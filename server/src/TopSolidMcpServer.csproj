@@ -26,6 +26,10 @@
       <HintPath>C:\Program Files\TOPSOLID\TopSolid 7.20\bin\TopSolid.Cad.Design.Automating.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="TopSolid.Cad.Drafting.Automating">
+      <HintPath>C:\Program Files\TOPSOLID\TopSolid 7.20\bin\TopSolid.Cad.Drafting.Automating.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
