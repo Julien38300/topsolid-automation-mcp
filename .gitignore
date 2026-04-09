@@ -1,0 +1,43 @@
+# Build outputs
+bin/
+obj/
+*.exe
+*.dll
+*.pdb
+*.cache
+
+# Node
+node_modules/
+.vitepress/dist/
+.vitepress/cache/
+
+# IDE
+.vs/
+*.suo
+*.user
+*.sln.docuser
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Secrets
+.env
+*.env.local
+
+# Logs
+*.log
+chroma.log
+
+# Data (large files — tracked separately)
+data/help-md/
+
+# Python
+__pycache__/
+*.pyc
+
+# TopSolid
+*.TopPrt
+*.TopAsm
+*.TopFam
+*.TopDrf

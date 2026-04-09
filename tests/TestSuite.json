@@ -1,0 +1,1470 @@
+{
+  "version": "1.0",
+  "tests": [
+    {
+      "id": "T-00",
+      "name": "setup projet et document de test",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 99,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "try { TopSolidHost.Application.EndModification(false, false); } catch { }\nvar currentDoc = TopSolidHost.Documents.EditedDocument;\nif (!currentDoc.IsEmpty)\n{\n    var currentPdm = TopSolidHost.Documents.GetPdmObject(currentDoc);\n    if (!currentPdm.IsEmpty && TopSolidHost.Pdm.GetName(currentPdm).Contains(\"Test 01\"))\n        return \"SETUP OK: Test 01 deja en edition.\";\n}\nreturn \"SETUP FAIL: Test 01 n'est pas le document edite. Ouvrir Test 01 dans le projet Test MCP.\";"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["SETUP OK"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-01",
+      "name": "get_state connexion + version",
+      "tool": "topsolid_get_state",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 100,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_get_state",
+          "arguments": {}
+        }
+      },
+      "assertions": {
+        "contains": ["Version"],
+        "not_contains": ["Erreur"],
+        "pattern": "Version[\\s:>]+[0-9]"
+      },
+      "baseline_ms": 500
+    },
+    {
+      "id": "T-02",
+      "name": "get_state document actif",
+      "tool": "topsolid_get_state",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 101,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_get_state",
+          "arguments": {}
+        }
+      },
+      "assertions": {
+        "not_contains": ["Erreur de connexion"]
+      },
+      "baseline_ms": 500
+    },
+    {
+      "id": "T-03",
+      "name": "api_help sketch",
+      "tool": "topsolid_api_help",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 102,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_api_help",
+          "arguments": {
+            "query": "sketch"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["ketch"]
+      },
+      "baseline_ms": 200
+    },
+    {
+      "id": "T-04",
+      "name": "api_help IParameters",
+      "tool": "topsolid_api_help",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 103,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_api_help",
+          "arguments": {
+            "query": "IParameters"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["IParameter"]
+      },
+      "baseline_ms": 200
+    },
+    {
+      "id": "T-05",
+      "name": "find_path IPdm -> String",
+      "tool": "topsolid_find_path",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 104,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_find_path",
+          "arguments": {
+            "sourceType": "IPdm",
+            "targetType": "String"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["Aucun chemin"]
+      },
+      "baseline_ms": 1000
+    },
+    {
+      "id": "T-06",
+      "name": "explore_paths IDocuments depth=2",
+      "tool": "topsolid_explore_paths",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 105,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_explore_paths",
+          "arguments": {
+            "sourceType": "IDocuments",
+            "maxDepth": 2
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["timeout"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-07",
+      "name": "execute_script script simple (Version)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 106,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var version = TopSolidHost.Version;\nreturn \"Version: \" + version.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Version:"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 2000
+    },
+    {
+      "id": "T-08",
+      "name": "execute_script document actif",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 107,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nvar name = TopSolidHost.Documents.GetName(docId);\nreturn \"Document: \" + name;"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-09",
+      "name": "execute_script using+Run() pattern LLM",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 108,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "using System;\n\npublic static string Run() {\n    var version = TopSolidHost.Version;\n    return \"LLM pattern test: \" + version.ToString();\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["LLM pattern test:"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 2000
+    },
+    {
+      "id": "T-10",
+      "name": "execute_script using seuls pattern LLM",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 109,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "using System;\nusing System.Collections.Generic;\n\nvar version = TopSolidHost.Version;\nreturn \"Using strip test: \" + version.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Using strip test:"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 2000
+    },
+    {
+      "id": "T-11",
+      "name": "script projets ouverts",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 110,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var projects = TopSolidHost.Pdm.GetOpenProjects(true, true);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Projets ouverts : \" + projects.Count);\nforeach (var p in projects) sb.AppendLine(\"- \" + TopSolidHost.Pdm.GetName(p));\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Projets ouverts"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-12",
+      "name": "script contenu projet courant",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 111,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var projectId = TopSolidHost.Pdm.GetCurrentProject();\nif (projectId.IsEmpty) return \"Aucun projet courant.\";\nvar name = TopSolidHost.Pdm.GetName(projectId);\nList<PdmObjectId> folders;\nList<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(projectId, out folders, out docs);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Projet : \" + name);\nsb.AppendLine(\"Dossiers : \" + folders.Count);\nforeach (var f in folders) sb.AppendLine(\"  [D] \" + TopSolidHost.Pdm.GetName(f));\nsb.AppendLine(\"Documents : \" + docs.Count);\nforeach (var d in docs) sb.AppendLine(\"  [F] \" + TopSolidHost.Pdm.GetName(d));\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Projet"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-13",
+      "name": "script contenu Dossier 01 avec types",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 112,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var projectId = TopSolidHost.Pdm.GetCurrentProject();\nif (projectId.IsEmpty) return \"Aucun projet courant.\";\nList<PdmObjectId> folders;\nList<PdmObjectId> rootDocs;\nTopSolidHost.Pdm.GetConstituents(projectId, out folders, out rootDocs);\nPdmObjectId dossierId = PdmObjectId.Empty;\nforeach (var f in folders)\n{\n    if (TopSolidHost.Pdm.GetName(f) == \"Dossier 01\") { dossierId = f; break; }\n}\nif (dossierId.IsEmpty) return \"Dossier 01 non trouve.\";\nList<PdmObjectId> subFolders;\nList<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(dossierId, out subFolders, out docs);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Dossier 01 contient \" + docs.Count + \" documents :\");\nforeach (var d in docs)\n{\n    string docName = TopSolidHost.Pdm.GetName(d);\n    string ext;\n    TopSolidHost.Pdm.GetType(d, out ext);\n    sb.AppendLine(\"- \" + docName + \" (\" + ext + \")\");\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Dossier 01 contient"],
+        "not_contains": ["Erreur de compilation", "non trouve"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-14",
+      "name": "script recherche dossier CONTAINS",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 113,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var projectId = TopSolidHost.Pdm.GetCurrentProject();\nif (projectId.IsEmpty) return \"Aucun projet courant.\";\nvar results = TopSolidHost.Pdm.SearchFolderByName(projectId, \"Dossier\");\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Recherche 'Dossier' : \" + results.Count + \" resultat(s)\");\nforeach (var r in results) sb.AppendLine(\"- \" + TopSolidHost.Pdm.GetName(r));\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["resultat"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-15",
+      "name": "script parametres document actif",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 114,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nvar parameters = TopSolidHost.Parameters.GetParameters(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Parametres : \" + parameters.Count);\nforeach (var p in parameters)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(p);\n    var pType = TopSolidHost.Parameters.GetParameterType(p);\n    string value = \"?\";\n    try\n    {\n        if (pType == ParameterType.Real) value = TopSolidHost.Parameters.GetRealValue(p).ToString();\n        else if (pType == ParameterType.Integer) value = TopSolidHost.Parameters.GetIntegerValue(p).ToString();\n        else if (pType == ParameterType.Boolean) value = TopSolidHost.Parameters.GetBooleanValue(p).ToString();\n        else if (pType == ParameterType.Text) value = TopSolidHost.Parameters.GetTextValue(p);\n        else value = pType.ToString();\n    }\n    catch { value = \"(erreur lecture)\"; }\n    sb.AppendLine(\"- \" + name + \" [\" + pType + \"] = \" + value);\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Parametres"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-16",
+      "name": "script parametre booleen par nom",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 115,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nvar parameters = TopSolidHost.Parameters.GetParameters(docId);\nforeach (var p in parameters)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(p);\n    if (name.Contains(\"plan\"))\n    {\n        var pType = TopSolidHost.Parameters.GetParameterType(p);\n        if (pType == ParameterType.Boolean)\n        {\n            bool val = TopSolidHost.Parameters.GetBooleanValue(p);\n            return name + \" = \" + val.ToString() + \" (type: \" + pType + \")\";\n        }\n        return name + \" trouve mais type = \" + pType;\n    }\n}\nreturn \"Parametre contenant 'plan' non trouve.\";"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["Erreur de compilation", "non trouve"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-17",
+      "name": "script liste esquisses",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 116,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nvar entities = TopSolidHost.Entities.GetFunctions(docId);\nvar sb = new System.Text.StringBuilder();\nint sketchCount = 0;\nforeach (var e in entities)\n{\n    string typeName = TopSolidHost.Elements.GetTypeFullName(e);\n    if (typeName.Contains(\"Sketch\"))\n    {\n        string name = TopSolidHost.Elements.GetFriendlyName(e);\n        sb.AppendLine(\"- \" + name);\n        sketchCount++;\n    }\n}\nsb.Insert(0, \"Esquisses : \" + sketchCount + \"\\n\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Esquisses"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-18",
+      "name": "script type document assemblage",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 117,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nstring typeName = TopSolidHost.Documents.GetTypeFullName(docId);\nstring name = TopSolidHost.Documents.GetName(docId);\nreturn \"Document: \" + name + \"\\nType: \" + typeName;"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Document:"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 2000
+    },
+    {
+      "id": "T-19",
+      "name": "script inclusions assemblage",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 118,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nvar entities = TopSolidHost.Entities.GetFunctions(docId);\nvar sb = new System.Text.StringBuilder();\nint count = 0;\nforeach (var e in entities)\n{\n    string typeName = TopSolidHost.Elements.GetTypeFullName(e);\n    if (typeName.Contains(\"Inclusion\"))\n    {\n        string name = TopSolidHost.Elements.GetFriendlyName(e);\n        count++;\n        try\n        {\n            var defDoc = TopSolidDesignHost.Assemblies.GetInclusionDefinitionDocument(e);\n            string defName = TopSolidHost.Documents.GetName(defDoc);\n            sb.AppendLine(\"- \" + name + \" -> \" + defName);\n        }\n        catch { sb.AppendLine(\"- \" + name + \" (def. inaccessible)\"); }\n    }\n}\nsb.Insert(0, \"Inclusions : \" + count + \"\\n\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Inclusions"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-20",
+      "name": "script recherche document CONTAINS",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 119,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var projectId = TopSolidHost.Pdm.GetCurrentProject();\nif (projectId.IsEmpty) return \"Aucun projet courant.\";\nvar results = TopSolidHost.Pdm.SearchDocumentByName(projectId, \"Piece\");\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Recherche 'Piece' : \" + results.Count + \" resultat(s)\");\nforeach (var r in results)\n{\n    string name = TopSolidHost.Pdm.GetName(r);\n    string ext;\n    TopSolidHost.Pdm.GetType(r, out ext);\n    sb.AppendLine(\"- \" + name + \" (\" + ext + \")\");\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["resultat"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+
+    {
+      "id": "T-30",
+      "name": "WRITE modifier Parametre 1 de 10 a 20",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 130,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Set Parametre 1 to 20\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    var parameters = TopSolidHost.Parameters.GetParameters(docId);\n    bool found = false;\n    foreach (var p in parameters)\n    {\n        string name = TopSolidHost.Elements.GetFriendlyName(p);\n        if (name.Contains(\"1\") && TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Integer)\n        {\n            TopSolidHost.Parameters.SetIntegerValue(p, 20);\n            found = true;\n            break;\n        }\n    }\n    if (!found) { TopSolidHost.Application.EndModification(false, false); return \"FAIL: Parametre 1 Integer non trouve.\"; }\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: Parametre 1 mis a 20\";\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-30v",
+      "name": "VERIFY Parametre 1 vaut 20",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1300,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nvar pars = TopSolidHost.Parameters.GetParameters(docId);\nforeach (var p in pars)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(p);\n    if (name.Contains(\"1\") && TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Integer)\n        return \"VERIFY: Parametre 1 = \" + TopSolidHost.Parameters.GetIntegerValue(p);\n}\nreturn \"VERIFY FAIL: Parametre 1 non trouve.\";"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["VERIFY: Parametre 1 = 20"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-31",
+      "name": "WRITE rollback Parametre 1 de 20 a 10",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 131,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Rollback Parametre 1 to 10\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    var parameters = TopSolidHost.Parameters.GetParameters(docId);\n    bool found = false;\n    foreach (var p in parameters)\n    {\n        string name = TopSolidHost.Elements.GetFriendlyName(p);\n        if (name.Contains(\"1\") && TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Integer)\n        {\n            TopSolidHost.Parameters.SetIntegerValue(p, 10);\n            found = true;\n            break;\n        }\n    }\n    if (!found) { TopSolidHost.Application.EndModification(false, false); return \"FAIL: Parametre 1 Integer non trouve.\"; }\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: Parametre 1 remis a 10\";\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-32",
+      "name": "WRITE toggle parametre booleen Mise en plan",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 132,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Toggle boolean plan\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    var parameters = TopSolidHost.Parameters.GetParameters(docId);\n    bool found = false;\n    foreach (var p in parameters)\n    {\n        if (TopSolidHost.Elements.GetFriendlyName(p).Contains(\"plan\") && TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Boolean)\n        {\n            bool oldVal = TopSolidHost.Parameters.GetBooleanValue(p);\n            TopSolidHost.Parameters.SetBooleanValue(p, !oldVal);\n            found = true;\n            break;\n        }\n    }\n    if (!found) { TopSolidHost.Application.EndModification(false, false); return \"FAIL: Boolean param contenant plan non trouve.\"; }\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: Boolean plan toggled\";\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-33",
+      "name": "WRITE re-toggle parametre booleen Mise en plan",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 133,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Re-toggle boolean plan\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    var parameters = TopSolidHost.Parameters.GetParameters(docId);\n    bool found = false;\n    foreach (var p in parameters)\n    {\n        if (TopSolidHost.Elements.GetFriendlyName(p).Contains(\"plan\") && TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Boolean)\n        {\n            bool oldVal = TopSolidHost.Parameters.GetBooleanValue(p);\n            TopSolidHost.Parameters.SetBooleanValue(p, !oldVal);\n            found = true;\n            break;\n        }\n    }\n    if (!found) { TopSolidHost.Application.EndModification(false, false); return \"FAIL: Boolean param contenant plan non trouve.\"; }\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: Boolean plan re-toggled\";\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-34",
+      "name": "WRITE creer parametre reel TestParam_MCP",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 134,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Create TestParam_MCP\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    ElementId newParam = TopSolidHost.Parameters.CreateRealParameter(docId, UnitType.Length, 0.042);\n    TopSolidHost.Elements.SetName(newParam, \"TestParam_MCP\");\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: TestParam_MCP cree avec valeur 0.042\";\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-34v",
+      "name": "VERIFY TestParam_MCP existe avec valeur 0.042",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 1340,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nvar pars = TopSolidHost.Parameters.GetParameters(docId);\nforeach (var p in pars)\n{\n    if (TopSolidHost.Elements.GetFriendlyName(p) == \"TestParam_MCP\")\n        return \"VERIFY: TestParam_MCP = \" + TopSolidHost.Parameters.GetRealValue(p);\n}\nreturn \"VERIFY FAIL: TestParam_MCP non trouve.\";"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["VERIFY: TestParam_MCP"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-35",
+      "name": "WRITE supprimer parametre TestParam_MCP",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 135,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Delete TestParam_MCP\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    var parameters = TopSolidHost.Parameters.GetParameters(docId);\n    bool found = false;\n    foreach (var p in parameters)\n    {\n        if (TopSolidHost.Elements.GetFriendlyName(p) == \"TestParam_MCP\")\n        {\n            TopSolidHost.Elements.Delete(p);\n            found = true;\n            break;\n        }\n    }\n    if (!found) { TopSolidHost.Application.EndModification(false, false); return \"FAIL: TestParam_MCP non trouve.\"; }\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: TestParam_MCP supprime\";\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-36",
+      "name": "WRITE renommer document puis restaurer",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 136,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Rename document round-trip\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    string oldName = TopSolidHost.Documents.GetName(docId);\n    TopSolidHost.Documents.SetName(docId, oldName + \"_MCP_TEST\");\n    TopSolidHost.Documents.SetName(docId, oldName);\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: Document renomme puis restaure a \" + oldName;\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-37",
+      "name": "READ lister exporteurs STEP",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 137,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "int count = TopSolidHost.Application.ExporterCount;\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Exporteurs: \" + count);\nint stepIdx = -1;\nfor (int i = 0; i < count; i++)\n{\n    string typeName;\n    string[] extensions;\n    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n    string exts = string.Join(\", \", extensions);\n    sb.AppendLine(\"[\" + i + \"] \" + typeName + \" (\" + exts + \")\");\n    foreach (string ext in extensions)\n    {\n        if (ext.ToLower().Contains(\"stp\") || ext.ToLower().Contains(\"step\"))\n            stepIdx = i;\n    }\n}\nif (stepIdx >= 0)\n    sb.AppendLine(\"STEP exporter index: \" + stepIdx);\nelse\n    sb.AppendLine(\"STEP exporter: NON TROUVE\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Exporteurs:"],
+        "not_contains": ["Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-38",
+      "name": "READ lire metadata PDM (description, reference, fabricant)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 138,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "var docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nPdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Document: \" + TopSolidHost.Pdm.GetName(pdmId));\nstring ext;\nTopSolidHost.Pdm.GetType(pdmId, out ext);\nsb.AppendLine(\"Type: \" + ext);\ntry { sb.AppendLine(\"Description: \" + TopSolidHost.Pdm.GetDescription(pdmId)); } catch { sb.AppendLine(\"Description: N/A\"); }\ntry { sb.AppendLine(\"PartNumber: \" + TopSolidHost.Pdm.GetPartNumber(pdmId)); } catch { sb.AppendLine(\"PartNumber: N/A\"); }\ntry { sb.AppendLine(\"Manufacturer: \" + TopSolidHost.Pdm.GetManufacturer(pdmId)); } catch { sb.AppendLine(\"Manufacturer: N/A\"); }\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Document:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-39",
+      "name": "WRITE rebuild et save document",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 139,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ntry\n{\n    TopSolidHost.Application.StartModification(\"Rebuild document\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    TopSolidHost.Documents.Rebuild(docId);\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: Document rebuilt et sauvegarde\";\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-40",
+      "name": "READ lister esquisses du document (R-040)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 140,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sketches = TopSolidHost.Sketches2D.GetSketches(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Esquisses: \" + sketches.Count);\nforeach (ElementId sketch in sketches)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(sketch);\n    var profiles = TopSolidHost.Sketches2D.GetProfiles(sketch);\n    sb.AppendLine(\"  \" + name + \" — \" + profiles.Count + \" profil(s)\");\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Esquisses:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-41",
+      "name": "READ lister shapes et faces (R-041)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 141,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Shapes: \" + shapes.Count);\nforeach (ElementId shape in shapes)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(shape);\n    int faceCount = TopSolidHost.Shapes.GetFaceCount(shape);\n    int edgeCount = TopSolidHost.Shapes.GetEdgeCount(shape);\n    sb.AppendLine(\"  \" + name + \" — \" + faceCount + \" faces, \" + edgeCount + \" aretes\");\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Shapes:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-42",
+      "name": "READ plans et axes absolus (R-042)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 142,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\nElementId xyPlane = TopSolidHost.Geometries3D.GetAbsoluteXYPlane(docId);\nElementId xzPlane = TopSolidHost.Geometries3D.GetAbsoluteXZPlane(docId);\nElementId yzPlane = TopSolidHost.Geometries3D.GetAbsoluteYZPlane(docId);\nsb.AppendLine(\"Plan XY: \" + (!xyPlane.IsEmpty ? \"OK\" : \"VIDE\"));\nsb.AppendLine(\"Plan XZ: \" + (!xzPlane.IsEmpty ? \"OK\" : \"VIDE\"));\nsb.AppendLine(\"Plan YZ: \" + (!yzPlane.IsEmpty ? \"OK\" : \"VIDE\"));\nElementId frame = TopSolidHost.Geometries3D.GetAbsoluteFrame(docId);\nElementId origin = TopSolidHost.Geometries3D.GetAbsoluteOriginPoint(docId);\nsb.AppendLine(\"Repere absolu: \" + (!frame.IsEmpty ? \"OK\" : \"VIDE\"));\nsb.AppendLine(\"Origine: \" + (!origin.IsEmpty ? \"OK\" : \"VIDE\"));\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Plan XY: OK", "Repere absolu: OK"],
+        "not_contains": ["FAIL", "Erreur de compilation", "VIDE"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-43",
+      "name": "READ detecter type document (assemblage ou piece)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 143,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\nstring typeName = TopSolidHost.Documents.GetTypeFullName(docId);\nbool isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId);\nsb.AppendLine(\"Document: \" + TopSolidHost.Documents.GetName(docId));\nsb.AppendLine(\"Type: \" + typeName);\nsb.AppendLine(\"Est assemblage: \" + isAsm);\nif (isAsm)\n{\n    var ops = TopSolidHost.Operations.GetOperations(docId);\n    int inclCount = 0;\n    foreach (ElementId ope in ops)\n    {\n        if (TopSolidDesignHost.Assemblies.IsInclusion(ope)) inclCount++;\n    }\n    sb.AppendLine(\"Inclusions: \" + inclCount);\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Document:", "Type:", "Est assemblage:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-44",
+      "name": "READ lister points et reperes 3D",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 144,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\nvar points = TopSolidHost.Geometries3D.GetPoints(docId);\nsb.AppendLine(\"Points 3D: \" + points.Count);\nforeach (ElementId pt in points)\n{\n    Point3D geom = TopSolidHost.Geometries3D.GetPointGeometry(pt);\n    string name = TopSolidHost.Elements.GetFriendlyName(pt);\n    sb.AppendLine(\"  \" + name + \" (\" + (geom.X*1000).ToString(\"F1\") + \", \" + (geom.Y*1000).ToString(\"F1\") + \", \" + (geom.Z*1000).ToString(\"F1\") + \") mm\");\n}\nvar frames = TopSolidHost.Geometries3D.GetFrames(docId);\nsb.AppendLine(\"Reperes 3D: \" + frames.Count);\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Points 3D:", "Reperes 3D:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-45",
+      "name": "READ lister operations du document",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 145,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar ops = TopSolidHost.Operations.GetOperations(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Operations: \" + ops.Count);\nforeach (ElementId ope in ops)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(ope);\n    string typeName = TopSolidHost.Elements.GetTypeFullName(ope);\n    string shortType = typeName.Substring(typeName.LastIndexOf('.') + 1);\n    sb.AppendLine(\"  \" + name + \" [\" + shortType + \"]\");\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Operations:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-46",
+      "name": "api_help assemblage inclusion",
+      "tool": "topsolid_api_help",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 146,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_api_help",
+          "arguments": {
+            "query": "create inclusion"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Inclusion"],
+        "not_contains": ["Aucun"]
+      },
+      "baseline_ms": 200
+    },
+    {
+      "id": "T-47",
+      "name": "api_help famille explicit",
+      "tool": "topsolid_api_help",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 147,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_api_help",
+          "arguments": {
+            "query": "IFamilies"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["amil"],
+        "not_contains": ["Aucun"]
+      },
+      "baseline_ms": 200
+    },
+    {
+      "id": "T-48",
+      "name": "find_path IAssemblies -> DocumentId",
+      "tool": "topsolid_find_path",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 148,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_find_path",
+          "arguments": {
+            "sourceType": "IAssemblies",
+            "targetType": "DocumentId"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["Aucun chemin"]
+      },
+      "baseline_ms": 1000
+    },
+    {
+      "id": "T-49",
+      "name": "find_path IFamilies -> PdmObjectId",
+      "tool": "topsolid_find_path",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 149,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_find_path",
+          "arguments": {
+            "sourceType": "IFamilies",
+            "targetType": "PdmObjectId"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["Aucun chemin"]
+      },
+      "baseline_ms": 1000
+    },
+    {
+      "id": "T-50",
+      "name": "WRITE creer point 3D puis supprimer (round-trip)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 150,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\ntry\n{\n    TopSolidHost.Application.StartModification(\"T-50 create+delete point\", false);\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    int beforeCount = TopSolidHost.Geometries3D.GetPoints(docId).Count;\n    ElementId pt = TopSolidHost.Geometries3D.CreatePoint(docId, new Point3D(0.123, 0.456, 0.789));\n    TopSolidHost.Elements.SetName(pt, \"MCP_TEST_POINT_T50\");\n    int afterCreate = TopSolidHost.Geometries3D.GetPoints(docId).Count;\n    TopSolidHost.Elements.Delete(pt);\n    int afterDelete = TopSolidHost.Geometries3D.GetPoints(docId).Count;\n    TopSolidHost.Application.EndModification(true, true);\n    PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n    TopSolidHost.Pdm.Save(pdmId, true);\n    return \"OK: before=\" + beforeCount + \" created=\" + afterCreate + \" afterDelete=\" + afterDelete;\n}\ncatch (Exception ex)\n{\n    TopSolidHost.Application.EndModification(false, false);\n    return \"FAIL: \" + ex.Message;\n}"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["OK:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-51",
+      "name": "READ lire faces detaillees d'un shape (aire + type surface)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 151,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nif (shapes.Count == 0) return \"Shapes: 0 (document sans geometrie)\";\nvar sb = new System.Text.StringBuilder();\nElementId shape = shapes[0];\nstring name = TopSolidHost.Elements.GetFriendlyName(shape);\nvar faces = TopSolidHost.Shapes.GetFaces(shape);\nsb.AppendLine(\"Shape: \" + name + \" — \" + faces.Count + \" faces\");\nint maxFaces = faces.Count > 10 ? 10 : faces.Count;\nfor (int i = 0; i < maxFaces; i++)\n{\n    double area = TopSolidHost.Shapes.GetFaceArea(faces[i]);\n    SurfaceType surfType = TopSolidHost.Shapes.GetFaceSurfaceType(faces[i]);\n    sb.AppendLine(\"  Face \" + i + \": \" + surfType + \" — \" + (area * 10000).ToString(\"F2\") + \" cm2\");\n}\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Shape"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-60",
+      "name": "DEMO Sc.1 Analyse interferences assemblage",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 160,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\nbool isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId);\nsb.AppendLine(\"Document: \" + TopSolidHost.Documents.GetName(docId));\nsb.AppendLine(\"Assemblage: \" + isAsm);\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Document:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-61",
+      "name": "DEMO Sc.2 BOM — pieces assemblage ou volume piece",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 161,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\nstring docName = TopSolidHost.Documents.GetName(docId);\nbool isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId);\nif (!isAsm)\n{\n    sb.AppendLine(\"Document: \" + docName + \" (piece unique)\");\n    var shapes = TopSolidHost.Shapes.GetShapes(docId);\n    double totalVol = 0;\n    foreach (ElementId s in shapes)\n    {\n        try { totalVol += TopSolidHost.Shapes.GetShapeVolume(s); } catch { }\n    }\n    sb.AppendLine(\"Volume: \" + (totalVol * 1e9).ToString(\"F1\") + \" cm3\");\n    sb.AppendLine(\"Shapes: \" + shapes.Count);\n    return sb.ToString();\n}\nvar parts = TopSolidDesignHost.Assemblies.GetParts(docId);\nsb.AppendLine(\"Assemblage: \" + docName);\nsb.AppendLine(\"Pieces: \" + parts.Count);\nvar refs = new System.Collections.Generic.Dictionary<string, int>();\nforeach (ElementId part in parts)\n{\n    try\n    {\n        DocumentId defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(part);\n        if (defDoc.IsEmpty) continue;\n        string name = TopSolidHost.Documents.GetName(defDoc);\n        if (refs.ContainsKey(name)) refs[name]++;\n        else refs[name] = 1;\n    }\n    catch { }\n}\nsb.AppendLine(\"References uniques: \" + refs.Count);\nforeach (var kv in refs)\n    sb.AppendLine(\"  \" + kv.Key + \" x\" + kv.Value);\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-62",
+      "name": "DEMO Sc.3 Diagnostic esquisse (R-060)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 162,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sketches = TopSolidHost.Sketches2D.GetSketches(docId);\nif (sketches.Count == 0) return \"Diagnostic: 0 esquisses (document sans esquisse).\";\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Diagnostic esquisses (\" + sketches.Count + \"):\");\nint totalProblems = 0;\nforeach (ElementId sketch in sketches)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(sketch);\n    var profiles = TopSolidHost.Sketches2D.GetProfiles(sketch);\n    if (profiles.Count == 0)\n    {\n        sb.AppendLine(\"  \" + name + \": VIDE (aucun profil)\");\n        totalProblems++;\n        continue;\n    }\n    foreach (var profile in profiles)\n    {\n        bool closed = TopSolidHost.Sketches2D.IsProfileClosed(profile);\n        var segments = TopSolidHost.Sketches2D.GetProfileSegments(profile);\n        if (!closed)\n        {\n            sb.AppendLine(\"  \" + name + \": PROFIL OUVERT (\" + segments.Count + \" segments)\");\n            totalProblems++;\n        }\n        else\n            sb.AppendLine(\"  \" + name + \": OK (\" + segments.Count + \" segments, ferme)\");\n    }\n}\nsb.AppendLine(\"Problemes: \" + totalProblems);\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Diagnostic"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-63",
+      "name": "DEMO Sc.4 Tracabilite PDM revisions (R-061)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 163,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nPdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Document: \" + TopSolidHost.Pdm.GetName(pdmId));\nstring majorText;\nstring minorText;\nTopSolidHost.Pdm.GetRevisionTexts(pdmId, out majorText, out minorText);\nsb.AppendLine(\"Revision: \" + majorText + \".\" + minorText);\ntry\n{\n    PdmMinorRevisionId finalRev = TopSolidHost.Pdm.GetFinalMinorRevision(pdmId);\n    PdmMinorRevisionId currentRev = TopSolidHost.Documents.GetPdmMinorRevision(docId);\n    sb.AppendLine(\"A jour: \" + (finalRev.Id == currentRev.Id ? \"OUI\" : \"NON — revision plus recente disponible\"));\n}\ncatch { sb.AppendLine(\"Info revision detaillee non disponible.\"); }\ntry { sb.AppendLine(\"Description: \" + TopSolidHost.Pdm.GetDescription(pdmId)); } catch { }\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Document:", "Revision:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-64",
+      "name": "DEMO Sc.5 Calcul encombrement (bounding box)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 164,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nif (shapes.Count == 0) return \"Aucun shape — document sans geometrie.\";\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Encombrement du document: \" + TopSolidHost.Documents.GetName(docId));\ndouble gXmin = double.MaxValue, gYmin = double.MaxValue, gZmin = double.MaxValue;\ndouble gXmax = double.MinValue, gYmax = double.MinValue, gZmax = double.MinValue;\nforeach (ElementId shape in shapes)\n{\n    var faces = TopSolidHost.Shapes.GetFaces(shape);\n    foreach (var face in faces)\n    {\n        double xmin, ymin, zmin, xmax, ymax, zmax;\n        TopSolidHost.Shapes.GetFaceEnclosingCoordinates(face, out xmin, out ymin, out zmin, out xmax, out ymax, out zmax);\n        if (xmin < gXmin) gXmin = xmin;\n        if (ymin < gYmin) gYmin = ymin;\n        if (zmin < gZmin) gZmin = zmin;\n        if (xmax > gXmax) gXmax = xmax;\n        if (ymax > gYmax) gYmax = ymax;\n        if (zmax > gZmax) gZmax = zmax;\n    }\n}\ndouble dx = (gXmax - gXmin) * 1000;\ndouble dy = (gYmax - gYmin) * 1000;\ndouble dz = (gZmax - gZmin) * 1000;\nsb.AppendLine(\"Dimensions hors-tout:\");\nsb.AppendLine(\"  X: \" + dx.ToString(\"F1\") + \" mm\");\nsb.AppendLine(\"  Y: \" + dy.ToString(\"F1\") + \" mm\");\nsb.AppendLine(\"  Z: \" + dz.ToString(\"F1\") + \" mm\");\ndouble vol = dx * dy * dz / 1e9;\nsb.AppendLine(\"Volume boite: \" + vol.ToString(\"F4\") + \" m3\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-65",
+      "name": "DEMO Sc.7 Usinabilite — rayons cylindriques des faces",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 165,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nif (shapes.Count == 0) return \"Aucun shape.\";\nvar sb = new System.Text.StringBuilder();\ndouble minRadius = double.MaxValue;\nint cylCount = 0;\nforeach (ElementId shape in shapes)\n{\n    var faces = TopSolidHost.Shapes.GetFaces(shape);\n    foreach (var face in faces)\n    {\n        SurfaceType st = TopSolidHost.Shapes.GetFaceSurfaceType(face);\n        if (st == SurfaceType.Cylinder)\n        {\n            double r = TopSolidHost.Shapes.GetFaceCylinderRadius(face);\n            cylCount++;\n            if (r < minRadius) minRadius = r;\n        }\n    }\n}\nsb.AppendLine(\"Analyse usinabilite:\");\nsb.AppendLine(\"Faces cylindriques: \" + cylCount);\nif (cylCount > 0)\n{\n    sb.AppendLine(\"Rayon minimum: \" + (minRadius * 1000).ToString(\"F2\") + \" mm\");\n    sb.AppendLine(\"Fraise max: diam \" + (minRadius * 2000).ToString(\"F1\") + \" mm\");\n}\nelse\n    sb.AppendLine(\"Aucune face cylindrique detectee.\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-66",
+      "name": "DEMO Sc.8 Proprietes personnalisees (attributs)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 166,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nPdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Proprietes de: \" + TopSolidHost.Pdm.GetName(pdmId));\nvar pList = TopSolidHost.Parameters.GetParameters(docId);\nint userCount = 0;\nforeach (ElementId p in pList)\n{\n    if (TopSolidHost.Elements.HasSystemName(p)) continue;\n    string name = TopSolidHost.Elements.GetFriendlyName(p);\n    ParameterType pt = TopSolidHost.Parameters.GetParameterType(p);\n    string val = \"\";\n    try\n    {\n        switch (pt)\n        {\n            case ParameterType.Real: val = (TopSolidHost.Parameters.GetRealValue(p) * 1000).ToString(\"F2\") + \" mm\"; break;\n            case ParameterType.Text: val = TopSolidHost.Parameters.GetTextValue(p); break;\n            case ParameterType.Boolean: val = TopSolidHost.Parameters.GetBooleanValue(p).ToString(); break;\n            case ParameterType.Integer: val = TopSolidHost.Parameters.GetIntegerValue(p).ToString(); break;\n            default: val = \"(\" + pt + \")\"; break;\n        }\n    }\n    catch { val = \"?\"; }\n    sb.AppendLine(\"  \" + name + \" = \" + val);\n    userCount++;\n}\nsb.AppendLine(\"Total attributs utilisateur: \" + userCount);\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Proprietes de:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-67",
+      "name": "DEMO Sc.9 Chasse au poids — top 5 pieces par volume",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 167,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nif (shapes.Count == 0) return \"Aucun shape dans le document.\";\nvar volumes = new System.Collections.Generic.List<KeyValuePair<string, double>>();\nforeach (ElementId s in shapes)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(s);\n    try\n    {\n        double vol = TopSolidHost.Shapes.GetShapeVolume(s);\n        volumes.Add(new KeyValuePair<string, double>(name, vol));\n    }\n    catch { }\n}\nvolumes.Sort(delegate(KeyValuePair<string, double> a, KeyValuePair<string, double> b) { return b.Value.CompareTo(a.Value); });\nsb.AppendLine(\"Top shapes par volume:\");\ndouble totalVol = 0;\nforeach (var kv in volumes) totalVol += kv.Value;\nint top = volumes.Count > 5 ? 5 : volumes.Count;\nfor (int i = 0; i < top; i++)\n{\n    double pct = totalVol > 0 ? (volumes[i].Value / totalVol * 100) : 0;\n    sb.AppendLine(\"  \" + (i+1) + \". \" + volumes[i].Key + \": \" + (volumes[i].Value * 1e9).ToString(\"F1\") + \" cm3 (\" + pct.ToString(\"F0\") + \"%)\");\n}\nsb.AppendLine(\"Volume total: \" + (totalVol * 1e9).ToString(\"F1\") + \" cm3\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-68",
+      "name": "DEMO Sc.11 Standardisation — famille vs local",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 168,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Audit standardisation:\");\nvar projectId = TopSolidHost.Pdm.GetCurrentProject();\nList<PdmObjectId> folders;\nList<PdmObjectId> files;\nTopSolidHost.Pdm.GetConstituents(projectId, out folders, out files);\nint fromLib = 0;\nint local = 0;\nforeach (PdmObjectId f in files)\n{\n    DocumentId d = TopSolidHost.Documents.GetDocument(f);\n    if (d.IsEmpty) continue;\n    if (TopSolidHost.Families.IsFamily(d))\n        fromLib++;\n    else\n        local++;\n}\nsb.AppendLine(\"  Familles (bibliotheque): \" + fromLib);\nsb.AppendLine(\"  Documents locaux: \" + local);\nif (local > 0 && fromLib > 0)\n    sb.AppendLine(\"Ratio standard: \" + (fromLib * 100 / (fromLib + local)) + \"%\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Audit standardisation:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-69",
+      "name": "DEMO Sc.12 Performance CAO — nb faces par shape",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 169,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Audit performance CAO:\");\nint totalFaces = 0;\nint totalEdges = 0;\nforeach (ElementId s in shapes)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(s);\n    int fc = TopSolidHost.Shapes.GetFaceCount(s);\n    int ec = TopSolidHost.Shapes.GetEdgeCount(s);\n    totalFaces += fc;\n    totalEdges += ec;\n    sb.AppendLine(\"  \" + name + \": \" + fc + \" faces, \" + ec + \" aretes\");\n}\nsb.AppendLine(\"Total: \" + totalFaces + \" faces, \" + totalEdges + \" aretes\");\nif (totalFaces > 5000)\n    sb.AppendLine(\"ATTENTION: Modele lourd (>5000 faces). Envisager representation simplifiee.\");\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Audit performance"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-70",
+      "name": "DEMO Sc.13 Check-list fiabilite avant fabrication",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 170,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nPdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Bilan de sante: \" + TopSolidHost.Pdm.GetName(pdmId));\nint warnings = 0;\n\n// Check materiau\ntry\n{\n    DocumentId matDoc = TopSolidDesignHost.Parts.GetMaterial(docId);\n    if (matDoc.IsEmpty)\n    {\n        sb.AppendLine(\"  AVERT: Aucun materiau affecte\");\n        warnings++;\n    }\n    else\n        sb.AppendLine(\"  OK: Materiau = \" + TopSolidHost.Documents.GetName(matDoc));\n}\ncatch { sb.AppendLine(\"  INFO: Verification materiau non applicable\"); }\n\n// Check parametres\nvar pList = TopSolidHost.Parameters.GetParameters(docId);\nint userParams = 0;\nforeach (ElementId p in pList)\n{\n    if (!TopSolidHost.Elements.HasSystemName(p)) userParams++;\n}\nsb.AppendLine(\"  OK: \" + userParams + \" parametres utilisateur\");\n\n// Check revision\ntry\n{\n    string major;\n    string minor;\n    TopSolidHost.Pdm.GetRevisionTexts(pdmId, out major, out minor);\n    sb.AppendLine(\"  OK: Revision \" + major + \".\" + minor);\n}\ncatch { }\n\n// Check geometrie\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nif (shapes.Count == 0)\n{\n    sb.AppendLine(\"  AVERT: Aucune geometrie\");\n    warnings++;\n}\nelse\n    sb.AppendLine(\"  OK: \" + shapes.Count + \" shape(s)\");\n\n// Check esquisses\nvar sketches = TopSolidHost.Sketches2D.GetSketches(docId);\nint openProfiles = 0;\nforeach (ElementId sk in sketches)\n{\n    var profiles = TopSolidHost.Sketches2D.GetProfiles(sk);\n    foreach (var pf in profiles)\n    {\n        if (!TopSolidHost.Sketches2D.IsProfileClosed(pf)) openProfiles++;\n    }\n}\nif (openProfiles > 0)\n{\n    sb.AppendLine(\"  AVERT: \" + openProfiles + \" profil(s) ouvert(s)\");\n    warnings++;\n}\n\nsb.AppendLine(\"Resultat: \" + (warnings == 0 ? \"OK\" : warnings + \" avertissement(s)\"));\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Bilan de sante:", "Resultat:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 5000
+    },
+    {
+      "id": "T-71",
+      "name": "DEMO Sc.14 Export — lister formats disponibles",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 171,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nint count = TopSolidHost.Application.ExporterCount;\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Formats d'export disponibles (\" + count + \"):\");\nint compatible = 0;\nfor (int i = 0; i < count; i++)\n{\n    string typeName;\n    string[] extensions;\n    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n    bool canExport = TopSolidHost.Documents.CanExport(i, docId);\n    string exts = string.Join(\", \", extensions);\n    if (canExport)\n    {\n        sb.AppendLine(\"  [\" + i + \"] \" + typeName + \" (\" + exts + \")\");\n        compatible++;\n    }\n}\nsb.AppendLine(\"Formats compatibles: \" + compatible + \"/\" + count);\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Formats d'export"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+      "id": "T-72",
+      "name": "DEMO Sc.15 Materiaux des pieces (R-063)",
+      "tool": "topsolid_execute_script",
+      "request": {
+        "jsonrpc": "2.0",
+        "id": 172,
+        "method": "tools/call",
+        "params": {
+          "name": "topsolid_execute_script",
+          "arguments": {
+            "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"FAIL: Aucun document ouvert.\";\nvar sb = new System.Text.StringBuilder();\ntry\n{\n    DocumentId matDoc = TopSolidDesignHost.Parts.GetMaterial(docId);\n    string matName = matDoc.IsEmpty ? \"(aucun)\" : TopSolidHost.Documents.GetName(matDoc);\n    sb.AppendLine(\"Materiau: \" + matName);\n}\ncatch { sb.AppendLine(\"Materiau: non applicable (assemblage ou autre)\"); }\nreturn sb.ToString();"
+          }
+        }
+      },
+      "assertions": {
+        "contains": ["Materiau:"],
+        "not_contains": ["FAIL", "Erreur de compilation"]
+      },
+      "baseline_ms": 3000
+    },
+    {
+        "id": "T-73",
+        "name": "read shape types (solid vs sheet)",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 173,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nvar shapes = TopSolidHost.Shapes.GetShapes(docId);\nvar sb = new System.Text.StringBuilder();\nfor (int i = 0; i < shapes.Count; i++)\n{\n    var st = TopSolidHost.Shapes.GetShapeType(shapes[i]);\n    string name = TopSolidHost.Elements.GetFriendlyName(shapes[i]);\n    sb.AppendLine(name + \": \" + st);\n}\nreturn \"Shapes: \" + shapes.Count + \"\\n\" + sb.ToString();"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["Shapes:"],
+            "not_contains": ["Erreur de compilation", "ERREUR"]
+        },
+        "baseline_ms": 2000
+    },
+    {
+        "id": "T-74",
+        "name": "read file metadata (size + version)",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 174,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nPdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\nstring name = TopSolidHost.Pdm.GetName(pdmId);\nPdmMinorRevisionId minorRevId = TopSolidHost.Documents.GetPdmMinorRevision(docId);\nlong fileSize = TopSolidHost.Pdm.GetMinorRevisionFileSize(minorRevId);\nint fileVersion = TopSolidHost.Pdm.GetMinorRevisionFileVersion(minorRevId);\nreturn \"Document: \" + name + \", Taille: \" + (fileSize / 1024) + \" KB, Version: \" + fileVersion;"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["Document:", "Taille:", "Version:"],
+            "not_contains": ["Erreur de compilation", "ERREUR"]
+        },
+        "baseline_ms": 2000
+    },
+    {
+        "id": "T-75",
+        "name": "read visualization tolerances",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 175,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\ndouble chordError = 0, angularTolerance = 0;\nTopSolidHost.Options.GetVisualizationTolerances(docId, out chordError, out angularTolerance);\nreturn \"Tolerances: chord=\" + chordError + \", angular=\" + angularTolerance + \" rad\";"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["Tolerances:", "chord="],
+            "not_contains": ["Erreur de compilation", "ERREUR"]
+        },
+        "baseline_ms": 1000
+    },
+    {
+        "id": "T-76",
+        "name": "read synchronized documents",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 176,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nvar syncDocs = TopSolidHost.Documents.GetSynchronizedDocuments(docId);\nreturn \"Documents synchronises: \" + syncDocs.Count;"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["Documents synchronises:"],
+            "not_contains": ["Erreur de compilation", "ERREUR"]
+        },
+        "baseline_ms": 1500
+    },
+    {
+        "id": "T-77",
+        "name": "read operations tree children",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 177,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nvar ops = TopSolidHost.Operations.GetOperations(docId);\nvar sb = new System.Text.StringBuilder();\nsb.AppendLine(\"Operations: \" + ops.Count);\nfor (int i = 0; i < Math.Min(ops.Count, 5); i++)\n{\n    string name = TopSolidHost.Elements.GetFriendlyName(ops[i]);\n    var children = TopSolidHost.Operations.GetChildren(ops[i]);\n    sb.AppendLine(\"  \" + name + \": \" + children.Count + \" children\");\n}\nreturn sb.ToString();"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["Operations:"],
+            "not_contains": ["Erreur de compilation", "ERREUR"]
+        },
+        "baseline_ms": 2000
+    },
+    {
+        "id": "T-78",
+        "name": "api_help stock management",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 178,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": {
+                    "query": "stock"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["SetStockManagement"],
+            "not_contains": ["Aucun resultat"]
+        },
+        "baseline_ms": 500
+    },
+    {
+        "id": "T-79",
+        "name": "api_help back references where-used",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 179,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": {
+                    "query": "back references"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["SearchMajorRevisionBackReferences"],
+            "not_contains": ["Aucun resultat"]
+        },
+        "baseline_ms": 500
+    },
+    {
+        "id": "T-80",
+        "name": "api_help smart parameter formula",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 180,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": {
+                    "query": "smart real parameter"
+                }
+            }
+        },
+        "assertions": {
+            "contains": ["CreateSmartRealParameter"],
+            "not_contains": ["Aucun resultat"]
+        },
+        "baseline_ms": 500
+    },
+    {
+        "id": "T-81",
+        "name": "api_help BackReferences CamelCase",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 181,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": { "query": "BackReferences" }
+            }
+        },
+        "assertions": { "contains": ["BackReferences"] }
+    },
+    {
+        "id": "T-82",
+        "name": "api_help export step synonym",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 182,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": { "query": "export step" }
+            }
+        },
+        "assertions": { "contains": ["Export"] }
+    },
+    {
+        "id": "T-83",
+        "name": "api_help collision synonym",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 183,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": { "query": "collision" }
+            }
+        },
+        "assertions": { "contains": ["Collision"] }
+    },
+    {
+        "id": "T-84",
+        "name": "api_help bom nomenclature synonym",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 184,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": { "query": "bom nomenclature" }
+            }
+        },
+        "assertions": { "contains": ["Bom"] }
+    },
+    {
+        "id": "T-85",
+        "name": "api_help rename synonym",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 185,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": { "query": "rename" }
+            }
+        },
+        "assertions": { "contains": ["SetName"] }
+    },
+    {
+        "id": "T-86",
+        "name": "api_help delete element fallback",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 186,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": { "query": "delete element" }
+            }
+        },
+        "assertions": { "contains": ["Delete"] }
+    }
+  ]
+}
