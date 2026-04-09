@@ -136,6 +136,9 @@ namespace TopSolidMcpServer
                 var apiHelpTool = new ApiHelpTool(() => { EnsureInitialized(); return graph; });
                 apiHelpTool.Register(registry);
 
+                var recipeTool = new RecipeTool(() => { EnsureInitialized(); return connector; });
+                recipeTool.Register(registry);
+
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
