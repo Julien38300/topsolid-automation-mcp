@@ -19,6 +19,7 @@ namespace TopSolidMcpServer.Utils
         private const string TopSolidBinPath = @"C:\Program Files\TOPSOLID\TopSolid 7.20\bin\";
         private const string TopSolidDllName = "TopSolid.Kernel.Automating.dll";
         private const string TopSolidDesignDllName = "TopSolid.Cad.Design.Automating.dll";
+        private const string TopSolidDraftingDllName = "TopSolid.Cad.Drafting.Automating.dll";
 
         /// <summary>
         /// Exécute un script C# dynamique en forçant le mode modification.
@@ -72,6 +73,12 @@ namespace TopSolidMcpServer.Utils
                     if (File.Exists(designDllPath))
                     {
                         parameters.ReferencedAssemblies.Add(designDllPath);
+                    }
+
+                    string draftingDllPath = Path.Combine(TopSolidBinPath, TopSolidDraftingDllName);
+                    if (File.Exists(draftingDllPath))
+                    {
+                        parameters.ReferencedAssemblies.Add(draftingDllPath);
                     }
 
                     var results = provider.CompileAssemblyFromSource(parameters, wrappedCode);
@@ -339,6 +346,7 @@ namespace TopSolidMcpServer.Utils
                 "using System.IO;",
                 "using TopSolid.Kernel.Automating;",
                 "using TopSolid.Cad.Design.Automating;",
+                "using TopSolid.Cad.Drafting.Automating;",
                 "",
                 "namespace TopSolidMcpServer.Dynamic",
                 "{",

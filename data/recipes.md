@@ -2692,6 +2692,263 @@ return "Propriete utilisateur = " + value;
 
 ---
 
+## R-076 : Detecter si le document est une mise en plan
+Pattern: READ
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+bool isDrafting = TopSolidDesignHost.Draftings.IsDrafting(docId);
+bool isBundle = TopSolidDesignHost.Draftings.IsDraftingBundle(docId);
+
+if (!isDrafting) return "Ce document n'est PAS une mise en plan.";
+
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("Type: Mise en plan" + (isBundle ? " (liasse)" : ""));
+
+// Pages
+int pages = TopSolidDesignHost.Draftings.GetPageCount(docId);
+sb.AppendLine("Pages: " + pages);
+
+// Format
+string format = TopSolidDesignHost.Draftings.GetDraftingFormatName(docId);
+sb.AppendLine("Format: " + format);
+
+// Dimensions
+Real w, h;
+TopSolidDesignHost.Draftings.GetDraftingFormatDimensions(docId, out w, out h);
+sb.AppendLine("Dimensions: " + (w * 1000).ToString("F0") + " x " + (h * 1000).ToString("F0") + " mm");
+
+// Echelle
+double scale = TopSolidDesignHost.Draftings.GetScaleFactorParameterValue(docId);
+sb.AppendLine("Echelle: 1:" + (1.0 / scale).ToString("F0"));
+
+return sb.ToString();
+```
+
+---
+
+## R-077 : Lister les vues d'une mise en plan
+Pattern: READ
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+if (!TopSolidDesignHost.Draftings.IsDrafting(docId))
+    return "Ce document n'est pas une mise en plan.";
+
+var views = TopSolidDesignHost.Draftings.GetDraftingViews(docId);
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("Vues: " + views.Count);
+
+foreach (var view in views)
+{
+    string title = TopSolidDesignHost.Draftings.GetViewTitle(view);
+    string name = TopSolidHost.Elements.GetFriendlyName(view);
+
+    bool isRelative;
+    double relVal, absVal, refVal;
+    TopSolidDesignHost.Draftings.GetViewScaleFactor(view, out isRelative, out relVal, out absVal, out refVal);
+
+    // Vues auxiliaires
+    var auxViews = TopSolidDesignHost.Draftings.GetAuxiliaryViews(view);
+
+    sb.AppendLine("  " + name + " - \"" + title + "\" echelle=" + absVal.ToString("F3") + " auxiliaires=" + auxViews.Count);
+}
+
+return sb.ToString();
+```
+
+---
+
+## R-078 : Lire l'ensemble de projection principal
+Pattern: READ
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+if (!TopSolidDesignHost.Draftings.IsDrafting(docId))
+    return "Ce document n'est pas une mise en plan.";
+
+DocumentId projSetDoc;
+ElementId repId;
+TopSolidDesignHost.Draftings.GetMainProjectionSet(docId, out projSetDoc, out repId);
+
+var sb = new System.Text.StringBuilder();
+if (!projSetDoc.IsEmpty)
+{
+    PdmObjectId projPdm = TopSolidHost.Documents.GetPdmObject(projSetDoc);
+    string docName = TopSolidHost.Pdm.GetName(projPdm);
+    sb.AppendLine("Document source: " + docName);
+}
+else
+{
+    sb.AppendLine("Aucun ensemble de projection defini.");
+}
+
+return sb.ToString();
+```
+
+---
+
+## R-079 : Detecter si le document est une nomenclature + lire les colonnes
+Pattern: READ
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+bool isBom = TopSolidDesignHost.Boms.IsBom(docId);
+if (!isBom) return "Ce document n'est PAS une nomenclature.";
+
+int colCount = TopSolidDesignHost.Boms.GetColumnCount(docId);
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("Nomenclature: " + colCount + " colonnes");
+
+for (int i = 0; i < colCount; i++)
+{
+    string title = TopSolidDesignHost.Boms.GetColumnTitle(docId, i);
+    bool visible = TopSolidDesignHost.Boms.IsColumnVisible(docId, i);
+    sb.AppendLine("  [" + i + "] " + title + (visible ? "" : " (masquee)"));
+}
+
+return sb.ToString();
+```
+
+---
+
+## R-080 : Lire les lignes d'une nomenclature (recursif)
+Pattern: READ
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+if (!TopSolidDesignHost.Boms.IsBom(docId))
+    return "Ce document n'est pas une nomenclature.";
+
+int colCount = TopSolidDesignHost.Boms.GetColumnCount(docId);
+int rootRow = TopSolidDesignHost.Boms.GetRootRow(docId);
+
+var sb = new System.Text.StringBuilder();
+
+// En-tetes
+var headers = new System.Collections.Generic.List<string>();
+for (int i = 0; i < colCount; i++)
+    headers.Add(TopSolidDesignHost.Boms.GetColumnTitle(docId, i));
+sb.AppendLine(string.Join(" | ", headers));
+
+// Lignes enfants du root
+var children = TopSolidDesignHost.Boms.GetRowChildrenRows(docId, rootRow);
+foreach (int rowId in children)
+{
+    if (!TopSolidDesignHost.Boms.IsRowActive(docId, rowId)) continue;
+
+    System.Collections.Generic.List<Property> props;
+    System.Collections.Generic.List<string> texts;
+    TopSolidDesignHost.Boms.GetRowContents(docId, rowId, out props, out texts);
+
+    sb.AppendLine(string.Join(" | ", texts));
+}
+
+return sb.ToString();
+```
+
+---
+
+## R-081 : Detecter une mise a plat + info
+Pattern: READ
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+bool isUnfolding = TopSolidDesignHost.Unfoldings.IsUnfolding(docId);
+if (!isUnfolding) return "Ce document n'est PAS une mise a plat.";
+
+DocumentId partDocId;
+ElementId repId, shapeId;
+TopSolidDesignHost.Unfoldings.GetPartToUnfold(docId, out partDocId, out repId, out shapeId);
+
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("Mise a plat detectee.");
+
+if (!partDocId.IsEmpty)
+{
+    PdmObjectId partPdm = TopSolidHost.Documents.GetPdmObject(partDocId);
+    string partName = TopSolidHost.Pdm.GetName(partPdm);
+    sb.AppendLine("Piece source: " + partName);
+}
+
+return sb.ToString();
+```
+
+---
+
+## R-082 : Lire les tableaux d'une mise en plan
+Pattern: READ
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+if (!TopSolidDesignHost.Draftings.IsDrafting(docId))
+    return "Ce document n'est pas une mise en plan.";
+
+var tables = TopSolidDraftingHost.Tables.GetDraftTables(docId);
+if (tables.Count == 0) return "Aucun tableau dans cette mise en plan.";
+
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("Tableaux: " + tables.Count);
+
+foreach (var tableId in tables)
+{
+    string name = TopSolidHost.Elements.GetFriendlyName(tableId);
+    int cols = TopSolidDraftingHost.Tables.GetDraftTableColumnCount(tableId);
+    int rows = TopSolidDraftingHost.Tables.GetDraftTableRowCount(tableId);
+
+    sb.AppendLine("  " + name + " : " + cols + " colonnes x " + rows + " lignes");
+
+    // Lire la premiere ligne
+    if (rows > 0 && cols > 0)
+    {
+        var rowTexts = new System.Collections.Generic.List<string>();
+        for (int c = 0; c < cols; c++)
+        {
+            string cellText = TopSolidDraftingHost.Tables.GetDraftTableCellText(tableId, c, 0, 0);
+            rowTexts.Add(cellText);
+        }
+        sb.AppendLine("  Ligne 0: " + string.Join(" | ", rowTexts));
+    }
+}
+
+return sb.ToString();
+```
+
+---
+
+## R-083 : Imprimer une mise en plan
+Pattern: READ/WRITE (Impression)
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Aucun document ouvert.";
+
+if (!TopSolidDesignHost.Draftings.IsDrafting(docId))
+    return "Ce document n'est pas une mise en plan.";
+
+int pages = TopSolidDesignHost.Draftings.GetPageCount(docId);
+
+// PrintMode.Normal = 0, PrintColorMapping.Unchanged = 0, 300dpi
+TopSolidDesignHost.Draftings.Print(docId, 0, 0, 300, 1, pages);
+return "OK: Impression lancee (" + pages + " pages, 300dpi).";
+```
+
+---
+
 ## TYPES DE PARAMETRES (ParameterType enum)
 
 | Type | Getter | Setter | Creator |
