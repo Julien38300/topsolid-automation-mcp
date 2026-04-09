@@ -1465,6 +1465,91 @@
             }
         },
         "assertions": { "contains": ["Delete"] }
+    },
+    {
+        "id": "T-87",
+        "name": "list all exporters",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 187,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "var sb = new System.Text.StringBuilder();\nint count = TopSolidHost.Application.ExporterCount;\nsb.AppendLine(\"Exporteurs: \" + count);\nfor (int i = 0; i < count; i++)\n{\n    string typeName;\n    string[] extensions;\n    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n    bool valid = TopSolidHost.Application.IsExporterValid(i);\n    sb.AppendLine(i + \": \" + typeName + \" [\" + string.Join(\", \", extensions) + \"] valid=\" + valid);\n}\nint icount = TopSolidHost.Application.ImporterCount;\nsb.AppendLine(\"Importeurs: \" + icount);\nfor (int i = 0; i < icount; i++)\n{\n    string typeName;\n    string[] extensions;\n    TopSolidHost.Application.GetImporterFileType(i, out typeName, out extensions);\n    bool valid = TopSolidHost.Application.IsImporterValid(i);\n    sb.AppendLine(i + \": \" + typeName + \" [\" + string.Join(\", \", extensions) + \"] valid=\" + valid);\n}\nreturn sb.ToString();"
+                }
+            }
+        },
+        "assertions": { "contains": ["Exporteurs:"] }
+    },
+    {
+        "id": "T-88",
+        "name": "find DXF exporter",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 188,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "int count = TopSolidHost.Application.ExporterCount;\nfor (int i = 0; i < count; i++)\n{\n    string typeName;\n    string[] extensions;\n    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n    foreach (string ext in extensions)\n    {\n        if (ext.ToLower().Contains(\"dxf\"))\n            return \"DXF exporter found: index=\" + i + \" type=\" + typeName;\n    }\n}\nreturn \"DXF exporter NOT found\";"
+                }
+            }
+        },
+        "assertions": { "contains": ["DXF exporter found"] }
+    },
+    {
+        "id": "T-89",
+        "name": "find PDF exporter",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 189,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "int count = TopSolidHost.Application.ExporterCount;\nfor (int i = 0; i < count; i++)\n{\n    string typeName;\n    string[] extensions;\n    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n    foreach (string ext in extensions)\n    {\n        if (ext.ToLower().Contains(\"pdf\"))\n            return \"PDF exporter found: index=\" + i + \" type=\" + typeName;\n    }\n}\nreturn \"PDF exporter NOT found\";"
+                }
+            }
+        },
+        "assertions": { "contains": ["PDF exporter found"] }
+    },
+    {
+        "id": "T-90",
+        "name": "read user property",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 190,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nPdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\nstring desc = TopSolidHost.Pdm.GetDescription(pdmId);\nstring partNum = TopSolidHost.Pdm.GetPartNumber(pdmId);\nstring manufacturer = TopSolidHost.Pdm.GetManufacturer(pdmId);\nreturn \"Designation: \" + (string.IsNullOrEmpty(desc) ? \"(vide)\" : desc) + \"\\nReference: \" + (string.IsNullOrEmpty(partNum) ? \"(vide)\" : partNum) + \"\\nFabricant: \" + (string.IsNullOrEmpty(manufacturer) ? \"(vide)\" : manufacturer);"
+                }
+            }
+        },
+        "assertions": { "contains": ["Designation:"] }
+    },
+    {
+        "id": "T-91",
+        "name": "list exporter options",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0",
+            "id": 191,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "var sb = new System.Text.StringBuilder();\nint count = TopSolidHost.Application.ExporterCount;\nfor (int i = 0; i < count; i++)\n{\n    string typeName;\n    string[] extensions;\n    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n    var options = TopSolidHost.Application.GetExporterOptions(i);\n    if (options != null && options.Count > 0)\n    {\n        sb.AppendLine(typeName + \" (\" + string.Join(\",\", extensions) + \"):\");\n        foreach (var kv in options)\n            sb.AppendLine(\"  \" + kv.Key + \" = \" + kv.Value);\n    }\n}\nreturn sb.ToString();"
+                }
+            }
+        },
+        "assertions": { "contains": ["="] }
     }
   ]
 }
