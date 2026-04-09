@@ -44,6 +44,15 @@ namespace McpTestRunner
             }
 
             var runner = new TestRunner(mcpServerPath, suite, baselines, updateBaselines);
+            
+            // Facultatif : filtrage par ID
+            if (args.Length > 2 && args[2] != "--update-baselines")
+            {
+                string filter = args[2];
+                suite.Tests = suite.Tests.FindAll(t => t.Id == filter);
+                Console.WriteLine($"[INFO] Filtrage des tests sur l'ID : {filter} ({suite.Tests.Count} test trouve)");
+            }
+
             List<TestResult> results = runner.RunAll();
 
             // Console summary
