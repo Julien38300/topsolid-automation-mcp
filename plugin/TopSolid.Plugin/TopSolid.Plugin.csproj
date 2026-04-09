@@ -1,0 +1,29 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <PlatformTarget>x64</PlatformTarget>
+    <AssemblyName>EPFL.RhinoInsideTopSolid.AddIn</AssemblyName>
+    <RootNamespace>EPFL.RhinoInsideTopSolid.AddIn</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="TopSolid.Kernel.SX">
+      <HintPath>C:\Program Files\TOPSOLID\TopSolid 7.20\bin\TopSolid.Kernel.SX.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="TopSolid.Kernel.TX">
+      <HintPath>C:\Program Files\TOPSOLID\TopSolid 7.20\bin\TopSolid.Kernel.TX.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="TopSolidAddInCertificate.xml" />
+  </ItemGroup>
+
+</Project>
