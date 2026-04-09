@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <Platforms>AnyCPU;x64</Platforms>
+    <LangVersion>7.3</LangVersion>
+    <AssemblyName>TopSolidApiGraph</AssemblyName>
+    <RootNamespace>TopSolidApiGraph</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);TopSolidApiGraph.Core\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <ProjectReference Include="TopSolidApiGraph.Core\TopSolidApiGraph.Core.csproj" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Reflection" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\data\semantic-rules.json" Link="data\semantic-rules.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+</Project>
+
