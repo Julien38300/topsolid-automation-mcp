@@ -205,28 +205,35 @@ namespace TopSolidMcpServer.Tools
             }
 
             // --- 2. Mode Recherche par mots-cles ---
-            // Split by separators
+            var expandedKeywords = new List<string>();
             var rawTokens = query.Split(new[] { ' ', ',', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
 
-            // CamelCase split each token (ex: "BackReferences" → "Back", "References")
-            var splitTokens = new List<string>();
-            foreach (var token in rawTokens)
+            // Case-insensitive full match in Synonyms (for multi-word terms like "mise en plan")
+            if (Synonyms.TryGetValue(query, out var querySyns))
             {
-                var camelParts = SplitCamelCase(token);
-                if (camelParts.Length > 0)
-                    splitTokens.AddRange(camelParts);
-                else
-                    splitTokens.Add(token);
+                expandedKeywords.AddRange(querySyns);
             }
-
-            // Expand synonyms (ex: "bom" → "IBoms", "rename" → "Set" + "Name")
-            var expandedKeywords = new List<string>();
-            foreach (var token in splitTokens)
+            else
             {
-                if (Synonyms.TryGetValue(token, out var syns))
-                    expandedKeywords.AddRange(syns);
-                else
-                    expandedKeywords.Add(token);
+                // CamelCase split each token (ex: "BackReferences" → "Back", "References")
+                var splitTokens = new List<string>();
+                foreach (var token in rawTokens)
+                {
+                    var camelParts = SplitCamelCase(token);
+                    if (camelParts.Length > 0)
+                        splitTokens.AddRange(camelParts);
+                    else
+                        splitTokens.Add(token);
+                }
+
+                // Expand synonyms (ex: "bom" → "IBoms", "rename" → "Set" + "Name")
+                foreach (var token in splitTokens)
+                {
+                    if (Synonyms.TryGetValue(token, out var syns))
+                        expandedKeywords.AddRange(syns);
+                    else
+                        expandedKeywords.Add(token);
+                }
             }
 
             // Deduplicate case-insensitive
