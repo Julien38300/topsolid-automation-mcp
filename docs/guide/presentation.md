@@ -34,13 +34,18 @@ Le coeur du systeme. Un graphe oriente de 4119 edges representant toutes les met
 | Exemples reels (.cs) | 22% |
 
 ### Serveur MCP (`TopSolidMcpServer.exe`)
-Executable .NET Framework 4.8, communique en stdio JSON-RPC. 5 outils exposes a l'agent.
+Executable .NET Framework 4.8, communique en stdio JSON-RPC. 7 outils exposes a l'agent (dont `run_recipe` pour les petits modeles 3B).
 
 ### Recettes (`recipes.md`)
-68 scripts C# documentes, couvrant les scenarios les plus courants : navigation PDM, lecture/ecriture parametres, esquisses, assemblages, familles, export multi-format.
+68 scripts C# documentes, couvrant les scenarios les plus courants : navigation PDM, lecture/ecriture parametres, esquisses, assemblages, familles, export multi-format. Plus 10 recettes RecipeTool pour les modeles 3B.
 
 ### Tests (`TestSuite.json`)
 72 tests automatises, executables contre une instance TopSolid vivante. 68/72 PASS.
+
+### Integration Hermes Agent
+Le serveur MCP est teste avec **Hermes** (agent Noemid) utilisant **ministral-3b** (3B parametres). Grace a `topsolid_run_recipe`, un modele 3B peut piloter TopSolid sans generer de code C#.
+
+**Resultat e2e** : la commande "Change la designation en Piece Test Noemid" s'execute en **4 secondes** via Hermes + run_recipe.
 
 ## Projet Cortana / Noemid
 
