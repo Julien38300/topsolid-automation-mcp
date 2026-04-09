@@ -43,16 +43,15 @@ namespace McpTestRunner
                 return 1;
             }
 
-            var runner = new TestRunner(mcpServerPath, suite, baselines, updateBaselines);
-            
             // Facultatif : filtrage par ID
             if (args.Length > 2 && args[2] != "--update-baselines")
             {
                 string filter = args[2];
-                suite.Tests = suite.Tests.FindAll(t => t.Id == filter);
-                Console.WriteLine($"[INFO] Filtrage des tests sur l'ID : {filter} ({suite.Tests.Count} test trouve)");
+                suite.Tests = suite.Tests.FindAll(t => t.Id.StartsWith(filter));
+                Console.WriteLine($"[INFO] Filtrage des tests commençant par : {filter} ({suite.Tests.Count} test(s) trouvé(s))");
             }
 
+            var runner = new TestRunner(mcpServerPath, suite, baselines, updateBaselines);
             List<TestResult> results = runner.RunAll();
 
             // Console summary

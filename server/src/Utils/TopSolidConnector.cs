@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using TopSolid.Kernel.Automating;
 using TopSolid.Cad.Design.Automating;
+using TopSolid.Cad.Drafting.Automating;
 
 namespace TopSolidMcpServer.Utils
 {
@@ -37,6 +38,7 @@ namespace TopSolidMcpServer.Utils
                 if (_isConnected)
                 {
                     TopSolidDesignHost.Connect();
+                    TopSolidDraftingHost.Connect();
                     Console.Error.WriteLine("[TopSolidConnector] Connected to TopSolid v" + version + ".");
                 }
                 else
@@ -63,6 +65,7 @@ namespace TopSolidMcpServer.Utils
             {
                 if (_isConnected)
                 {
+                    TopSolidDraftingHost.Disconnect();
                     TopSolidDesignHost.Disconnect();
                     TopSolidHost.Disconnect();
                     _isConnected = false;
