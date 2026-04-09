@@ -26,6 +26,7 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'Presentation', link: '/guide/presentation' },
+            { text: 'Comment ca fonctionne', link: '/guide/fonctionnement' },
             { text: 'Architecture', link: '/guide/architecture' },
             { text: 'Roadmap', link: '/guide/roadmap' }
           ]
