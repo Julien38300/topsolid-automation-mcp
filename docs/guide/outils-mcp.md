@@ -1,6 +1,6 @@
 # Outils MCP
 
-Le serveur expose 6 outils au protocole MCP. L'agent IA les appelle via JSON-RPC sur stdin/stdout.
+Le serveur expose 7 outils au protocole MCP. L'agent IA les appelle via JSON-RPC sur stdin/stdout.
 
 ## topsolid_get_state
 
@@ -76,3 +76,36 @@ Trouve le chemin le plus court (Dijkstra) entre deux types dans le graphe API.
 ## topsolid_explore_paths
 
 Explore plusieurs chemins (BFS) entre deux types. Timeout 5 secondes pour eviter les freezes.
+
+## topsolid_run_recipe
+
+Execute une recette pre-construite par nom. Concu pour les **petits modeles (3B)** comme ministral-3b : le LLM choisit un nom de recette, le serveur MCP execute le code C# correspondant. Aucune generation de code requise cote agent.
+
+**10 recettes disponibles** :
+
+| Nom | Description | Pattern |
+|-----|-------------|---------|
+| `lire_designation` | Lire la designation du document actif | READ |
+| `lire_nom` | Lire le nom du document actif | READ |
+| `lire_reference` | Lire la reference (part number) | READ |
+| `lire_fabricant` | Lire le fabricant | READ |
+| `lire_proprietes_pdm` | Lire toutes les proprietes PDM d'un coup | READ |
+| `modifier_designation` | Changer la designation | WRITE |
+| `modifier_nom` | Changer le nom du document | WRITE |
+| `lire_parametres` | Lister les parametres du document | READ |
+| `lister_exporteurs` | Lister les formats d'export disponibles | READ |
+| `type_document` | Detecter le type de document (piece, assemblage, mise en plan) | READ |
+
+```json
+{
+  "name": "topsolid_run_recipe",
+  "arguments": {
+    "recipe": "modifier_designation",
+    "params": { "value": "Piece Test Noemid" }
+  }
+}
+```
+
+::: tip Integration Hermes
+Avec un modele 3B, `run_recipe` est le seul outil necessaire. Le modele n'a pas besoin de generer du C# — il choisit simplement la bonne recette parmi les 10 disponibles.
+:::

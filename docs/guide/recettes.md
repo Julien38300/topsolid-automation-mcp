@@ -83,4 +83,33 @@ TopSolidHost.Pdm.Save(pdmId, true);
 `EnsureIsDirty(ref docId)` change le `docId` ! Chercher les elements **APRES** cet appel, jamais avant.
 :::
 
+## Recettes RecipeTool (topsolid_run_recipe)
+
+En plus des 76 recettes classiques, le serveur expose **10 recettes pre-construites** via l'outil `topsolid_run_recipe`. Ces recettes sont concues pour les **petits modeles (3B)** comme ministral-3b : le LLM choisit un nom de recette au lieu de generer du C#.
+
+| Nom | Description | Pattern |
+|-----|-------------|---------|
+| `lire_designation` | Lire la designation du document actif | READ |
+| `lire_nom` | Lire le nom du document actif | READ |
+| `lire_reference` | Lire la reference (part number) | READ |
+| `lire_fabricant` | Lire le fabricant | READ |
+| `lire_proprietes_pdm` | Lire toutes les proprietes PDM d'un coup | READ |
+| `modifier_designation` | Changer la designation | WRITE |
+| `modifier_nom` | Changer le nom du document | WRITE |
+| `lire_parametres` | Lister les parametres du document | READ |
+| `lister_exporteurs` | Lister les formats d'export disponibles | READ |
+| `type_document` | Detecter le type (piece, assemblage, mise en plan) | READ |
+
+Les recettes WRITE acceptent un parametre `value` :
+
+```json
+{
+  "name": "topsolid_run_recipe",
+  "arguments": {
+    "recipe": "modifier_designation",
+    "params": { "value": "Piece Test Noemid" }
+  }
+}
+```
+
 Le fichier complet des recettes est dans `TopSolidMcpServer/data/recipes.md`.

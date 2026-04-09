@@ -21,8 +21,8 @@
 
 - **4119 edges** dans le graphe API
 - **1728 methodes** uniques couvertes
-- **68 recettes** C# documentees
-- **72 tests** automatises (68 PASS)
+- **76 recettes** C# documentees + **10 RecipeTool** pour modeles 3B
+- **85 tests** automatises
 - **84%** d'edges avec hints semantiques
 - **5809 pages** d'aide en ligne converties en MD
 
@@ -33,7 +33,7 @@
 | 1 | M-58 | Recettes Tier 3 : mise en plan, nomenclature, mise a plat |
 | 2 | M-59 | Documenter exporteurs et options (batch, formats) |
 | 3 | M-60 | Recettes proprietes utilisateur + occurrence |
-| 4 | — | Integration Hermes Agent (Noemid) |
+| 4 | — | ~~Integration Hermes Agent (Noemid)~~ ✅ Teste avec ministral-3b |
 | 5 | M-57 | Injecter aide en ligne MD dans RAG/ChromaDB |
 | 6 | M-36 | Benchmark latence/tokens/taux de succes |
 
@@ -58,3 +58,5 @@
 - M-56 : SemanticHints 8% → 84%
 - M-57 : Conversion aide en ligne (5809 pages)
 - Glossaire metier FR valide par Julien
+- RecipeTool : 10 recettes pre-construites pour modeles 3B (run_recipe)
+- Integration Hermes Agent testee avec ministral-3b (e2e en 4s)

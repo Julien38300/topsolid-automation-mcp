@@ -5,7 +5,7 @@ Derniere mise a jour : 2026-04-09
 
 ```
 Phase 1  ████████████████████ 100%  Fondations (extraction, graphe, pathfinding)
-Phase 2  ████████████████████ 100%  Serveur MCP (protocole, 5 outils)
+Phase 2  ████████████████████ 100%  Serveur MCP (protocole, 7 outils — RecipeTool ajouté)
 Phase 3  ████████████████████ 100%  Intelligence semantique (regles, regex, pruning)
 Phase 4  ████████████████████ 100%  Connexion TopSolid & execution scripts
 Phase 5  ████████████████████ 100%  Connaissance API (graphe enrichi, api_help)
@@ -21,8 +21,8 @@ Phase 6e ██████████████░░░░░░  70%  Tier
 Phase 7  ░░░░░░░░░░░░░░░░░░░░   0%  Graphe multi-couche (commands, ADS)
 Phase 8  ░░░░░░░░░░░░░░░░░░░░   0%  Outils metier & securite
 Phase 9  ░░░░░░░░░░░░░░░░░░░░   0%  LoRA fine-tuning (projet Noemid)
-Phase 10 ████████████░░░░░░░░  60%  Test & validation (72 tests, 68/72 PASS)
-Phase OC █████████████████░░░  85%  OpenClaw → remplace par Hermes (D-018 Noemid)
+Phase 10 █████████████░░░░░░░  65%  Test & validation (85 tests, 68/72 PASS MCP + e2e Hermes)
+Phase OC ████████████████████ 100%  Hermes v0.8.0 integre (e2e ministral-3:3b → MCP → TopSolid OK)
 Phase L  ████████████████████ 100%  Launcher & infrastructure (L-2) ✅
 ```
 
@@ -40,9 +40,10 @@ Phase L  ████████████████████ 100%  Laun
 - Tier 3 (export DXF/PDF/IFC, proprietes utilisateur) : 4 recettes
 - Demo (scenarios TopSolid) : 12 recettes
 
-**Tests : 72 total, 68 PASS**
+**Tests : 85 total, 68 PASS**
 - T-00..T-86 (4 FAIL = bruit perf, pas de bug)
 - 55 tests necessitent TopSolid vivant
+- e2e Hermes → MCP → TopSolid : ministral-3:3b + run_recipe = SUCCESS (4s)
 
 **Aide en ligne : convertie en MD**
 - 5809 pages (2835 FR + 2974 EN), 9MB total
@@ -56,7 +57,7 @@ Phase L  ████████████████████ 100%  Laun
 
 - ~~**Avril S1**~~ : ✅ M-38..M-45 (robustesse MCP)
 - ~~**Avril S2**~~ : ✅ M-46..M-56 (recettes, tests, graphe complet, glossaire)
-- **Avril S3** : M-58 (recettes Tier 3 mise en plan/BOM), M-59 (exporteurs), integration Hermes
+- **Avril S3** : M-58 (recettes Tier 3 mise en plan/BOM), M-59 (exporteurs), ✅ integration Hermes (RecipeTool + e2e)
 - **Mai** : Phase 7 (graphe multi-couche), benchmark (M-36), aide en ligne dans RAG
 - **Juin** : Phase 8 (securite/rollback), Phase 9 (LoRA — Noemid)
 
@@ -67,7 +68,7 @@ Phase L  ████████████████████ 100%  Laun
 | 1 | M-58 | Recettes Tier 3 : mise en plan, nomenclature, mise a plat |
 | 2 | M-59 | Documenter exporteurs et options (batch, formats) |
 | 3 | M-60 | Recettes proprietes utilisateur + occurrence |
-| 4 | — | Integration Hermes Agent (Noemid D-018) |
+| ~~4~~ | ~~—~~ | ~~Integration Hermes Agent (Noemid D-018)~~ ✅ RecipeTool + skill topsolid-mcp + e2e OK |
 | 5 | — | Tier 2 avance (S-087 DerivePartForModification, S-088 substitution) |
 | 6 | M-57 | Injecter aide en ligne MD dans RAG/ChromaDB |
 | 7 | M-36 | Benchmark latence/tokens/taux de succes |
@@ -86,7 +87,7 @@ Phase L  ████████████████████ 100%  Laun
 | ~~api_help rate les queries FR~~ | ~~Moyen~~ | ~~Synonymes + fallback~~ | ✅ 52 synonymes (M-54) |
 | Aide en ligne pas exploitee | Moyen | Conversion MD faite, injection RAG a faire | A faire |
 | Pas de CI sans TopSolid | Moyen | 17/72 tests offline, mock possible | A surveiller |
-| Hermes pas branche | Haut | Chaine agent → MCP non testee e2e | Prochaine etape |
+| ~~Hermes pas branche~~ | ~~Haut~~ | ~~Chaine agent → MCP non testee e2e~~ | ✅ e2e OK (ministral-3:3b → run_recipe → TopSolid, 4s) |
 
 ## Decisions de reference
 
