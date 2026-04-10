@@ -85,8 +85,9 @@ TopSolidHost.Pdm.Save(pdmId, true);
 
 ## Recettes RecipeTool (topsolid_run_recipe)
 
-En plus des 76 recettes classiques, le serveur expose **10 recettes pre-construites** via l'outil `topsolid_run_recipe`. Ces recettes sont concues pour les **petits modeles (3B)** comme ministral-3b : le LLM choisit un nom de recette au lieu de generer du C#.
+En plus des 76 recettes classiques, le serveur expose **75 recettes pre-construites** via l'outil `topsolid_run_recipe`. Ces recettes sont concues pour les **petits modeles (3B)** comme ministral-3b : le LLM choisit un nom de recette au lieu de generer du C#.
 
+### Attributs (8 recettes)
 | Nom | Description | Pattern |
 |-----|-------------|---------|
 | `lire_designation` | Lire la designation du document actif | READ |
@@ -97,8 +98,47 @@ En plus des 76 recettes classiques, le serveur expose **10 recettes pre-construi
 | `modifier_designation` | Changer la designation | WRITE |
 | `modifier_nom` | Changer le nom du document | WRITE |
 | `lire_parametres` | Lister les parametres du document | READ |
-| `lister_exporteurs` | Lister les formats d'export disponibles | READ |
+
+### Audit / verification (4 recettes)
+| Nom | Description | Pattern |
+|-----|-------------|---------|
 | `type_document` | Detecter le type (piece, assemblage, mise en plan) | READ |
+| `diagnostiquer_esquisse` | Verifier l'etat d'une esquisse | READ |
+| `lire_proprietes_pdm` | Audit complet des proprietes PDM | READ |
+| `tracabilite_document` | Historique et revisions du document | READ |
+
+### Performance (3 recettes)
+| Nom | Description | Pattern |
+|-----|-------------|---------|
+| `lire_faces` | Lire les faces d'un shape | READ |
+| `lister_inclusions` | Lister les inclusions d'un assemblage | READ |
+| `collisions_assemblage` | Detecter les collisions dans un assemblage | READ |
+
+### Batch operations (4 recettes)
+| Nom | Description | Pattern |
+|-----|-------------|---------|
+| `copier_parametres` | Copier parametres entre documents | WRITE |
+| `renommer_batch` | Renommer plusieurs documents | WRITE |
+| `sync_documents` | Synchroniser des documents | WRITE |
+| `modifier_inclusion_pilotes` | Modifier code/pilotes d'une inclusion | WRITE |
+
+### Interactive selection — IUser.Ask* (3 recettes)
+| Nom | Description | Pattern |
+|-----|-------------|---------|
+| `ask_select_document` | Demander a l'utilisateur de selectionner un document | INTERACTIVE |
+| `ask_select_element` | Demander a l'utilisateur de selectionner un element | INTERACTIVE |
+| `ask_select_face` | Demander a l'utilisateur de selectionner une face | INTERACTIVE |
+
+### Export formats (7 recettes)
+| Nom | Description | Format |
+|-----|-------------|--------|
+| `exporter_step` | Exporter en STEP | STEP |
+| `exporter_dxf` | Exporter en DXF | DXF |
+| `exporter_pdf` | Exporter en PDF | PDF |
+| `exporter_ifc` | Exporter en IFC | IFC |
+| `exporter_fbx` | Exporter en FBX | FBX |
+| `exporter_gltf` | Exporter en glTF | glTF |
+| `exporter_parasolid` | Exporter en Parasolid | Parasolid |
 
 Les recettes WRITE acceptent un parametre `value` :
 

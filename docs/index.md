@@ -20,8 +20,8 @@ features:
   - title: 7 outils MCP
     details: get_state, execute_script, modify_script, api_help, find_path, explore_paths + run_recipe pour modeles 3B.
     icon: "&#x1F6E0;"
-  - title: 76 recettes + 10 RecipeTool
-    details: Scripts C# prets a l'emploi — PDM, parametres, esquisses, assemblages, familles, export. Plus 10 recettes pre-construites pour petits modeles.
+  - title: 76 recettes + 75 RecipeTool
+    details: Scripts C# prets a l'emploi — PDM, parametres, esquisses, assemblages, familles, export. Plus 75 recettes pre-construites pour petits modeles (attributs, audit, batch, interactive, export 7 formats).
     icon: "&#x1F4D6;"
   - title: 85 tests valides
     details: Suite de tests automatises contre TopSolid vivant. Baselines perf figees.

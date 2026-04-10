@@ -21,10 +21,11 @@
 
 - **4119 edges** dans le graphe API
 - **1728 methodes** uniques couvertes
-- **76 recettes** C# documentees + **10 RecipeTool** pour modeles 3B
+- **76 recettes** C# documentees + **75 RecipeTool** pour modeles 3B
 - **85 tests** automatises
 - **84%** d'edges avec hints semantiques
 - **5809 pages** d'aide en ligne converties en MD
+- **Hermes e2e teste** : ministral-3:3b → run_recipe → TopSolid en 4 secondes
 
 ## Prochaines etapes
 
@@ -58,5 +59,5 @@
 - M-56 : SemanticHints 8% → 84%
 - M-57 : Conversion aide en ligne (5809 pages)
 - Glossaire metier FR valide par Julien
-- RecipeTool : 10 recettes pre-construites pour modeles 3B (run_recipe)
+- RecipeTool : 75 recettes pre-construites pour modeles 3B (run_recipe)
 - Integration Hermes Agent testee avec ministral-3b (e2e en 4s)
