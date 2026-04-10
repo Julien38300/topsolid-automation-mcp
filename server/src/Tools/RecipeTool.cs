@@ -916,6 +916,122 @@ namespace TopSolidMcpServer.Tools
                 "else\n" +
                 "    sb.AppendLine(\"Aucun materiau affecte.\");\n" +
                 "return sb.ToString();") },
+
+            // =====================================================================
+            // EXPORT — Formats supplementaires
+            // =====================================================================
+            { "exporter_stl", R("Exporte en STL (impression 3D). Param: value=chemin",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "int count = TopSolidHost.Application.ExporterCount;\n" +
+                "int idx = -1;\n" +
+                "for (int i = 0; i < count; i++)\n" +
+                "{\n" +
+                "    string typeName; string[] extensions;\n" +
+                "    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n" +
+                "    foreach (string ext in extensions)\n" +
+                "        if (ext.ToLower().Contains(\"stl\")) { idx = i; break; }\n" +
+                "    if (idx >= 0) break;\n" +
+                "}\n" +
+                "if (idx < 0) return \"Exporteur STL non trouve.\";\n" +
+                "string path = \"{value}\";\n" +
+                "if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), \"export.stl\");\n" +
+                "TopSolidHost.Documents.Export(idx, docId, path);\n" +
+                "return \"OK: Exporte en STL → \" + path;") },
+            { "exporter_iges", R("Exporte en IGES. Param: value=chemin",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "int count = TopSolidHost.Application.ExporterCount;\n" +
+                "int idx = -1;\n" +
+                "for (int i = 0; i < count; i++)\n" +
+                "{\n" +
+                "    string typeName; string[] extensions;\n" +
+                "    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);\n" +
+                "    foreach (string ext in extensions)\n" +
+                "        if (ext.ToLower().Contains(\"igs\") || ext.ToLower().Contains(\"iges\")) { idx = i; break; }\n" +
+                "    if (idx >= 0) break;\n" +
+                "}\n" +
+                "if (idx < 0) return \"Exporteur IGES non trouve.\";\n" +
+                "string path = \"{value}\";\n" +
+                "if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), \"export.igs\");\n" +
+                "TopSolidHost.Documents.Export(idx, docId, path);\n" +
+                "return \"OK: Exporte en IGES → \" + path;") },
+
+            // =====================================================================
+            // ASSEMBLAGE — Comptage et diagnostic
+            // =====================================================================
+            { "compter_pieces_assemblage", R("Compte les pieces groupees par type avec quantites",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "bool isAsm = false;\n" +
+                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Pas un assemblage.\"; }\n" +
+                "if (!isAsm) return \"Pas un assemblage.\";\n" +
+                "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
+                "var counts = new System.Collections.Generic.Dictionary<string, int>();\n" +
+                "foreach (var op in ops)\n" +
+                "{\n" +
+                "    bool isInclusion = false;\n" +
+                "    try { isInclusion = TopSolidDesignHost.Assemblies.IsInclusion(op); } catch { continue; }\n" +
+                "    if (!isInclusion) continue;\n" +
+                "    DocumentId defDoc = TopSolidDesignHost.Assemblies.GetInclusionDefinitionDocument(op);\n" +
+                "    string defName = \"?\";\n" +
+                "    if (!defDoc.IsEmpty) { PdmObjectId defPdm = TopSolidHost.Documents.GetPdmObject(defDoc); defName = TopSolidHost.Pdm.GetName(defPdm); }\n" +
+                "    if (counts.ContainsKey(defName)) counts[defName]++; else counts[defName] = 1;\n" +
+                "}\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"=== COMPTAGE PIECES ===\");\n" +
+                "int total = 0;\n" +
+                "foreach (var kvp in counts)\n" +
+                "{\n" +
+                "    sb.AppendLine(\"  \" + kvp.Value + \"x \" + kvp.Key);\n" +
+                "    total += kvp.Value;\n" +
+                "}\n" +
+                "sb.AppendLine(\"Total: \" + total + \" pieces (\" + counts.Count + \" references uniques)\");\n" +
+                "return sb.ToString();") },
+
+            // =====================================================================
+            // PROJET — Operations batch
+            // =====================================================================
+            { "sauvegarder_tout_projet", R("Sauvegarde tous les documents du projet courant",
+                "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projId.IsEmpty) return \"Aucun projet courant.\";\n" +
+                "var items = TopSolidHost.Pdm.GetConstituents(projId);\n" +
+                "int saved = 0;\n" +
+                "foreach (var item in items)\n" +
+                "{\n" +
+                "    try { TopSolidHost.Pdm.Save(item, true); saved++; } catch { continue; }\n" +
+                "}\n" +
+                "return \"OK: \" + saved + \"/\" + items.Count + \" documents sauvegardes.\";") },
+            { "ouvrir_document_par_nom", R("Cherche et ouvre un document par nom. Param: value=nom",
+                "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projId.IsEmpty) return \"Aucun projet courant.\";\n" +
+                "var results = TopSolidHost.Pdm.SearchDocumentByName(projId, \"{value}\");\n" +
+                "if (results.Count == 0) return \"Document '{value}' non trouve.\";\n" +
+                "DocumentId dId = TopSolidHost.Documents.GetDocument(results[0]);\n" +
+                "TopSolidHost.Documents.Open(ref dId);\n" +
+                "return \"OK: Document '\" + TopSolidHost.Pdm.GetName(results[0]) + \"' ouvert.\";") },
+
+            // =====================================================================
+            // COULEURS — Lecture des faces
+            // =====================================================================
+            { "lire_couleurs_faces", R("Lit les couleurs des faces du shape principal",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "if (shapes.Count == 0) return \"Aucun shape.\";\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "foreach (var s in shapes)\n" +
+                "{\n" +
+                "    string sName = TopSolidHost.Elements.GetFriendlyName(s);\n" +
+                "    var faces = TopSolidHost.Shapes.GetFaces(s);\n" +
+                "    sb.AppendLine(sName + \" (\" + faces.Count + \" faces):\");\n" +
+                "    foreach (var f in faces)\n" +
+                "    {\n" +
+                "        Color c = TopSolidHost.Shapes.GetFaceColor(f);\n" +
+                "        sb.AppendLine(\"  R=\" + c.R + \" G=\" + c.G + \" B=\" + c.B);\n" +
+                "    }\n" +
+                "}\n" +
+                "return sb.ToString();") },
         };
 
         // Shortcut factory methods for readability
