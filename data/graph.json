@@ -1864,7 +1864,7 @@
             "Examples": [
                 "// REDACTED.cs \u2014 DraftTable()\n\nstring typeFullName = (TopSolidHost.Documents.GetTypeFullName(currentDocument));//part uniquement\n{\n\tElementId layersFolder = TopSolidHost.Layers.GetLayersFolder(currentDocument);\n\n\tList<ElementId> layersFromDocument = TopSolidHost.Layers.GetLayers(currentDocument);\n\ttry\n\t{\n\t\tTopSolidHost.Application.StartModification(\"creation of layer\", false);\n\t\tTopSolidHost.Documents.EnsureIsDirty(ref currentDocument);\n\t\tElementId layerToAdd = TopSolidHost.Layers.CreateLayer(currentDocument, \"myLayer\");"
             ],
-            "SemanticHint": "couche, calque, document, dossier, parametres"
+            "SemanticHint": "Liste les calques du document. calque, layer"
         },
         {
             "Source": {
@@ -1885,7 +1885,7 @@
             "Examples": [
                 "// REDACTED.cs \u2014 DraftTable()\n\nstring typeFullName = (TopSolidHost.Documents.GetTypeFullName(currentDocument));//part uniquement\n{\n\tElementId layersFolder = TopSolidHost.Layers.GetLayersFolder(currentDocument);\n\n\tList<ElementId> layersFromDocument = TopSolidHost.Layers.GetLayers(currentDocument);\n\ttry\n\t{\n\t\tTopSolidHost.Application.StartModification(\"creation of layer\", false);\n\t\tTopSolidHost.Documents.EnsureIsDirty(ref currentDocument);\n\t\tElementId layerToAdd = TopSolidHost.Layers.CreateLayer(currentDocument, \"myLayer\");"
             ],
-            "SemanticHint": "couche, calque, document, dossier, parametres"
+            "SemanticHint": "Liste les calques du document. calque, layer"
         },
         {
             "Source": {
@@ -1986,7 +1986,7 @@
             "Examples": [
                 "// REDACTED.cs \u2014 DraftTable()\nList<ElementId> layersFromDocument = TopSolidHost.Layers.GetLayers(currentDocument);\ntry\n{\n\tTopSolidHost.Application.StartModification(\"creation of layer\", false);\n\tTopSolidHost.Documents.EnsureIsDirty(ref currentDocument);\n\tElementId layerToAdd = TopSolidHost.Layers.CreateLayer(currentDocument, \"myLayer\");\n\tTopSolidHost.Application.EndModification(true, true);\n}\ncatch { TopSolidHost.Application.EndModification(false, false); }\n\nlayersFolder = TopSolidHost.Layers.GetLayersFolder(currentDocument);"
             ],
-            "SemanticHint": "couche, calque, creer, document, parametre, reel"
+            "SemanticHint": "Cree un nouveau calque. calque, layer"
         },
         {
             "Source": {
@@ -2007,7 +2007,7 @@
             "Examples": [
                 "// REDACTED.cs \u2014 DraftTable()\nList<ElementId> layersFromDocument = TopSolidHost.Layers.GetLayers(currentDocument);\ntry\n{\n\tTopSolidHost.Application.StartModification(\"creation of layer\", false);\n\tTopSolidHost.Documents.EnsureIsDirty(ref currentDocument);\n\tElementId layerToAdd = TopSolidHost.Layers.CreateLayer(currentDocument, \"myLayer\");\n\tTopSolidHost.Application.EndModification(true, true);\n}\ncatch { TopSolidHost.Application.EndModification(false, false); }\n\nlayersFolder = TopSolidHost.Layers.GetLayersFolder(currentDocument);"
             ],
-            "SemanticHint": "couche, calque, creer, document, parametre, reel"
+            "SemanticHint": "Cree un nouveau calque. calque, layer"
         },
         {
             "Source": {
@@ -2028,7 +2028,7 @@
             "Examples": [
                 "// REDACTED.cs \u2014 DraftTable()\nList<ElementId> layersFromDocument = TopSolidHost.Layers.GetLayers(currentDocument);\ntry\n{\n\tTopSolidHost.Application.StartModification(\"creation of layer\", false);\n\tTopSolidHost.Documents.EnsureIsDirty(ref currentDocument);\n\tElementId layerToAdd = TopSolidHost.Layers.CreateLayer(currentDocument, \"myLayer\");\n\tTopSolidHost.Application.EndModification(true, true);\n}\ncatch { TopSolidHost.Application.EndModification(false, false); }\n\nlayersFolder = TopSolidHost.Layers.GetLayersFolder(currentDocument);"
             ],
-            "SemanticHint": "couche, calque, creer, document, parametre, reel"
+            "SemanticHint": "Cree un nouveau calque. calque, layer"
         },
         {
             "Source": {
@@ -2049,7 +2049,7 @@
             "Examples": [
                 "// REDACTED.cs \u2014 DraftTable()\nList<ElementId> layersFromDocument = TopSolidHost.Layers.GetLayers(currentDocument);\ntry\n{\n\tTopSolidHost.Application.StartModification(\"creation of layer\", false);\n\tTopSolidHost.Documents.EnsureIsDirty(ref currentDocument);\n\tElementId layerToAdd = TopSolidHost.Layers.CreateLayer(currentDocument, \"myLayer\");\n\tTopSolidHost.Application.EndModification(true, true);\n}\ncatch { TopSolidHost.Application.EndModification(false, false); }\n\nlayersFolder = TopSolidHost.Layers.GetLayersFolder(currentDocument);"
             ],
-            "SemanticHint": "couche, calque, creer, document, parametre, reel"
+            "SemanticHint": "Cree un nouveau calque. calque, layer"
         },
         {
             "Source": {
@@ -2062,12 +2062,12 @@
             },
             "MethodName": "SetLayer",
             "MethodSignature": "void SetLayer( ElementId inElementId, ElementId inLayerId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "ILayers",
             "Description": "Sets the Layer of a document",
             "Since": "v7.18.",
-            "SemanticHint": "couche, calque, document"
+            "SemanticHint": "Affecte un element a un calque. calque, layer"
         },
         {
             "Source": {
@@ -2080,12 +2080,12 @@
             },
             "MethodName": "SetLayer",
             "MethodSignature": "void SetLayer( ElementId inElementId, ElementId inLayerId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "ILayers",
             "Description": "Sets the Layer of a document",
             "Since": "v7.18.",
-            "SemanticHint": "couche, calque, document"
+            "SemanticHint": "Affecte un element a un calque. calque, layer"
         },
         {
             "Source": {
@@ -2103,7 +2103,7 @@
             "Interface": "ILayers",
             "Description": "Retrieves layer from an element. Returns Empty if no layer defined.",
             "Since": "",
-            "SemanticHint": "couche, calque"
+            "SemanticHint": "Retourne le calque d'un element. calque, layer"
         },
         {
             "Source": {
@@ -2121,7 +2121,7 @@
             "Interface": "ILayers",
             "Description": "Retrieves layer from an element. Returns Empty if no layer defined.",
             "Since": "",
-            "SemanticHint": "couche, calque"
+            "SemanticHint": "Retourne le calque d'un element. calque, layer"
         },
         {
             "Source": {
@@ -39310,11 +39310,12 @@
             },
             "MethodName": "IsVisible",
             "MethodSignature": "bool IsVisible( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether an element is visible.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Verifie si l'element est visible. visibilite, cacher, montrer"
         },
         {
             "Source": {
@@ -39327,11 +39328,12 @@
             },
             "MethodName": "IsVisible",
             "MethodSignature": "bool IsVisible( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether an element is visible.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Verifie si l'element est visible. visibilite, cacher, montrer"
         },
         {
             "Source": {
@@ -39418,12 +39420,12 @@
             },
             "MethodName": "HasColor",
             "MethodSignature": "bool HasColor( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether an element has a color.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Verifie si l'element a une couleur d'attribut."
         },
         {
             "Source": {
@@ -39436,12 +39438,12 @@
             },
             "MethodName": "HasColor",
             "MethodSignature": "bool HasColor( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether an element has a color.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Verifie si l'element a une couleur d'attribut."
         },
         {
             "Source": {
@@ -39454,12 +39456,12 @@
             },
             "MethodName": "IsColorModifiable",
             "MethodSignature": "bool IsColorModifiable( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 3,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether the color of an element is modifiable.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Verifie si la couleur de l'element est modifiable."
         },
         {
             "Source": {
@@ -39472,12 +39474,12 @@
             },
             "MethodName": "IsColorModifiable",
             "MethodSignature": "bool IsColorModifiable( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 3,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether the color of an element is modifiable.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Verifie si la couleur de l'element est modifiable."
         },
         {
             "Source": {
@@ -39495,7 +39497,7 @@
             "Interface": "IElements",
             "Description": "Gets the color of an element.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Lit la COULEUR d'attribut d'un element (clic droit \u2192 attribut \u2192 couleur). couleur, color, attribut"
         },
         {
             "Source": {
@@ -39513,7 +39515,7 @@
             "Interface": "IElements",
             "Description": "Gets the color of an element.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Lit la COULEUR d'attribut d'un element (clic droit \u2192 attribut \u2192 couleur). couleur, color, attribut"
         },
         {
             "Source": {
@@ -39526,12 +39528,12 @@
             },
             "MethodName": "SetColor",
             "MethodSignature": "void SetColor( ElementId inElementId, Color inColor )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Sets the color of an element.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Change la COULEUR d'attribut d'un element. Methode principale pour colorer une forme. couleur, color, attribut"
         },
         {
             "Source": {
@@ -39544,12 +39546,12 @@
             },
             "MethodName": "SetColor",
             "MethodSignature": "void SetColor( ElementId inElementId, Color inColor )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Sets the color of an element.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Change la COULEUR d'attribut d'un element. Methode principale pour colorer une forme. couleur, color, attribut"
         },
         {
             "Source": {
@@ -39562,12 +39564,12 @@
             },
             "MethodName": "SetColor",
             "MethodSignature": "void SetColor( ElementId inElementId, Color inColor )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Sets the color of an element.",
             "Since": "v7.6.",
-            "SemanticHint": "couleur"
+            "SemanticHint": "Change la COULEUR d'attribut d'un element. Methode principale pour colorer une forme. couleur, color, attribut"
         },
         {
             "Source": {
@@ -39580,11 +39582,12 @@
             },
             "MethodName": "HasTransparency",
             "MethodSignature": "bool HasTransparency( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether an element has a transparency.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Verifie si l'element a une transparence."
         },
         {
             "Source": {
@@ -39597,11 +39600,12 @@
             },
             "MethodName": "HasTransparency",
             "MethodSignature": "bool HasTransparency( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Tells whether an element has a transparency.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Verifie si l'element a une transparence."
         },
         {
             "Source": {
@@ -39648,11 +39652,12 @@
             },
             "MethodName": "GetTransparency",
             "MethodSignature": "double GetTransparency( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Gets the transparency of an element.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Lit la TRANSPARENCE d'un element (0=opaque, 1=transparent). transparence, opacite"
         },
         {
             "Source": {
@@ -39665,11 +39670,12 @@
             },
             "MethodName": "GetTransparency",
             "MethodSignature": "double GetTransparency( ElementId inElementId )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Gets the transparency of an element.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Lit la TRANSPARENCE d'un element (0=opaque, 1=transparent). transparence, opacite"
         },
         {
             "Source": {
@@ -39682,11 +39688,12 @@
             },
             "MethodName": "SetTransparency",
             "MethodSignature": "void SetTransparency( ElementId inElementId, double inTransparency )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Sets the transparency of an element.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Change la TRANSPARENCE d'un element. transparence, opacite"
         },
         {
             "Source": {
@@ -39699,11 +39706,12 @@
             },
             "MethodName": "SetTransparency",
             "MethodSignature": "void SetTransparency( ElementId inElementId, double inTransparency )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Sets the transparency of an element.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Change la TRANSPARENCE d'un element. transparence, opacite"
         },
         {
             "Source": {
@@ -39716,11 +39724,12 @@
             },
             "MethodName": "SetTransparency",
             "MethodSignature": "void SetTransparency( ElementId inElementId, double inTransparency )",
-            "Weight": 10,
+            "Weight": 2,
             "IsStatic": false,
             "Interface": "IElements",
             "Description": "Sets the transparency of an element.",
-            "Since": "v7.6."
+            "Since": "v7.6.",
+            "SemanticHint": "Change la TRANSPARENCE d'un element. transparence, opacite"
         },
         {
             "Source": {
