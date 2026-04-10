@@ -1043,23 +1043,20 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "attribut_modifier_couleur", RW("Attribut: change la couleur. Param: value=R,G,B (ex: 0,0,255 pour bleu)",
+            { "attribut_modifier_couleur", RW("Attribut: change la couleur d'un element. L'utilisateur le selectionne dans TopSolid. Param: value=R,G,B (ex: 0,0,255 pour bleu)",
                 "string[] rgb = \"{value}\".Split(',');\n" +
                 "if (rgb.Length != 3) { __message = \"Format: R,G,B (ex: 255,0,0 pour rouge)\"; return; }\n" +
                 "int r, g, b;\n" +
                 "if (!int.TryParse(rgb[0].Trim(), out r) || !int.TryParse(rgb[1].Trim(), out g) || !int.TryParse(rgb[2].Trim(), out b))\n" +
                 "{ __message = \"Format: R,G,B (ex: 255,0,0)\"; return; }\n" +
-                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
-                "int count = 0;\n" +
-                "foreach (var s in shapes)\n" +
-                "{\n" +
-                "    if (TopSolidHost.Elements.IsColorModifiable(s))\n" +
-                "    {\n" +
-                "        TopSolidHost.Elements.SetColor(s, new Color((byte)r, (byte)g, (byte)b));\n" +
-                "        count++;\n" +
-                "    }\n" +
-                "}\n" +
-                "__message = \"OK: \" + count + \" element(s) colore(s) en RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
+                "// Demander a l'utilisateur de selectionner un shape\n" +
+                "ElementId selected = ElementId.Empty;\n" +
+                "UserQuestion q = new UserQuestion(\"Selectionnez l'element a colorer\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out selected);\n" +
+                "if (answer != UserAnswerType.Validated || selected.IsEmpty)\n" +
+                "{ __message = \"Selection annulee.\"; return; }\n" +
+                "TopSolidHost.Elements.SetColor(selected, new Color((byte)r, (byte)g, (byte)b));\n" +
+                "__message = \"OK: \" + TopSolidHost.Elements.GetFriendlyName(selected) + \" colore en RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
 
             { "attribut_lire_couleur", R("Attribut: lit la couleur des elements",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
@@ -1078,21 +1075,17 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "attribut_modifier_transparence", RW("Attribut: change la transparence. Param: value=0.0 a 1.0 (0=opaque, 1=transparent)",
+            { "attribut_modifier_transparence", RW("Attribut: change la transparence d'un element. L'utilisateur le selectionne. Param: value=0.0 a 1.0",
                 "double transp;\n" +
                 "if (!double.TryParse(\"{value}\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out transp))\n" +
                 "{ __message = \"Format: nombre entre 0.0 et 1.0\"; return; }\n" +
-                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
-                "int count = 0;\n" +
-                "foreach (var s in shapes)\n" +
-                "{\n" +
-                "    if (TopSolidHost.Elements.IsTransparencyModifiable(s))\n" +
-                "    {\n" +
-                "        TopSolidHost.Elements.SetTransparency(s, transp);\n" +
-                "        count++;\n" +
-                "    }\n" +
-                "}\n" +
-                "__message = \"OK: transparence \" + transp.ToString(\"F1\") + \" sur \" + count + \" element(s)\";") },
+                "ElementId selected = ElementId.Empty;\n" +
+                "UserQuestion q = new UserQuestion(\"Selectionnez l'element\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out selected);\n" +
+                "if (answer != UserAnswerType.Validated || selected.IsEmpty)\n" +
+                "{ __message = \"Selection annulee.\"; return; }\n" +
+                "TopSolidHost.Elements.SetTransparency(selected, transp);\n" +
+                "__message = \"OK: transparence \" + transp.ToString(\"F1\") + \" sur \" + TopSolidHost.Elements.GetFriendlyName(selected);") },
 
             { "attribut_lire_transparence", R("Attribut: lit la transparence des elements",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
@@ -1188,6 +1181,47 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "__message = changed + \" element(s) passe(s) de RGB(\" + sr + \",\" + sg + \",\" + sb2 + \") a RGB(\" + dr + \",\" + dg + \",\" + db + \")\";") },
+
+            // --- Selection interactive (IUser.Ask*) ---
+            { "selectionner_shape", R("Demande a l'utilisateur de selectionner un shape et retourne ses infos",
+                "ElementId selected = ElementId.Empty;\n" +
+                "UserQuestion q = new UserQuestion(\"Selectionnez un shape\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out selected);\n" +
+                "if (answer != UserAnswerType.Validated || selected.IsEmpty) return \"Selection annulee.\";\n" +
+                "string name = TopSolidHost.Elements.GetFriendlyName(selected);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"Element selectionne: \" + name);\n" +
+                "if (TopSolidHost.Elements.HasColor(selected))\n" +
+                "{\n" +
+                "    Color c = TopSolidHost.Elements.GetColor(selected);\n" +
+                "    sb.AppendLine(\"Couleur: RGB(\" + c.R + \",\" + c.G + \",\" + c.B + \")\");\n" +
+                "}\n" +
+                "if (TopSolidHost.Elements.HasTransparency(selected))\n" +
+                "    sb.AppendLine(\"Transparence: \" + TopSolidHost.Elements.GetTransparency(selected).ToString(\"F2\"));\n" +
+                "sb.AppendLine(\"Visible: \" + TopSolidHost.Elements.IsVisible(selected));\n" +
+                "sb.AppendLine(\"Type: \" + TopSolidHost.Elements.GetTypeFullName(selected));\n" +
+                "return sb.ToString();") },
+
+            { "selectionner_face", R("Demande a l'utilisateur de selectionner une face et retourne ses infos",
+                "ElementItemId selected = default;\n" +
+                "UserQuestion q = new UserQuestion(\"Selectionnez une face\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default, out selected);\n" +
+                "if (answer != UserAnswerType.Validated) return \"Selection annulee.\";\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "Color c = TopSolidHost.Shapes.GetFaceColor(selected);\n" +
+                "sb.AppendLine(\"Couleur face: RGB(\" + c.R + \",\" + c.G + \",\" + c.B + \")\");\n" +
+                "double area = TopSolidHost.Shapes.GetFaceArea(selected);\n" +
+                "sb.AppendLine(\"Aire: \" + (area * 1e6).ToString(\"F2\") + \" cm2\");\n" +
+                "int surfType = (int)TopSolidHost.Shapes.GetFaceSurfaceType(selected);\n" +
+                "sb.AppendLine(\"Type surface: \" + surfType);\n" +
+                "return sb.ToString();") },
+
+            { "selectionner_point_3d", R("Demande a l'utilisateur de cliquer un point 3D et retourne les coordonnees",
+                "SmartPoint3D selected;\n" +
+                "UserQuestion q = new UserQuestion(\"Cliquez un point 3D\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskPoint3D(q, default, out selected);\n" +
+                "if (answer != UserAnswerType.Validated) return \"Selection annulee.\";\n" +
+                "return \"Point: (\" + (selected.X * 1000).ToString(\"F2\") + \", \" + (selected.Y * 1000).ToString(\"F2\") + \", \" + (selected.Z * 1000).ToString(\"F2\") + \") mm\";") },
 
             { "attribut_lire_couleurs_faces", R("Attribut: lit les couleurs de chaque face individuellement",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
