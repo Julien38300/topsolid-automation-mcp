@@ -1014,6 +1014,36 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // COULEURS — Lecture des faces
             // =====================================================================
+            { "modifier_couleur_piece", RW("Change la couleur (attribut) de toutes les faces de la piece. Param: value=R,G,B (ex: 0,0,255 pour bleu)",
+                "string[] rgb = \"{value}\".Split(',');\n" +
+                "if (rgb.Length != 3) { __message = \"Format: R,G,B (ex: 255,0,0 pour rouge)\"; return; }\n" +
+                "int r, g, b;\n" +
+                "if (!int.TryParse(rgb[0].Trim(), out r) || !int.TryParse(rgb[1].Trim(), out g) || !int.TryParse(rgb[2].Trim(), out b))\n" +
+                "{ __message = \"Format: R,G,B (ex: 255,0,0)\"; return; }\n" +
+                "// Colorer toutes les faces de tous les shapes\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "int totalFaces = 0;\n" +
+                "foreach (var s in shapes)\n" +
+                "{\n" +
+                "    var faces = TopSolidHost.Shapes.GetFaces(s);\n" +
+                "    if (faces.Count > 0)\n" +
+                "    {\n" +
+                "        TopSolidHost.Shapes.CreateColoringOperation(faces, new Color((byte)r, (byte)g, (byte)b));\n" +
+                "        totalFaces += faces.Count;\n" +
+                "    }\n" +
+                "}\n" +
+                "__message = \"OK: \" + totalFaces + \" faces colorees en RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
+
+            { "lire_couleur_piece", R("Lit la couleur d'attribut de la premiere face",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "if (shapes.Count == 0) return \"Aucun shape.\";\n" +
+                "var faces = TopSolidHost.Shapes.GetFaces(shapes[0]);\n" +
+                "if (faces.Count == 0) return \"Aucune face.\";\n" +
+                "Color c = TopSolidHost.Shapes.GetFaceColor(faces[0]);\n" +
+                "return \"Couleur piece: RGB(\" + c.R + \",\" + c.G + \",\" + c.B + \")\";") },
+
             { "lire_couleurs_faces", R("Lit les couleurs des faces du shape principal",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
