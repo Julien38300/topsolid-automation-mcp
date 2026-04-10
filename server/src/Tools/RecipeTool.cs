@@ -1145,6 +1145,50 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"Element '\" + elemName + \"' non trouve.\";") },
 
+            { "attribut_remplacer_couleur", RW("Attribut: remplace une couleur par une autre sur les elements. Param: value=R1,G1,B1:R2,G2,B2 (ex: 0,128,0:255,0,0 = vert→rouge)",
+                "string[] parts = \"{value}\".Split(':');\n" +
+                "if (parts.Length != 2) { __message = \"Format: R1,G1,B1:R2,G2,B2 (ex: 0,128,0:255,0,0)\"; return; }\n" +
+                "string[] src = parts[0].Split(',');\n" +
+                "string[] dst = parts[1].Split(',');\n" +
+                "if (src.Length != 3 || dst.Length != 3) { __message = \"Format: R1,G1,B1:R2,G2,B2\"; return; }\n" +
+                "int sr, sg, sb2, dr, dg, db;\n" +
+                "if (!int.TryParse(src[0].Trim(), out sr) || !int.TryParse(src[1].Trim(), out sg) || !int.TryParse(src[2].Trim(), out sb2) ||\n" +
+                "    !int.TryParse(dst[0].Trim(), out dr) || !int.TryParse(dst[1].Trim(), out dg) || !int.TryParse(dst[2].Trim(), out db))\n" +
+                "{ __message = \"Valeurs RGB invalides.\"; return; }\n" +
+                "// Chercher dans les shapes du document\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "int changed = 0;\n" +
+                "int tolerance = 50; // tolerance RGB\n" +
+                "foreach (var s in shapes)\n" +
+                "{\n" +
+                "    if (!TopSolidHost.Elements.HasColor(s)) continue;\n" +
+                "    Color c = TopSolidHost.Elements.GetColor(s);\n" +
+                "    if (System.Math.Abs(c.R - sr) < tolerance && System.Math.Abs(c.G - sg) < tolerance && System.Math.Abs(c.B - sb2) < tolerance)\n" +
+                "    {\n" +
+                "        if (TopSolidHost.Elements.IsColorModifiable(s))\n" +
+                "        {\n" +
+                "            TopSolidHost.Elements.SetColor(s, new Color((byte)dr, (byte)dg, (byte)db));\n" +
+                "            changed++;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "// Chercher aussi dans les operations (inclusions dans un assemblage)\n" +
+                "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
+                "foreach (var op in ops)\n" +
+                "{\n" +
+                "    if (!TopSolidHost.Elements.HasColor(op)) continue;\n" +
+                "    Color c = TopSolidHost.Elements.GetColor(op);\n" +
+                "    if (System.Math.Abs(c.R - sr) < tolerance && System.Math.Abs(c.G - sg) < tolerance && System.Math.Abs(c.B - sb2) < tolerance)\n" +
+                "    {\n" +
+                "        if (TopSolidHost.Elements.IsColorModifiable(op))\n" +
+                "        {\n" +
+                "            TopSolidHost.Elements.SetColor(op, new Color((byte)dr, (byte)dg, (byte)db));\n" +
+                "            changed++;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "__message = changed + \" element(s) passe(s) de RGB(\" + sr + \",\" + sg + \",\" + sb2 + \") a RGB(\" + dr + \",\" + dg + \",\" + db + \")\";") },
+
             { "attribut_lire_couleurs_faces", R("Attribut: lit les couleurs de chaque face individuellement",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
