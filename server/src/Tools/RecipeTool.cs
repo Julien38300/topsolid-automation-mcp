@@ -517,6 +517,279 @@ namespace TopSolidMcpServer.Tools
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
                 "string val = TopSolidHost.Pdm.GetTextUserProperty(pdmId, \"{value}\");\n" +
                 "return string.IsNullOrEmpty(val) ? \"Propriete '{value}': (vide)\" : \"Propriete '{value}': \" + val;") },
+
+            // =====================================================================
+            // AUDIT PIECE — Scenarios composites haute valeur
+            // =====================================================================
+            { "audit_piece", R("Audit complet de la piece : proprietes, parametres, shapes, masse, volume",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"=== AUDIT PIECE ===\");\n" +
+                "sb.AppendLine(\"Nom: \" + TopSolidHost.Pdm.GetName(pdmId));\n" +
+                "string desc = TopSolidHost.Pdm.GetDescription(pdmId);\n" +
+                "sb.AppendLine(\"Designation: \" + (string.IsNullOrEmpty(desc) ? \"(VIDE!)\" : desc));\n" +
+                "string pn = TopSolidHost.Pdm.GetPartNumber(pdmId);\n" +
+                "sb.AppendLine(\"Reference: \" + (string.IsNullOrEmpty(pn) ? \"(VIDE!)\" : pn));\n" +
+                "sb.AppendLine(\"Type: \" + TopSolidHost.Documents.GetTypeFullName(docId));\n" +
+                "// Parametres\n" +
+                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
+                "sb.AppendLine(\"\\nParametres: \" + pList.Count);\n" +
+                "foreach (var p in pList)\n" +
+                "{\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    int pType = TopSolidHost.Parameters.GetParameterType(p);\n" +
+                "    string val = \"\";\n" +
+                "    if (pType == 0) val = (TopSolidHost.Parameters.GetRealValue(p) * 1000).ToString(\"F2\") + \" mm\";\n" +
+                "    else if (pType == 1) val = TopSolidHost.Parameters.GetIntegerValue(p).ToString();\n" +
+                "    else if (pType == 3) val = TopSolidHost.Parameters.GetBooleanValue(p).ToString();\n" +
+                "    else if (pType == 4) val = TopSolidHost.Parameters.GetTextValue(p);\n" +
+                "    sb.AppendLine(\"  \" + name + \" = \" + val);\n" +
+                "}\n" +
+                "// Shapes\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "sb.AppendLine(\"\\nShapes: \" + shapes.Count);\n" +
+                "foreach (var s in shapes)\n" +
+                "{\n" +
+                "    string sName = TopSolidHost.Elements.GetFriendlyName(s);\n" +
+                "    double vol = TopSolidHost.Shapes.GetShapeVolume(s);\n" +
+                "    int faces = TopSolidHost.Shapes.GetFaceCount(s);\n" +
+                "    sb.AppendLine(\"  \" + sName + \" : \" + faces + \" faces, volume=\" + (vol * 1e9).ToString(\"F1\") + \" cm3\");\n" +
+                "}\n" +
+                "return sb.ToString();") },
+
+            { "audit_assemblage", R("Audit complet de l'assemblage : pieces, inclusions, masse",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "bool isAsm = false;\n" +
+                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Impossible de verifier.\"; }\n" +
+                "if (!isAsm) return \"Ce document n'est PAS un assemblage.\";\n" +
+                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"=== AUDIT ASSEMBLAGE ===\");\n" +
+                "sb.AppendLine(\"Nom: \" + TopSolidHost.Pdm.GetName(pdmId));\n" +
+                "string desc = TopSolidHost.Pdm.GetDescription(pdmId);\n" +
+                "sb.AppendLine(\"Designation: \" + (string.IsNullOrEmpty(desc) ? \"(VIDE!)\" : desc));\n" +
+                "// Pieces\n" +
+                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
+                "sb.AppendLine(\"\\nPieces: \" + parts.Count);\n" +
+                "// Inclusions\n" +
+                "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
+                "int inclCount = 0;\n" +
+                "foreach (var op in ops)\n" +
+                "{\n" +
+                "    bool isInclusion = false;\n" +
+                "    try { isInclusion = TopSolidDesignHost.Assemblies.IsInclusion(op); } catch { continue; }\n" +
+                "    if (isInclusion)\n" +
+                "    {\n" +
+                "        string opName = TopSolidHost.Elements.GetFriendlyName(op);\n" +
+                "        DocumentId defDoc = TopSolidDesignHost.Assemblies.GetInclusionDefinitionDocument(op);\n" +
+                "        string defName = \"?\";\n" +
+                "        if (!defDoc.IsEmpty) { PdmObjectId defPdm = TopSolidHost.Documents.GetPdmObject(defDoc); defName = TopSolidHost.Pdm.GetName(defPdm); }\n" +
+                "        sb.AppendLine(\"  \" + opName + \" -> \" + defName);\n" +
+                "        inclCount++;\n" +
+                "    }\n" +
+                "}\n" +
+                "sb.Insert(sb.ToString().IndexOf(\"\\nPieces\"), \"Inclusions: \" + inclCount + \"\\n\");\n" +
+                "return sb.ToString();") },
+
+            { "verifier_piece", R("Verification qualite : designation, reference, materiau remplis ?",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"=== VERIFICATION QUALITE ===\");\n" +
+                "int warnings = 0;\n" +
+                "string desc = TopSolidHost.Pdm.GetDescription(pdmId);\n" +
+                "if (string.IsNullOrEmpty(desc)) { sb.AppendLine(\"ALERTE: Designation VIDE\"); warnings++; } else sb.AppendLine(\"OK: Designation = \" + desc);\n" +
+                "string pn = TopSolidHost.Pdm.GetPartNumber(pdmId);\n" +
+                "if (string.IsNullOrEmpty(pn)) { sb.AppendLine(\"ALERTE: Reference VIDE\"); warnings++; } else sb.AppendLine(\"OK: Reference = \" + pn);\n" +
+                "string mfr = TopSolidHost.Pdm.GetManufacturer(pdmId);\n" +
+                "if (string.IsNullOrEmpty(mfr)) sb.AppendLine(\"INFO: Fabricant non renseigne\");\n" +
+                "// Parametres\n" +
+                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
+                "sb.AppendLine(\"Parametres: \" + pList.Count);\n" +
+                "if (pList.Count == 0) { sb.AppendLine(\"ALERTE: Aucun parametre\"); warnings++; }\n" +
+                "// Shapes\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "if (shapes.Count == 0) { sb.AppendLine(\"ALERTE: Aucun shape (piece vide?)\"); warnings++; } else sb.AppendLine(\"OK: \" + shapes.Count + \" shape(s)\");\n" +
+                "sb.AppendLine(\"\\n\" + (warnings == 0 ? \"RESULTAT: Piece OK\" : \"RESULTAT: \" + warnings + \" alerte(s)\"));\n" +
+                "return sb.ToString();") },
+
+            // =====================================================================
+            // PERFORMANCE — Masse, volume, surface
+            // =====================================================================
+            { "lire_masse_volume", R("Lit masse, volume, surface de la piece via les proprietes physiques",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "// Volume depuis shapes\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "double totalVol = 0;\n" +
+                "foreach (var s in shapes)\n" +
+                "    totalVol += TopSolidHost.Shapes.GetShapeVolume(s);\n" +
+                "sb.AppendLine(\"Volume total: \" + (totalVol * 1e9).ToString(\"F2\") + \" cm3\");\n" +
+                "// Densite depuis materiau\n" +
+                "double density = 0;\n" +
+                "try { density = TopSolidHost.Materials.GetDensity(docId); } catch {}\n" +
+                "if (density > 0)\n" +
+                "{\n" +
+                "    sb.AppendLine(\"Densite: \" + density.ToString(\"F0\") + \" kg/m3\");\n" +
+                "    double mass = totalVol * density;\n" +
+                "    sb.AppendLine(\"Masse estimee: \" + mass.ToString(\"F3\") + \" kg\");\n" +
+                "}\n" +
+                "else\n" +
+                "    sb.AppendLine(\"Densite: (aucun materiau affecte)\");\n" +
+                "return sb.ToString();") },
+
+            { "lire_densite_materiau", R("Lit la densite du materiau affecte",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "double density = 0;\n" +
+                "try { density = TopSolidHost.Materials.GetDensity(docId); } catch {}\n" +
+                "return density > 0 ? \"Densite: \" + density.ToString(\"F0\") + \" kg/m3\" : \"Aucun materiau affecte.\";") },
+
+            // =====================================================================
+            // INVOKE COMMAND — Appel de commandes menu TopSolid
+            // =====================================================================
+            { "invoquer_commande", R("Execute une commande menu TopSolid par nom. Param: value=nom_commande",
+                "bool result = TopSolidHost.Application.InvokeCommand(\"{value}\");\n" +
+                "return result ? \"OK: Commande '{value}' executee.\" : \"ERREUR: Commande '{value}' non trouvee ou echec.\";") },
+
+            // =====================================================================
+            // OCCURRENCES — Proprietes d'occurrence dans assemblages
+            // =====================================================================
+            { "lire_occurrences", R("Liste les occurrences d'un assemblage avec leur definition",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "bool isAsm = false;\n" +
+                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Pas un assemblage.\"; }\n" +
+                "if (!isAsm) return \"Pas un assemblage.\";\n" +
+                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"Occurrences: \" + parts.Count);\n" +
+                "foreach (var p in parts)\n" +
+                "{\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    bool isOcc = TopSolidHost.Entities.IsOccurrence(p);\n" +
+                "    string occName = \"\";\n" +
+                "    try { occName = TopSolidHost.Entities.GetFunctionOccurrenceName(p); } catch {}\n" +
+                "    DocumentId defDoc = DocumentId.Empty;\n" +
+                "    try { defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(p); } catch {}\n" +
+                "    string defName = \"\";\n" +
+                "    if (!defDoc.IsEmpty) { PdmObjectId defPdm = TopSolidHost.Documents.GetPdmObject(defDoc); defName = TopSolidHost.Pdm.GetName(defPdm); }\n" +
+                "    sb.AppendLine(\"  \" + name + (isOcc ? \" [occ]\" : \"\") + (!string.IsNullOrEmpty(occName) ? \" nom=\" + occName : \"\") + (!string.IsNullOrEmpty(defName) ? \" -> \" + defName : \"\"));\n" +
+                "}\n" +
+                "return sb.ToString();") },
+
+            { "renommer_occurrence", RW("Renomme une occurrence. Param: value=ancien_nom:nouveau_nom",
+                "int idx = \"{value}\".IndexOf(':');\n" +
+                "if (idx < 0) { __message = \"Format: ancien_nom:nouveau_nom\"; return; }\n" +
+                "string oldName = \"{value}\".Substring(0, idx).Trim();\n" +
+                "string newName = \"{value}\".Substring(idx + 1).Trim();\n" +
+                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
+                "foreach (var p in parts)\n" +
+                "{\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    if (name.IndexOf(oldName, StringComparison.OrdinalIgnoreCase) >= 0)\n" +
+                "    {\n" +
+                "        TopSolidHost.Entities.SetFunctionOccurrenceName(p, newName);\n" +
+                "        __message = \"OK: Occurrence '\" + name + \"' renommee en '\" + newName + \"'\";\n" +
+                "        return;\n" +
+                "    }\n" +
+                "}\n" +
+                "__message = \"Occurrence '\" + oldName + \"' non trouvee.\";") },
+
+            // =====================================================================
+            // PROPRIETES UTILISATEUR — Ecriture
+            // =====================================================================
+            { "modifier_propriete_utilisateur", R("Modifie une propriete utilisateur texte. Param: value=nom_propriete:valeur",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "int idx = \"{value}\".IndexOf(':');\n" +
+                "if (idx < 0) return \"Format: nom_propriete:valeur\";\n" +
+                "string propName = \"{value}\".Substring(0, idx).Trim();\n" +
+                "string propVal = \"{value}\".Substring(idx + 1).Trim();\n" +
+                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "TopSolidHost.Pdm.SetTextUserProperty(pdmId, propName, propVal);\n" +
+                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
+                "return \"OK: Propriete '\" + propName + \"' = '\" + propVal + \"'\";") },
+
+            // =====================================================================
+            // BOITE ENGLOBANTE / STOCK
+            // =====================================================================
+            { "lire_boite_englobante", R("Lit les dimensions de la boite englobante de la piece",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "ElementId xSize, ySize, zSize;\n" +
+                "TopSolidDesignHost.Parts.GetEnclosingBoxParameters(docId, out xSize, out ySize, out zSize);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"Boite englobante:\");\n" +
+                "if (!xSize.IsEmpty) sb.AppendLine(\"  X: \" + (TopSolidHost.Parameters.GetRealValue(xSize) * 1000).ToString(\"F1\") + \" mm\");\n" +
+                "if (!ySize.IsEmpty) sb.AppendLine(\"  Y: \" + (TopSolidHost.Parameters.GetRealValue(ySize) * 1000).ToString(\"F1\") + \" mm\");\n" +
+                "if (!zSize.IsEmpty) sb.AppendLine(\"  Z: \" + (TopSolidHost.Parameters.GetRealValue(zSize) * 1000).ToString(\"F1\") + \" mm\");\n" +
+                "return sb.ToString();") },
+
+            // =====================================================================
+            // BATCH — Operations sur le projet
+            // =====================================================================
+            { "lister_documents_projet", R("Liste TOUS les documents du projet avec designation et reference",
+                "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projId.IsEmpty) return \"Aucun projet courant.\";\n" +
+                "var items = TopSolidHost.Pdm.GetConstituents(projId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"Projet: \" + TopSolidHost.Pdm.GetName(projId));\n" +
+                "int docCount = 0;\n" +
+                "foreach (var item in items)\n" +
+                "{\n" +
+                "    string name = TopSolidHost.Pdm.GetName(item);\n" +
+                "    string desc = TopSolidHost.Pdm.GetDescription(item);\n" +
+                "    string pn = TopSolidHost.Pdm.GetPartNumber(item);\n" +
+                "    sb.AppendLine(\"  \" + name + \" | Designation: \" + (string.IsNullOrEmpty(desc) ? \"-\" : desc) + \" | Ref: \" + (string.IsNullOrEmpty(pn) ? \"-\" : pn));\n" +
+                "    docCount++;\n" +
+                "}\n" +
+                "sb.Insert(0, \"Documents: \" + docCount + \"\\n\");\n" +
+                "return sb.ToString();") },
+
+            { "verifier_projet", R("Verification qualite du projet entier : pieces sans designation/reference",
+                "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projId.IsEmpty) return \"Aucun projet courant.\";\n" +
+                "var items = TopSolidHost.Pdm.GetConstituents(projId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"=== VERIFICATION PROJET ===\");\n" +
+                "sb.AppendLine(\"Projet: \" + TopSolidHost.Pdm.GetName(projId));\n" +
+                "int total = 0; int alertes = 0;\n" +
+                "foreach (var item in items)\n" +
+                "{\n" +
+                "    string name = TopSolidHost.Pdm.GetName(item);\n" +
+                "    string desc = TopSolidHost.Pdm.GetDescription(item);\n" +
+                "    string pn = TopSolidHost.Pdm.GetPartNumber(item);\n" +
+                "    total++;\n" +
+                "    if (string.IsNullOrEmpty(desc) || string.IsNullOrEmpty(pn))\n" +
+                "    {\n" +
+                "        sb.AppendLine(\"  ALERTE: \" + name + (string.IsNullOrEmpty(desc) ? \" [designation vide]\" : \"\") + (string.IsNullOrEmpty(pn) ? \" [reference vide]\" : \"\"));\n" +
+                "        alertes++;\n" +
+                "    }\n" +
+                "}\n" +
+                "sb.AppendLine(\"\\nTotal: \" + total + \" documents, \" + alertes + \" alerte(s)\");\n" +
+                "sb.AppendLine(alertes == 0 ? \"RESULTAT: Projet OK\" : \"RESULTAT: \" + alertes + \" document(s) a completer\");\n" +
+                "return sb.ToString();") },
+
+            // =====================================================================
+            // MATERIAUX
+            // =====================================================================
+            { "lire_materiau", R("Lit le materiau et la densite de la piece",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "double density = 0;\n" +
+                "try { density = TopSolidHost.Materials.GetDensity(docId); } catch {}\n" +
+                "if (density > 0)\n" +
+                "    sb.AppendLine(\"Materiau affecte. Densite: \" + density.ToString(\"F0\") + \" kg/m3\");\n" +
+                "else\n" +
+                "    sb.AppendLine(\"Aucun materiau affecte.\");\n" +
+                "return sb.ToString();") },
         };
 
         // Shortcut factory methods for readability
