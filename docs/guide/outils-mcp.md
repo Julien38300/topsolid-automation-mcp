@@ -81,20 +81,21 @@ Explore plusieurs chemins (BFS) entre deux types. Timeout 5 secondes pour eviter
 
 Execute une recette pre-construite par nom. Concu pour les **petits modeles (3B)** comme ministral-3b : le LLM choisit un nom de recette, le serveur MCP execute le code C# correspondant. Aucune generation de code requise cote agent.
 
-**10 recettes disponibles** :
+**75 recettes disponibles** couvrant 6 categories :
 
-| Nom | Description | Pattern |
-|-----|-------------|---------|
-| `lire_designation` | Lire la designation du document actif | READ |
-| `lire_nom` | Lire le nom du document actif | READ |
-| `lire_reference` | Lire la reference (part number) | READ |
-| `lire_fabricant` | Lire le fabricant | READ |
-| `lire_proprietes_pdm` | Lire toutes les proprietes PDM d'un coup | READ |
-| `modifier_designation` | Changer la designation | WRITE |
-| `modifier_nom` | Changer le nom du document | WRITE |
-| `lire_parametres` | Lister les parametres du document | READ |
-| `lister_exporteurs` | Lister les formats d'export disponibles | READ |
-| `type_document` | Detecter le type de document (piece, assemblage, mise en plan) | READ |
+| Categorie | Nb | Exemples |
+|-----------|----|----------|
+| Attributs (PDM, parametres) | 8 | `lire_designation`, `modifier_nom`, `lire_parametres` |
+| Audit / verification | 4 | `type_document`, `diagnostiquer_esquisse`, `lire_proprietes_pdm` |
+| Performance (geometrie, assemblages) | 3 | `lire_faces`, `lister_inclusions`, `collisions_assemblage` |
+| Batch operations | 4 | `copier_parametres`, `renommer_batch`, `sync_documents` |
+| Interactive selection (IUser.Ask*) | 3 | `ask_select_document`, `ask_select_element`, `ask_select_face` |
+| Export formats | 7 | `exporter_step`, `exporter_dxf`, `exporter_pdf`, `exporter_ifc`, `exporter_fbx`, `exporter_gltf`, `exporter_parasolid` |
+
+Deux patterns d'execution :
+
+- **Auto** : le serveur execute la recette directement (ex: `lire_designation`)
+- **Interactive** : la recette utilise `IUser.Ask*` pour demander une selection a l'utilisateur dans TopSolid (ex: `ask_select_document`)
 
 ```json
 {
@@ -107,5 +108,5 @@ Execute une recette pre-construite par nom. Concu pour les **petits modeles (3B)
 ```
 
 ::: tip Integration Hermes
-Avec un modele 3B, `run_recipe` est le seul outil necessaire. Le modele n'a pas besoin de generer du C# — il choisit simplement la bonne recette parmi les 10 disponibles.
+Avec un modele 3B, `run_recipe` est le seul outil necessaire. Le modele n'a pas besoin de generer du C# — il choisit simplement la bonne recette parmi les 75 disponibles. Teste e2e avec ministral-3:3b en 4 secondes.
 :::
