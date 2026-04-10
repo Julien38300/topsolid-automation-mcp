@@ -1043,20 +1043,39 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "attribut_modifier_couleur", RW("Attribut: change la couleur d'un element. L'utilisateur le selectionne dans TopSolid. Param: value=R,G,B (ex: 0,0,255 pour bleu)",
+            { "attribut_modifier_couleur", RW("Attribut: change la couleur. Si 1 shape → direct. Si plusieurs → demande selection. Param: value=R,G,B (ex: 0,0,255)",
                 "string[] rgb = \"{value}\".Split(',');\n" +
                 "if (rgb.Length != 3) { __message = \"Format: R,G,B (ex: 255,0,0 pour rouge)\"; return; }\n" +
                 "int r, g, b;\n" +
                 "if (!int.TryParse(rgb[0].Trim(), out r) || !int.TryParse(rgb[1].Trim(), out g) || !int.TryParse(rgb[2].Trim(), out b))\n" +
                 "{ __message = \"Format: R,G,B (ex: 255,0,0)\"; return; }\n" +
-                "// Demander a l'utilisateur de selectionner un shape\n" +
-                "ElementId selected = ElementId.Empty;\n" +
-                "UserQuestion q = new UserQuestion(\"Selectionnez l'element a colorer\");\n" +
-                "UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out selected);\n" +
-                "if (answer != UserAnswerType.Validated || selected.IsEmpty)\n" +
-                "{ __message = \"Selection annulee.\"; return; }\n" +
-                "TopSolidHost.Elements.SetColor(selected, new Color((byte)r, (byte)g, (byte)b));\n" +
-                "__message = \"OK: \" + TopSolidHost.Elements.GetFriendlyName(selected) + \" colore en RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "ElementId target = ElementId.Empty;\n" +
+                "if (shapes.Count == 1) { target = shapes[0]; }\n" +
+                "else if (shapes.Count > 1)\n" +
+                "{\n" +
+                "    UserQuestion q = new UserQuestion(\"Plusieurs elements. Selectionnez celui a colorer\");\n" +
+                "    UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out target);\n" +
+                "    if (answer != UserAnswerType.Validated || target.IsEmpty) { __message = \"Selection annulee.\"; return; }\n" +
+                "}\n" +
+                "else { __message = \"Aucun shape dans le document.\"; return; }\n" +
+                "TopSolidHost.Elements.SetColor(target, new Color((byte)r, (byte)g, (byte)b));\n" +
+                "__message = \"OK: \" + TopSolidHost.Elements.GetFriendlyName(target) + \" → RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
+
+            { "attribut_modifier_couleur_tout", RW("Attribut: change la couleur de TOUS les elements. Param: value=R,G,B",
+                "string[] rgb = \"{value}\".Split(',');\n" +
+                "if (rgb.Length != 3) { __message = \"Format: R,G,B\"; return; }\n" +
+                "int r, g, b;\n" +
+                "if (!int.TryParse(rgb[0].Trim(), out r) || !int.TryParse(rgb[1].Trim(), out g) || !int.TryParse(rgb[2].Trim(), out b))\n" +
+                "{ __message = \"Format: R,G,B\"; return; }\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "int count = 0;\n" +
+                "foreach (var s in shapes)\n" +
+                "{\n" +
+                "    if (TopSolidHost.Elements.IsColorModifiable(s))\n" +
+                "    { TopSolidHost.Elements.SetColor(s, new Color((byte)r, (byte)g, (byte)b)); count++; }\n" +
+                "}\n" +
+                "__message = \"OK: \" + count + \" element(s) → RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
 
             { "attribut_lire_couleur", R("Attribut: lit la couleur des elements",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
@@ -1075,17 +1094,22 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "attribut_modifier_transparence", RW("Attribut: change la transparence d'un element. L'utilisateur le selectionne. Param: value=0.0 a 1.0",
+            { "attribut_modifier_transparence", RW("Attribut: change la transparence. Si 1 shape → direct. Si plusieurs → demande. Param: value=0.0 a 1.0",
                 "double transp;\n" +
                 "if (!double.TryParse(\"{value}\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out transp))\n" +
                 "{ __message = \"Format: nombre entre 0.0 et 1.0\"; return; }\n" +
-                "ElementId selected = ElementId.Empty;\n" +
-                "UserQuestion q = new UserQuestion(\"Selectionnez l'element\");\n" +
-                "UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out selected);\n" +
-                "if (answer != UserAnswerType.Validated || selected.IsEmpty)\n" +
-                "{ __message = \"Selection annulee.\"; return; }\n" +
-                "TopSolidHost.Elements.SetTransparency(selected, transp);\n" +
-                "__message = \"OK: transparence \" + transp.ToString(\"F1\") + \" sur \" + TopSolidHost.Elements.GetFriendlyName(selected);") },
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "ElementId target = ElementId.Empty;\n" +
+                "if (shapes.Count == 1) { target = shapes[0]; }\n" +
+                "else if (shapes.Count > 1)\n" +
+                "{\n" +
+                "    UserQuestion q = new UserQuestion(\"Selectionnez l'element\");\n" +
+                "    UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out target);\n" +
+                "    if (answer != UserAnswerType.Validated || target.IsEmpty) { __message = \"Selection annulee.\"; return; }\n" +
+                "}\n" +
+                "else { __message = \"Aucun shape.\"; return; }\n" +
+                "TopSolidHost.Elements.SetTransparency(target, transp);\n" +
+                "__message = \"OK: transparence \" + transp.ToString(\"F1\") + \" sur \" + TopSolidHost.Elements.GetFriendlyName(target);") },
 
             { "attribut_lire_transparence", R("Attribut: lit la transparence des elements",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
