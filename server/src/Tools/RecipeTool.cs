@@ -1014,8 +1014,36 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // COULEURS — Lecture des faces
             // =====================================================================
-            // --- Couleur / Transparence / Calque (via IElements — attributs de forme) ---
-            { "modifier_couleur_element", RW("Change la couleur d'attribut d'un element (shape). Param: value=R,G,B (ex: 0,0,255 pour bleu)",
+            // --- ATTRIBUTS (couleur, transparence, calque, visibilite) ---
+            // TopSolid: clic droit → Attributs → Color / Transparency / Layer
+            { "attribut_lire_tout", R("Attribut: lit couleur, transparence, calque et visibilite de tous les elements",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
+                "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"=== ATTRIBUTS ===\");\n" +
+                "foreach (var s in shapes)\n" +
+                "{\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(s);\n" +
+                "    sb.Append(name + \": \");\n" +
+                "    if (TopSolidHost.Elements.HasColor(s))\n" +
+                "    {\n" +
+                "        Color c = TopSolidHost.Elements.GetColor(s);\n" +
+                "        sb.Append(\"couleur=RGB(\" + c.R + \",\" + c.G + \",\" + c.B + \") \");\n" +
+                "    }\n" +
+                "    if (TopSolidHost.Elements.HasTransparency(s))\n" +
+                "        sb.Append(\"transparence=\" + TopSolidHost.Elements.GetTransparency(s).ToString(\"F2\") + \" \");\n" +
+                "    sb.Append(\"visible=\" + TopSolidHost.Elements.IsVisible(s));\n" +
+                "    try\n" +
+                "    {\n" +
+                "        ElementId layerId = TopSolidHost.Layers.GetLayer(docId, s);\n" +
+                "        if (!layerId.IsEmpty) sb.Append(\" calque=\" + TopSolidHost.Elements.GetFriendlyName(layerId));\n" +
+                "    } catch {}\n" +
+                "    sb.AppendLine();\n" +
+                "}\n" +
+                "return sb.ToString();") },
+
+            { "attribut_modifier_couleur", RW("Attribut: change la couleur. Param: value=R,G,B (ex: 0,0,255 pour bleu)",
                 "string[] rgb = \"{value}\".Split(',');\n" +
                 "if (rgb.Length != 3) { __message = \"Format: R,G,B (ex: 255,0,0 pour rouge)\"; return; }\n" +
                 "int r, g, b;\n" +
@@ -1033,7 +1061,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: \" + count + \" element(s) colore(s) en RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
 
-            { "lire_couleur_element", R("Lit la couleur d'attribut des elements (shapes)",
+            { "attribut_lire_couleur", R("Attribut: lit la couleur des elements",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
@@ -1050,7 +1078,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "modifier_transparence", RW("Change la transparence d'un element. Param: value=0.0 a 1.0 (0=opaque, 1=transparent)",
+            { "attribut_modifier_transparence", RW("Attribut: change la transparence. Param: value=0.0 a 1.0 (0=opaque, 1=transparent)",
                 "double transp;\n" +
                 "if (!double.TryParse(\"{value}\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out transp))\n" +
                 "{ __message = \"Format: nombre entre 0.0 et 1.0\"; return; }\n" +
@@ -1066,7 +1094,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: transparence \" + transp.ToString(\"F1\") + \" sur \" + count + \" element(s)\";") },
 
-            { "lire_transparence", R("Lit la transparence des elements",
+            { "attribut_lire_transparence", R("Attribut: lit la transparence des elements",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
@@ -1080,7 +1108,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "lister_calques", R("Liste les calques (layers) du document",
+            { "attribut_lister_calques", R("Attribut: liste les calques (layers) du document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
                 "var layers = TopSolidHost.Layers.GetLayers(docId);\n" +
@@ -1090,7 +1118,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + TopSolidHost.Elements.GetFriendlyName(l));\n" +
                 "return sb.ToString();") },
 
-            { "affecter_calque", RW("Affecte un element au calque par nom. Param: value=nom_element:nom_calque",
+            { "attribut_affecter_calque", RW("Attribut: affecte un element a un calque. Param: value=nom_element:nom_calque",
                 "int idx = \"{value}\".IndexOf(':');\n" +
                 "if (idx < 0) { __message = \"Format: nom_element:nom_calque\"; return; }\n" +
                 "string elemName = \"{value}\".Substring(0, idx).Trim();\n" +
@@ -1117,7 +1145,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"Element '\" + elemName + \"' non trouve.\";") },
 
-            { "lire_couleurs_faces", R("Lit les couleurs des faces du shape principal",
+            { "attribut_lire_couleurs_faces", R("Attribut: lit les couleurs de chaque face individuellement",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"Aucun document ouvert.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
