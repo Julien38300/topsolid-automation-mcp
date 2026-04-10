@@ -532,6 +532,20 @@ def enrich_graph():
         "IElements.GetParent": {"weight": 2, "hint": "Retourne l'operation parente d'un element."},
         "IElements.GetOwner": {"weight": 2, "hint": "Retourne le proprietaire d'un element."},
         "IElements.Delete": {"weight": 3, "hint": "Supprime un element (operation, parametre...)."},
+        "IElements.GetColor": {"weight": 2, "hint": "Lit la COULEUR d'attribut d'un element (clic droit → attribut → couleur). couleur, color, attribut"},
+        "IElements.SetColor": {"weight": 2, "hint": "Change la COULEUR d'attribut d'un element. Methode principale pour colorer une forme. couleur, color, attribut"},
+        "IElements.HasColor": {"weight": 2, "hint": "Verifie si l'element a une couleur d'attribut."},
+        "IElements.IsColorModifiable": {"weight": 3, "hint": "Verifie si la couleur de l'element est modifiable."},
+        "IElements.GetTransparency": {"weight": 2, "hint": "Lit la TRANSPARENCE d'un element (0=opaque, 1=transparent). transparence, opacite"},
+        "IElements.SetTransparency": {"weight": 2, "hint": "Change la TRANSPARENCE d'un element. transparence, opacite"},
+        "IElements.HasTransparency": {"weight": 2, "hint": "Verifie si l'element a une transparence."},
+        "IElements.IsVisible": {"weight": 2, "hint": "Verifie si l'element est visible. visibilite, cacher, montrer"},
+
+        # Layers
+        "ILayers.GetLayers": {"weight": 2, "hint": "Liste les calques du document. calque, layer"},
+        "ILayers.SetLayer": {"weight": 2, "hint": "Affecte un element a un calque. calque, layer"},
+        "ILayers.GetLayer": {"weight": 2, "hint": "Retourne le calque d'un element. calque, layer"},
+        "ILayers.CreateLayer": {"weight": 2, "hint": "Cree un nouveau calque. calque, layer"},
 
         # Parameters
         "IParameters.GetParameters": {"weight": 1, "hint": "Liste tous les parametres d'un document. CHERCHER APRES EnsureIsDirty."},
