@@ -2,6 +2,35 @@
 
 Le serveur expose 7 outils au protocole MCP. L'agent IA les appelle via JSON-RPC sur stdin/stdout.
 
+## topsolid_run_recipe
+
+**L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.
+
+**113 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles.
+
+```json
+{ "name": "topsolid_run_recipe", "arguments": { "recipe": "lire_masse_volume" } }
+```
+
+**Avec parametre :**
+```json
+{ "name": "topsolid_run_recipe", "arguments": { "recipe": "modifier_designation", "value": "Bride de fixation" } }
+```
+
+**Reponse type :**
+```
+Masse: 9.922 kg
+Volume: 1263904.82 mm3
+Surface: 115447.61 mm2
+```
+
+::: tip Quand utiliser run_recipe vs execute_script ?
+- `run_recipe` : pour les 113 operations pre-definies (rapide, fiable, pas besoin de C#)
+- `execute_script` : pour du C# custom que le LLM genere a la volee (plus flexible, plus risque)
+
+Un modele 3B peut utiliser `run_recipe`. Seul un modele 24B+ peut utiliser `execute_script` correctement.
+:::
+
 ## topsolid_get_state
 
 Retourne l'etat courant : document actif, projet, connexion TopSolid.
@@ -76,37 +105,3 @@ Trouve le chemin le plus court (Dijkstra) entre deux types dans le graphe API.
 ## topsolid_explore_paths
 
 Explore plusieurs chemins (BFS) entre deux types. Timeout 5 secondes pour eviter les freezes.
-
-## topsolid_run_recipe
-
-Execute une recette pre-construite par nom. Concu pour les **petits modeles (3B)** comme ministral-3b : le LLM choisit un nom de recette, le serveur MCP execute le code C# correspondant. Aucune generation de code requise cote agent.
-
-**75 recettes disponibles** couvrant 6 categories :
-
-| Categorie | Nb | Exemples |
-|-----------|----|----------|
-| Attributs (PDM, parametres) | 8 | `lire_designation`, `modifier_nom`, `lire_parametres` |
-| Audit / verification | 4 | `type_document`, `diagnostiquer_esquisse`, `lire_proprietes_pdm` |
-| Performance (geometrie, assemblages) | 3 | `lire_faces`, `lister_inclusions`, `collisions_assemblage` |
-| Batch operations | 4 | `copier_parametres`, `renommer_batch`, `sync_documents` |
-| Interactive selection (IUser.Ask*) | 3 | `ask_select_document`, `ask_select_element`, `ask_select_face` |
-| Export formats | 7 | `exporter_step`, `exporter_dxf`, `exporter_pdf`, `exporter_ifc`, `exporter_fbx`, `exporter_gltf`, `exporter_parasolid` |
-
-Deux patterns d'execution :
-
-- **Auto** : le serveur execute la recette directement (ex: `lire_designation`)
-- **Interactive** : la recette utilise `IUser.Ask*` pour demander une selection a l'utilisateur dans TopSolid (ex: `ask_select_document`)
-
-```json
-{
-  "name": "topsolid_run_recipe",
-  "arguments": {
-    "recipe": "modifier_designation",
-    "params": { "value": "Piece Test Noemid" }
-  }
-}
-```
-
-::: tip Integration Hermes
-Avec un modele 3B, `run_recipe` est le seul outil necessaire. Le modele n'a pas besoin de generer du C# — il choisit simplement la bonne recette parmi les 75 disponibles. Teste e2e avec ministral-3:3b en 4 secondes.
-:::
