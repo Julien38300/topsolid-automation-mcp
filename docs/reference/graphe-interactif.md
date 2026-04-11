@@ -74,10 +74,10 @@ function initGraph() {
           {
             selector: 'edge',
             style: {
-              'width': ele => Math.max(0.5, ele.data('weight') * 0.5),
-              'line-color': '#d1d5db',
+              'width': ele => Math.max(1, ele.data('weight') * 0.8),
+              'line-color': '#94a3b8',
               'curve-style': 'bezier',
-              'opacity': 0.3
+              'opacity': 0.6
             }
           },
           {
