@@ -36,6 +36,7 @@ export default defineConfig({
           items: [
             { text: 'Outils MCP', link: '/guide/outils-mcp' },
             { text: 'Graphe API', link: '/guide/graphe' },
+            { text: 'Graphe Interactif', link: '/reference/graphe-interactif' },
             { text: 'Recettes', link: '/guide/recettes' }
           ]
         },
@@ -55,7 +56,8 @@ export default defineConfig({
             { text: 'Glossaire FR/EN', link: '/reference/glossaire' },
             { text: 'Proprietes PDM', link: '/reference/proprietes-pdm' },
             { text: 'Exporteurs', link: '/reference/exporteurs' },
-            { text: 'Interfaces API', link: '/reference/interfaces' }
+            { text: 'Interfaces API', link: '/reference/interfaces' },
+            { text: 'Graphe Interactif', link: '/reference/graphe-interactif' }
           ]
         }
       ]
