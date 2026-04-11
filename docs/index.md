@@ -15,24 +15,21 @@ hero:
 
 features:
   - title: Graphe API enrichi
-    details: 4119 edges, 1728 methodes, 84% de hints semantiques FR/EN. Couvre 100% de l'API TopSolid Automation.
+    details: 4119 edges, 1728 methodes, 1194 avec exemples reels, 85% de hints semantiques FR/EN.
     icon: "&#x1F9E0;"
-  - title: 7 outils MCP
-    details: get_state, execute_script, modify_script, api_help, find_path, explore_paths + run_recipe pour modeles 3B.
+  - title: 6 outils MCP
+    details: get_state, execute_script, modify_script, run_recipe, api_help (52 synonymes FR), find_path, explore_paths.
     icon: "&#x1F6E0;"
-  - title: 76 recettes + 75 RecipeTool
-    details: Scripts C# prets a l'emploi — PDM, parametres, esquisses, assemblages, familles, export. Plus 75 recettes pre-construites pour petits modeles (attributs, audit, batch, interactive, export 7 formats).
+  - title: 113 recettes
+    details: Pilotage complet sans code — PDM, parametres, masse, export, assemblages, familles, mise en plan, nomenclature, comparaison, audit batch.
     icon: "&#x1F4D6;"
-  - title: 85 tests valides
-    details: Suite de tests automatises contre TopSolid vivant. Baselines perf figees.
+  - title: Tests LIVE valides
+    details: Suite de tests automatises contre TopSolid vivant. Recettes testees en LIVE sur assemblage reel.
     icon: "&#x2705;"
-  - title: Glossaire metier
-    details: Mapping complet termes TopSolid FR vers API EN. Designation, reference, mise au coffre, rafale...
+  - title: Glossaire metier complet
+    details: 250+ termes TopSolid FR/EN. Proprietes systeme, operations PDM, revisions, parametres avances, concepts metier.
     icon: "&#x1F1EB;&#x1F1F7;"
-  - title: 5809 pages d'aide
-    details: Aide en ligne TopSolid convertie en Markdown (FR + EN). Pret pour RAG et fine-tuning.
+  - title: Dataset LoRA + 5809 pages aide
+    details: 732 paires d'entrainement pour fine-tuner un modele 3B. Aide en ligne convertie en Markdown (FR + EN).
     icon: "&#x1F4DA;"
-  - title: Integration Hermes
-    details: Teste avec ministral-3b (3B). Un modele leger pilote TopSolid via run_recipe en 4 secondes e2e.
-    icon: "&#x26A1;"
 ---

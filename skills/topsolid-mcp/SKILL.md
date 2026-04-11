@@ -1,162 +1,208 @@
 ---
 name: topsolid-mcp
-description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, audit).
-version: 3.0.0
+description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, audit, masse, dimensions).
+version: 4.0.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation]
-    trigger_phrases: ["topsolid", "piece", "assemblage", "esquisse", "parametre", "designation", "reference", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "masse", "audit"]
+    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges"]
 ---
 
 # TopSolid MCP — Skill de pilotage
 
-## REGLES ABSOLUES
+## REGLE UNIQUE
 
-1. Tu ne connais PAS l'API TopSolid. Tu NE GENERES JAMAIS de code C#.
-2. Tu utilises UNIQUEMENT `mcp_topsolid_topsolid_run_recipe` avec le nom d'une recette.
-3. **EN CAS DE DOUTE, TU DEMANDES CLARIFICATION A L'UTILISATEUR.** Ne devine pas.
-4. **AUTOMATISME D'ABORD** : le but est de faire gagner du temps. Si l'action est claire, agis directement. La selection interactive (AskShape) ne s'active que s'il y a plusieurs choix possibles.
+Tu appelles `mcp_topsolid_topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAIS de code C#. Tu ne decris JAMAIS ce que tu vas faire. Tu FAIS.
 
-## Principe : automatique vs interactif
+## EXEMPLES A SUIVRE EXACTEMENT
 
-| Situation | Comportement |
+User: "combien de pieces dans l'assemblage?"
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="compter_pieces_assemblage")
+→ Reponse: "L'assemblage contient 4 pieces (2 references uniques)."
+
+User: "c'est quoi la masse?"
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="lire_masse_volume")
+→ Reponse: "Masse: 9.922 kg, Volume: 1263905 mm3."
+
+User: "change la designation en Bride support"
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="modifier_designation", value="Bride support")
+→ Reponse: "Designation modifiee: Bride support."
+
+User: "exporte en STEP"
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="exporter_step")
+→ Reponse: "Export STEP OK: C:\...\fichier.step"
+
+User: "quels parametres?"
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="lire_parametres")
+→ Reponse: "29 parametres: Parametre 1 = 10, Masse = 9.922 kg..."
+
+User: "la masse de l'assemblage?"
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="rapport_masse_assemblage")
+→ Reponse: "Masse totale: 9.922 kg, 4 pieces."
+
+User: "exporte en DXF"
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="exporter_dxf")
+→ Reponse: "Export DXF OK."
+
+## QUAND DEMANDER CLARIFICATION
+
+| Situation | Question |
 |---|---|
-| 1 seul element possible | Agir directement (pas de question) |
-| Plusieurs elements, l'utilisateur n'a pas precise | La recette demande selection dans TopSolid |
-| L'utilisateur dit "tout" ou "tous" | Utiliser la variante _tout (ex: attribut_modifier_couleur_tout) |
-| L'utilisateur a nomme l'element | Chercher par nom, agir directement |
+| "change la couleur" sans precision | "Quel element ? Ou tout ?" |
+| "renomme" | "Le nom PDM, la designation, ou la reference ?" |
+| "exporte" sans format | "Quel format ? STEP, DXF, PDF, STL, IGES ?" |
+| "modifie le parametre" sans valeur | "Quelle valeur ?" |
 
-## Quand demander clarification (en TEXTE, avant d'appeler la recette)
-
-Si la demande est ambigue, DEMANDE avant d'agir :
-
-| Situation ambigue | Demande a poser |
-|---|---|
-| "change la couleur" sans precision | "Sur quel element ? Ou sur tout ?" |
-| "renomme" | "Tu veux changer le nom PDM, la designation, ou la reference ?" |
-| "exporte" sans format | "En quel format ? STEP, DXF, PDF, STL, IGES ?" |
-| "modifie le parametre" sans valeur | "Quelle valeur ? (en mm pour les longueurs, en degres pour les angles)" |
-| "verifie" sans precision | "Tu veux verifier cette piece seule ou tout le projet ?" |
-| "supprime" | "Tu veux supprimer un parametre, un element, ou le document ?" |
-
-## Workflow (2 etapes max)
-
-### Etape 1 — Etat TopSolid (optionnel mais recommande)
-Appelle `mcp_topsolid_topsolid_get_state` pour verifier la connexion.
-
-### Etape 2 — Executer une recette
-Appelle `mcp_topsolid_topsolid_run_recipe` avec le bon nom de recette.
-
-## Mapping question → recette
+## RECETTES DISPONIBLES
 
 ### Proprietes PDM
-| L'utilisateur demande | recipe | value |
+| Demande | recipe | value |
 |---|---|---|
-| designation, description | lire_designation | |
-| nom du document | lire_nom | |
-| reference, part number | lire_reference | |
-| fabricant, fournisseur | lire_fabricant | |
+| designation | lire_designation | |
+| nom | lire_nom | |
+| reference | lire_reference | |
+| fabricant | lire_fabricant | |
 | toutes les proprietes | lire_proprietes_pdm | |
-| changer la designation | modifier_designation | nouvelle valeur |
+| changer designation | modifier_designation | nouvelle valeur |
 | renommer | modifier_nom | nouveau nom |
-| changer la reference | modifier_reference | nouvelle reference |
-| changer le fabricant | modifier_fabricant | nouveau fabricant |
+| changer reference | modifier_reference | nouvelle ref |
+| changer fabricant | modifier_fabricant | nouveau fabricant |
 
 ### Navigation projet
-| L'utilisateur demande | recipe | value |
+| Demande | recipe | value |
 |---|---|---|
 | projet courant | lire_projet_courant | |
-| contenu du projet | lire_contenu_projet | |
-| chercher un document | chercher_document | nom a chercher |
-| ouvrir un document | ouvrir_document_par_nom | nom du document |
-| tous les documents du projet | lister_documents_projet | |
+| contenu projet | lire_contenu_projet | |
+| chercher document | chercher_document | nom |
+| ouvrir document | ouvrir_document_par_nom | nom |
+| tous les documents | lister_documents_projet | |
+| documents d'un dossier | lister_documents_dossier | nom dossier |
+| resume du projet | resumer_projet | |
+| documents par type | compter_documents_par_type | |
+| sans reference | lister_documents_sans_reference | |
+| sans designation | lister_documents_sans_designation | |
+| pieces par materiau/masse | chercher_pieces_par_materiau | filtre (opt) |
+| cas d'emploi, where-used | lire_cas_emploi | |
+| historique revisions | lire_historique_revisions | |
+| comparer revisions | comparer_revisions | |
+| comparer parametres | comparer_parametres | nom autre doc |
+| comparer operations | comparer_operations_documents | nom autre doc |
+| comparer entites | comparer_entites_documents | nom autre doc |
+| reporter parametres | reporter_parametres | nom doc cible |
+| reporter proprietes PDM | reporter_proprietes_pdm | nom doc cible |
+| export batch STEP | exporter_batch_step | dossier (opt) |
+| lire propriete batch | lire_propriete_batch | nom propriete |
+| documents modifies | chercher_documents_modifies | |
+| vider auteur projet | vider_auteur_batch | |
+| vider auteur doc | vider_auteur_document | |
+| verifier virtuel | verifier_virtuel_batch | |
+| activer virtuel projet | activer_virtuel_batch | |
+| activer virtuel doc | activer_virtuel_document | |
+| drivers famille sans designation | verifier_drivers_famille | |
+| corriger drivers famille | corriger_drivers_famille | |
+| audit drivers toutes familles | verifier_drivers_famille_batch | |
 
 ### Parametres
-| L'utilisateur demande | recipe | value |
+| Demande | recipe | value |
 |---|---|---|
-| liste des parametres | lire_parametres | |
-| valeur d'un parametre reel | lire_parametre_reel | nom du parametre |
-| valeur d'un parametre texte | lire_parametre_texte | nom du parametre |
-| modifier un parametre reel | modifier_parametre_reel | nom:valeurSI |
-| modifier un parametre texte | modifier_parametre_texte | nom:valeur |
-| comparer avec une autre piece | comparer_parametres | nom de l'autre piece |
+| liste parametres | lire_parametres | |
+| parametre reel | lire_parametre_reel | nom |
+| parametre texte | lire_parametre_texte | nom |
+| modifier reel | modifier_parametre_reel | nom:valeurSI |
+| modifier texte | modifier_parametre_texte | nom:valeur |
+| comparer | comparer_parametres | nom autre piece |
+
+### Masse, volume, dimensions
+| Demande | recipe | value |
+|---|---|---|
+| masse, poids, volume | lire_masse_volume | |
+| masse assemblage | rapport_masse_assemblage | |
+| densite, materiau | lire_densite_materiau | |
+| materiau | lire_materiau | |
+| dimensions piece | lire_dimensions_piece | |
+| boite englobante | lire_boite_englobante | |
+| moments inertie | lire_moments_inertie | |
 
 ### Geometrie et visualisation
-| L'utilisateur demande | recipe | value |
+| Demande | recipe | value |
 |---|---|---|
 | points 3D | lire_points_3d | |
 | reperes | lire_reperes_3d | |
 | esquisses | lister_esquisses | |
 | shapes, formes | lire_shapes | |
 | operations, arbre | lire_operations | |
-| couleur de la piece | lire_couleur_piece | |
-| couleurs des faces | lire_couleurs_faces | |
-| changer la couleur | modifier_couleur_piece | R,G,B |
+| couleur piece | lire_couleur_piece | |
+| couleurs faces | lire_couleurs_faces | |
+| changer couleur | modifier_couleur_piece | R,G,B |
 
 ### Assemblages
-| L'utilisateur demande | recipe | value |
+| Demande | recipe | value |
 |---|---|---|
-| c'est un assemblage ? | detecter_assemblage | |
-| liste des inclusions | lister_inclusions | |
+| c'est un assemblage? | detecter_assemblage | |
+| inclusions | lister_inclusions | |
 | occurrences | lire_occurrences | |
-| renommer une occurrence | renommer_occurrence | ancien:nouveau |
-| compter les pieces | compter_pieces_assemblage | |
-| masse totale assemblage | rapport_masse_assemblage | |
-
-### Audit et verification
-| L'utilisateur demande | recipe | value |
-|---|---|---|
-| audit complet piece | audit_piece | |
-| audit assemblage | audit_assemblage | |
-| verification qualite piece | verifier_piece | |
-| verification qualite projet | verifier_projet | |
-| pieces sans materiau | verifier_materiaux_manquants | |
-
-### Performance et physique
-| L'utilisateur demande | recipe | value |
-|---|---|---|
-| masse, volume, poids | lire_masse_volume | |
-| densite, materiau | lire_materiau | |
-| boite englobante, dimensions brut | lire_boite_englobante | |
+| renommer occurrence | renommer_occurrence | ancien:nouveau |
+| compter pieces | compter_pieces_assemblage | |
 
 ### Export
-| L'utilisateur demande | recipe | value |
+| Demande | recipe | value |
 |---|---|---|
-| exporter en STEP | exporter_step | chemin (optionnel) |
-| exporter en DXF | exporter_dxf | chemin (optionnel) |
-| exporter en PDF | exporter_pdf | chemin (optionnel) |
-| exporter en STL | exporter_stl | chemin (optionnel) |
-| exporter en IGES | exporter_iges | chemin (optionnel) |
-| formats disponibles | lister_exporteurs | |
-| nomenclature en CSV | exporter_nomenclature_csv | |
+| STEP | exporter_step | chemin (opt) |
+| DXF | exporter_dxf | chemin (opt) |
+| PDF | exporter_pdf | chemin (opt) |
+| STL | exporter_stl | chemin (opt) |
+| IGES | exporter_iges | chemin (opt) |
+| formats dispo | lister_exporteurs | |
+| nomenclature CSV | exporter_nomenclature_csv | |
 
-### Mise en plan et nomenclature
-| L'utilisateur demande | recipe | value |
+### Audit
+| Demande | recipe | value |
 |---|---|---|
-| c'est une mise en plan ? | detecter_mise_en_plan | |
+| audit piece | audit_piece | |
+| audit assemblage | audit_assemblage | |
+| verif piece | verifier_piece | |
+| verif projet | verifier_projet | |
+| materiaux manquants | verifier_materiaux_manquants | |
+
+### Mise en plan
+| Demande | recipe | value |
+|---|---|---|
+| mise en plan? | detecter_mise_en_plan | |
+| ouvre le plan | ouvrir_mise_en_plan | |
 | vues du plan | lister_vues_mise_en_plan | |
-| c'est une nomenclature ? | detecter_nomenclature | |
-| colonnes nomenclature | lire_colonnes_nomenclature | |
+| echelle | lire_echelle_mise_en_plan | |
+| format, taille papier | lire_format_mise_en_plan | |
+| projection principale | lire_projection_principale | |
 
-### Document et projet
-| L'utilisateur demande | recipe | value |
+### Nomenclature (BOM)
+| Demande | recipe | value |
 |---|---|---|
-| type de document | type_document | |
+| nomenclature? | detecter_nomenclature | |
+| colonnes nomenclature | lire_colonnes_nomenclature | |
+| contenu nomenclature | lire_contenu_nomenclature | |
+| compter lignes | compter_lignes_nomenclature | |
+
+### Mise a plat (depliage tolerie)
+| Demande | recipe | value |
+|---|---|---|
+| mise a plat? depliage? | detecter_mise_a_plat | |
+| plis, angles | lire_plis_depliage | |
+| dimensions depliage | lire_dimensions_depliage | |
+
+### Document
+| Demande | recipe | value |
+|---|---|---|
+| type document | type_document | |
 | sauvegarder | sauvegarder_document | |
 | reconstruire | reconstruire_document | |
-| sauvegarder tout le projet | sauvegarder_tout_projet | |
-| propriete utilisateur | lire_propriete_utilisateur | nom propriete |
-| modifier propriete utilisateur | modifier_propriete_utilisateur | nom:valeur |
+| sauvegarder tout | sauvegarder_tout_projet | |
+| propriete utilisateur | lire_propriete_utilisateur | nom |
+| modifier propriete | modifier_propriete_utilisateur | nom:valeur |
+| commande TopSolid | invoquer_commande | nom commande |
 
-### Commandes TopSolid directes
-| L'utilisateur demande | recipe | value |
-|---|---|---|
-| lancer une commande | invoquer_commande | nom de la commande |
+## COULEURS
 
-## Couleurs courantes
-
-Si l'utilisateur dit une couleur par nom, convertir en RGB :
-| Couleur | RGB |
+| Nom | RGB |
 |---|---|
 | rouge | 255,0,0 |
 | vert | 0,128,0 |
@@ -167,24 +213,10 @@ Si l'utilisateur dit une couleur par nom, convertir en RGB :
 | noir | 0,0,0 |
 | gris | 128,128,128 |
 
-## Unites
+## UNITES (TopSolid = SI)
+- Longueurs: metres (50mm = 0.05)
+- Angles: radians (45deg = 0.785398)
+- Masses: kg
 
-Les valeurs dans TopSolid sont en **SI** :
-- Longueurs en metres : 50mm = 0.05
-- Angles en radians : 45deg = 0.785398
-- Masses en kg
-
-## Glossaire
-
-| Francais TopSolid | Signification |
-|---|---|
-| Designation | Description du document (colonne "Designation", PAS le nom) |
-| Reference | Part number (colonne "Reference") |
-| Mise au coffre | CheckIn |
-| Sorti de coffre | CheckOut |
-| Revetement | Coating (la couleur d'apparence de la piece) |
-
-## Si la question ne correspond a aucune recette
-
-Utilise `mcp_topsolid_topsolid_api_help` avec un mot-cle pour chercher.
-Puis reponds avec l'information trouvee. NE GENERE PAS de code.
+## SI AUCUNE RECETTE NE CORRESPOND
+Appelle `mcp_topsolid_topsolid_api_help` avec un mot-cle. Ne genere JAMAIS de code.

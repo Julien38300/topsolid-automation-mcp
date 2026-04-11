@@ -5,24 +5,25 @@
 ## Comment ca marche
 
 ```
-Agent IA (Hermes / LLM)
+Agent IA (Hermes / Claude / OpenClaw / tout client MCP)
   |
   v
 TopSolidMcpServer.exe (stdio JSON-RPC)
-  |  - api_help : cherche les bonnes methodes API
+  |  - run_recipe : execute une des 113 recettes pre-construites
+  |  - api_help : cherche les bonnes methodes API (52 synonymes FR)
   |  - execute_script : compile et execute du C# contre TopSolid
-  |  - find_path : navigue dans le graphe de types
+  |  - find_path / explore_paths : navigue dans le graphe de types
   |
   v
 TopSolid 7 (WCF/TCP port 8090)
 ```
 
-L'agent pose une question en langage naturel → le serveur MCP traduit en appels API → TopSolid execute.
+L'agent pose une question en langage naturel &rarr; le serveur MCP traduit en appels API &rarr; TopSolid execute.
 
 ## Composants
 
 ### Graphe API enrichi (`graph.json`)
-Le coeur du systeme. Un graphe oriente de 4119 edges representant toutes les methodes de l'API TopSolid Automation :
+Le coeur du systeme. Un graphe oriente representant toutes les methodes de l'API TopSolid Automation :
 
 | Metrique | Valeur |
 |----------|--------|
@@ -30,25 +31,60 @@ Le coeur du systeme. Un graphe oriente de 4119 edges representant toutes les met
 | Methodes uniques | 1728 |
 | Interfaces | 46 |
 | Description | 90% |
-| Hints semantiques | 84% |
-| Exemples reels (.cs) | 22% |
+| Hints semantiques | 85% |
+| Edges avec exemples reels | 1194 (29%) |
+| Snippets de code | 2174 |
 
 ### Serveur MCP (`TopSolidMcpServer.exe`)
-Executable .NET Framework 4.8, communique en stdio JSON-RPC. 7 outils exposes a l'agent (dont `run_recipe` pour les petits modeles 3B).
+Executable .NET Framework 4.8, communique en stdio JSON-RPC. **7 outils** exposes a l'agent.
 
-### Recettes (`recipes.md`)
-68 scripts C# documentes, couvrant les scenarios les plus courants : navigation PDM, lecture/ecriture parametres, esquisses, assemblages, familles, export multi-format. Plus 10 recettes RecipeTool pour les modeles 3B.
+### RecipeTool — 113 recettes
+L'outil principal. Le LLM choisit une recette par nom, aucune generation de code necessaire.
 
-### Tests (`TestSuite.json`)
-72 tests automatises, executables contre une instance TopSolid vivante. 68/72 PASS.
+| Categorie | Recettes | Exemples |
+|-----------|----------|----------|
+| PDM (lecture/ecriture) | 9 | designation, reference, fabricant |
+| Navigation projet | 5 | chercher, ouvrir, lister documents |
+| Parametres | 6 | lire, modifier, comparer |
+| Masse/Volume/Dimensions | 7 | masse, volume, surface, inertie, boite englobante |
+| Geometrie/Visualisation | 8 | shapes, esquisses, operations, couleurs |
+| Assemblages | 6 | inclusions, occurrences, comptage pieces |
+| Export | 8 | STEP, DXF, PDF, STL, IGES, CSV |
+| Mise en plan | 6 | vues, echelle, format, projection, ouvrir plan |
+| Nomenclature (BOM) | 4 | colonnes, contenu, comptage lignes |
+| Mise a plat / Tolerie | 3 | detection, plis, dimensions depliage |
+| Comparaison documents | 4 | parametres, operations, entites, revisions |
+| Report modifications | 2 | copier parametres ou proprietes PDM vers un autre doc |
+| Batch projet | 13 | audit refs/desig, masse batch, export batch, auteur, virtuel |
+| Audit qualite | 6 | noms parametres, drivers famille, materiaux |
+| Familles | 5 | detection, catalogue, drivers |
+| Historique/Revisions | 2 | timeline revisions, comparaison revisions |
+| Document | 7 | type, sauvegarder, reconstruire, proprietes utilisateur |
+| Interactif | 3 | selection shape/face/point dans TopSolid |
 
-### Integration Hermes Agent
-Le serveur MCP est teste avec **Hermes** (agent Noemid) utilisant **ministral-3b** (3B parametres). Grace a `topsolid_run_recipe`, un modele 3B peut piloter TopSolid sans generer de code C#.
+### Dataset LoRA (`lora-dataset.jsonl`)
+732 paires d'entrainement au format ShareGPT pour fine-tuner un modele 3B sur la selection de recettes.
 
-**Resultat e2e** : la commande "Change la designation en Piece Test Noemid" s'execute en **4 secondes** via Hermes + run_recipe.
+### Tests
+Suite de tests automatises contre une instance TopSolid vivante. Scripts PowerShell executables en batch.
+
+## Architecture Hermes (agent)
+
+```
+ministral 8B (main agent — conversation, raisonnement)
+  |
+  v
+ministral 3B (sous-agent TopSolid — selection de recettes)
+  |
+  v
+TopSolidMcpServer.exe (MCP stdio)
+  |
+  v
+TopSolid 7 (WCF port 8090)
+```
+
+Le modele 8B garde la coherence conversationnelle. Le modele 3B execute les recettes via `run_recipe`. Le LoRA (futur) cible le 3B pour ameliorer sa connaissance TopSolid.
 
 ## Projet Cortana / Noemid
 
 TopSolid MCP fait partie du projet **Cortana** (prototype) qui migre vers **Noemid** (produit final). Le serveur MCP et le graphe API sont les composants qui survivent a la migration.
-
-Les autres blocs Cortana (Dashboard, Launcher, RagService, BridgeMonitor) sont progressivement remplaces par l'ecosysteme Noemid.
