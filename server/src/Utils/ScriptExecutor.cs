@@ -367,9 +367,17 @@ namespace TopSolidMcpServer.Utils
                 header.Add("                TopSolidHost.Documents.EnsureIsDirty(ref docId);");
             }
 
+            // Replace bare 'return;' with 'goto __done;' in modification code
+            // so that early exits properly go through EndModification/Save
+            if (isModification)
+            {
+                userCode = Regex.Replace(userCode, @"\breturn\s*;", "goto __done;");
+            }
+
             var footer = new List<string>();
             if (isModification)
             {
+                footer.Add("                __done:");
                 footer.Add("                TopSolidHost.Application.EndModification(true, true);");
                 footer.Add("                TopSolidHost.Pdm.Save(pdmId, true);");
                 footer.Add("                return __message;");
