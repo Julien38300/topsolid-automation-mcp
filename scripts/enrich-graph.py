@@ -266,6 +266,13 @@ def enrich_graph():
     EXAMPLES_DIRS = [
         r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER",
         r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB",
+        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\SelfLearning-Exercises-master",
+        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\TopSolidKernelAutomationExamples-main",
+        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\ExportMAPMEPdepuisNomenclature",
+        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\DraftSwitch",
+        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Extraction CSV Liste de documents TopSolid",
+        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\TopSolid Material Creator",
+        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Traitement par lot",
     ]
 
     # Mapping from TopSolidHost.Property to Interface name
@@ -300,6 +307,16 @@ def enrich_graph():
         "Processes": "IProcesses",
         "MultiLayers": "IMultiLayer",
         "Tools": "ITools",
+        "Boms": "IBoms",
+        "Unfoldings": "IUnfoldings",
+        "Visualization3D": "IVisualization3D",
+        "Sketches3D": "ISketches3D",
+        "Simulations": "ISimulations",
+        "Collisions": "ICollisions",
+    }
+    DRAFTING_HOST_MAPPING = {
+        "Draftings": "IDraftings",
+        "Tables": "ITables",
     }
 
     SKIP_DIRS = {'bin', 'obj', 'packages', '.vs', 'TestResults'}
@@ -370,7 +387,7 @@ def enrich_graph():
         """Find TopSolidHost/TopSolidDesignHost API calls and extract context snippets."""
         snippets = {}  # key: "Interface.Method" -> list of snippet strings
 
-        api_pattern = re.compile(r'(TopSolidHost|TopSolidDesignHost)\.(\w+)\.(\w+)\s*\(')
+        api_pattern = re.compile(r'(TopSolidHost|TopSolidDesignHost|TopSolidDraftingHost)\.(\w+)\.(\w+)\s*\(')
 
         for idx, line in enumerate(method_lines):
             for match in api_pattern.finditer(line):
@@ -385,6 +402,8 @@ def enrich_graph():
                 # Map to interface name
                 if host_type == "TopSolidHost":
                     iface = HOST_MAPPING.get(prop)
+                elif host_type == "TopSolidDraftingHost":
+                    iface = DRAFTING_HOST_MAPPING.get(prop)
                 else:
                     iface = DESIGN_HOST_MAPPING.get(prop)
 
@@ -440,6 +459,442 @@ def enrich_graph():
         print(f"[{dir_label}] Extracted {dir_methods_count} snippets.")
 
     print(f"Total: examples for {len(examples_index)} unique API methods.")
+
+    # Manual injection: IBoms examples from VB.NET source (Affectation Reference Auto)
+    # These use the same TopSolid API but in VB syntax — converted to C# snippets
+    VB_BOM_EXAMPLES = {
+        "IBoms.IsBom": [
+            "// Accueil.vb — Affectation Reference Auto (VB->C#)\n"
+            "// Check if document is a BOM\n"
+            "if (TopSolidDesignHost.Boms.IsBom(docId)) {\n"
+            "    // proceed with BOM operations\n"
+            "} else {\n"
+            "    // Not a BOM document\n"
+            "}"
+        ],
+        "IBoms.GetColumnCount": [
+            "// Accueil.vb — BOM column enumeration (VB->C#)\n"
+            "int columnCount = TopSolidDesignHost.Boms.GetColumnCount(docId);\n"
+            "for (int i = 0; i < columnCount; i++) {\n"
+            "    var propDef = TopSolidDesignHost.Boms.GetColumnPropertyDefinition(docId, i);\n"
+            "    // propDef.Name, propDef.Domain\n"
+            "}"
+        ],
+        "IBoms.GetColumnPropertyDefinition": [
+            "// Accueil.vb — Get property definitions for BOM columns (VB->C#)\n"
+            "var propDefs = new List<PropertyDefinition>();\n"
+            "int colCount = TopSolidDesignHost.Boms.GetColumnCount(docId);\n"
+            "for (int i = 0; i < colCount; i++)\n"
+            "    propDefs.Add(TopSolidDesignHost.Boms.GetColumnPropertyDefinition(docId, i));"
+        ],
+        "IBoms.GetRootRow": [
+            "// Accueil.vb — Traverse BOM tree recursively (VB->C#)\n"
+            "int rootRow = TopSolidDesignHost.Boms.GetRootRow(docId);\n"
+            "var children = TopSolidDesignHost.Boms.GetRowChildrenRows(docId, rootRow);\n"
+            "// Iterate children, check for sub-children (assemblies vs parts)"
+        ],
+        "IBoms.GetRowChildrenRows": [
+            "// Accueil.vb — Recursive BOM traversal (VB->C#)\n"
+            "var childRows = TopSolidDesignHost.Boms.GetRowChildrenRows(docId, rowNumber);\n"
+            "if (childRows.Count > 0) {\n"
+            "    // This row is an assembly, recurse into children\n"
+            "    foreach (int childRow in childRows) { /* process */ }\n"
+            "} else {\n"
+            "    // This row is a leaf part\n"
+            "}"
+        ],
+        "IBoms.GetRowContents": [
+            "// Accueil.vb — Read BOM row properties and texts (VB->C#)\n"
+            "List<Property> props; List<string> texts;\n"
+            "TopSolidDesignHost.Boms.GetRowContents(docId, rowNumber, out props, out texts);\n"
+            "// texts contains the cell values as strings\n"
+            "// Compare texts across rows to group identical parts"
+        ],
+        "IBoms.GetRowCountedEntities": [
+            "// Accueil.vb — Get entities counted in a BOM row (VB->C#)\n"
+            "var entities = TopSolidDesignHost.Boms.GetRowCountedEntities(docId, rowNumber);\n"
+            "// Each entity is an ElementId representing a counted part/assembly\n"
+            "// Used for assigning BOM indices: SetNodeBomIndex(entity, \"P001\")"
+        ],
+    }
+
+    for key, snippets in VB_BOM_EXAMPLES.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_BOM_EXAMPLES)} IBoms methods from VB.NET source.")
+
+    # Manual injection: Advanced Parameters & PDM from VB.NET (Macro Traitement proprietes SW)
+    VB_PARAMS_EXAMPLES = {
+        "IParameters.GetDescriptionParameter": [
+            "// Accueil.vb — Macro Traitement proprietes SW (VB->C#)\n"
+            "// Direct access to the Description system parameter\n"
+            "ElementId descId = TopSolidHost.Parameters.GetDescriptionParameter(docId);\n"
+            "TopSolidHost.Parameters.SetTextValue(descId, newDescription);"
+        ],
+        "IParameters.GetNameParameter": [
+            "// Accueil.vb — Get the Name system parameter directly (VB->C#)\n"
+            "ElementId nameId = TopSolidHost.Parameters.GetNameParameter(docId);\n"
+            "string currentName = TopSolidHost.Parameters.GetTextValue(nameId);"
+        ],
+        "IParameters.GetPartNumberParameter": [
+            "// Accueil.vb — Get PartNumber (Reference) parameter directly (VB->C#)\n"
+            "ElementId pnId = TopSolidHost.Parameters.GetPartNumberParameter(docId);\n"
+            "TopSolidHost.Parameters.SetTextValue(pnId, newPartNumber);"
+        ],
+        "IParameters.GetManufacturerParameter": [
+            "// Accueil.vb — Get Manufacturer parameter directly (VB->C#)\n"
+            "ElementId mfrId = TopSolidHost.Parameters.GetManufacturerParameter(docId);\n"
+            "TopSolidHost.Parameters.SetTextValue(mfrId, \"Bosch\");"
+        ],
+        "IParameters.GetManufacturerPartNumberParameter": [
+            "// Accueil.vb — Get ManufacturerPartNumber parameter directly (VB->C#)\n"
+            "ElementId mfrPnId = TopSolidHost.Parameters.GetManufacturerPartNumberParameter(docId);\n"
+            "TopSolidHost.Parameters.SetTextValue(mfrPnId, fabricantRef);"
+        ],
+        "IParameters.SetTextParameterizedValue": [
+            "// Accueil.vb — Set a parameterized text value with formula (VB->C#)\n"
+            "// Makes the Name parameter always equal to PartNumber\n"
+            "ElementId nameId = TopSolidHost.Parameters.GetNameParameter(docId);\n"
+            "TopSolidHost.Parameters.SetTextParameterizedValue(nameId, \"[$PartNumber]\");",
+            "// Accueil.vb — Compound formula: Ref + Revision - Designation (VB->C#)\n"
+            "ElementId nameId = TopSolidHost.Parameters.GetNameParameter(docId);\n"
+            "TopSolidHost.Parameters.SetTextParameterizedValue(nameId, \"[$PartNumber][$MajorRevision]-[$Description]\");\n"
+            "// Available tokens: [$PartNumber], [$Description], [$MajorRevision], [$Manufacturer], etc."
+        ],
+        "IParameters.CreateUserPropertyParameter": [
+            "// Accueil.vb — Create user property parameter from .TopPrd doc (VB->C#)\n"
+            "// userPropDocId is the DocumentId of the .TopPrd property definition\n"
+            "ElementId newParam = TopSolidHost.Parameters.CreateUserPropertyParameter(docId, userPropDocId);\n"
+            "// Then read its enumeration values\n"
+            "DocumentId enumDef = TopSolidHost.Parameters.GetUserEnumerationDefinition(newParam);"
+        ],
+        "IParameters.GetUserEnumerationDefinition": [
+            "// Accueil.vb — Get enumeration definition for user property (VB->C#)\n"
+            "DocumentId enumDef = TopSolidHost.Parameters.GetUserEnumerationDefinition(paramId);\n"
+            "List<int> values; List<string> texts;\n"
+            "TopSolidHost.Parameters.GetUserEnumerationValues(enumDef, out values, out texts);"
+        ],
+        "IParameters.GetUserEnumerationValues": [
+            "// Accueil.vb — Read possible values of user enumeration (VB->C#)\n"
+            "List<int> values; List<string> texts;\n"
+            "TopSolidHost.Parameters.GetUserEnumerationValues(enumDef, out values, out texts);\n"
+            "// texts = {\"Usinage\", \"Tolerie\", \"Standard\"}, values = {0, 1, 2}"
+        ],
+        "IParameters.SetUserEnumerationValue": [
+            "// Accueil.vb — Set user enumeration value by index (VB->C#)\n"
+            "TopSolidHost.Parameters.SetUserEnumerationValue(paramId, values[i]);\n"
+            "// values[i] is the int index matching the desired text"
+        ],
+        "IPdm.GetReferencedProjects": [
+            "// Accueil.vb — Get referenced projects for user property search (VB->C#)\n"
+            "PdmObjectId projId = TopSolidHost.Pdm.GetProject(pdmId);\n"
+            "var refProjects = TopSolidHost.Pdm.GetReferencedProjects(projId);\n"
+            "// Search for .TopPrd documents in referenced projects"
+        ],
+        "IPdm.SearchDocumentByName": [
+            "// Accueil.vb — Search document by name in a project (VB->C#)\n"
+            "var found = TopSolidHost.Pdm.SearchDocumentByName(projectId, \"Type Composant\");\n"
+            "// Returns List<PdmObjectId>, filter by GetType for .TopPrd"
+        ],
+        "IParts.IsDerivedPart": [
+            "// Accueil.vb — Check if part is a derivation (VB->C#)\n"
+            "bool isDerived = TopSolidDesignHost.Parts.IsDerivedPart(docId);\n"
+            "// Derived parts have special constraints on parameter modification"
+        ],
+    }
+
+    for key, snippets in VB_PARAMS_EXAMPLES.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_PARAMS_EXAMPLES)} IParameters/IPdm/IParts methods from VB.NET source.")
+
+    # Manual injection: Import workflow from TopSolidWorks Bridge VB.NET
+    VB_IMPORT_EXAMPLES = {
+        "IDocuments.Import": [
+            "// Accueil.vb — TopSolidWorks Bridge: Import Parasolid file (VB->C#)\n"
+            "PdmObjectId projId = TopSolidHost.Pdm.GetProject(pdmId);\n"
+            "var importLog = new List<string>();\n"
+            "var badDocs = new List<DocumentId>();\n"
+            "// importerIndex 0 = first available importer\n"
+            "var created = TopSolidHost.Documents.Import(0, filePath, projId, importLog, badDocs);\n"
+            "// created = list of DocumentIds for imported documents\n"
+            "DocumentId importedDoc = created[0];"
+        ],
+    }
+
+    for key, snippets in VB_IMPORT_EXAMPLES.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_IMPORT_EXAMPLES)} IDocuments.Import from VB.NET source.")
+
+    # Manual injection: Recursive PDM traversal + material search (Referenced Materials getting)
+    VB_PDM_RECURSIVE = {
+        "IPdm.GetConstituents": [
+            "// Accueil.vb — Recursive PDM folder traversal (VB->C#)\n"
+            "// Get all documents recursively from referenced projects\n"
+            "var allDocs = new List<PdmObjectId>();\n"
+            "var refProjects = TopSolidHost.Pdm.GetReferencedProjects(projId);\n"
+            "foreach (var refProj in refProjects) {\n"
+            "    List<PdmObjectId> folders, docs;\n"
+            "    TopSolidHost.Pdm.GetConstituents(refProj, out folders, out docs);\n"
+            "    allDocs.AddRange(docs);\n"
+            "    // Recurse into sub-folders\n"
+            "    while (folders.Count > 0) {\n"
+            "        var nextFolders = new List<PdmObjectId>();\n"
+            "        foreach (var f in folders) {\n"
+            "            List<PdmObjectId> subFolders, subDocs;\n"
+            "            TopSolidHost.Pdm.GetConstituents(f, out subFolders, out subDocs);\n"
+            "            allDocs.AddRange(subDocs);\n"
+            "            nextFolders.AddRange(subFolders);\n"
+            "        }\n"
+            "        folders = nextFolders;\n"
+            "    }\n"
+            "}"
+        ],
+        "IPdm.GetType": [
+            "// Accueil.vb — Filter documents by type extension (VB->C#)\n"
+            "// TopSolid document types:\n"
+            "//   .TopPrt = Part, .TopAsm = Assembly, .TopDft = Drafting\n"
+            "//   .TopPrd = User Property, .TopMat = Material\n"
+            "string docType;\n"
+            "TopSolidHost.Pdm.GetType(pdmObjId, out docType);\n"
+            "if (docType == \".TopMat\") {\n"
+            "    // This is a material document\n"
+            "    string matName = TopSolidHost.Pdm.GetName(pdmObjId);\n"
+            "}"
+        ],
+    }
+
+    for key, snippets in VB_PDM_RECURSIVE.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_PDM_RECURSIVE)} IPdm recursive traversal from VB.NET source.")
+
+    # Manual injection: SmartText parameter creation (Concateneur de parametres)
+    VB_SMART_TEXT = {
+        "IParameters.CreateSmartTextParameter": [
+            "// Form1.vb — Concateneur de parametres (VB->C#)\n"
+            "// Create a SmartText parameter with formula concatenation\n"
+            "// formula example: ParamA & \" - \" & ParamB\n"
+            "var stValue = new SmartText(SmartTextType.Formula, \"\", ElementId.Empty, ItemLabel.Empty, formula);\n"
+            "TopSolidHost.Application.StartModification(\"Creation parametre\", true);\n"
+            "TopSolidHost.Documents.EnsureIsDirty(ref docId);\n"
+            "ElementId newParam = TopSolidHost.Parameters.CreateSmartTextParameter(docId, stValue);\n"
+            "TopSolidHost.Elements.SetName(newParam, \"MonParametre\");\n"
+            "TopSolidHost.Application.EndModification(true, true);"
+        ],
+        "IElements.SetName": [
+            "// Form1.vb — Rename a created element (VB->C#)\n"
+            "// After creating a parameter, give it a friendly name\n"
+            "TopSolidHost.Elements.SetName(paramElementId, \"Nom du parametre\");"
+        ],
+    }
+
+    for key, snippets in VB_SMART_TEXT.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_SMART_TEXT)} SmartText/SetName from VB.NET source.")
+
+    # Manual injection: Parameter copy/create (Copie Parametres)
+    VB_PARAM_CREATE = {
+        "IParameters.CreateRealParameter": [
+            "// Accueil.vb — Copie Parametres: create real param (VB->C#)\n"
+            "ElementId newParam = TopSolidHost.Parameters.CreateRealParameter(docId, unitType, value);\n"
+            "TopSolidHost.Elements.SetName(newParam, \"Longueur - Copie\");\n"
+            "TopSolidHost.Elements.SetDescription(newParam, description);"
+        ],
+        "IParameters.CreateIntegerParameter": [
+            "// Accueil.vb — Create integer parameter (VB->C#)\n"
+            "ElementId newParam = TopSolidHost.Parameters.CreateIntegerParameter(docId, intValue);\n"
+            "TopSolidHost.Elements.SetName(newParam, \"Quantite\");"
+        ],
+        "IParameters.CreateBooleanParameter": [
+            "// Accueil.vb — Create boolean parameter (VB->C#)\n"
+            "ElementId newParam = TopSolidHost.Parameters.CreateBooleanParameter(docId, boolValue);\n"
+            "TopSolidHost.Elements.SetName(newParam, \"Actif\");"
+        ],
+        "IParameters.CreateTextParameter": [
+            "// Accueil.vb — Create text parameter (VB->C#)\n"
+            "ElementId newParam = TopSolidHost.Parameters.CreateTextParameter(docId, textValue);\n"
+            "TopSolidHost.Elements.SetName(newParam, \"Commentaire\");"
+        ],
+        "IParameters.GetRealUnit": [
+            "// Accueil.vb — Get unit type and symbol of a real parameter (VB->C#)\n"
+            "UnitType unitType; string unitSymbol;\n"
+            "TopSolidHost.Parameters.GetRealUnit(paramId, out unitType, out unitSymbol);\n"
+            "// unitType = UnitType.Length, unitSymbol = \"mm\""
+        ],
+        "IElements.SearchByName": [
+            "// Accueil.vb — Search element by name in document (VB->C#)\n"
+            "ElementId found = TopSolidHost.Elements.SearchByName(docId, \"Longueur - Copie\");\n"
+            "if (!found.IsEmpty) { /* element exists */ }"
+        ],
+        "IElements.GetDescription": [
+            "// Accueil.vb — Get element description (VB->C#)\n"
+            "string desc = TopSolidHost.Elements.GetDescription(paramId);"
+        ],
+        "IElements.SetDescription": [
+            "// Accueil.vb — Set element description (VB->C#)\n"
+            "TopSolidHost.Elements.SetDescription(paramId, \"Description du parametre\");"
+        ],
+    }
+
+    for key, snippets in VB_PARAM_CREATE.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_PARAM_CREATE)} Parameter create/unit/search from VB.NET source.")
+
+    # Manual injection: Material + Texture creation (TopSolid Material Creator)
+    VB_MATERIAL = {
+        "IPdm.CreateDocument": [
+            "// Form1.vb — TopSolid Material Creator (VB->C#)\n"
+            "// Create a material document in the current project\n"
+            "PdmObjectId matPdmId = TopSolidHost.Pdm.CreateDocument(projectId, \".TopMat\", true);\n"
+            "DocumentId matDocId = TopSolidHost.Documents.GetDocument(matPdmId);\n"
+            "// Create texture as child of material\n"
+            "PdmObjectId texPdmId = TopSolidHost.Pdm.CreateDocument(matPdmId, \".TopTex\", true);\n"
+            "DocumentId texDocId = TopSolidHost.Documents.GetDocument(texPdmId);\n"
+            "// Document types: .TopMat=Material, .TopTex=Texture, .TopPrt=Part,\n"
+            "//   .TopAsm=Assembly, .TopDft=Drafting, .TopPrd=UserProperty"
+        ],
+        "IDocuments.SetName": [
+            "// Form1.vb — Rename a document (not element) (VB->C#)\n"
+            "TopSolidHost.Application.StartModification(\"Rename\", false);\n"
+            "TopSolidHost.Documents.EnsureIsDirty(ref docId);\n"
+            "TopSolidHost.Documents.SetName(docId, \"Acier S235\");\n"
+            "TopSolidHost.Application.EndModification(true, true);"
+        ],
+        "ITextures.SetCategory": [
+            "// Form1.vb — Set texture category type (VB->C#)\n"
+            "// Categories: Albedo, Roughness, Metalness, Normal, Opacity, AmbientOcclusion\n"
+            "TopSolidHost.Textures.SetCategory(texDocId, TextureCategoryType.Albedo);"
+        ],
+        "ITextures.SetPicture": [
+            "// Form1.vb — Assign image file to texture (VB->C#)\n"
+            "TopSolidHost.Textures.SetPicture(texDocId, @\"C:\\Textures\\Steel_Color.png\");"
+        ],
+        "ITextures.SetTextureScale": [
+            "// Form1.vb — Set texture physical scale in meters (VB->C#)\n"
+            "TopSolidHost.Textures.SetTextureScale(texDocId, 0.1); // 100mm width"
+        ],
+    }
+
+    for key, snippets in VB_MATERIAL.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_MATERIAL)} Material/Texture creation from VB.NET source.")
+
+    # Manual injection: Batch PDM modification + GetProperties (Retraitement lib RAL)
+    VB_BATCH_PDM = {
+        "IDocuments.GetProperties": [
+            "// Form1.vb — Retraitement lib RAL (VB->C#)\n"
+            "// Get list of property strings from a document\n"
+            "var props = TopSolidHost.Documents.GetProperties(docId);\n"
+            "// Returns List<string> of document properties"
+        ],
+    }
+
+    for key, snippets in VB_BATCH_PDM.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_BATCH_PDM)} Batch PDM from VB.NET source.")
+
+    # Manual injection: Preview extraction + PDM navigation (Previews Extractor)
+    VB_PREVIEW = {
+        "IPdm.GetOwner": [
+            "// Form1.vb — Previews Extractor (VB->C#)\n"
+            "// Get the parent folder of a document in PDM tree\n"
+            "PdmObjectId parentFolder = TopSolidHost.Pdm.GetOwner(docPdmId);\n"
+            "string folderName = TopSolidHost.Pdm.GetName(parentFolder);"
+        ],
+        "IPdm.GetMinorRevisionPreviewBitmap": [
+            "// Form1.vb — Extract document preview as Bitmap (VB->C#)\n"
+            "PdmMinorRevisionId minorRev = TopSolidHost.Documents.GetPdmMinorRevision(docId);\n"
+            "Bitmap preview = TopSolidHost.Pdm.GetMinorRevisionPreviewBitmap(minorRev);\n"
+            "preview.Save(path, System.Drawing.Imaging.ImageFormat.Png);"
+        ],
+    }
+
+    for key, snippets in VB_PREVIEW.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_PREVIEW)} Preview/GetOwner from VB.NET source.")
+
+    # Manual injection: Bridge V2 + CSV Extractor (advanced PDM & import/export)
+    VB_BRIDGE_CSV = {
+        "IPdm.ImportFile": [
+            "// Accueil.vb — TopSolidWorks Bridge V2 (VB->C#)\n"
+            "// Import a file directly into a project (shortcut, no format selection)\n"
+            "PdmObjectId imported = TopSolidHost.Pdm.ImportFile(filePath, projectId, docName);\n"
+            "DocumentId importedDocId = TopSolidHost.Documents.GetDocument(imported);"
+        ],
+        "IPdm.CheckIn": [
+            "// Accueil.vb — CheckIn (mise au coffre) programmatique (VB->C#)\n"
+            "TopSolidHost.Pdm.CheckIn(pdmId, true); // true = keep local copy"
+        ],
+        "IPdm.IsDirty": [
+            "// Accueil.vb — Check if document has unsaved changes (VB->C#)\n"
+            "bool dirty = TopSolidHost.Pdm.IsDirty(pdmId);"
+        ],
+        "IDocuments.ImportWithOptions": [
+            "// Accueil.vb — Import with explicit options (VB->C#)\n"
+            "var options = TopSolidHost.Application.GetImporterOptions(importerIndex);\n"
+            "var log = new List<string>(); var bad = new List<DocumentId>();\n"
+            "var created = TopSolidHost.Documents.ImportWithOptions(importerIndex, options, path, projId, log, bad);"
+        ],
+        "IPdm.MoveSeveral": [
+            "// Accueil.vb — Move multiple PDM objects to a destination (VB->C#)\n"
+            "var toMove = new List<PdmObjectId> { obj1, obj2, obj3 };\n"
+            "TopSolidHost.Pdm.MoveSeveral(toMove, destinationFolderId);"
+        ],
+        "IPdm.SetDescription": [
+            "// Accueil.vb — Set description directly via PDM (VB->C#)\n"
+            "TopSolidHost.Pdm.SetDescription(pdmId, \"Bride de fixation\");"
+        ],
+        "IPdm.SetPartNumber": [
+            "// Accueil.vb — Set part number directly via PDM (VB->C#)\n"
+            "TopSolidHost.Pdm.SetPartNumber(pdmId, \"REF-2024-001\");"
+        ],
+        "IPdm.SetManufacturer": [
+            "// Accueil.vb — Set manufacturer directly via PDM (VB->C#)\n"
+            "TopSolidHost.Pdm.SetManufacturer(pdmId, \"Bosch\");"
+        ],
+        "IPdm.SetManufacturerPartNumber": [
+            "// Accueil.vb — Set manufacturer part number via PDM (VB->C#)\n"
+            "TopSolidHost.Pdm.SetManufacturerPartNumber(pdmId, \"MFR-REF-001\");"
+        ],
+        "IPdm.GetDescription": [
+            "// Start.vb — CSV Extractor: read description via PDM (VB->C#)\n"
+            "string desc = TopSolidHost.Pdm.GetDescription(pdmId);"
+        ],
+        "IPdm.GetPartNumber": [
+            "// Start.vb — CSV Extractor: read part number via PDM (VB->C#)\n"
+            "string pn = TopSolidHost.Pdm.GetPartNumber(pdmId);"
+        ],
+        "IPdm.GetManufacturer": [
+            "// Start.vb — CSV Extractor: read manufacturer via PDM (VB->C#)\n"
+            "string mfr = TopSolidHost.Pdm.GetManufacturer(pdmId);"
+        ],
+        "IPdm.GetManufacturerPartNumber": [
+            "// Start.vb — CSV Extractor: read manufacturer part number (VB->C#)\n"
+            "string mfrPn = TopSolidHost.Pdm.GetManufacturerPartNumber(pdmId);"
+        ],
+    }
+
+    for key, snippets in VB_BRIDGE_CSV.items():
+        if key not in examples_index:
+            examples_index[key] = []
+        examples_index[key].extend(snippets)
+    print(f"Manual injection: {len(VB_BRIDGE_CSV)} Bridge V2 + CSV Extractor from VB.NET source.")
 
     # Inject into edges
     edges_with_examples = 0
