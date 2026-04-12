@@ -36,6 +36,12 @@ data/help-md/
 __pycache__/
 *.pyc
 
+# ML Models (LoRA, GGUF)
+*.gguf
+*.safetensors
+*.bin
+*.sqlite
+
 # TopSolid
 *.TopPrt
 *.TopAsm

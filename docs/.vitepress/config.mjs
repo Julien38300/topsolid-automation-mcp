@@ -4,10 +4,10 @@ export default defineConfig({
   title: 'TopSolid MCP',
   description: 'Serveur MCP et Graphe API enrichi pour TopSolid Automation',
   lang: 'fr-FR',
-  base: '/noemid-topsolid-automation/',
+  base: '/Cortana/',
 
   head: [
-    ['link', { rel: 'icon', href: '/noemid-topsolid-automation/favicon.ico' }]
+    ['link', { rel: 'icon', href: '/Cortana/favicon.ico' }]
   ],
 
   themeConfig: {
@@ -26,7 +26,6 @@ export default defineConfig({
           text: 'Introduction',
           items: [
             { text: 'Presentation', link: '/guide/presentation' },
-            { text: 'Comment ca fonctionne', link: '/guide/fonctionnement' },
             { text: 'Architecture', link: '/guide/architecture' },
             { text: 'Roadmap', link: '/guide/roadmap' }
           ]
