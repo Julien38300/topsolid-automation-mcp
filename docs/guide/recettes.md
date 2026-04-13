@@ -1,10 +1,10 @@
 # Recettes
 
-113 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
+112 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
 
 ## Statistiques
 
-- **113 recettes** (95 auto + 18 batch/comparaison/audit)
+- **112 recettes** (95 auto + 17 batch/comparaison/audit)
 - **Tests LIVE PASS** sur TopSolid vivant
 - **13 categories** fonctionnelles
 
@@ -217,7 +217,7 @@ TopSolidHost.Pdm.Save(pdmId, true);
 
 ## Tests LIVE
 
-59/61 tests PASS sur TopSolid vivant (assemblage REF-NOEMID-TEST).
+59/61 tests PASS sur TopSolid vivant (assemblage de test).
 
 | Categorie | PASS | Total |
 |-----------|------|-------|
@@ -233,4 +233,4 @@ TopSolidHost.Pdm.Save(pdmId, true);
 
 ## Dataset LoRA
 
-732 paires d'entrainement dans `data/lora-dataset.jsonl` pour fine-tuner le sous-agent 3B. Script regenerable : `scripts/generate-lora-dataset.py`.
+2104 paires d'entrainement dans `data/lora-dataset.jsonl` pour fine-tuner le sous-agent 3B. Script regenerable : `scripts/generate-lora-dataset.py`.
