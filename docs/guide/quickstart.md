@@ -3,8 +3,7 @@
 ## Prerequis
 
 - **TopSolid 7.15+** installe et lance
-- **.NET Framework 4.8** (inclus dans Windows 10+)
-- Un client MCP compatible (Claude Code, Antigravity, Claude Desktop, Hermes, ou tout client MCP stdio)
+- **Windows 10+** (.NET Framework 4.8 inclus)
 
 ## Etape 1 — Activer l'acces distant dans TopSolid
 
@@ -16,10 +15,20 @@ Dans TopSolid, aller dans **Outils > Options > General** puis descendre jusqu'a 
 4. **Redemarrer TopSolid** (obligatoire — le message l'indique)
 
 ::: warning Prerequis obligatoire
-Sans cette option activee, le serveur MCP ne pourra pas se connecter a TopSolid. C'est la cause n1 des problemes de connexion.
+Sans cette option activee, le serveur MCP ne pourra pas se connecter a TopSolid. C'est la cause numero 1 des problemes de connexion.
 :::
 
-## Etape 2 — Compiler le serveur MCP
+## Etape 2 — Telecharger le serveur MCP
+
+### Option A — Telecharger (recommande)
+
+1. Aller sur la [page Releases](https://github.com/Julien38300/noemid-topsolid-automation/releases)
+2. Telecharger `TopSolidMcpServer.zip` de la derniere version
+3. Dezipper dans un dossier, par exemple `C:\TopSolidMCP\`
+
+C'est tout. L'executable `TopSolidMcpServer.exe` est pret a l'emploi.
+
+### Option B — Compiler depuis les sources (developpeurs)
 
 ```bash
 git clone https://github.com/Julien38300/noemid-topsolid-automation.git
@@ -29,28 +38,71 @@ dotnet build TopSolidMcpServer.sln
 
 L'executable sera dans `server/src/bin/Debug/net48/TopSolidMcpServer.exe`.
 
-## Etape 3 — Tester la connexion
+## Etape 3 — Configurer votre assistant IA
 
-Ouvrez un terminal et lancez :
+Choisissez votre client IA et ajoutez le serveur MCP :
 
-```bash
-echo {"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"topsolid_get_state","arguments":{}}} | chemin\vers\TopSolidMcpServer.exe
+### ChatGPT Desktop (Windows)
+
+Dans ChatGPT Desktop : **Settings > Beta features > Model Context Protocol**
+
+Ajoutez un serveur avec la commande :
+```
+C:\TopSolidMCP\TopSolidMcpServer.exe
 ```
 
-Si TopSolid est lance avec l'acces distant active, vous devriez voir une reponse contenant `"connected": true` et un numero de version.
+### Claude Desktop
+
+Editez le fichier `%APPDATA%\Claude\claude_desktop_config.json` :
+
+```json
+{
+  "mcpServers": {
+    "topsolid": {
+      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
+    }
+  }
+}
+```
+
+### VS Code + GitHub Copilot
+
+Dans VS Code, ouvrez les parametres (`Ctrl+,`), cherchez `mcp` et ajoutez dans `settings.json` :
+
+```json
+{
+  "github.copilot.chat.mcp.servers": {
+    "topsolid": {
+      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
+    }
+  }
+}
+```
+
+### Cursor
+
+Dans Cursor : **Settings > MCP Servers > Add Server**
+
+- Name : `topsolid`
+- Command : `C:\TopSolidMCP\TopSolidMcpServer.exe`
+- Type : `stdio`
+
+### Autres clients
+
+Tout client MCP compatible stdio fonctionne. Consultez le [guide d'integration complet](./integration) pour Claude Code, Antigravity, Windsurf, Continue, Hermes et plus.
+
+## Etape 4 — Tester
+
+Dans votre assistant IA, demandez :
+
+> "Quelle est la designation de la piece ouverte dans TopSolid ?"
+
+L'assistant utilisera `topsolid_run_recipe` avec la recette `lire_designation` et vous retournera la designation du document actif.
 
 ::: tip Connect() retourne false ?
 C'est normal dans TopSolid v7.20. La connexion fonctionne quand meme. Verifiez que la version retournee est superieure a 0.
 :::
 
-## Etape 4 — Premiere recette
+## Ca ne marche pas ?
 
-```bash
-echo {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"topsolid_run_recipe","arguments":{"recipe_name":"lire_designation"}}} | chemin\vers\TopSolidMcpServer.exe
-```
-
-Cette commande retourne la designation du document actuellement ouvert dans TopSolid.
-
-## Etape suivante
-
-Configurez votre client MCP pour utiliser le serveur automatiquement : [Guide d'integration](./integration)
+Consultez le [guide de depannage](./troubleshooting).
