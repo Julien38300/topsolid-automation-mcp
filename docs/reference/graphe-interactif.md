@@ -17,10 +17,16 @@
   <div id="info-content"></div>
 </div>
 
-<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-
 <script>
 let cy, graphData;
+
+// Load cytoscape dynamically (single <script> required by VitePress)
+if (typeof window !== 'undefined' && !window.cytoscape) {
+  const s = document.createElement('script');
+  s.src = 'https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js';
+  s.onload = () => { if (typeof initGraph === 'function') initGraph(); };
+  document.head.appendChild(s);
+}
 
 const colors = {
   Kernel: { bg: '#4a9eff', border: '#1a56db', light: '#e8f0fe' },
