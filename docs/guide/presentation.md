@@ -9,7 +9,7 @@ Agent IA (Hermes / Claude / OpenClaw / tout client MCP)
   |
   v
 TopSolidMcpServer.exe (stdio JSON-RPC)
-  |  - run_recipe : execute une des 113 recettes pre-construites
+  |  - run_recipe : execute une des 112 recettes pre-construites
   |  - api_help : cherche les bonnes methodes API (52 synonymes FR)
   |  - execute_script : compile et execute du C# contre TopSolid
   |  - find_path / explore_paths : navigue dans le graphe de types
@@ -38,7 +38,7 @@ Le coeur du systeme. Un graphe oriente representant toutes les methodes de l'API
 ### Serveur MCP (`TopSolidMcpServer.exe`)
 Executable .NET Framework 4.8, communique en stdio JSON-RPC. **7 outils** exposes a l'agent.
 
-### RecipeTool — 113 recettes
+### RecipeTool — 112 recettes
 L'outil principal. Le LLM choisit une recette par nom, aucune generation de code necessaire.
 
 | Categorie | Recettes | Exemples |
@@ -63,7 +63,7 @@ L'outil principal. Le LLM choisit une recette par nom, aucune generation de code
 | Interactif | 3 | selection shape/face/point dans TopSolid |
 
 ### Dataset LoRA (`lora-dataset.jsonl`)
-732 paires d'entrainement au format ShareGPT pour fine-tuner un modele 3B sur la selection de recettes.
+2104 paires d'entrainement au format ShareGPT pour fine-tuner un modele 3B sur la selection de recettes.
 
 ### Tests
 Suite de tests automatises contre une instance TopSolid vivante. Scripts PowerShell executables en batch.
@@ -85,6 +85,7 @@ TopSolid 7 (WCF port 8090)
 
 Le modele 8B garde la coherence conversationnelle. Le modele 3B execute les recettes via `run_recipe`. Le LoRA (futur) cible le 3B pour ameliorer sa connaissance TopSolid.
 
-## Projet Cortana / Noemid
+## Sources
 
-TopSolid MCP fait partie du projet **Cortana** (prototype) qui migre vers **Noemid** (produit final). Le serveur MCP et le graphe API sont les composants qui survivent a la migration.
+- **API Automation TopSolid** : [help.topsolid.com](https://help.topsolid.com/7.20/en/TopSolid'Automation/) (documentation publique officielle)
+- **Exemples C#** : exemples d'automation publies avec TopSolid

@@ -4,10 +4,10 @@ export default defineConfig({
   title: 'TopSolid MCP',
   description: 'Serveur MCP et Graphe API enrichi pour TopSolid Automation',
   lang: 'fr-FR',
-  base: '/Cortana/',
+  base: '/noemid-topsolid-automation/',
 
   head: [
-    ['link', { rel: 'icon', href: '/Cortana/favicon.ico' }]
+    ['link', { rel: 'icon', href: '/noemid-topsolid-automation/favicon.ico' }]
   ],
 
   themeConfig: {
@@ -22,6 +22,14 @@ export default defineConfig({
 
     sidebar: {
       '/guide/': [
+        {
+          text: 'Demarrage',
+          items: [
+            { text: 'Demarrage rapide', link: '/guide/quickstart' },
+            { text: 'Integration MCP', link: '/guide/integration' },
+            { text: 'Depannage', link: '/guide/troubleshooting' }
+          ]
+        },
         {
           text: 'Introduction',
           items: [
@@ -63,7 +71,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/jup/Cortana' }
+      { icon: 'github', link: 'https://github.com/Julien38300/noemid-topsolid-automation' }
     ],
 
     search: {
@@ -72,7 +80,7 @@ export default defineConfig({
 
     footer: {
       message: 'TopSolid MCP — Serveur Model Context Protocol pour TopSolid Automation',
-      copyright: '2026 Julien'
+      copyright: "2026 Julien — TopSolid est une marque deposee d'Allplan"
     },
 
     outline: {

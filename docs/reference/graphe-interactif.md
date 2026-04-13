@@ -29,7 +29,7 @@ const colors = {
 };
 
 async function initGraph() {
-  const resp = await fetch('/Cortana/graph-data.json');
+  const resp = await fetch('/noemid-topsolid-automation/graph-data.json');
   graphData = await resp.json();
 
   document.getElementById('graph-stats').innerHTML =
