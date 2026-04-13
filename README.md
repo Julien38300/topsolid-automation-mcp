@@ -1,27 +1,30 @@
-# Noemid TopSolid
+# TopSolid MCP
 
 Serveur MCP (Model Context Protocol) et Graphe API enrichi pour piloter **TopSolid 7** par intelligence artificielle.
+
+> TopSolid est une marque deposee d'[Allplan](https://www.allplan.com/) (anciennement REDACTED Software). Ce projet est independant et n'est ni affilie ni endosse par Allplan.
 
 ## Composants
 
 | Composant | Description |
 |-----------|-------------|
-| **server/** | Serveur MCP .NET 4.8 — 6 outils JSON-RPC via stdio |
+| **server/** | Serveur MCP .NET 4.8 — 7 outils JSON-RPC via stdio |
 | **graph/** | Constructeur du graphe API (extraction par reflexion DLL) |
 | **plugin/** | Plugin TopSolid (bridge WCF/TCP port 8090) |
-| **data/** | Graphe enrichi (4119 edges), recettes (68), api-index (1462 methodes) |
+| **data/** | Graphe enrichi (4119 edges), 112 recettes, api-index (1728 methodes) |
 | **scripts/** | Scripts Python — enrichissement graphe, conversion aide en ligne |
-| **tests/** | 72 tests automatises (68 PASS) |
+| **tests/** | Tests automatises contre TopSolid vivant |
 | **docs/** | Site de documentation VitePress |
 
 ## Outils MCP
 
 | Outil | Fonction |
 |-------|----------|
+| `topsolid_run_recipe` | Execute une des 112 recettes pre-construites |
 | `topsolid_get_state` | Document actif, projet, connexion |
 | `topsolid_api_help` | Recherche dans 1728 methodes (52 synonymes FR) |
 | `topsolid_execute_script` | Compile et execute C# contre TopSolid |
-| `topsolid_modify_script` | Idem mais pour les modifications (auto-wrap) |
+| `topsolid_modify_script` | Idem pour les modifications (auto-wrap) |
 | `topsolid_find_path` | Chemin Dijkstra entre types API |
 | `topsolid_explore_paths` | BFS multi-chemins |
 
@@ -40,8 +43,12 @@ cd scripts && python enrich-graph.py
 
 ## Documentation
 
-Site complet : [https://jup.github.io/noemid-topsolid/](https://jup.github.io/noemid-topsolid/)
+Site complet : [https://julien38300.github.io/noemid-topsolid-automation/](https://julien38300.github.io/noemid-topsolid-automation/)
+
+## Sources
+
+- API Automation TopSolid : [help.topsolid.com](https://help.topsolid.com/7.20/en/TopSolid'Automation/) (documentation publique officielle)
 
 ## Licence
 
-Projet prive — Julien / Noemid
+Projet par Julien

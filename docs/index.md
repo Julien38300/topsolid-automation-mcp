@@ -20,7 +20,7 @@ features:
   - title: 6 outils MCP
     details: get_state, execute_script, modify_script, run_recipe, api_help (52 synonymes FR), find_path, explore_paths.
     icon: "&#x1F6E0;"
-  - title: 113 recettes
+  - title: 112 recettes
     details: Pilotage complet sans code — PDM, parametres, masse, export, assemblages, familles, mise en plan, nomenclature, comparaison, audit batch.
     icon: "&#x1F4D6;"
   - title: Tests LIVE valides
@@ -30,6 +30,11 @@ features:
     details: 250+ termes TopSolid FR/EN. Proprietes systeme, operations PDM, revisions, parametres avances, concepts metier.
     icon: "&#x1F1EB;&#x1F1F7;"
   - title: Dataset LoRA + 5809 pages aide
-    details: 732 paires d'entrainement pour fine-tuner un modele 3B. Aide en ligne convertie en Markdown (FR + EN).
+    details: 2104 paires d'entrainement pour fine-tuner un modele 3B. Aide en ligne convertie en Markdown (FR + EN).
     icon: "&#x1F4DA;"
 ---
+
+*TopSolid est une marque deposee d'[Allplan](https://www.allplan.com/) (anciennement REDACTED Software).
+Ce projet est independant et n'est ni affilie ni endosse par Allplan.
+La documentation API utilisee comme reference est disponible publiquement sur
+[help.topsolid.com](https://help.topsolid.com/7.20/en/TopSolid'Automation/).*
