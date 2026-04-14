@@ -1,11 +1,13 @@
 using System;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using Newtonsoft.Json;
 using TopSolidApiGraph.Core;
 using TopSolidMcpServer.Protocol;
 using TopSolidMcpServer.Tools;
 using TopSolidMcpServer.Utils;
+using System.Windows.Forms;
 
 namespace TopSolidMcpServer
 {
@@ -15,6 +17,13 @@ namespace TopSolidMcpServer
 
         static void Main(string[] args)
         {
+            // --version flag
+            if (args.Length > 0 && (args[0] == "--version" || args[0] == "-v"))
+            {
+                Console.WriteLine(TrayIcon.GetVersion());
+                return;
+            }
+
             bool createdNew;
             using (var mutex = new Mutex(true, MutexName, out createdNew))
             {
@@ -69,7 +78,10 @@ namespace TopSolidMcpServer
                 return System.IO.File.Exists(path) ? System.Reflection.Assembly.LoadFrom(path) : null;
             };
 
-            Console.Error.WriteLine("[MCP-INFO] TopSolid MCP Server starting...");
+            string version = TrayIcon.GetVersion();
+            Console.Error.WriteLine($"[MCP-INFO] TopSolid MCP Server v{version} starting...");
+
+            TrayIcon tray = null;
 
             try
             {
@@ -122,6 +134,9 @@ namespace TopSolidMcpServer
 
                     resolver = new TypeNameResolver(graph);
 
+                    // Update tray icon status
+                    tray?.SetConnected(connector.IsConnected);
+
                     Console.Error.WriteLine("[MCP-INFO] Initialization complete.");
                 };
 
@@ -152,6 +167,16 @@ namespace TopSolidMcpServer
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
+                // Start tray icon (background STA thread)
+                tray = new TrayIcon(() =>
+                {
+                    // Shutdown: close stdin to break the ReadLine loop
+                    Console.Error.WriteLine("[MCP-INFO] Shutdown requested from tray.");
+                    try { Console.In.Close(); } catch { }
+                    Environment.Exit(0);
+                });
+                tray.Start();
+
                 Console.Error.WriteLine("[MCP-INFO] Server ready. Listening on stdin.");
                 server.Start();
             }
@@ -160,6 +185,10 @@ namespace TopSolidMcpServer
                 Console.Error.WriteLine($"[MCP-FATAL] Server crashed: {ex.Message}");
                 Console.Error.WriteLine(ex.StackTrace);
                 Environment.Exit(1);
+            }
+            finally
+            {
+                tray?.Dispose();
             }
         }
 
