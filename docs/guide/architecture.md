@@ -16,8 +16,8 @@
                     |                   |
                     |  +-------------+  |
                     |  | TypeGraph   |  |  graph.json (4119 edges)
-                    |  | KeywordIdx  |  |  api-index.json (1728 methods)
-                    |  | Recipes     |  |  112 recettes pre-construites
+                    |  | KeywordIdx  |  |  api-index.json (1462 methods)
+                    |  | Recipes     |  |  recipes.md (68 recettes)
                     |  +-------------+  |
                     |                   |
                     |  5 outils MCP :   |
@@ -82,7 +82,7 @@ Pour les scripts de modification, un wrapper supplementaire gere `StartModificat
 | Fichier | Role | Taille |
 |---------|------|--------|
 | `data/graph.json` | Graphe API enrichi | ~2.9 MB |
-| `data/api-index.json` | Index plat des 1728 methodes | ~400 KB |
-| `data/recipes.md` | 112 recettes documentees | ~100 KB |
+| `data/api-index.json` | Index plat des 1462 methodes | ~400 KB |
+| `data/recipes.md` | 68 recettes C# documentees | ~80 KB |
 | `data/help-md/` | Aide en ligne convertie (FR+EN) | ~9 MB |
 | `tests/TestSuite.json` | 72 tests automatises | ~50 KB |
