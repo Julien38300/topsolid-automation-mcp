@@ -1,11 +1,11 @@
 ---
 name: topsolid-mcp
-description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, audit, masse, dimensions).
-version: 4.0.0
+description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection).
+version: 5.0.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation]
-    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges"]
+    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "transparence", "calque", "attribut", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges", "famille", "driver", "selectionner", "face", "shape"]
 ---
 
 # TopSolid MCP — Skill de pilotage
@@ -74,6 +74,7 @@ User: "exporte en DXF"
 | projet courant | lire_projet_courant | |
 | contenu projet | lire_contenu_projet | |
 | chercher document | chercher_document | nom |
+| chercher dossier | chercher_dossier | nom |
 | ouvrir document | ouvrir_document_par_nom | nom |
 | tous les documents | lister_documents_projet | |
 | documents d'un dossier | lister_documents_dossier | nom dossier |
@@ -91,7 +92,7 @@ User: "exporte en DXF"
 | reporter parametres | reporter_parametres | nom doc cible |
 | reporter proprietes PDM | reporter_proprietes_pdm | nom doc cible |
 | export batch STEP | exporter_batch_step | dossier (opt) |
-| lire propriete batch | lire_propriete_batch | nom propriete |
+| lire propriete sur tout le projet | lire_propriete_batch | nom propriete |
 | documents modifies | chercher_documents_modifies | |
 | vider auteur projet | vider_auteur_batch | |
 | vider auteur doc | vider_auteur_document | |
@@ -131,9 +132,27 @@ User: "exporte en DXF"
 | esquisses | lister_esquisses | |
 | shapes, formes | lire_shapes | |
 | operations, arbre | lire_operations | |
-| couleur piece | lire_couleur_piece | |
-| couleurs faces | lire_couleurs_faces | |
-| changer couleur | modifier_couleur_piece | R,G,B |
+
+### Attributs (couleurs, transparence, calques)
+| Demande | recipe | value |
+|---|---|---|
+| tout lire (couleur, transparence, calque) | attribut_lire_tout | |
+| couleur des elements | attribut_lire_couleur | |
+| couleurs par face | attribut_lire_couleurs_faces | |
+| changer couleur (1 element) | attribut_modifier_couleur | R,G,B |
+| changer couleur (tout) | attribut_modifier_couleur_tout | R,G,B |
+| remplacer une couleur par une autre | attribut_remplacer_couleur | R1,G1,B1:R2,G2,B2 |
+| transparence | attribut_lire_transparence | |
+| changer transparence | attribut_modifier_transparence | 0.0 a 1.0 |
+| calques (layers) | attribut_lister_calques | |
+| affecter un calque | attribut_affecter_calque | nom_element:nom_calque |
+
+### Selection interactive
+| Demande | recipe | value |
+|---|---|---|
+| selectionner un shape | selectionner_shape | |
+| selectionner une face | selectionner_face | |
+| cliquer un point 3D | selectionner_point_3d | |
 
 ### Assemblages
 | Demande | recipe | value |
@@ -143,6 +162,12 @@ User: "exporte en DXF"
 | occurrences | lire_occurrences | |
 | renommer occurrence | renommer_occurrence | ancien:nouveau |
 | compter pieces | compter_pieces_assemblage | |
+
+### Familles
+| Demande | recipe | value |
+|---|---|---|
+| c'est une famille? | detecter_famille | |
+| codes de la famille | lire_codes_famille | |
 
 ### Export
 | Demande | recipe | value |
@@ -163,6 +188,9 @@ User: "exporte en DXF"
 | verif piece | verifier_piece | |
 | verif projet | verifier_projet | |
 | materiaux manquants | verifier_materiaux_manquants | |
+| audit noms parametres | auditer_noms_parametres | |
+| audit noms parametres (projet) | auditer_noms_parametres_batch | |
+| audit designations drivers | auditer_designations_drivers_batch | |
 
 ### Mise en plan
 | Demande | recipe | value |
