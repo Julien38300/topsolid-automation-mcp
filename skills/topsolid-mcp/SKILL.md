@@ -246,5 +246,55 @@ User: "exporte en DXF"
 - Angles: radians (45deg = 0.785398)
 - Masses: kg
 
-## SI AUCUNE RECETTE NE CORRESPOND
-Appelle `mcp_topsolid_topsolid_api_help` avec un mot-cle. Ne genere JAMAIS de code.
+## TOUS LES OUTILS MCP (7)
+
+### 1. topsolid_run_recipe (outil principal — 90% des cas)
+Appelle une des 113 recettes ci-dessus. Params: recipe, value (optionnel).
+
+### 2. topsolid_get_state
+Retourne l'etat de connexion, le document actif et le projet courant.
+→ **Toujours appeler en premier** pour verifier que TopSolid est connecte.
+
+Exemple:
+→ mcp_topsolid_topsolid_get_state()
+→ "Connected: true, Document: Bride.TopPrt, Project: MonProjet"
+
+### 3. topsolid_api_help (fallback — quand aucune recette ne correspond)
+Recherche dans 1728 methodes API TopSolid. Supporte 52 synonymes FR.
+Param: query (mot-cle en francais ou anglais).
+
+Exemples:
+→ mcp_topsolid_topsolid_api_help(query="contrainte assemblage")
+→ mcp_topsolid_topsolid_api_help(query="tolerance")
+
+### 4. topsolid_find_path (expert — exploration API)
+Trouve le chemin le plus court (Dijkstra) entre deux types API.
+Utile pour comprendre comment aller de IDocumentId a IShapeId par exemple.
+Params: from_type, to_type.
+
+Exemple:
+→ mcp_topsolid_topsolid_find_path(from_type="IDocumentId", to_type="IShapeId")
+→ "IDocumentId → GetShapes() → IShapeId (2 etapes)"
+
+### 5. topsolid_explore_paths (expert — exploration multi-chemins)
+Exploration BFS multi-chemins entre deux types API. Plus large que find_path.
+Params: from_type, to_type, max_depth (opt).
+
+### 6. topsolid_execute_script (expert — lecture seule)
+Compile et execute du C# contre l'API TopSolid. Lecture seule (pas de transaction).
+**Utiliser UNIQUEMENT si aucune recette ne correspond ET apres reflexion.**
+Param: code (code C# complet).
+
+### 7. topsolid_modify_script (expert — modification avec transaction)
+Comme execute_script mais avec transaction TopSolid (begin/end modification).
+Pour les modifications qui n'ont pas de recette.
+**Utiliser avec EXTREME PRUDENCE — peut modifier le modele.**
+Param: code (code C# complet).
+
+## REGLES D'UTILISATION DES OUTILS
+
+1. **get_state** en premier (toujours)
+2. **run_recipe** pour 90% des demandes
+3. **api_help** si aucune recette ne correspond
+4. **find_path / explore_paths** uniquement si l'utilisateur pose des questions sur l'API
+5. **execute_script / modify_script** en DERNIER recours, jamais en premier choix
