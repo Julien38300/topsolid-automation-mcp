@@ -17,8 +17,6 @@
   <div id="info-content"></div>
 </div>
 
-<script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
-
 <script>
 let cy, graphData;
 
@@ -28,8 +26,23 @@ const colors = {
   Drafting: { bg: '#f59e0b', border: '#d97706', light: '#fffbeb' }
 };
 
+async function loadCytoscape() {
+  if (window.cytoscape) return;
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js';
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
 async function initGraph() {
-  const resp = await fetch('/Cortana/graph-data.json');
+  await loadCytoscape();
+  // Detect VitePress base path from current URL (works for /Cortana/ and /noemid-topsolid-automation/)
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const base = pathParts.length > 0 ? '/' + pathParts[0] + '/' : '/';
+  const resp = await fetch(base + 'graph-data.json');
   graphData = await resp.json();
 
   document.getElementById('graph-stats').innerHTML =
