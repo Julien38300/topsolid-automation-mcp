@@ -95,17 +95,28 @@ namespace TopSolidMcpServer.Tools
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"Aucun projet courant.\";\n" +
                 "return \"Projet: \" + TopSolidHost.Pdm.GetName(projId);") },
-            { "lire_contenu_projet", R("Liste dossiers et documents du projet courant",
+            { "lire_contenu_projet", R("Liste dossiers, sous-dossiers et documents du projet courant (arborescence complete)",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"Aucun projet courant.\";\n" +
-                "List<PdmObjectId> folders; List<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\nvar items = docs;\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
-                "sb.AppendLine(\"Projet: \" + TopSolidHost.Pdm.GetName(projId) + \" (\" + items.Count + \" elements)\");\n" +
-                "foreach (var item in items)\n" +
-                "{\n" +
-                "    string name = TopSolidHost.Pdm.GetName(item);\n" +
-                "    sb.AppendLine(\"  \" + name);\n" +
-                "}\n" +
+                "sb.AppendLine(\"Projet: \" + TopSolidHost.Pdm.GetName(projId));\n" +
+                "int totalDocs = 0; int totalFolders = 0;\n" +
+                "Action<PdmObjectId, string> listRecursive = null;\n" +
+                "listRecursive = (parentId, indent) => {\n" +
+                "    List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(parentId, out folders, out docs);\n" +
+                "    foreach (var f in folders) {\n" +
+                "        totalFolders++;\n" +
+                "        sb.AppendLine(indent + \"[Dossier] \" + TopSolidHost.Pdm.GetName(f));\n" +
+                "        listRecursive(f, indent + \"  \");\n" +
+                "    }\n" +
+                "    foreach (var d in docs) {\n" +
+                "        totalDocs++;\n" +
+                "        sb.AppendLine(indent + TopSolidHost.Pdm.GetName(d));\n" +
+                "    }\n" +
+                "};\n" +
+                "listRecursive(projId, \"  \");\n" +
+                "sb.Insert(sb.ToString().IndexOf('\\n') + 1, \"(\" + totalFolders + \" dossiers, \" + totalDocs + \" documents)\\n\");\n" +
                 "return sb.ToString();") },
             { "chercher_document", R("Cherche un document par nom (CONTAINS). Param: value",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
