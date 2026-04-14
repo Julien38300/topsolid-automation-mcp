@@ -21,7 +21,10 @@ namespace TopSolidMcpServer
                 if (!createdNew)
                 {
                     // Another instance is already running — wait briefly then exit
-                    if (!mutex.WaitOne(TimeSpan.FromSeconds(5)))
+                    bool acquired = false;
+                    try { acquired = mutex.WaitOne(TimeSpan.FromSeconds(5)); }
+                    catch (AbandonedMutexException) { acquired = true; } // Previous instance crashed — we take over
+                    if (!acquired)
                     {
                         Console.Error.WriteLine("[Program] Another TopSolidMcpServer instance is already running. Exiting.");
 
@@ -82,12 +85,19 @@ namespace TopSolidMcpServer
 
                     Console.Error.WriteLine("[MCP-INFO] First tool call — performing slow initialization...");
 
-                    // Path to graph data
+                    // Path to graph data — search in multiple locations
                     string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                     string graphPath = Path.Combine(baseDir, "data", "graph.json");
 
                     if (!File.Exists(graphPath))
                     {
+                        // Fallback: graph.json next to the .exe (release layout)
+                        string rootPath = Path.Combine(baseDir, "graph.json");
+                        if (File.Exists(rootPath)) graphPath = rootPath;
+                    }
+                    if (!File.Exists(graphPath))
+                    {
+                        // Fallback: dev layout (src/bin/Debug/net48 -> data/)
                         string devPath = Path.Combine(baseDir, "..", "..", "..", "data", "graph.json");
                         if (File.Exists(devPath)) graphPath = devPath;
                     }

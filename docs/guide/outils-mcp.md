@@ -6,7 +6,7 @@ Le serveur expose 7 outils au protocole MCP. L'agent IA les appelle via JSON-RPC
 
 **L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.
 
-**112 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles.
+**113 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles.
 
 ```json
 { "name": "topsolid_run_recipe", "arguments": { "recipe": "lire_masse_volume" } }
@@ -25,7 +25,7 @@ Surface: 115447.61 mm2
 ```
 
 ::: tip Quand utiliser run_recipe vs execute_script ?
-- `run_recipe` : pour les 112 operations pre-definies (rapide, fiable, pas besoin de C#)
+- `run_recipe` : pour les 113 operations pre-definies (rapide, fiable, pas besoin de C#)
 - `execute_script` : pour du C# custom que le LLM genere a la volee (plus flexible, plus risque)
 
 Un modele 3B peut utiliser `run_recipe`. Seul un modele 24B+ peut utiliser `execute_script` correctement.
