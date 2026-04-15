@@ -2,13 +2,13 @@
 
 113 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
 
-## Statistiques
+## Tableau interactif
 
-- **113 recettes** (95 auto + 18 batch/comparaison/audit)
-- **Tests LIVE PASS** sur TopSolid vivant
-- **13 categories** fonctionnelles
+Recherche, tri par colonne et filtres par categorie/mode.
 
-## Par categorie
+<RecipeTable />
+
+## Par categorie (detail)
 
 ### Proprietes PDM (9 recettes)
 
