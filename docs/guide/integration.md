@@ -33,7 +33,7 @@ Fermez avec `Ctrl+C`. Si vous voyez `Graph data not found`, placez `graph.json` 
 | **JetBrains + AI Assistant** | Oui | Moyen |
 | **Antigravity / Cline / Roo Code** | Oui | Moyen |
 | **Continue** | Oui | Moyen |
-| **Hermes** | Via skill | Avance |
+| **OpenClaw** | Via sous-agent | Avance |
 | **ChatGPT Desktop** | Non | - |
 | **Copilot standalone** | Non | - |
 
@@ -349,12 +349,12 @@ Pour utiliser MCP avec Copilot, passez par **VS Code + Copilot Chat** (voir sect
 
 ---
 
-## Hermes (WSL2)
+## OpenClaw
 
-Configuration avancee pour le framework Hermes :
+Configuration avancee pour le framework multi-agents OpenClaw :
 
-Le skill topsolid-mcp se configure dans `~/.hermes/skills/topsolid-mcp/SKILL.md`.
-Le serveur MCP est lance automatiquement par Hermes via stdio.
+Le sous-agent TopSolid se configure dans `~/.openclaw/agents/topsolid/agent/system.md`.
+Le serveur MCP est lance automatiquement par OpenClaw via stdio. Chaque sous-agent a son propre workspace isole et ses outils MCP autorises (tool scoping via `openclaw.json`).
 
 ---
 
