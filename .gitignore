@@ -1,6 +1,6 @@
 # Build outputs
-bin/
-obj/
+**/bin/
+**/obj/
 *.exe
 *.dll
 *.pdb
