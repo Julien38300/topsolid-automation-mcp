@@ -193,23 +193,21 @@ function sortIcon(key) {
           <tr>
             <th @click="toggleSort('name')" class="sortable">Recette{{ sortIcon('name') }}</th>
             <th @click="toggleSort('description')" class="sortable">Description{{ sortIcon('description') }}</th>
-            <th @click="toggleSort('category')" class="sortable">Categorie{{ sortIcon('category') }}</th>
-            <th @click="toggleSort('api')" class="sortable">API TopSolid{{ sortIcon('api') }}</th>
-            <th @click="toggleSort('mode')" class="sortable">Mode{{ sortIcon('mode') }}</th>
+            <th @click="toggleSort('api')" class="sortable">API{{ sortIcon('api') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="r in filtered" :key="r.name">
-            <td><code>{{ r.name }}</code></td>
-            <td>{{ r.description }}</td>
-            <td><span class="cat-badge">{{ r.category }}</span></td>
-            <td><code class="api-code">{{ r.api }}</code></td>
-            <td>
+            <td class="col-name">
+              <code>{{ r.name }}</code>
               <span class="mode-badge" :style="{ background: modeColors[r.mode] }">{{ r.mode }}</span>
+              <span class="cat-badge">{{ r.category }}</span>
             </td>
+            <td>{{ r.description }}</td>
+            <td><code class="api-code">{{ r.api }}</code></td>
           </tr>
           <tr v-if="filtered.length === 0">
-            <td colspan="5" class="no-results">Aucune recette trouvee</td>
+            <td colspan="3" class="no-results">Aucune recette trouvee</td>
           </tr>
         </tbody>
       </table>
@@ -277,17 +275,22 @@ function sortIcon(key) {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
+  table-layout: fixed;
 }
+col.col-recipe { width: 28%; }
+col.col-desc { width: 40%; }
+col.col-api { width: 32%; }
 thead {
   background: var(--vp-c-bg-soft);
   position: sticky;
   top: 0;
 }
 th {
-  padding: 0.6rem 0.75rem;
+  padding: 0.4rem 0.5rem;
   text-align: left;
   font-weight: 600;
+  font-size: 0.75rem;
   border-bottom: 2px solid var(--vp-c-border);
   white-space: nowrap;
 }
@@ -299,41 +302,45 @@ th.sortable:hover {
   color: var(--vp-c-brand-1);
 }
 td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.35rem 0.5rem;
   border-bottom: 1px solid var(--vp-c-border);
   vertical-align: top;
+  line-height: 1.35;
 }
 tr:hover td {
   background: var(--vp-c-bg-soft);
 }
-td code {
-  font-size: 0.8rem;
-  padding: 1px 4px;
+.col-name code {
+  font-size: 0.72rem;
+  padding: 1px 3px;
   border-radius: 3px;
   background: var(--vp-c-bg-mute);
+  display: block;
+  margin-bottom: 3px;
 }
 .api-code {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   color: var(--vp-c-text-2);
   word-break: break-word;
 }
 .cat-badge {
   display: inline-block;
-  padding: 1px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: 0px 4px;
+  border-radius: 3px;
+  font-size: 0.62rem;
   background: var(--vp-c-bg-mute);
-  color: var(--vp-c-text-2);
+  color: var(--vp-c-text-3);
   white-space: nowrap;
 }
 .mode-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.7rem;
+  padding: 0px 5px;
+  border-radius: 8px;
+  font-size: 0.6rem;
   font-weight: 700;
   color: white;
   text-transform: uppercase;
+  margin-right: 3px;
 }
 .no-results {
   text-align: center;
