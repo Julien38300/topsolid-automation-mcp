@@ -13,6 +13,16 @@ namespace TopSolidMcpServer.Utils
     public class TopSolidConnector
     {
         private bool _isConnected;
+        private readonly int _port;
+
+        /// <summary>
+        /// Creates a connector targeting a specific TopSolid instance via TCP port.
+        /// </summary>
+        /// <param name="port">TCP port (default 8090). Set in TopSolid: Tools > Options > General > Automation.</param>
+        public TopSolidConnector(int port = 8090)
+        {
+            _port = port;
+        }
 
         /// <summary>
         /// Indique si la connexion à TopSolid est active.
@@ -21,12 +31,19 @@ namespace TopSolidMcpServer.Utils
 
         /// <summary>
         /// Établit la connexion avec une instance de TopSolid en cours d'exécution.
+        /// Uses DefineConnection to target the specific TCP port, allowing multiple
+        /// TopSolid instances to coexist on the same machine.
         /// </summary>
         /// <returns>True si la connexion est établie, sinon False.</returns>
         public bool Connect()
         {
             try
             {
+                // Target the specific TopSolid instance by TCP port.
+                // Without this, Connect() picks the first available named pipe,
+                // which fails when multiple TopSolid versions are running.
+                TopSolidHost.DefineConnection("localhost", _port, null, 0);
+
                 // Connect() returns false even when connection succeeds (TopSolid 7.20 bug).
                 // We ignore the return value and verify with an actual API call.
                 TopSolidHost.Connect(false, 10000);
@@ -39,7 +56,7 @@ namespace TopSolidMcpServer.Utils
                 {
                     TopSolidDesignHost.Connect();
                     TopSolidDraftingHost.Connect();
-                    Console.Error.WriteLine("[TopSolidConnector] Connected to TopSolid v" + version + ".");
+                    Console.Error.WriteLine("[TopSolidConnector] Connected to TopSolid v" + version + " on port " + _port + ".");
                 }
                 else
                 {
