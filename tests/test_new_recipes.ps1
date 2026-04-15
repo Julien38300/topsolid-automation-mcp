@@ -10,33 +10,33 @@ $initNotif = '{"jsonrpc":"2.0","method":"notifications/initialized","params":{}}
 
 $tests = @(
     # MASSE/VOLUME fixes (5)
-    @("MV-01", "lire_masse_volume",         "", "Masse:"),
-    @("MV-02", "lire_densite_materiau",     "", ""),
-    @("MV-03", "rapport_masse_assemblage",  "", "RAPPORT MASSE"),
-    @("MV-04", "lire_materiau",             "", ""),
-    @("MV-05", "verifier_materiaux_manquants","","VERIFICATION MATERIAUX"),
+    @("MV-01", "read_mass_volume",         "", "Masse:"),
+    @("MV-02", "read_material_density",     "", ""),
+    @("MV-03", "assembly_mass_report",  "", "RAPPORT MASSE"),
+    @("MV-04", "read_material",             "", ""),
+    @("MV-05", "check_missing_materials","","VERIFICATION MATERIAUX"),
 
     # DIMENSIONS nouvelles (3)
-    @("DM-01", "lire_dimensions_piece",     "", "DIMENSIONS"),
-    @("DM-02", "lire_moments_inertie",      "", "MOMENTS"),
-    @("DM-03", "lire_boite_englobante",     "", "Boite englobante:"),
+    @("DM-01", "read_part_dimensions",     "", "DIMENSIONS"),
+    @("DM-02", "read_inertia_moments",      "", "MOMENTS"),
+    @("DM-03", "read_bounding_box",     "", "Boite englobante:"),
 
     # M-58 MISE EN PLAN (3) - skip si pas un plan ouvert
-    @("MP-01", "detecter_mise_en_plan",     "", ""),
-    @("MP-02", "detecter_nomenclature",     "", ""),
-    @("MP-03", "detecter_mise_a_plat",      "", ""),
+    @("MP-01", "detect_drafting",     "", ""),
+    @("MP-02", "detect_bom",     "", ""),
+    @("MP-03", "detect_unfolding",      "", ""),
 
     # BATCH bibliotheque (7)
-    @("BT-01", "resumer_projet",            "", "Projet:"),
-    @("BT-02", "compter_documents_par_type","", "Total:"),
-    @("BT-03", "lister_documents_sans_reference","","Documents sans reference:"),
-    @("BT-04", "lister_documents_sans_designation","","Documents sans designation:"),
-    @("BT-05", "lister_documents_projet",   "", "Projet:"),
-    @("BT-06", "chercher_pieces_par_materiau","","Pieces trouvees:"),
-    @("BT-07", "lire_cas_emploi",           "", "Cas d'emploi:"),
+    @("BT-01", "summarize_project",            "", "Projet:"),
+    @("BT-02", "count_documents_by_type","", "Total:"),
+    @("BT-03", "list_documents_without_reference","","Documents sans reference:"),
+    @("BT-04", "list_documents_without_designation","","Documents sans designation:"),
+    @("BT-05", "list_project_documents",   "", "Projet:"),
+    @("BT-06", "search_parts_by_material","","Pieces trouvees:"),
+    @("BT-07", "read_where_used",           "", "Cas d'emploi:"),
 
     # NAVIGATION (1)
-    @("NV-01", "ouvrir_mise_en_plan",       "", "")
+    @("NV-01", "open_drafting",       "", "")
 )
 
 $allLines = @($initReq, $initNotif)
