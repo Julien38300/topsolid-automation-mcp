@@ -89,7 +89,7 @@ Dans Cursor : **Settings > MCP Servers > Add Server**
 
 ### Autres clients
 
-Tout client MCP compatible stdio fonctionne. Consultez le [guide d'integration complet](./integration) pour Claude Code, Antigravity, Windsurf, Continue, Hermes et plus.
+Tout client MCP compatible stdio fonctionne. Consultez le [guide d'integration complet](./integration) pour Claude Code, Antigravity, Windsurf, Continue, OpenClaw et plus.
 
 ## Etape 4 — Tester
 

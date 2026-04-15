@@ -18,10 +18,11 @@
 | Phase 6i | Dataset LoRA v3 (732 paires) — M-33 prep | 100% |
 | Phase 7 | Graphe multi-couche (commands, ADS) | 0% |
 | Phase 8 | Outils metier & securite | 0% |
-| Phase 9 | LoRA fine-tuning (Noemid) — M-33/M-34 | 0% |
+| Phase 9a | LoRA recettes (M-33 dataset + M-34 training 3B) | 50% |
+| Phase 9b | Benchmark automation (M-35 — 14B/24B/Codestral) — DEC-011 | 0% |
 | Phase 10 | Test & validation complete | 80% |
 
-## Chiffres cles (2026-04-11)
+## Chiffres cles (2026-04-15)
 
 - **4119 edges** dans le graphe API
 - **1728 methodes** uniques couvertes
@@ -29,7 +30,7 @@
 - **85%** d'edges avec hints semantiques FR/EN
 - **113 recettes** RecipeTool — tests LIVE sur TopSolid vivant
 - **7 outils MCP** (run_recipe, get_state, execute_script, modify_script, api_help, find_path, explore_paths)
-- **732 paires** dataset LoRA (format ShareGPT/Axolotl)
+- **2161 paires** dataset LoRA (format ShareGPT, 112 recettes + domaine)
 - **5/5 exports** testes LIVE (STEP, STL, IGES, DXF, PDF)
 - **5809 pages** d'aide en ligne converties en MD
 - **46 interfaces** TopSolid couvertes (Kernel + Design + Drafting)
@@ -38,11 +39,11 @@
 
 | Priorite | Mission | Description |
 |----------|---------|-------------|
-| 1 | M-33 | Fine-tuning LoRA sur ministral-3:3b avec le dataset 732 paires |
-| 2 | M-34 | Evaluation du modele fine-tune (taux selection recettes) |
-| 3 | — | Guide integration (Claude Desktop, Hermes, OpenClaw, generique) |
-| 4 | — | Troubleshooting guide (Connect()=false, Mutex, port 8090) |
-| 5 | M-30 | Graphe multi-couche : parser Commands TopSolid |
-| 6 | M-31 | Graphe multi-couche : parser ADS |
-| 7 | — | Tests LIVE des recettes contextuelles (ouvrir piece, plan, nomenclature, famille) |
-| 8 | — | Recettes creation (esquisse, extrusion, inclusion) |
+| 1 | M-34a-c | Training + Eval LoRA 3B recettes (Unsloth, QLoRA 4-bit) |
+| 2 | M-35 | Benchmark modeles automation (14B Q8, 24B Q4, Codestral 22B) — DEC-011 |
+| 3 | M-35b | Skill automation (instructions graphe + patterns C# pour 14-24B) |
+| 4 | M-35c | Dataset LoRA automation (si benchmark justifie fine-tune) |
+| 5 | — | Guide integration (Claude Desktop, OpenClaw, generique) |
+| 6 | — | Troubleshooting guide (Connect()=false, Mutex, port 8090) |
+| 7 | M-30/31 | Graphe multi-couche (Commands, ADS) |
+| 8 | M-62-65 | Recettes creation (Smart params, esquisse, extrusion, inclusion) |
