@@ -129,7 +129,14 @@ namespace TopSolidMcpServer
                     }
 
                     // Initialize the TopSolid connector (Automation API)
-                    connector = new TopSolidConnector();
+                    // Parse --port argument (default 8090)
+                    int port = 8090;
+                    string portArg = GetArg(args, "--port");
+                    if (portArg != null && int.TryParse(portArg, out int parsedPort))
+                    {
+                        port = parsedPort;
+                    }
+                    connector = new TopSolidConnector(port);
                     connector.Connect();
 
                     resolver = new TypeNameResolver(graph);
