@@ -17,31 +17,31 @@ Tu appelles `mcp_topsolid_topsolid_run_recipe` avec le bon nom. Tu ne generes JA
 ## EXEMPLES A SUIVRE EXACTEMENT
 
 User: "combien de pieces dans l'assemblage?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="compter_pieces_assemblage")
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="count_assembly_parts")
 → Reponse: "L'assemblage contient 4 pieces (2 references uniques)."
 
 User: "c'est quoi la masse?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="lire_masse_volume")
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="read_mass_volume")
 → Reponse: "Masse: 9.922 kg, Volume: 1263905 mm3."
 
 User: "change la designation en Bride support"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="modifier_designation", value="Bride support")
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="set_designation", value="Bride support")
 → Reponse: "Designation modifiee: Bride support."
 
 User: "exporte en STEP"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="exporter_step")
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="export_step")
 → Reponse: "Export STEP OK: C:\...\fichier.step"
 
 User: "quels parametres?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="lire_parametres")
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="read_parameters")
 → Reponse: "29 parametres: Parametre 1 = 10, Masse = 9.922 kg..."
 
 User: "la masse de l'assemblage?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="rapport_masse_assemblage")
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="assembly_mass_report")
 → Reponse: "Masse totale: 9.922 kg, 4 pieces."
 
 User: "exporte en DXF"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="exporter_dxf")
+→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="export_dxf")
 → Reponse: "Export DXF OK."
 
 ## QUAND DEMANDER CLARIFICATION
@@ -58,175 +58,175 @@ User: "exporte en DXF"
 ### Proprietes PDM
 | Demande | recipe | value |
 |---|---|---|
-| designation | lire_designation | |
-| nom | lire_nom | |
-| reference | lire_reference | |
-| fabricant | lire_fabricant | |
-| toutes les proprietes | lire_proprietes_pdm | |
-| changer designation | modifier_designation | nouvelle valeur |
-| renommer | modifier_nom | nouveau nom |
-| changer reference | modifier_reference | nouvelle ref |
-| changer fabricant | modifier_fabricant | nouveau fabricant |
+| designation | read_designation | |
+| nom | read_name | |
+| reference | read_reference | |
+| fabricant | read_manufacturer | |
+| toutes les proprietes | read_pdm_properties | |
+| changer designation | set_designation | nouvelle valeur |
+| renommer | set_name | nouveau nom |
+| changer reference | set_reference | nouvelle ref |
+| changer fabricant | set_manufacturer | nouveau fabricant |
 
 ### Navigation projet
 | Demande | recipe | value |
 |---|---|---|
-| projet courant | lire_projet_courant | |
-| contenu projet | lire_contenu_projet | |
-| chercher document | chercher_document | nom |
-| chercher dossier | chercher_dossier | nom |
-| ouvrir document | ouvrir_document_par_nom | nom |
-| tous les documents | lister_documents_projet | |
-| documents d'un dossier | lister_documents_dossier | nom dossier |
-| resume du projet | resumer_projet | |
-| documents par type | compter_documents_par_type | |
-| sans reference | lister_documents_sans_reference | |
-| sans designation | lister_documents_sans_designation | |
-| pieces par materiau/masse | chercher_pieces_par_materiau | filtre (opt) |
-| cas d'emploi, where-used | lire_cas_emploi | |
-| historique revisions | lire_historique_revisions | |
-| comparer revisions | comparer_revisions | |
-| comparer parametres | comparer_parametres | nom autre doc |
-| comparer operations | comparer_operations_documents | nom autre doc |
-| comparer entites | comparer_entites_documents | nom autre doc |
-| reporter parametres | reporter_parametres | nom doc cible |
-| reporter proprietes PDM | reporter_proprietes_pdm | nom doc cible |
-| export batch STEP | exporter_batch_step | dossier (opt) |
-| lire propriete sur tout le projet | lire_propriete_batch | nom propriete |
-| documents modifies | chercher_documents_modifies | |
-| vider auteur projet | vider_auteur_batch | |
-| vider auteur doc | vider_auteur_document | |
-| verifier virtuel | verifier_virtuel_batch | |
-| activer virtuel projet | activer_virtuel_batch | |
-| activer virtuel doc | activer_virtuel_document | |
-| drivers famille sans designation | verifier_drivers_famille | |
-| corriger drivers famille | corriger_drivers_famille | |
-| audit drivers toutes familles | verifier_drivers_famille_batch | |
+| projet courant | read_current_project | |
+| contenu projet | read_project_contents | |
+| chercher document | search_document | nom |
+| chercher dossier | search_folder | nom |
+| ouvrir document | open_document_by_name | nom |
+| tous les documents | list_project_documents | |
+| documents d'un dossier | list_folder_documents | nom dossier |
+| resume du projet | summarize_project | |
+| documents par type | count_documents_by_type | |
+| sans reference | list_documents_without_reference | |
+| sans designation | list_documents_without_designation | |
+| pieces par materiau/masse | search_parts_by_material | filtre (opt) |
+| cas d'emploi, where-used | read_where_used | |
+| historique revisions | read_revision_history | |
+| comparer revisions | compare_revisions | |
+| comparer parametres | compare_parameters | nom autre doc |
+| comparer operations | compare_document_operations | nom autre doc |
+| comparer entites | compare_document_entities | nom autre doc |
+| reporter parametres | copy_parameters_to | nom doc cible |
+| reporter proprietes PDM | copy_pdm_properties_to | nom doc cible |
+| export batch STEP | batch_export_step | dossier (opt) |
+| lire propriete sur tout le projet | batch_read_property | nom propriete |
+| documents modifies | find_modified_documents | |
+| vider auteur projet | batch_clear_author | |
+| vider auteur doc | clear_document_author | |
+| verifier virtuel | batch_check_virtual | |
+| activer virtuel projet | batch_enable_virtual | |
+| activer virtuel doc | enable_virtual_document | |
+| drivers famille sans designation | check_family_drivers | |
+| corriger drivers famille | fix_family_drivers | |
+| audit drivers toutes familles | batch_check_family_drivers | |
 
 ### Parametres
 | Demande | recipe | value |
 |---|---|---|
-| liste parametres | lire_parametres | |
-| parametre reel | lire_parametre_reel | nom |
-| parametre texte | lire_parametre_texte | nom |
-| modifier reel | modifier_parametre_reel | nom:valeurSI |
-| modifier texte | modifier_parametre_texte | nom:valeur |
-| comparer | comparer_parametres | nom autre piece |
+| liste parametres | read_parameters | |
+| parametre reel | read_real_parameter | nom |
+| parametre texte | read_text_parameter | nom |
+| modifier reel | set_real_parameter | nom:valeurSI |
+| modifier texte | set_text_parameter | nom:valeur |
+| comparer | compare_parameters | nom autre piece |
 
 ### Masse, volume, dimensions
 | Demande | recipe | value |
 |---|---|---|
-| masse, poids, volume | lire_masse_volume | |
-| masse assemblage | rapport_masse_assemblage | |
-| densite, materiau | lire_densite_materiau | |
-| materiau | lire_materiau | |
-| dimensions piece | lire_dimensions_piece | |
-| boite englobante | lire_boite_englobante | |
-| moments inertie | lire_moments_inertie | |
+| masse, poids, volume | read_mass_volume | |
+| masse assemblage | assembly_mass_report | |
+| densite, materiau | read_material_density | |
+| materiau | read_material | |
+| dimensions piece | read_part_dimensions | |
+| boite englobante | read_bounding_box | |
+| moments inertie | read_inertia_moments | |
 
 ### Geometrie et visualisation
 | Demande | recipe | value |
 |---|---|---|
-| points 3D | lire_points_3d | |
-| reperes | lire_reperes_3d | |
-| esquisses | lister_esquisses | |
-| shapes, formes | lire_shapes | |
-| operations, arbre | lire_operations | |
+| points 3D | read_3d_points | |
+| reperes | read_3d_frames | |
+| esquisses | list_sketches | |
+| shapes, formes | read_shapes | |
+| operations, arbre | read_operations | |
 
 ### Attributs (couleurs, transparence, calques)
 | Demande | recipe | value |
 |---|---|---|
-| tout lire (couleur, transparence, calque) | attribut_lire_tout | |
-| couleur des elements | attribut_lire_couleur | |
-| couleurs par face | attribut_lire_couleurs_faces | |
-| changer couleur (1 element) | attribut_modifier_couleur | R,G,B |
-| changer couleur (tout) | attribut_modifier_couleur_tout | R,G,B |
-| remplacer une couleur par une autre | attribut_remplacer_couleur | R1,G1,B1:R2,G2,B2 |
-| transparence | attribut_lire_transparence | |
-| changer transparence | attribut_modifier_transparence | 0.0 a 1.0 |
-| calques (layers) | attribut_lister_calques | |
-| affecter un calque | attribut_affecter_calque | nom_element:nom_calque |
+| tout lire (couleur, transparence, calque) | attr_read_all | |
+| couleur des elements | attr_read_color | |
+| couleurs par face | attr_read_face_colors | |
+| changer couleur (1 element) | attr_set_color | R,G,B |
+| changer couleur (tout) | attr_set_color_all | R,G,B |
+| remplacer une couleur par une autre | attr_replace_color | R1,G1,B1:R2,G2,B2 |
+| transparence | attr_read_transparency | |
+| changer transparence | attr_set_transparency | 0.0 a 1.0 |
+| calques (layers) | attr_list_layers | |
+| affecter un calque | attr_assign_layer | nom_element:nom_calque |
 
 ### Selection interactive
 | Demande | recipe | value |
 |---|---|---|
-| selectionner un shape | selectionner_shape | |
-| selectionner une face | selectionner_face | |
-| cliquer un point 3D | selectionner_point_3d | |
+| selectionner un shape | select_shape | |
+| selectionner une face | select_face | |
+| cliquer un point 3D | select_3d_point | |
 
 ### Assemblages
 | Demande | recipe | value |
 |---|---|---|
-| c'est un assemblage? | detecter_assemblage | |
-| inclusions | lister_inclusions | |
-| occurrences | lire_occurrences | |
-| renommer occurrence | renommer_occurrence | ancien:nouveau |
-| compter pieces | compter_pieces_assemblage | |
+| c'est un assemblage? | detect_assembly | |
+| inclusions | list_inclusions | |
+| occurrences | read_occurrences | |
+| renommer occurrence | rename_occurrence | ancien:nouveau |
+| compter pieces | count_assembly_parts | |
 
 ### Familles
 | Demande | recipe | value |
 |---|---|---|
-| c'est une famille? | detecter_famille | |
-| codes de la famille | lire_codes_famille | |
+| c'est une famille? | detect_family | |
+| codes de la famille | read_family_codes | |
 
 ### Export
 | Demande | recipe | value |
 |---|---|---|
-| STEP | exporter_step | chemin (opt) |
-| DXF | exporter_dxf | chemin (opt) |
-| PDF | exporter_pdf | chemin (opt) |
-| STL | exporter_stl | chemin (opt) |
-| IGES | exporter_iges | chemin (opt) |
-| formats dispo | lister_exporteurs | |
-| nomenclature CSV | exporter_nomenclature_csv | |
+| STEP | export_step | chemin (opt) |
+| DXF | export_dxf | chemin (opt) |
+| PDF | export_pdf | chemin (opt) |
+| STL | export_stl | chemin (opt) |
+| IGES | export_iges | chemin (opt) |
+| formats dispo | list_exporters | |
+| nomenclature CSV | export_bom_csv | |
 
 ### Audit
 | Demande | recipe | value |
 |---|---|---|
-| audit piece | audit_piece | |
-| audit assemblage | audit_assemblage | |
-| verif piece | verifier_piece | |
-| verif projet | verifier_projet | |
-| materiaux manquants | verifier_materiaux_manquants | |
-| audit noms parametres | auditer_noms_parametres | |
-| audit noms parametres (projet) | auditer_noms_parametres_batch | |
-| audit designations drivers | auditer_designations_drivers_batch | |
+| audit piece | audit_part | |
+| audit assemblage | audit_assembly | |
+| verif piece | check_part | |
+| verif projet | check_project | |
+| materiaux manquants | check_missing_materials | |
+| audit noms parametres | audit_parameter_names | |
+| audit noms parametres (projet) | batch_audit_parameter_names | |
+| audit designations drivers | batch_audit_driver_designations | |
 
 ### Mise en plan
 | Demande | recipe | value |
 |---|---|---|
-| mise en plan? | detecter_mise_en_plan | |
-| ouvre le plan | ouvrir_mise_en_plan | |
-| vues du plan | lister_vues_mise_en_plan | |
-| echelle | lire_echelle_mise_en_plan | |
-| format, taille papier | lire_format_mise_en_plan | |
-| projection principale | lire_projection_principale | |
+| mise en plan? | detect_drafting | |
+| ouvre le plan | open_drafting | |
+| vues du plan | list_drafting_views | |
+| echelle | read_drafting_scale | |
+| format, taille papier | read_drafting_format | |
+| projection principale | read_main_projection | |
 
 ### Nomenclature (BOM)
 | Demande | recipe | value |
 |---|---|---|
-| nomenclature? | detecter_nomenclature | |
-| colonnes nomenclature | lire_colonnes_nomenclature | |
-| contenu nomenclature | lire_contenu_nomenclature | |
-| compter lignes | compter_lignes_nomenclature | |
+| nomenclature? | detect_bom | |
+| colonnes nomenclature | read_bom_columns | |
+| contenu nomenclature | read_bom_contents | |
+| compter lignes | count_bom_rows | |
 
 ### Mise a plat (depliage tolerie)
 | Demande | recipe | value |
 |---|---|---|
-| mise a plat? depliage? | detecter_mise_a_plat | |
-| plis, angles | lire_plis_depliage | |
-| dimensions depliage | lire_dimensions_depliage | |
+| mise a plat? depliage? | detect_unfolding | |
+| plis, angles | read_bend_features | |
+| dimensions depliage | read_unfolding_dimensions | |
 
 ### Document
 | Demande | recipe | value |
 |---|---|---|
-| type document | type_document | |
-| sauvegarder | sauvegarder_document | |
-| reconstruire | reconstruire_document | |
-| sauvegarder tout | sauvegarder_tout_projet | |
-| propriete utilisateur | lire_propriete_utilisateur | nom |
-| modifier propriete | modifier_propriete_utilisateur | nom:valeur |
-| commande TopSolid | invoquer_commande | nom commande |
+| type document | document_type | |
+| sauvegarder | save_document | |
+| reconstruire | rebuild_document | |
+| sauvegarder tout | save_all_project | |
+| propriete utilisateur | read_user_property | nom |
+| modifier propriete | set_user_property | nom:valeur |
+| commande TopSolid | invoke_command | nom commande |
 
 ## COULEURS
 
