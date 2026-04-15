@@ -2,7 +2,7 @@
 
 Serveur MCP (Model Context Protocol) et Graphe API enrichi pour piloter **TopSolid 7** par intelligence artificielle.
 
-> TopSolid est une marque deposee d'[Allplan](https://www.allplan.com/) (anciennement REDACTED Software). Ce projet est independant et n'est ni affilie ni endosse par Allplan.
+> TopSolid est une marque deposee de [TOPSOLID SAS](https://www.topsolid.com/). Ce projet est independant et n'est ni affilie ni endosse par TOPSOLID SAS.
 
 ## Composants
 
