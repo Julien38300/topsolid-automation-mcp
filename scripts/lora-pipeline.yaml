@@ -1,0 +1,67 @@
+# LoRA Pipeline Configuration
+# Central config for dataset generation, training, evaluation, and deployment
+
+# === Model ===
+model:
+  base: "unsloth/Ministral-3-3B-Instruct-2512-bnb-4bit"
+  name: "ministral-topsolid"
+  ollama_tag: "ministral-topsolid"
+  max_seq_length: 2048
+  load_in_4bit: true
+
+# === LoRA Hyperparameters ===
+lora:
+  r: 32
+  alpha: 64
+  dropout: 0
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+
+# === Training ===
+training:
+  epochs: 3
+  batch_size: 2
+  gradient_accumulation: 4
+  learning_rate: 2e-4
+  warmup_steps: 5
+  optimizer: "adamw_8bit"
+  scheduler: "linear"
+  weight_decay: 0.01
+  seed: 42
+  output_dir: "outputs"
+
+# === Paths (relative to TopSolidMcpServer/) ===
+paths:
+  dataset: "data/lora-dataset.jsonl"
+  dataset_stats: "data/lora-dataset-stats.json"
+  recipe_mapping: "data/recipe-name-mapping-fr-en.json"
+  adapter_output: "models/topsolid_lora"
+  gguf_output: "models/model-topsolid-gguf"
+  modelfile: "models/Modelfile"
+  eval_baseline: "data/eval-baseline.json"
+  eval_lora: "data/eval-lora.json"
+  eval_report: "data/eval-comparison.md"
+
+# === Evaluation Thresholds ===
+eval:
+  min_global_accuracy: 60.0
+  min_tier1_accuracy: 90.0
+  min_tier2_accuracy: 70.0
+  min_improvement_over_baseline: 30.0
+
+# === System Prompt (shared across training, eval, and deployment) ===
+system_prompt: >-
+  You are Noemid, a TopSolid assistant.
+  You ONLY use mcp_topsolid_topsolid_run_recipe with a recipe name.
+  You NEVER generate C# code. You act directly, without asking for confirmation.
+
+# === Export ===
+export:
+  quantization: "q4_k_m"
+  gguf_suffix: ".q4km.gguf"
