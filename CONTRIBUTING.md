@@ -13,8 +13,8 @@ ou `{ "nom_recette", RW("description", @"script C# avec {value}") }` pour WRITE.
 
 Pattern READ :
 ```csharp
-{ "ma_nouvelle_recette", R(
-    "Description courte en francais",
+{ "my_new_recipe", R(
+    "Short description in English",
     @"
     DocumentId docId = TopSolidHost.Documents.EditedDocument;
     // ... logique de lecture ...
@@ -25,8 +25,8 @@ Pattern READ :
 
 Pattern WRITE (modification) — TOUJOURS suivre le pattern transactionnel :
 ```csharp
-{ "ma_recette_write", RW(
-    "Description courte en francais",
+{ "my_write_recipe", RW(
+    "Short description in English",
     @"
     DocumentId docId = TopSolidHost.Documents.EditedDocument;
     TopSolidHost.Application.StartModification(""Description"", false);
@@ -49,7 +49,7 @@ Fichier : `docs/.vitepress/theme/components/RecipeTable.vue`
 
 Ajouter une entree dans le tableau `recipes` :
 ```javascript
-{ name: "ma_nouvelle_recette", description: "Description fonctionnelle detaillee en francais", mode: "READ", category: "MaCategorie", api: "Interface.Methode" },
+{ name: "my_new_recipe", description: "Detailed functional description in English", mode: "READ", category: "MyCategory", api: "Interface.Method" },
 ```
 
 Categories existantes : PDM, Navigation, Parametres, Geometrie, Esquisse, Assemblage, Materiau, Physique, Attribut, Mise en plan, Export, Comparaison, Audit, Famille, Etat
@@ -90,7 +90,7 @@ Dans `TestSuite.json`, ajouter une entree :
 ```json
 {
   "id": "T-XX",
-  "name": "ma_nouvelle_recette retourne un resultat",
+  "name": "my_new_recipe returns a result",
   "tool": "topsolid_run_recipe",
   "request": {
     "jsonrpc": "2.0",
@@ -98,7 +98,7 @@ Dans `TestSuite.json`, ajouter une entree :
     "method": "tools/call",
     "params": {
       "name": "topsolid_run_recipe",
-      "arguments": { "recipe": "ma_nouvelle_recette" }
+      "arguments": { "recipe": "my_new_recipe" }
     }
   },
   "assertions": {
@@ -114,8 +114,8 @@ Le fichier `tests/TestDocument.md` decrit le document TopSolid attendu par les t
 
 ### 4. Conventions
 
-- Noms de recettes : `verbe_objet` en francais (ex: `lire_masse_volume`, `modifier_designation`)
-- Descriptions : en francais, langage metier TopSolid
+- Noms de recettes : `verb_object` en anglais (ex: `read_mass_volume`, `set_designation`)
+- Descriptions : en anglais (MCP public, international)
 - Code : en anglais (variables, commentaires inline)
 - Toujours retourner un string (jamais void)
 - Toujours gerer le cas "pas de document actif" avec un message clair
