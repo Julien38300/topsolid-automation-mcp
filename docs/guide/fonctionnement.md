@@ -10,10 +10,10 @@
                         │
                         v
 ┌─────────────────────────────────────────────────────────┐
-│  HERMES AGENT (WSL2, ministral-3:3b)                    │
+│  SOUS-AGENT RECETTES (3B LoRA, local)                   │
 │                                                         │
 │  Le LLM comprend l'intention en francais.               │
-│  Le Skill topsolid-mcp lui dit quoi faire.              │
+│  Il selectionne la recette par nom.                     │
 │  Il appelle run_recipe("modifier_designation",          │
 │                         value="Ma Piece")               │
 │                                                         │
@@ -57,8 +57,8 @@
 │                                                         │
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
 │  │ get_state   │  │ api_help     │  │ run_recipe    │  │
-│  │             │  │              │  │  (NOUVEAU)    │  │
-│  │ Etat de     │  │ Cherche dans │  │ 10 recettes   │  │
+│  │             │  │              │  │               │  │
+│  │ Etat de     │  │ Cherche dans │  │ 113 recettes  │  │
 │  │ TopSolid    │  │ 1728 methodes│  │ pre-codees    │  │
 │  │ connexion   │  │ 52 synonymes │  │ Le LLM choisit│  │
 │  │ document    │  │ FR/EN        │  │ par nom       │  │
@@ -89,9 +89,9 @@
 
 ## 2 modes d'utilisation
 
-### Mode 3B — Selection de recette (actuel)
+### Sous-agent Recettes (3B LoRA) — actuel
 
-Pour les petits modeles (ministral-3:3b, ~2GB VRAM) qui ne savent pas generer du C# :
+Le sous-agent 3B + LoRA selectionne la bonne recette par nom. Pas de generation de code :
 
 ```
 User : "Lis la designation"
@@ -103,9 +103,9 @@ User : "Lis la designation"
 **Avantage** : fiable, rapide, zero hallucination.
 **Limite** : ne peut faire que ce qui est pre-programme dans RecipeTool.
 
-### Mode 7B+ — Generation de code (futur)
+### Sous-agent Automation (14-24B) — prevu M-35
 
-Pour les modeles plus gros (qwen2.5:7b, mistral-small) ou fine-tuned (LoRA domain) :
+Le sous-agent 14-24B (Mistral Small ou Codestral) navigue le graphe API et genere du C# :
 
 ```
 User : "Cree un point a 50mm, 100mm, 0"
@@ -136,8 +136,8 @@ A mesure qu'on ajoute des recettes, le mode 3B couvre de plus en plus de cas.
 | **run_recipe** | Execute une recette pre-codee par nom | La solution pour les petits modeles : zero code a generer. |
 | **execute_script** | Compile et execute du C# libre | La puissance brute : peut tout faire si le code est correct. |
 | **modify_script** | Comme execute_script + auto-wrap modification/save | Pour les ecritures : gere StartModification/EndModification/Save. |
-| **recipes.md** | 76 recettes documentees en markdown | La reference pour les humains et les LLM : comment faire chaque operation. |
-| **Skill** (SKILL.md) | Instructions pour Hermes : quel outil appeler selon la question | Guide le LLM vers la bonne recette sans se perdre. |
+| **RecipeTool** | 113 recettes pre-construites en C# | La reference pour les humains et les LLM : comment faire chaque operation. |
+| **Skill** (system.md) | Instructions pour chaque sous-agent : outils autorises et routing | Chaque agent a son propre system.md dans OpenClaw. |
 | **Glossaire FR** | Mapping termes TopSolid FR → API EN | "Designation" → SetDescription, "mise au coffre" → CheckIn, etc. |
 
 ## Donnees du graphe
