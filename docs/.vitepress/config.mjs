@@ -44,7 +44,8 @@ export default defineConfig({
             { text: 'Outils MCP', link: '/guide/outils-mcp' },
             { text: 'Graphe API', link: '/guide/graphe' },
             { text: 'Graphe Interactif', link: '/reference/graphe-interactif' },
-            { text: 'Recettes', link: '/guide/recettes' }
+            { text: 'Recettes', link: '/guide/recettes' },
+            { text: 'Tests', link: '/guide/tests' }
           ]
         },
         {
