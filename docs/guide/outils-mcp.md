@@ -9,12 +9,12 @@ Le serveur expose 7 outils au protocole MCP. L'agent IA les appelle via JSON-RPC
 **113 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles.
 
 ```json
-{ "name": "topsolid_run_recipe", "arguments": { "recipe": "lire_masse_volume" } }
+{ "name": "topsolid_run_recipe", "arguments": { "recipe": "read_mass_volume" } }
 ```
 
 **Avec parametre :**
 ```json
-{ "name": "topsolid_run_recipe", "arguments": { "recipe": "modifier_designation", "value": "Bride de fixation" } }
+{ "name": "topsolid_run_recipe", "arguments": { "recipe": "set_designation", "value": "Bride de fixation" } }
 ```
 
 **Reponse type :**
