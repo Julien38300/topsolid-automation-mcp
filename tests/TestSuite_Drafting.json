@@ -1,0 +1,131 @@
+{
+  "version": "1.0",
+  "tests": [
+    {
+        "id": "T-92",
+        "name": "detect drafting document",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0", "id": 192,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nbool isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId);\nreturn \"IsDrafting=\" + isDrafting;"
+                }
+            }
+        },
+        "assertions": { "contains": ["IsDrafting="] }
+    },
+    {
+        "id": "T-93",
+        "name": "detect bom document",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0", "id": 193,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nbool isBom = TopSolidDraftingHost.Boms.IsBom(docId);\nreturn \"IsBom=\" + isBom;"
+                }
+            }
+        },
+        "assertions": { "contains": ["IsBom="] }
+    },
+    {
+        "id": "T-94",
+        "name": "detect unfolding document",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0", "id": 194,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nbool isUnfolding = TopSolidDesignHost.Unfoldings.IsUnfolding(docId);\nreturn \"IsUnfolding=\" + isUnfolding;"
+                }
+            }
+        },
+        "assertions": { "contains": ["IsUnfolding="] }
+    },
+    {
+        "id": "T-95",
+        "name": "list drafting views",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0", "id": 195,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nif (!TopSolidDraftingHost.Draftings.IsDrafting(docId)) return \"Not a drafting.\";\nvar views = TopSolidDraftingHost.Draftings.GetDraftingViews(docId);\nreturn \"Vues:\" + views.Count;"
+                }
+            }
+        },
+        "assertions": { "contains": ["Vues:"] }
+    },
+    {
+        "id": "T-96",
+        "name": "read bom columns",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0", "id": 196,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nif (!TopSolidDraftingHost.Boms.IsBom(docId)) return \"Not a BOM.\";\nint colCount = TopSolidDraftingHost.Boms.GetColumnCount(docId);\nreturn \"colonnes:\" + colCount;"
+                }
+            }
+        },
+        "assertions": { "contains": ["colonnes"] }
+    },
+    {
+        "id": "T-97",
+        "name": "read bom rows",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0", "id": 197,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nif (!TopSolidDraftingHost.Boms.IsBom(docId)) return \"Not a BOM.\";\nint rootRow = TopSolidDraftingHost.Boms.GetRootRow(docId);\nvar children = TopSolidDraftingHost.Boms.GetRowChildrenRows(docId, rootRow);\nreturn \"Children:\" + children.Count + \" |\";"
+                }
+            }
+        },
+        "assertions": { "contains": ["|"] }
+    },
+    {
+        "id": "T-98",
+        "name": "read drafting tables",
+        "tool": "topsolid_execute_script",
+        "request": {
+            "jsonrpc": "2.0", "id": 198,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_execute_script",
+                "arguments": {
+                    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"Aucun document ouvert.\";\nif (!TopSolidDraftingHost.Draftings.IsDrafting(docId)) return \"Not a drafting.\";\nvar tables = TopSolidDraftingHost.Tables.GetDraftTables(docId);\nreturn \"Tableaux:\" + tables.Count;"
+                }
+            }
+        },
+        "assertions": { "contains": ["Tableaux:"] }
+    },
+    {
+        "id": "T-99",
+        "name": "api_help mise en plan",
+        "tool": "topsolid_api_help",
+        "request": {
+            "jsonrpc": "2.0", "id": 199,
+            "method": "tools/call",
+            "params": {
+                "name": "topsolid_api_help",
+                "arguments": { "query": "mise en plan" }
+            }
+        },
+        "assertions": { "contains": ["Drafting"] }
+    }
+  ]
+}
