@@ -1335,7 +1335,6 @@ namespace TopSolidMcpServer.Tools
                 "__message = \"OK: Auteur vide sur \" + cleared + \"/\" + docs.Count + \" documents.\";") },
 
             { "vider_auteur_document", RW("Vide le champ Auteur du document courant",
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
                 "TopSolidHost.Pdm.SetAuthor(pdmId, \"\");\n" +
                 "__message = \"OK: Auteur vide sur le document courant.\";") },
 
