@@ -12,8 +12,12 @@ noemid-topsolid/
 ├── data/          — graph.json, api-index.json, recipes.md
 ├── tests/         — 72 tests automatises
 ├── docs/          — Site VitePress (documentation)
-└── research/      — Roadmap, missions, decisions
+├── research/      — Roadmap, missions, decisions
+└── skills/        — YAML skills for OpenClaw
 ```
+
+## Contribuer
+Voir le guide [CONTRIBUTING.md](CONTRIBUTING.md) pour ajouter des recettes ou modifier le serveur.
 
 ## Language
 - Code : **anglais** (noms, variables, commentaires inline)
@@ -43,4 +47,4 @@ noemid-topsolid/
 
 ## Relation avec Noemid
 Ce repo est le composant TopSolid de l'ecosysteme Noemid.
-L'agent Hermes se connecte au MCP server via stdio.
+L'agent TopSolid se connecte via OpenClaw (sous-agent dedie avec system.md + tool scoping).

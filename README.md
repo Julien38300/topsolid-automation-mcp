@@ -11,7 +11,7 @@ Serveur MCP (Model Context Protocol) et Graphe API enrichi pour piloter **TopSol
 | **server/** | Serveur MCP .NET 4.8 — 7 outils JSON-RPC via stdio |
 | **graph/** | Constructeur du graphe API (extraction par reflexion DLL) |
 | **plugin/** | Plugin TopSolid (bridge WCF/TCP port 8090) |
-| **data/** | Graphe enrichi (4119 edges), 112 recettes, api-index (1728 methodes) |
+| **data/** | Graphe enrichi (4119 edges), 113 recettes, api-index (1728 methodes) |
 | **scripts/** | Scripts Python — enrichissement graphe, conversion aide en ligne |
 | **tests/** | Tests automatises contre TopSolid vivant |
 | **docs/** | Site de documentation VitePress |
@@ -20,7 +20,7 @@ Serveur MCP (Model Context Protocol) et Graphe API enrichi pour piloter **TopSol
 
 | Outil | Fonction |
 |-------|----------|
-| `topsolid_run_recipe` | Execute une des 112 recettes pre-construites |
+| `topsolid_run_recipe` | Execute une des 113 recettes pre-construites |
 | `topsolid_get_state` | Document actif, projet, connexion |
 | `topsolid_api_help` | Recherche dans 1728 methodes (52 synonymes FR) |
 | `topsolid_execute_script` | Compile et execute C# contre TopSolid |
@@ -48,6 +48,10 @@ Site complet : [https://julien38300.github.io/noemid-topsolid-automation/](https
 ## Sources
 
 - API Automation TopSolid : [help.topsolid.com](https://help.topsolid.com/7.20/en/TopSolid'Automation/) (documentation publique officielle)
+
+## Contribuer
+
+Pour ajouter une nouvelle recette ou ameliorer le serveur, consultez le guide [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Licence
 
