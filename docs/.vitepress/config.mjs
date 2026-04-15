@@ -81,7 +81,7 @@ export default defineConfig({
 
     footer: {
       message: 'TopSolid MCP — Serveur Model Context Protocol pour TopSolid Automation',
-      copyright: "2026 Julien — TopSolid est une marque deposee de TOPSOLID SAS"
+      copyright: "2026 Julien — TopSolid\u00AE est une marque deposee de TOPSOLID SAS"
     },
 
     outline: {

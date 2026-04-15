@@ -97,7 +97,7 @@ Dans votre assistant IA, demandez :
 
 > "Quelle est la designation de la piece ouverte dans TopSolid ?"
 
-L'assistant utilisera `topsolid_run_recipe` avec la recette `lire_designation` et vous retournera la designation du document actif.
+L'assistant utilisera `topsolid_run_recipe` avec la recette `read_designation` et vous retournera la designation du document actif.
 
 ::: tip Connect() retourne false ?
 C'est normal dans TopSolid v7.20. La connexion fonctionne quand meme. Verifiez que la version retournee est superieure a 0.
