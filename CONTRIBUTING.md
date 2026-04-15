@@ -56,12 +56,61 @@ Categories existantes : PDM, Navigation, Parametres, Geometrie, Esquisse, Assemb
 
 ### 3. Tester
 
+Les tests necessitent **TopSolid 7 actif** avec le document de test ouvert (voir `tests/TestDocument.md`).
+
+#### Prerequis
+
+1. TopSolid 7.15+ ouvert
+2. Le projet **"Test MCP"** importe, avec le document **"Test 01"** en edition
+3. Automation active (Outils > Options > General > Automation, port 8090)
+4. Le serveur MCP doit etre compile (`cd server && dotnet build`)
+
+#### Lancer toute la suite (72 tests)
+
 ```powershell
 cd tests
 .\run-tests.ps1
 ```
 
-Les tests necessitent TopSolid 7 actif avec un projet ouvert.
+Le script lance `TopSolidMcpServer.exe` en arriere-plan, envoie les requetes JSON-RPC depuis `TestSuite.json`, et verifie les assertions (contains / not_contains).
+
+#### Tester les recettes en LIVE (113 recettes)
+
+```powershell
+cd tests
+.\test_recipes_live.ps1
+```
+
+Ce script appelle chaque recette via `topsolid_run_recipe` et verifie que le resultat ne contient pas d'erreur. Resultat attendu : 59/61+ PASS (certaines recettes contextuelles necessitent un document specifique).
+
+#### Ajouter un test pour une nouvelle recette
+
+Dans `TestSuite.json`, ajouter une entree :
+
+```json
+{
+  "id": "T-XX",
+  "name": "ma_nouvelle_recette retourne un resultat",
+  "tool": "topsolid_run_recipe",
+  "request": {
+    "jsonrpc": "2.0",
+    "id": 100,
+    "method": "tools/call",
+    "params": {
+      "name": "topsolid_run_recipe",
+      "arguments": { "recipe": "ma_nouvelle_recette" }
+    }
+  },
+  "assertions": {
+    "not_contains": ["Erreur", "Exception", "non trouvee"]
+  },
+  "baseline_ms": 2000
+}
+```
+
+#### Document de test de reference
+
+Le fichier `tests/TestDocument.md` decrit le document TopSolid attendu par les tests : nom, type, parametres, esquisses, valeurs attendues. Tous les tests sont calibres sur ce document.
 
 ### 4. Conventions
 
