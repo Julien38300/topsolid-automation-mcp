@@ -5,7 +5,7 @@
 ## Comment ca marche
 
 ```
-Agent IA (Hermes / Claude / OpenClaw / tout client MCP)
+Agent IA (OpenClaw / Claude / tout client MCP)
   |
   v
 TopSolidMcpServer.exe (stdio JSON-RPC)
@@ -63,27 +63,34 @@ L'outil principal. Le LLM choisit une recette par nom, aucune generation de code
 | Interactif | 3 | selection shape/face/point dans TopSolid |
 
 ### Dataset LoRA (`lora-dataset.jsonl`)
-732 paires d'entrainement au format ShareGPT pour fine-tuner un modele 3B sur la selection de recettes.
+2161 paires d'entrainement au format ShareGPT pour fine-tuner un modele 3B sur la selection de recettes. Couvre les 112 recettes avec variantes francais naturel/metier et paires d'ambiguite Smart params.
 
 ### Tests
 Suite de tests automatises contre une instance TopSolid vivante. Scripts PowerShell executables en batch.
 
-## Architecture Hermes (agent)
+## Architecture Agent (OpenClaw)
 
 ```
-ministral 8B (main agent — conversation, raisonnement)
+OpenClaw Main (cloud, leger — routing + conversation)
   |
-  v
-ministral 3B (sous-agent TopSolid — selection de recettes)
+  ├── topsolid-recipes (3B LoRA, local)
+  |     → topsolid_run_recipe
+  |     113 recettes pre-construites
+  |     Classification : intent → nom de recette
+  |     Latence : ~2-4 secondes
   |
-  v
-TopSolidMcpServer.exe (MCP stdio)
-  |
-  v
-TopSolid 7 (WCF port 8090)
+  └── topsolid-automation (14-24B, local — a venir)
+        → topsolid_execute_script + api_help + find_path
+        Generation C# via le graphe API
+        Cas hors-recettes, scripts ad-hoc
+        Latence cible : < 30 secondes
 ```
 
-Le modele 8B garde la coherence conversationnelle. Le modele 3B execute les recettes via `run_recipe`. Le LoRA (futur) cible le 3B pour ameliorer sa connaissance TopSolid.
+Le Main (cloud) garde la coherence conversationnelle et route les demandes :
+- **Recette connue** (80% des cas) → sous-agent 3B, rapide et fiable
+- **Cas custom** (20%) → sous-agent 14-24B, generation de code via le graphe
+
+Le LoRA cible le 3B pour ameliorer sa connaissance TopSolid. Un second LoRA (futur) ciblera le 14-24B pour la generation C#.
 
 ## Projet Cortana / Noemid
 
