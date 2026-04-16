@@ -123,17 +123,45 @@ def ask_ollama(model, query):
 
 
 def parse_tool_call(response):
-    """Extract recipe name from <tool_call>..."""
-    if "<tool_call>" not in response:
-        return None
-    try:
-        start = response.find("{")
-        end = response.rfind("}") + 1
-        data = json.loads(response[start:end])
-        args = data.get("arguments", {})
-        return args.get("recipe") or args.get("recipe_name")
-    except Exception:
-        return None
+    """Extract recipe name from a tool_call in either Mistral native or Hermes format.
+
+    Mistral native:  [TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{"recipe":"x"}
+    Hermes:          <tool_call>{"name":"...","arguments":{"recipe":"x"}}</tool_call>
+    """
+    import re
+    # Mistral native format
+    if "[TOOL_CALLS]" in response and "[ARGS]" in response:
+        try:
+            args_start = response.find("[ARGS]") + len("[ARGS]")
+            json_start = response.find("{", args_start)
+            # Find matching end-brace (handles nested? for our case flat is fine)
+            depth = 0
+            json_end = json_start
+            for i in range(json_start, len(response)):
+                if response[i] == "{":
+                    depth += 1
+                elif response[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        json_end = i + 1
+                        break
+            args = json.loads(response[json_start:json_end])
+            return args.get("recipe") or args.get("recipe_name")
+        except Exception:
+            return None
+
+    # Hermes format (legacy fallback)
+    if "<tool_call>" in response:
+        try:
+            start = response.find("{")
+            end = response.rfind("}") + 1
+            data = json.loads(response[start:end])
+            args = data.get("arguments", {})
+            return args.get("recipe") or args.get("recipe_name")
+        except Exception:
+            return None
+
+    return None
 
 
 def evaluate_model(model, suite):
