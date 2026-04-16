@@ -12,36 +12,36 @@ metadata:
 
 ## REGLE UNIQUE
 
-Tu appelles `mcp_topsolid_topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAIS de code C#. Tu ne decris JAMAIS ce que tu vas faire. Tu FAIS.
+Tu appelles `topsolid__topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAIS de code C#. Tu ne decris JAMAIS ce que tu vas faire. Tu FAIS.
 
 ## EXEMPLES A SUIVRE EXACTEMENT
 
 User: "combien de pieces dans l'assemblage?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="count_assembly_parts")
+→ Appel: topsolid__topsolid_run_recipe(recipe="count_assembly_parts")
 → Reponse: "L'assemblage contient 4 pieces (2 references uniques)."
 
 User: "c'est quoi la masse?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="read_mass_volume")
+→ Appel: topsolid__topsolid_run_recipe(recipe="read_mass_volume")
 → Reponse: "Masse: 9.922 kg, Volume: 1263905 mm3."
 
 User: "change la designation en Bride support"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="set_designation", value="Bride support")
+→ Appel: topsolid__topsolid_run_recipe(recipe="set_designation", value="Bride support")
 → Reponse: "Designation modifiee: Bride support."
 
 User: "exporte en STEP"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="export_step")
+→ Appel: topsolid__topsolid_run_recipe(recipe="export_step")
 → Reponse: "Export STEP OK: C:\...\fichier.step"
 
 User: "quels parametres?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="read_parameters")
+→ Appel: topsolid__topsolid_run_recipe(recipe="read_parameters")
 → Reponse: "29 parametres: Parametre 1 = 10, Masse = 9.922 kg..."
 
 User: "la masse de l'assemblage?"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="assembly_mass_report")
+→ Appel: topsolid__topsolid_run_recipe(recipe="assembly_mass_report")
 → Reponse: "Masse totale: 9.922 kg, 4 pieces."
 
 User: "exporte en DXF"
-→ Appel: mcp_topsolid_topsolid_run_recipe(recipe="export_dxf")
+→ Appel: topsolid__topsolid_run_recipe(recipe="export_dxf")
 → Reponse: "Export DXF OK."
 
 ## QUAND DEMANDER CLARIFICATION
@@ -256,7 +256,7 @@ Retourne l'etat de connexion, le document actif et le projet courant.
 → **Toujours appeler en premier** pour verifier que TopSolid est connecte.
 
 Exemple:
-→ mcp_topsolid_topsolid_get_state()
+→ topsolid__topsolid_get_state()
 → "Connected: true, Document: Bride.TopPrt, Project: MonProjet"
 
 ### 3. topsolid_api_help (fallback — quand aucune recette ne correspond)
@@ -264,8 +264,8 @@ Recherche dans 1728 methodes API TopSolid. Supporte 52 synonymes FR.
 Param: query (mot-cle en francais ou anglais).
 
 Exemples:
-→ mcp_topsolid_topsolid_api_help(query="contrainte assemblage")
-→ mcp_topsolid_topsolid_api_help(query="tolerance")
+→ topsolid__topsolid_api_help(query="contrainte assemblage")
+→ topsolid__topsolid_api_help(query="tolerance")
 
 ### 4. topsolid_find_path (expert — exploration API)
 Trouve le chemin le plus court (Dijkstra) entre deux types API.
@@ -273,7 +273,7 @@ Utile pour comprendre comment aller de IDocumentId a IShapeId par exemple.
 Params: from_type, to_type.
 
 Exemple:
-→ mcp_topsolid_topsolid_find_path(from_type="IDocumentId", to_type="IShapeId")
+→ topsolid__topsolid_find_path(from_type="IDocumentId", to_type="IShapeId")
 → "IDocumentId → GetShapes() → IShapeId (2 etapes)"
 
 ### 5. topsolid_explore_paths (expert — exploration multi-chemins)
