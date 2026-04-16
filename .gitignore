@@ -47,3 +47,4 @@ __pycache__/
 *.TopAsm
 *.TopFam
 *.TopDrf
+unsloth_compiled_cache/
