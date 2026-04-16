@@ -1718,9 +1718,11 @@ def make_entry(human_msg, gpt_msg, system=None):
 
 
 def make_tool_call(recipe, value=None):
+    """Mistral native tool call format: [TOOL_CALLS]name[ARGS]{args}
+    The training script wraps this with </s> at the end."""
     if value:
-        return f'<tool_call>{{"name":"topsolid__topsolid_run_recipe","arguments":{{"recipe":"{recipe}","value":"{value}"}}}}</tool_call>'
-    return f'<tool_call>{{"name":"topsolid__topsolid_run_recipe","arguments":{{"recipe":"{recipe}"}}}}</tool_call>'
+        return f'[TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{{"recipe":"{recipe}","value":"{value}"}}'
+    return f'[TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{{"recipe":"{recipe}"}}'
 
 
 # ============================================================================
@@ -1744,9 +1746,9 @@ def migrate_v5_dataset():
             # Update system prompt
             convs[0]["value"] = SYSTEM_PROMPT
 
-            # Replace FR recipe names in GPT response
+            # Replace FR recipe names in GPT response (both formats)
             gpt_msg = convs[2]["value"]
-            if "<tool_call>" in gpt_msg:
+            if "[TOOL_CALLS]" in gpt_msg or ("[TOOL_CALLS]" in gpt_msg or "<tool_call>" in gpt_msg):
                 for fr_name, en_name in FR_TO_EN.items():
                     gpt_msg = gpt_msg.replace(f'"recipe":"{fr_name}"', f'"recipe":"{en_name}"')
                 convs[2]["value"] = gpt_msg
@@ -1788,7 +1790,7 @@ def count_existing_variants(migrated_entries, manual_entries):
     counts = {}
     for entry in migrated_entries + manual_entries:
         gpt_msg = entry["conversations"][2]["value"]
-        if "<tool_call>" in gpt_msg:
+        if ("[TOOL_CALLS]" in gpt_msg or "<tool_call>" in gpt_msg):
             # Extract recipe name
             try:
                 start = gpt_msg.index('"recipe":"') + len('"recipe":"')
@@ -2169,7 +2171,7 @@ def validate_dataset(entries, all_en_recipes):
             duplicates += 1
         seen_questions.add(q_key)
 
-        if "<tool_call>" in gpt_msg:
+        if ("[TOOL_CALLS]" in gpt_msg or "<tool_call>" in gpt_msg):
             tool_call_count += 1
 
             # Extract recipe name
@@ -2294,13 +2296,13 @@ def main():
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
     # Count tool_calls for stats
-    tc_count = sum(1 for e in all_entries if "<tool_call>" in e["conversations"][2]["value"])
+    tc_count = sum(1 for e in all_entries if ("[TOOL_CALLS]" in e["conversations"][2]["value"] or "<tool_call>" in e["conversations"][2]["value"]))
 
     # Per-recipe counts
     recipe_counts = {}
     for e in all_entries:
         gpt_msg = e["conversations"][2]["value"]
-        if "<tool_call>" in gpt_msg:
+        if ("[TOOL_CALLS]" in gpt_msg or "<tool_call>" in gpt_msg):
             try:
                 start = gpt_msg.index('"recipe":"') + len('"recipe":"')
                 end = gpt_msg.index('"', start)

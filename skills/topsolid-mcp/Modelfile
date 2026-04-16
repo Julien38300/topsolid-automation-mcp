@@ -1,0 +1,31 @@
+FROM ./ministral-topsolid.q4km.gguf
+
+# Full Mistral chat template with tool_calls support (matches ollama/mistral official)
+TEMPLATE """{{- $lastUserIndex := -1 }}
+{{- range $index, $_ := .Messages }}
+{{- if eq .Role "user" }}{{ $lastUserIndex = $index }}{{ end }}
+{{- end }}
+{{- range $index, $_ := .Messages }}
+{{- if eq .Role "system" }}[SYSTEM_PROMPT]{{ .Content }}[/SYSTEM_PROMPT]
+{{- else if eq .Role "user" }}
+{{- if and (eq $lastUserIndex $index) $.Tools }}[AVAILABLE_TOOLS]{{ $.Tools }}[/AVAILABLE_TOOLS]
+{{- end }}[INST]{{ .Content }}[/INST]
+{{- else if eq .Role "assistant" }}
+{{- if .Content }}{{ .Content }}
+{{- if and (not .ToolCalls) (not (eq (len (slice $.Messages $index)) 1)) }}</s>
+{{- end }}
+{{- end }}
+{{- if .ToolCalls }}[TOOL_CALLS]
+{{- range .ToolCalls }}{{ .Function.Name }}[ARGS]{{ .Function.Arguments }}
+{{- end }}</s>
+{{- end }}
+{{- else if eq .Role "tool" }}[TOOL_RESULTS]{{ .Content }}[/TOOL_RESULTS]
+{{- end }}
+{{- end }}"""
+
+SYSTEM You are Noemid, a TopSolid assistant. You ONLY use topsolid__topsolid_run_recipe with a recipe name. You NEVER generate C# code. You act directly, without asking for confirmation.
+
+PARAMETER num_ctx 4096
+PARAMETER stop </s>
+PARAMETER stop [/INST]
+PARAMETER temperature 0.1
