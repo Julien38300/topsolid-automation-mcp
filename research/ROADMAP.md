@@ -1,5 +1,5 @@
 # ROADMAP - Cortana Project
-Derniere mise a jour : 2026-04-15
+Derniere mise a jour : 2026-04-16
 
 ## Progression par Phases
 
@@ -20,7 +20,7 @@ Phase 6d ████████████████████ 100%  Fix 
 Phase 6e ██████████████░░░░░░  70%  Tier 3 recettes (M-58 mise en plan/BOM/export)
 Phase 7  ░░░░░░░░░░░░░░░░░░░░   0%  Graphe multi-couche (commands, ADS)
 Phase 8  ░░░░░░░░░░░░░░░░░░░░   0%  Outils metier & securite
-Phase 9a ██████████████░░░░░░  70%  LoRA 3B recettes (pipeline auto, training EN en cours)
+Phase 9a ████████████████████ 100%  LoRA 3B recettes (100/100 eval, OpenClaw prefix, PROD)
 Phase 9b ░░░░░░░░░░░░░░░░░░░░   0%  LoRA 14-24B automation (C# via graph API — DEC-011)
 Phase 10 █████████████░░░░░░░  65%  Test & validation (85 tests, 68/72 PASS MCP + e2e Hermes)
 Phase 11 ██░░░░░░░░░░░░░░░░░░  10%  Internationalisation (MCP EN ✅, dico 69K paires, multilingue futur)
@@ -84,7 +84,7 @@ Phase L  ████████████████████ 100%  Laun
 
 | Priorite | Mission | Description |
 |----------|---------|-------------|
-| 1 | Phase 9a | LoRA 3B recettes : training EN en cours, eval a venir |
+| ~~1~~ | ~~Phase 9a~~ | ✅ **DONE** — LoRA 3B recettes : 100/100 eval, OpenClaw prefix, PROD |
 | 2 | Phase 9b | LoRA 14-24B automation : modele qui genere du C# via graph API (DEC-011) |
 | 3 | M-58 | Recettes Tier 3 restantes : mise en plan, nomenclature, mise a plat |
 | 4 | M-59 | Documenter exporteurs et options (batch, formats) |
