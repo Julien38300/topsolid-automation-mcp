@@ -89,10 +89,11 @@ Phase L  ████████████████████ 100%  Laun
 | 3 | M-58 | Recettes Tier 3 restantes : mise en plan, nomenclature, mise a plat |
 | 4 | M-59 | Documenter exporteurs et options (batch, formats) |
 | 5 | M-60 | Recettes proprietes utilisateur + occurrence |
-| 6 | — | Tier 2 avance (S-087 DerivePartForModification, S-088 substitution) |
-| 7 | M-57 | Injecter aide en ligne MD dans RAG/ChromaDB |
-| 8 | M-36 | Benchmark latence/tokens/taux de succes |
-| 9 | Phase 11 | Multilingue : agent repond dans la langue de l'utilisateur (dico 69K paires) |
+| 6 | M-61 | **Publier LoRA sur Hugging Face** (`ministral-topsolid` GGUF + Modelfile + SKILL.md) — que les users fassent `ollama pull hf.co/Julien38300/ministral-topsolid` |
+| 7 | — | Tier 2 avance (S-087 DerivePartForModification, S-088 substitution) |
+| 8 | M-57 | Injecter aide en ligne MD dans RAG/ChromaDB |
+| 9 | M-36 | Benchmark latence/tokens/taux de succes |
+| 10 | Phase 11 | Multilingue : agent repond dans la langue de l'utilisateur (dico 69K paires) |
 
 ## Risques
 
