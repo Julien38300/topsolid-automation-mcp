@@ -23,6 +23,8 @@ namespace TopSolidMcpServer.Utils
         private ToolStripMenuItem _statusItem;
         private ToolStripMenuItem _reconnectItem;
         private Action _onReconnectRequested;
+        private int _port;
+        private bool? _lastConnectedState;
 
         public TrayIcon(Action onShutdownRequested)
         {
@@ -38,20 +40,39 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>
-        /// Updates the connection info shown in the tray (port, status).
+        /// Sets the TCP port used for TopSolid connection. Called once at startup.
         /// </summary>
-        public void SetConnectionInfo(int port)
+        public void SetPort(int port)
+        {
+            _port = port;
+            UpdateStatusText();
+        }
+
+        /// <summary>
+        /// Updates the status text in the tray menu. Thread-safe.
+        /// </summary>
+        private void UpdateStatusText()
         {
             if (_statusItem == null) return;
+
+            string portSuffix = _port > 0 ? " (port " + _port + ")" : "";
+            string text;
+            if (_lastConnectedState == null)
+                text = "TopSolid : en attente..." + portSuffix;
+            else if (_lastConnectedState == true)
+                text = "TopSolid : connecte" + portSuffix;
+            else
+                text = "TopSolid : deconnecte" + portSuffix;
+
             try
             {
                 var parent = _statusItem.GetCurrentParent();
                 if (parent != null && parent.InvokeRequired)
-                    parent.BeginInvoke(new Action(() => _statusItem.Text = "TopSolid : deconnecte (port " + port + ")"));
+                    parent.BeginInvoke(new Action(() => _statusItem.Text = text));
                 else
-                    _statusItem.Text = "TopSolid : deconnecte (port " + port + ")";
+                    _statusItem.Text = text;
             }
-            catch { }
+            catch { /* tray already disposed */ }
         }
 
         /// <summary>
@@ -68,25 +89,12 @@ namespace TopSolidMcpServer.Utils
 
         /// <summary>
         /// Updates the TopSolid connection status shown in the tray menu.
+        /// Includes port number for clarity.
         /// </summary>
         public void SetConnected(bool connected)
         {
-            if (_statusItem == null) return;
-            try
-            {
-                if (_statusItem.GetCurrentParent() != null && _statusItem.GetCurrentParent().InvokeRequired)
-                {
-                    _statusItem.GetCurrentParent().BeginInvoke(new Action(() =>
-                    {
-                        _statusItem.Text = connected ? "TopSolid : connecte" : "TopSolid : deconnecte";
-                    }));
-                }
-                else
-                {
-                    _statusItem.Text = connected ? "TopSolid : connecte" : "TopSolid : deconnecte";
-                }
-            }
-            catch { /* tray already disposed */ }
+            _lastConnectedState = connected;
+            UpdateStatusText();
         }
 
         private void RunTray()
@@ -106,10 +114,16 @@ namespace TopSolidMcpServer.Utils
             versionItem.Font = new Font(versionItem.Font, FontStyle.Bold);
             menu.Items.Add(versionItem);
 
-            // Connection status
-            _statusItem = new ToolStripMenuItem("TopSolid : en attente...");
+            // Connection status — show port if already known
+            string initStatus = _port > 0
+                ? "TopSolid : en attente... (port " + _port + ")"
+                : "TopSolid : en attente...";
+            _statusItem = new ToolStripMenuItem(initStatus);
             _statusItem.Enabled = false;
             menu.Items.Add(_statusItem);
+
+            // Apply any state that was set before the menu was created
+            UpdateStatusText();
 
             // Reconnect button
             _reconnectItem = new ToolStripMenuItem("Reconnecter a TopSolid");
