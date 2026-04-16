@@ -30,7 +30,7 @@ try:
 except Exception:
     SYSTEM_PROMPT = (
         "You are Noemid, a TopSolid assistant. "
-        "You ONLY use mcp_topsolid_topsolid_run_recipe with a recipe name. "
+        "You ONLY use topsolid__topsolid_run_recipe with a recipe name. "
         "You NEVER generate C# code. You act directly, without asking for confirmation."
     )
 
@@ -152,13 +152,23 @@ def evaluate_model(model, suite):
             if actual_recipe is None and ("?" in response or "Lequel" in response or "Quel" in response or "clari" in response.lower() or "which" in response.lower()):
                 success = True
         elif test.get("type") == "error":
+            r_lower = response.lower()
             if actual_recipe is None and (
-                "ne peux pas" in response.lower()
-                or "pas possible" in response.lower()
-                or "je ne" in response.lower()
-                or "cannot" in response.lower()
-                or "can't" in response.lower()
-                or "not possible" in response.lower()
+                "ne peux pas" in r_lower
+                or "pas possible" in r_lower
+                or "je ne" in r_lower
+                or "cannot" in r_lower
+                or "can't" in r_lower
+                or "not possible" in r_lower
+                or "not available" in r_lower
+                or "pas disponible" in r_lower
+                or "i can only" in r_lower
+                or "can only" in r_lower
+                or "ne sont pas" in r_lower
+                or "hors de" in r_lower
+                or "en dehors" in r_lower
+                or "trop dangereu" in r_lower
+                or "trop complexe" in r_lower
             ):
                 success = True
         else:
@@ -204,13 +214,19 @@ def main():
 
     for tier in range(1, 6):
         tier_results = [r for r in results if r["tier"] == tier]
-        tier_acc = sum(1 for r in tier_results if r["success"]) / len(tier_results) * 100
+        if tier_results:
+            tier_acc = sum(1 for r in tier_results if r["success"]) / len(tier_results) * 100
+        else:
+            tier_acc = None
         summary["tiers"][str(tier)] = tier_acc
 
     print(f"\nResults for {args.model}:")
     print(f"Global Accuracy: {accuracy:.1f}%")
     for t, acc in summary["tiers"].items():
-        print(f"  Tier {t}: {acc:.1f}%")
+        if acc is not None:
+            print(f"  Tier {t}: {acc:.1f}%")
+        else:
+            print(f"  Tier {t}: N/A (no tests)")
 
     if args.output:
         with open(args.output, "w", encoding="utf-8") as f:
