@@ -178,7 +178,7 @@ namespace TopSolidMcpServer
                 tray.Start();
 
                 // Wire tray icon to connector (AFTER tray.Start())
-                tray.SetConnectionInfo(port);
+                tray.SetPort(port);
                 tray.SetConnected(connector.IsConnected);
 
                 connector.ConnectionChanged += (connected) =>
