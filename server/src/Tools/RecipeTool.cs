@@ -2364,10 +2364,12 @@ namespace TopSolidMcpServer.Tools
             string value = arguments["value"]?.ToString() ?? "";
             code = code.Replace("{value}", value.Replace("\\", "\\\\").Replace("\"", "\\\""));
 
-            // Ensure connector is initialized
+            // Ensure connector is initialized and connected (auto-reconnect if needed)
             var connector = _connectorProvider();
             if (connector == null)
-                return "Error: TopSolid not connected.";
+                return "Error: TopSolid connector not initialized.";
+            if (!connector.EnsureConnected())
+                return "Error: TopSolid not connected. Please check that TopSolid is running with Automation enabled (port 8090). Use the tray icon to reconnect.";
 
             if (recipe.IsModification)
                 return ScriptExecutor.ExecuteModification(code);

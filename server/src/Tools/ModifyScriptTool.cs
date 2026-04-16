@@ -74,8 +74,8 @@ namespace TopSolidMcpServer.Tools
 
                 var connector = _connectorProvider();
 
-                if (!connector.IsConnected && !connector.Connect())
-                    return "TopSolid n'est pas connecté. Impossible d'exécuter le script.";
+                if (!connector.EnsureConnected())
+                    return "Error: TopSolid not connected. Please check that TopSolid is running with Automation enabled.";
 
                 return ScriptExecutor.ExecuteModification(code);
             }
