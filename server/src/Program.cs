@@ -86,30 +86,39 @@ namespace TopSolidMcpServer
             try
             {
                 TypeGraph graph = null;
-                TopSolidConnector connector = null;
                 TypeNameResolver resolver = null;
-                bool initialized = false;
+                bool graphInitialized = false;
 
-                Action EnsureInitialized = () =>
+                // ── Connector: created IMMEDIATELY (not lazy) ──
+                // so the tray icon and reconnect button work from the start.
+                int port = 8090;
+                string portArg = GetArg(args, "--port");
+                if (portArg != null && int.TryParse(portArg, out int parsedPort))
                 {
-                    if (initialized) return;
-                    initialized = true;
+                    port = parsedPort;
+                }
+                var connector = new TopSolidConnector(port);
+                Console.Error.WriteLine($"[MCP-INFO] Connector ready (port {port}). Attempting initial connection...");
+                connector.Connect(); // non-blocking, just tries once
 
-                    Console.Error.WriteLine("[MCP-INFO] First tool call — performing slow initialization...");
+                // ── Graph: lazy-loaded on first tool call (heavy) ──
+                Action EnsureGraphLoaded = () =>
+                {
+                    if (graphInitialized) return;
+                    graphInitialized = true;
 
-                    // Path to graph data — search in multiple locations
+                    Console.Error.WriteLine("[MCP-INFO] First tool call — loading graph...");
+
                     string baseDir = AppDomain.CurrentDomain.BaseDirectory;
                     string graphPath = Path.Combine(baseDir, "data", "graph.json");
 
                     if (!File.Exists(graphPath))
                     {
-                        // Fallback: graph.json next to the .exe (release layout)
                         string rootPath = Path.Combine(baseDir, "graph.json");
                         if (File.Exists(rootPath)) graphPath = rootPath;
                     }
                     if (!File.Exists(graphPath))
                     {
-                        // Fallback: dev layout (src/bin/Debug/net48 -> data/)
                         string devPath = Path.Combine(baseDir, "..", "..", "..", "data", "graph.json");
                         if (File.Exists(devPath)) graphPath = devPath;
                     }
@@ -128,68 +137,32 @@ namespace TopSolidMcpServer
                         throw new FileNotFoundException($"Graph data not found at expected locations (e.g. {graphPath})");
                     }
 
-                    // Initialize the TopSolid connector (Automation API)
-                    // Parse --port argument (default 8090)
-                    int port = 8090;
-                    string portArg = GetArg(args, "--port");
-                    if (portArg != null && int.TryParse(portArg, out int parsedPort))
-                    {
-                        port = parsedPort;
-                    }
-                    connector = new TopSolidConnector(port);
-                    tray?.SetConnectionInfo(port);
-
-                    // Wire connection status changes to tray icon
-                    connector.ConnectionChanged += (connected) =>
-                    {
-                        tray?.SetConnected(connected);
-                        if (connected)
-                            Console.Error.WriteLine("[MCP-INFO] TopSolid connection established.");
-                        else
-                            Console.Error.WriteLine("[MCP-INFO] TopSolid connection lost.");
-                    };
-
-                    // Wire tray icon reconnect button
-                    tray?.SetReconnectAction(() =>
-                    {
-                        bool ok = connector.Connect();
-                        Console.Error.WriteLine(ok
-                            ? "[MCP-INFO] Manual reconnect succeeded."
-                            : "[MCP-INFO] Manual reconnect failed — TopSolid not available.");
-                    });
-
-                    connector.Connect();
-
                     resolver = new TypeNameResolver(graph);
-
-                    // Update tray icon status
-                    tray?.SetConnected(connector.IsConnected);
-
-                    Console.Error.WriteLine("[MCP-INFO] Initialization complete.");
+                    Console.Error.WriteLine("[MCP-INFO] Graph initialization complete.");
                 };
 
                 var registry = new McpToolRegistry();
 
-                // Register tools
-                var findPathTool = new FindPathTool(() => { EnsureInitialized(); return graph; }, () => { EnsureInitialized(); return resolver; });
+                // Register tools — graph is lazy, connector is immediate
+                var findPathTool = new FindPathTool(() => { EnsureGraphLoaded(); return graph; }, () => { EnsureGraphLoaded(); return resolver; });
                 findPathTool.Register(registry);
 
-                var explorePathsTool = new ExplorePathsTool(() => { EnsureInitialized(); return graph; }, () => { EnsureInitialized(); return resolver; });
+                var explorePathsTool = new ExplorePathsTool(() => { EnsureGraphLoaded(); return graph; }, () => { EnsureGraphLoaded(); return resolver; });
                 explorePathsTool.Register(registry);
 
-                var getStateTool = new GetStateTool(() => { EnsureInitialized(); return connector; });
+                var getStateTool = new GetStateTool(() => connector);
                 getStateTool.Register(registry);
 
-                var executeScriptTool = new ExecuteScriptTool(() => { EnsureInitialized(); return connector; });
+                var executeScriptTool = new ExecuteScriptTool(() => connector);
                 executeScriptTool.Register(registry);
 
-                var modifyScriptTool = new ModifyScriptTool(() => { EnsureInitialized(); return connector; });
+                var modifyScriptTool = new ModifyScriptTool(() => connector);
                 modifyScriptTool.Register(registry);
 
-                var apiHelpTool = new ApiHelpTool(() => { EnsureInitialized(); return graph; });
+                var apiHelpTool = new ApiHelpTool(() => { EnsureGraphLoaded(); return graph; });
                 apiHelpTool.Register(registry);
 
-                var recipeTool = new RecipeTool(() => { EnsureInitialized(); return connector; });
+                var recipeTool = new RecipeTool(() => connector);
                 recipeTool.Register(registry);
 
                 var router = new McpRouter(registry);
@@ -198,12 +171,31 @@ namespace TopSolidMcpServer
                 // Start tray icon (background STA thread)
                 tray = new TrayIcon(() =>
                 {
-                    // Shutdown: close stdin to break the ReadLine loop
                     Console.Error.WriteLine("[MCP-INFO] Shutdown requested from tray.");
                     try { Console.In.Close(); } catch { }
                     Environment.Exit(0);
                 });
                 tray.Start();
+
+                // Wire tray icon to connector (AFTER tray.Start())
+                tray.SetConnectionInfo(port);
+                tray.SetConnected(connector.IsConnected);
+
+                connector.ConnectionChanged += (connected) =>
+                {
+                    tray.SetConnected(connected);
+                    Console.Error.WriteLine(connected
+                        ? "[MCP-INFO] TopSolid connection established."
+                        : "[MCP-INFO] TopSolid connection lost.");
+                };
+
+                tray.SetReconnectAction(() =>
+                {
+                    bool ok = connector.Connect();
+                    Console.Error.WriteLine(ok
+                        ? "[MCP-INFO] Manual reconnect succeeded."
+                        : "[MCP-INFO] Manual reconnect failed — TopSolid not available on port " + port + ".");
+                });
 
                 Console.Error.WriteLine("[MCP-INFO] Server ready. Listening on stdin.");
                 server.Start();
