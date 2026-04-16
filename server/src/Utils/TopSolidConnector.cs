@@ -14,6 +14,13 @@ namespace TopSolidMcpServer.Utils
     {
         private bool _isConnected;
         private readonly int _port;
+        private DateTime _lastConnectAttempt = DateTime.MinValue;
+        private static readonly TimeSpan ReconnectCooldown = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// Fired when connection status changes. Used by TrayIcon to update UI.
+        /// </summary>
+        public event Action<bool> ConnectionChanged;
 
         /// <summary>
         /// Creates a connector targeting a specific TopSolid instance via TCP port.
@@ -37,6 +44,9 @@ namespace TopSolidMcpServer.Utils
         /// <returns>True si la connexion est établie, sinon False.</returns>
         public bool Connect()
         {
+            _lastConnectAttempt = DateTime.UtcNow;
+            bool wasConnected = _isConnected;
+
             try
             {
                 // Target the specific TopSolid instance by TCP port.
@@ -63,14 +73,39 @@ namespace TopSolidMcpServer.Utils
                     Console.Error.WriteLine("[TopSolidConnector] TopSolid not available.");
                 }
 
+                // Notify listeners if status changed
+                if (wasConnected != _isConnected)
+                    ConnectionChanged?.Invoke(_isConnected);
+
                 return _isConnected;
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine("[TopSolidConnector] Connection error: " + ex.Message);
                 _isConnected = false;
+                if (wasConnected)
+                    ConnectionChanged?.Invoke(false);
                 return false;
             }
+        }
+
+        /// <summary>
+        /// Ensures a live connection to TopSolid, auto-reconnecting if needed.
+        /// Call this before every operation that requires TopSolid.
+        /// Respects a cooldown to avoid hammering the connection.
+        /// </summary>
+        /// <returns>True if connected, false if TopSolid is unreachable.</returns>
+        public bool EnsureConnected()
+        {
+            if (_isConnected && CheckConnection())
+                return true;
+
+            // Cooldown: don't retry too fast
+            if (DateTime.UtcNow - _lastConnectAttempt < ReconnectCooldown)
+                return false;
+
+            Console.Error.WriteLine("[TopSolidConnector] Connection lost — attempting reconnect...");
+            return Connect();
         }
 
         /// <summary>
@@ -101,9 +136,9 @@ namespace TopSolidMcpServer.Utils
         /// <returns>Une chaîne décrivant l'état ou un message d'erreur.</returns>
         public string GetState()
         {
-            if (!IsConnected && !Connect())
+            if (!EnsureConnected())
             {
-                return "TopSolid n'est pas connecté. Vérifiez que TopSolid est ouvert.\nLes outils find_path et explore_paths restent disponibles.";
+                return "Not connected to TopSolid. Please check that TopSolid is running with Automation enabled (port " + _port + ").\nThe tools find_path and explore_paths are still available.";
             }
 
             try
@@ -159,7 +194,13 @@ namespace TopSolidMcpServer.Utils
             }
             catch
             {
+                bool wasConnected = _isConnected;
                 _isConnected = false;
+                if (wasConnected)
+                {
+                    Console.Error.WriteLine("[TopSolidConnector] Connection lost to TopSolid.");
+                    ConnectionChanged?.Invoke(false);
+                }
                 return false;
             }
         }

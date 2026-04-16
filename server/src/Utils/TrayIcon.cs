@@ -21,10 +21,37 @@ namespace TopSolidMcpServer.Utils
         private Thread _thread;
         private readonly Action _onShutdownRequested;
         private ToolStripMenuItem _statusItem;
+        private ToolStripMenuItem _reconnectItem;
+        private Action _onReconnectRequested;
 
         public TrayIcon(Action onShutdownRequested)
         {
             _onShutdownRequested = onShutdownRequested;
+        }
+
+        /// <summary>
+        /// Sets the callback invoked when user clicks "Reconnecter" in the tray menu.
+        /// </summary>
+        public void SetReconnectAction(Action onReconnect)
+        {
+            _onReconnectRequested = onReconnect;
+        }
+
+        /// <summary>
+        /// Updates the connection info shown in the tray (port, status).
+        /// </summary>
+        public void SetConnectionInfo(int port)
+        {
+            if (_statusItem == null) return;
+            try
+            {
+                var parent = _statusItem.GetCurrentParent();
+                if (parent != null && parent.InvokeRequired)
+                    parent.BeginInvoke(new Action(() => _statusItem.Text = "TopSolid : deconnecte (port " + port + ")"));
+                else
+                    _statusItem.Text = "TopSolid : deconnecte (port " + port + ")";
+            }
+            catch { }
         }
 
         /// <summary>
@@ -84,6 +111,11 @@ namespace TopSolidMcpServer.Utils
             _statusItem.Enabled = false;
             menu.Items.Add(_statusItem);
 
+            // Reconnect button
+            _reconnectItem = new ToolStripMenuItem("Reconnecter a TopSolid");
+            _reconnectItem.Click += OnReconnectClick;
+            menu.Items.Add(_reconnectItem);
+
             menu.Items.Add(new ToolStripSeparator());
 
             // Update
@@ -118,6 +150,37 @@ namespace TopSolidMcpServer.Utils
 
             // Run the Windows Forms message loop (blocks this thread)
             Application.Run();
+        }
+
+        private void OnReconnectClick(object sender, EventArgs e)
+        {
+            if (_onReconnectRequested == null)
+            {
+                _notifyIcon.BalloonTipTitle = "Reconnexion";
+                _notifyIcon.BalloonTipText = "Le serveur n'est pas encore initialise.";
+                _notifyIcon.BalloonTipIcon = ToolTipIcon.Warning;
+                _notifyIcon.ShowBalloonTip(2000);
+                return;
+            }
+
+            _statusItem.Text = "TopSolid : reconnexion...";
+            _notifyIcon.BalloonTipTitle = "TopSolid MCP";
+            _notifyIcon.BalloonTipText = "Tentative de reconnexion...";
+            _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
+            _notifyIcon.ShowBalloonTip(2000);
+
+            // Run reconnect on a background thread (avoid blocking the UI)
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    _onReconnectRequested.Invoke();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("[TrayIcon] Reconnect error: " + ex.Message);
+                }
+            });
         }
 
         private void OnUpdateClick(object sender, EventArgs e)

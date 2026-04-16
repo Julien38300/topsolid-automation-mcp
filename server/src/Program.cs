@@ -137,6 +137,27 @@ namespace TopSolidMcpServer
                         port = parsedPort;
                     }
                     connector = new TopSolidConnector(port);
+                    tray?.SetConnectionInfo(port);
+
+                    // Wire connection status changes to tray icon
+                    connector.ConnectionChanged += (connected) =>
+                    {
+                        tray?.SetConnected(connected);
+                        if (connected)
+                            Console.Error.WriteLine("[MCP-INFO] TopSolid connection established.");
+                        else
+                            Console.Error.WriteLine("[MCP-INFO] TopSolid connection lost.");
+                    };
+
+                    // Wire tray icon reconnect button
+                    tray?.SetReconnectAction(() =>
+                    {
+                        bool ok = connector.Connect();
+                        Console.Error.WriteLine(ok
+                            ? "[MCP-INFO] Manual reconnect succeeded."
+                            : "[MCP-INFO] Manual reconnect failed — TopSolid not available.");
+                    });
+
                     connector.Connect();
 
                     resolver = new TypeNameResolver(graph);
