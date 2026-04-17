@@ -16,7 +16,7 @@ namespace TopSolidMcpServer.Utils
     /// </summary>
     public static class ScriptExecutor
     {
-        private const string TopSolidBinPath = @"C:\Program Files\TOPSOLID\TopSolid 7.20\bin\";
+        private const string TopSolidBinPath = @"C:\Program Files\TOPSOLID\TopSolid 7.21\bin\";
         private const string TopSolidDllName = "TopSolid.Kernel.Automating.dll";
         private const string TopSolidDesignDllName = "TopSolid.Cad.Design.Automating.dll";
         private const string TopSolidDraftingDllName = "TopSolid.Cad.Drafting.Automating.dll";
