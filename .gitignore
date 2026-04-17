@@ -32,6 +32,9 @@ chroma.log
 # Data (large files — tracked separately)
 data/help-md/
 
+# TopSolid API sync pipeline: raw CHM extractions (~25 MB each)
+data/api/*/raw/
+
 # Python
 __pycache__/
 *.pyc

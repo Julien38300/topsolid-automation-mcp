@@ -1,0 +1,5 @@
+# TopSolid API sync pipeline dependencies
+# Install with: pip install -r scripts/requirements-sync.txt
+beautifulsoup4>=4.12
+lxml>=5.0
+jsonschema>=4.20
