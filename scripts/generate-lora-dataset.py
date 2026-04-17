@@ -2058,6 +2058,32 @@ RECIPE_BILINGUAL = {
     # --- Interactive ---
     "select_shape": {"fr": ["selectionne un shape", "laisse-moi choisir une forme", "selection interactive shape"], "en": ["select a shape", "let me pick a shape", "interactive shape selection"]},
     "select_face": {"fr": ["selectionne une face", "laisse-moi choisir une face", "selection interactive face"], "en": ["select a face", "let me pick a face", "interactive face selection"]},
+
+    # --- New in TopSolid 7.21: face cone/torus measurements + operation names ---
+    "get_face_cone_length": {
+        "fr": ["longueur du cone", "mesure la longueur d'une face conique", "longueur de la face cone en mm"],
+        "en": ["cone face length", "measure cone length", "get the length of a cone face"],
+    },
+    "get_face_cone_radius": {
+        "fr": ["rayon du cone", "rayon de la base du cone", "mesure le rayon de la face conique"],
+        "en": ["cone face radius", "measure cone radius", "get the radius of a cone face"],
+    },
+    "get_face_cone_semi_angle": {
+        "fr": ["demi-angle du cone", "angle du cone en degres", "mesure l'angle d'une face conique"],
+        "en": ["cone half-angle", "cone semi-angle in degrees", "get the half-angle of a cone face"],
+    },
+    "get_face_torus_major_radius": {
+        "fr": ["grand rayon du tore", "rayon exterieur du tore", "mesure le grand rayon de la face torique"],
+        "en": ["torus major radius", "outer torus radius", "get the major radius of a torus face"],
+    },
+    "get_face_torus_minor_radius": {
+        "fr": ["petit rayon du tore", "rayon du tube du tore", "mesure le petit rayon de la face torique"],
+        "en": ["torus minor radius", "torus tube radius", "get the minor radius of a torus face"],
+    },
+    "get_item_last_operation_name": {
+        "fr": ["nom de la derniere operation", "quelle operation a cree cette face?", "derniere operation de la face"],
+        "en": ["last operation name", "which operation created this face?", "get the last operation name"],
+    },
 }
 
 

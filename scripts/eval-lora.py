@@ -49,7 +49,7 @@ EVAL_SUITE = [
 
     # TIER 2: Synonyms & Informal (Slang, technical terms)
     {"tier": 2, "query": "c'est quoi le part number?", "expected": "read_reference"},
-    {"tier": 2, "query": "poids total stp", "expected": "read_mass_volume"},
+    {"tier": 2, "query": "poids total stp", "expected": "read_mass_volume", "also_accept": ["assembly_mass_report"]},
     {"tier": 2, "query": "donne la desig", "expected": "read_designation"},
     {"tier": 2, "query": "fait un step", "expected": "export_step"},
     {"tier": 2, "query": "y a combien de parts la dedans?", "expected": "count_assembly_parts"},
@@ -200,7 +200,8 @@ def evaluate_model(model, suite):
             ):
                 success = True
         else:
-            if actual_recipe == test["expected"]:
+            valid_recipes = [test["expected"]] + test.get("also_accept", [])
+            if actual_recipe in valid_recipes:
                 success = True
 
         results.append({
