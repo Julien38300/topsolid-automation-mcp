@@ -2095,9 +2095,9 @@ namespace TopSolidMcpServer.Tools
                 "if (shapes.Count == 1) { target = shapes[0]; }\n" +
                 "else if (shapes.Count > 1)\n" +
                 "{\n" +
-                "    UserQuestion q = new UserQuestion(\"Multiple elements. Select the one to color\");\n" +
+                "    UserQuestion q = new UserQuestion(\"Multiple elements. Select the one to color\", \"\");\n" +
                 "    UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out target);\n" +
-                "    if (answer != UserAnswerType.Validated || target.IsEmpty) { __message = \"Selection cancelled.\"; return; }\n" +
+                "    if (answer != UserAnswerType.Ok || target.IsEmpty) { __message = \"Selection cancelled.\"; return; }\n" +
                 "}\n" +
                 "else { __message = \"No shape in the document.\"; return; }\n" +
                 "TopSolidHost.Elements.SetColor(target, new Color((byte)r, (byte)g, (byte)b));\n" +
@@ -2144,9 +2144,9 @@ namespace TopSolidMcpServer.Tools
                 "if (shapes.Count == 1) { target = shapes[0]; }\n" +
                 "else if (shapes.Count > 1)\n" +
                 "{\n" +
-                "    UserQuestion q = new UserQuestion(\"Select the element\");\n" +
+                "    UserQuestion q = new UserQuestion(\"Select the element\", \"\");\n" +
                 "    UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out target);\n" +
-                "    if (answer != UserAnswerType.Validated || target.IsEmpty) { __message = \"Selection cancelled.\"; return; }\n" +
+                "    if (answer != UserAnswerType.Ok || target.IsEmpty) { __message = \"Selection cancelled.\"; return; }\n" +
                 "}\n" +
                 "else { __message = \"No shape.\"; return; }\n" +
                 "TopSolidHost.Elements.SetTransparency(target, transp);\n" +
@@ -2250,9 +2250,9 @@ namespace TopSolidMcpServer.Tools
             // --- Selection interactive (IUser.Ask*) ---
             { "select_shape", R("Asks the user to select a shape and returns its info",
                 "ElementId selected = ElementId.Empty;\n" +
-                "UserQuestion q = new UserQuestion(\"Select a shape\");\n" +
+                "UserQuestion q = new UserQuestion(\"Select a shape\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out selected);\n" +
-                "if (answer != UserAnswerType.Validated || selected.IsEmpty) return \"Selection cancelled.\";\n" +
+                "if (answer != UserAnswerType.Ok || selected.IsEmpty) return \"Selection cancelled.\";\n" +
                 "string name = TopSolidHost.Elements.GetFriendlyName(selected);\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
                 "sb.AppendLine(\"Selected element: \" + name);\n" +
@@ -2268,10 +2268,10 @@ namespace TopSolidMcpServer.Tools
                 "return sb.ToString();") },
 
             { "select_face", R("Asks the user to select a face and returns its info",
-                "ElementItemId selected = default;\n" +
-                "UserQuestion q = new UserQuestion(\"Select a face\");\n" +
-                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default, out selected);\n" +
-                "if (answer != UserAnswerType.Validated) return \"Selection cancelled.\";\n" +
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select a face\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
                 "Color c = TopSolidHost.Shapes.GetFaceColor(selected);\n" +
                 "sb.AppendLine(\"Face color: RGB(\" + c.R + \",\" + c.G + \",\" + c.B + \")\");\n" +
@@ -2281,11 +2281,90 @@ namespace TopSolidMcpServer.Tools
                 "sb.AppendLine(\"Surface type: \" + surfType);\n" +
                 "return sb.ToString();") },
 
+            // =====================================================================
+            // FACE GEOMETRY — New in TopSolid 7.21 (IShapes cone/torus accessors)
+            // =====================================================================
+            // Each recipe prompts the user to pick a face, then returns the
+            // geometric property. Raw API returns SI (meters/radians); we
+            // convert to user-friendly units (mm, degrees).
+            { "get_face_cone_length", R("Gets the length of a selected cone face (mm). Requires a cone face selection.",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select a cone face\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try {\n" +
+                "    double lengthMeters = TopSolidHost.Shapes.GetFaceConeLength(selected);\n" +
+                "    return \"Cone length: \" + (lengthMeters * 1000).ToString(\"F3\") + \" mm\";\n" +
+                "} catch (Exception ex) {\n" +
+                "    return \"Error (is the selection a cone face?): \" + ex.Message;\n" +
+                "}") },
+
+            { "get_face_cone_radius", R("Gets the base radius of a selected cone face (mm). Requires a cone face selection.",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select a cone face\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try {\n" +
+                "    double radiusMeters = TopSolidHost.Shapes.GetFaceConeRadius(selected);\n" +
+                "    return \"Cone radius: \" + (radiusMeters * 1000).ToString(\"F3\") + \" mm\";\n" +
+                "} catch (Exception ex) {\n" +
+                "    return \"Error (is the selection a cone face?): \" + ex.Message;\n" +
+                "}") },
+
+            { "get_face_cone_semi_angle", R("Gets the half-angle of a selected cone face (degrees). Requires a cone face selection.",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select a cone face\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try {\n" +
+                "    double angleRadians = TopSolidHost.Shapes.GetFaceConeSemiAngle(selected);\n" +
+                "    double angleDegrees = angleRadians * 180.0 / System.Math.PI;\n" +
+                "    return \"Cone semi-angle: \" + angleDegrees.ToString(\"F2\") + \" deg (\" + angleRadians.ToString(\"F4\") + \" rad)\";\n" +
+                "} catch (Exception ex) {\n" +
+                "    return \"Error (is the selection a cone face?): \" + ex.Message;\n" +
+                "}") },
+
+            { "get_face_torus_major_radius", R("Gets the major radius of a selected torus face (mm). Requires a torus face selection.",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select a torus face\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try {\n" +
+                "    double radiusMeters = TopSolidHost.Shapes.GetFaceTorusMajorRadius(selected);\n" +
+                "    return \"Torus major radius: \" + (radiusMeters * 1000).ToString(\"F3\") + \" mm\";\n" +
+                "} catch (Exception ex) {\n" +
+                "    return \"Error (is the selection a torus face?): \" + ex.Message;\n" +
+                "}") },
+
+            { "get_face_torus_minor_radius", R("Gets the minor radius of a selected torus face (mm). Requires a torus face selection.",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select a torus face\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try {\n" +
+                "    double radiusMeters = TopSolidHost.Shapes.GetFaceTorusMinorRadius(selected);\n" +
+                "    return \"Torus minor radius: \" + (radiusMeters * 1000).ToString(\"F3\") + \" mm\";\n" +
+                "} catch (Exception ex) {\n" +
+                "    return \"Error (is the selection a torus face?): \" + ex.Message;\n" +
+                "}") },
+
+            { "get_item_last_operation_name", R("Gets the name of the last operation that produced a selected face.",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select a face\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try {\n" +
+                "    string opName = TopSolidHost.Operations.GetItemLastOperationName(selected);\n" +
+                "    return string.IsNullOrEmpty(opName) ? \"Last operation: (none)\" : \"Last operation: \" + opName;\n" +
+                "} catch (Exception ex) {\n" +
+                "    return \"Error: \" + ex.Message;\n" +
+                "}") },
+
             { "select_3d_point", R("Asks the user to click a 3D point and returns coordinates",
                 "SmartPoint3D selected;\n" +
-                "UserQuestion q = new UserQuestion(\"Click a 3D point\");\n" +
-                "UserAnswerType answer = TopSolidHost.User.AskPoint3D(q, default, out selected);\n" +
-                "if (answer != UserAnswerType.Validated) return \"Selection cancelled.\";\n" +
+                "UserQuestion q = new UserQuestion(\"Click a 3D point\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskPoint3D(q, default(SmartPoint3D), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
                 "return \"Point: (\" + (selected.X * 1000).ToString(\"F2\") + \", \" + (selected.Y * 1000).ToString(\"F2\") + \", \" + (selected.Z * 1000).ToString(\"F2\") + \") mm\";") },
 
             { "attr_read_face_colors", R("Reads individual face colors",
