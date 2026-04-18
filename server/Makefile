@@ -79,3 +79,26 @@ sync-report:
 
 sync-dry-run:
 	$(PYTHON) $(SCRIPTS)/sync-topsolid-api.py all --dry-run
+
+# ============================================================================
+# Phase 9b — Codestral-22B Code Sub-Agent
+# ============================================================================
+# Usage:
+#   make code-baseline      # Eval vanilla Codestral-22B before training
+#   make code-dataset       # Build the training dataset (~1500 entries)
+#   make code-train         # Train LoRA on Codestral-22B (WSL2, RTX 5090)
+#   make code-eval          # Eval the fine-tuned model
+
+.PHONY: code-baseline code-dataset code-train code-eval code-deploy
+
+code-baseline:
+	$(PYTHON) $(SCRIPTS)/eval-code.py --model codestral:22b --output data/eval-code-baseline.json
+
+code-dataset:
+	$(PYTHON) $(SCRIPTS)/generate-code-dataset.py
+
+code-train:
+	$(PYTHON) $(SCRIPTS)/train-code-lora.py
+
+code-eval:
+	$(PYTHON) $(SCRIPTS)/eval-code.py --model codestral-topsolid --output data/eval-code-lora.json
