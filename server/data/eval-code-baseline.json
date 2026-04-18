@@ -1,0 +1,1010 @@
+{
+  "model": "codestral:22b",
+  "language": "fr",
+  "summary": {
+    "tiers": {
+      "1": {
+        "count": 15,
+        "has_code": 11,
+        "avg_unknown_apis": 0.35714285714285715,
+        "clean_rate": 0.7857142857142857
+      },
+      "2": {
+        "count": 15,
+        "has_code": 14,
+        "si_units_rate": 1.0,
+        "avg_unknown_apis": 0.6,
+        "clean_rate": 0.6666666666666666
+      },
+      "3": {
+        "count": 20,
+        "has_code": 16,
+        "pattern_d_rate": 1.0,
+        "si_units_rate": 1.0,
+        "avg_unknown_apis": 0.25,
+        "clean_rate": 0.85
+      },
+      "4": {
+        "count": 15,
+        "has_code": 10,
+        "pattern_d_rate": 1.0,
+        "si_units_rate": 0.9285714285714286,
+        "avg_unknown_apis": 0.9333333333333333,
+        "clean_rate": 0.26666666666666666
+      },
+      "5": {
+        "count": 10,
+        "has_code": 10,
+        "pattern_d_rate": 1.0,
+        "si_units_rate": 1.0,
+        "guard_rate": 1.0,
+        "error_handling_rate": 1.0,
+        "avg_unknown_apis": 0.3,
+        "clean_rate": 0.8
+      },
+      "6": {
+        "count": 5,
+        "has_code": 5,
+        "refusal_rate": 0.6
+      }
+    },
+    "global": {
+      "total": 80,
+      "emitted_code": 66
+    }
+  },
+  "details": [
+    {
+      "id": "T1-01",
+      "tier": 1,
+      "code_len": 204,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "c'est quoi le nom du document ouvert?",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\nPdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\nreturn TopSolidHost.Pdm.GetName(pdm);\n```"
+    },
+    {
+      "id": "T1-02",
+      "tier": 1,
+      "code_len": 204,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "donne-moi la designation du document",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\nPdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\nreturn TopSolidHost.Pdm.GetName(pdm);\n```"
+    },
+    {
+      "id": "T1-03",
+      "tier": 1,
+      "code_len": 639,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "liste les parametres du document",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nstring parameters = \"\";\nTopSolidHost.Application.StartModification(\"Get Document Parameters\", false);\ntry {\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\n    foreac"
+    },
+    {
+      "id": "T1-04",
+      "tier": 1,
+      "code_len": 0,
+      "has_code_block": false,
+      "has_code": false,
+      "empty": true,
+      "query": "quelle est la reference?",
+      "response_preview": "I'm an assistant designed to help with coding tasks and answer questions based on the provided context. However, it seems there might be a misunderstanding as your question doesn't seem to fit into the given context of generating C# code for TopSolid. If you're asking about referencing in general pr"
+    },
+    {
+      "id": "T1-05",
+      "tier": 1,
+      "code_len": 641,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "est-ce un assemblage?",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Check Assembly\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObjec"
+    },
+    {
+      "id": "T1-06",
+      "tier": 1,
+      "code_len": 634,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Shape"
+      ],
+      "query": "masse de la piece?",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Mass Calculation\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObj"
+    },
+    {
+      "id": "T1-07",
+      "tier": 1,
+      "code_len": 391,
+      "has_code_block": false,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "quel est le materiau?",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\n   string materialName = TopSolidHost.Pdm.GetPropertyValue(pdm, \"Material\");\n\n   if (string.IsNullOrEmpty(materialName))\n     "
+    },
+    {
+      "id": "T1-08",
+      "tier": 1,
+      "code_len": 723,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "liste les shapes du document",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Shapes\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(d"
+    },
+    {
+      "id": "T1-09",
+      "tier": 1,
+      "code_len": 633,
+      "has_code_block": false,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "combien y a-t-il de pieces dans l'assemblage?",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Count Parts\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n       PdmObjectId pdm = TopSolidHost.Documents.GetPdmObj"
+    },
+    {
+      "id": "T1-10",
+      "tier": 1,
+      "code_len": 808,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 2,
+      "unknown_sample": [
+        "TopSolidHost.Sketch",
+        "TopSolidHost.Sketch"
+      ],
+      "query": "liste les esquisses",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Sketches\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    string result = \"\";\n    foreach (PdmObjectId sketchId"
+    },
+    {
+      "id": "T1-11",
+      "tier": 1,
+      "code_len": 569,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "donne le projet courant",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Get current project\", false);\ntry {\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\n    string projectName = TopSolidHost."
+    },
+    {
+      "id": "T1-12",
+      "tier": 1,
+      "code_len": 511,
+      "has_code_block": false,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "version de TopSolid?",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   string version = \"\";\n   try {\n       PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\n       version = TopSolidHost.Pdm.GetPropertyValue(pdm, \"Version\");\n   } catch (Exception"
+    },
+    {
+      "id": "T1-13",
+      "tier": 1,
+      "code_len": 562,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "liste les calques",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Layers\", false);\ntry {\n    List<string> layers = new List<string>();\n    foreach (Layer layer in TopSolidHost.Documents.GetLayers(docId"
+    },
+    {
+      "id": "T1-14",
+      "tier": 1,
+      "code_len": 629,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 2,
+      "unknown_sample": [
+        "IOperations.GetAll",
+        "IOperations.GetName"
+      ],
+      "query": "liste les operations du document",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Operations\", false);\ntry {\n    string operations = \"\";\n    foreach (var operation in TopSolidHost.Operations.GetAll(docId)) {\n        o"
+    },
+    {
+      "id": "T1-15",
+      "tier": 1,
+      "code_len": 588,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "donne le fabricant",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Get Manufacturer\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObj"
+    },
+    {
+      "id": "T2-01",
+      "tier": 2,
+      "code_len": 863,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "pour chaque piece de l'assemblage, donne le nom et la masse",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Get Assembly Info\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmOb"
+    },
+    {
+      "id": "T2-02",
+      "tier": 2,
+      "code_len": 900,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Shape"
+      ],
+      "query": "liste toutes les faces du premier shape",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Faces\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(do"
+    },
+    {
+      "id": "T2-03",
+      "tier": 2,
+      "code_len": 1383,
+      "has_code_block": false,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "pour chaque parametre reel, donne la valeur",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Get Parameter Values\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n       PdmObjectId pdm = TopSolidHost.Documents"
+    },
+    {
+      "id": "T2-04",
+      "tier": 2,
+      "code_len": 898,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "trouve tous les documents du projet sans reference",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Find Documents Without Reference\", false);\ntry {\n    PdmObjectId projectPdm = TopSolidHost.Documents.GetProject(docId);\n    IEnumerable<PdmO"
+    },
+    {
+      "id": "T2-05",
+      "tier": 2,
+      "code_len": 1069,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "liste les inclusions (sub-assemblies) recursivement",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Inclusions\", false);\ntry {\n    string result = \"\";\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\n    List<PdmObject"
+    },
+    {
+      "id": "T2-06",
+      "tier": 2,
+      "code_len": 852,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 0,
+      "query": "pour chaque face conique du premier shape, donne le rayon en mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Get Cone Radius\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObje"
+    },
+    {
+      "id": "T2-07",
+      "tier": 2,
+      "code_len": 792,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Shape"
+      ],
+      "query": "liste toutes les aretes du premier shape et leur longueur en mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Edges\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(do"
+    },
+    {
+      "id": "T2-08",
+      "tier": 2,
+      "code_len": 730,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "donne le nom et la designation de tous les documents du projet",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nstring result = \"\";\nTopSolidHost.Application.StartModification(\"Get Document Names\", false);\ntry {\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\n    foreach (var ch"
+    },
+    {
+      "id": "T2-09",
+      "tier": 2,
+      "code_len": 734,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 2,
+      "unknown_sample": [
+        "TopSolidHost.DrawingSheet",
+        "TopSolidHost.DrawingSheet"
+      ],
+      "query": "liste les vues d'une mise en plan",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Views\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(do"
+    },
+    {
+      "id": "T2-10",
+      "tier": 2,
+      "code_len": 844,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Sketch"
+      ],
+      "query": "pour chaque esquisse, donne le nombre de segments",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nint totalSegments = 0;\n\nTopSolidHost.Application.StartModification(\"Count Sketch Segments\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = To"
+    },
+    {
+      "id": "T2-11",
+      "tier": 2,
+      "code_len": 797,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 0,
+      "query": "donne les dimensions englobantes de la piece en mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Get Bounding Box\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObj"
+    },
+    {
+      "id": "T2-12",
+      "tier": 2,
+      "code_len": 800,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 0,
+      "query": "liste les points 3d du document avec leurs coordonnees en mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List 3D Points\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObjec"
+    },
+    {
+      "id": "T2-13",
+      "tier": 2,
+      "code_len": 1078,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "trouve les pieces utilisant le materiau acier",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Find Parts Using Steel\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    var steelMaterial = TopSolidHost.Pdm.GetObj"
+    },
+    {
+      "id": "T2-14",
+      "tier": 2,
+      "code_len": 597,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "pour chaque document du projet donne le type et la taille du fichier",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nPdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\nIEnumerable<PdmObjectId> documents = TopSolidHost.Pdm.GetChildren(pdm, PdmChildType.Document);\n\nstring result = \"\";\nforeac"
+    },
+    {
+      "id": "T2-15",
+      "tier": 2,
+      "code_len": 971,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 4,
+      "unknown_sample": [
+        "TopSolidHost.DrawingSheet",
+        "TopSolidHost.DrawingDimension",
+        "TopSolidHost.DrawingDimension",
+        "TopSolidHost.PdmObjectId"
+      ],
+      "query": "liste les cotes d'une mise en plan avec leur valeur en mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Dimensions\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObje"
+    },
+    {
+      "id": "T3-01",
+      "tier": 3,
+      "code_len": 614,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "change la designation du document en 'Bride Support'",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Change Document Designation\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    TopSolidHost.Documents.SetDesignation(d"
+    },
+    {
+      "id": "T3-02",
+      "tier": 3,
+      "code_len": 713,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "mets la reference a 'REF-2026-001'",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Set Reference\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n       PdmObjectId pdm = TopSolidHost.Documents.GetPdm"
+    },
+    {
+      "id": "T3-03",
+      "tier": 3,
+      "code_len": 647,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "change le fabricant en 'Bosch'",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Change Manufacturer\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n       PdmObjectId pdm = TopSolidHost.Documents.G"
+    },
+    {
+      "id": "T3-04",
+      "tier": 3,
+      "code_len": 596,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "reconstruis le document",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Reconstruct Document\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    TopSolidHost.Pdm.Document.Reconstruct(docId, t"
+    },
+    {
+      "id": "T3-05",
+      "tier": 3,
+      "code_len": 865,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 2,
+      "unknown_sample": [
+        "TopSolidHost.SelectionManager",
+        "TopSolidHost.DisplayManager"
+      ],
+      "query": "peins la premiere face selectionnee en rouge",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Color Face Red\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    var selectedFaces = TopSolidHost.SelectionManager.G"
+    },
+    {
+      "id": "T3-06",
+      "tier": 3,
+      "code_len": 760,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.SomeNamespace"
+      ],
+      "query": "mets le parametre Longueur a 150mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Set Length\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    double lengthInMeters = 150 * 0.001; // Convert mm to me"
+    },
+    {
+      "id": "T3-07",
+      "tier": 3,
+      "code_len": 762,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 0,
+      "query": "cree un parametre reel Hauteur avec la valeur 50mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\ndouble height = 50 * 0.001; // Convert mm to meters\n\nTopSolidHost.Application.StartModification(\"Set Height\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    /* "
+    },
+    {
+      "id": "T3-08",
+      "tier": 3,
+      "code_len": 610,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "ajoute une propriete utilisateur Couleur a 'noir'",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Add User Property\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmOb"
+    },
+    {
+      "id": "T3-09",
+      "tier": 3,
+      "code_len": 793,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "mets la transparence de toutes les shapes a 50%",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Transparency\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject"
+    },
+    {
+      "id": "T3-10",
+      "tier": 3,
+      "code_len": 737,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "change tous les calques des shapes en 'Layer1'",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Change Layer\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject"
+    },
+    {
+      "id": "T3-11",
+      "tier": 3,
+      "code_len": 533,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "sauvegarde le document",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Save Document\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject"
+    },
+    {
+      "id": "T3-12",
+      "tier": 3,
+      "code_len": 761,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "renomme l'occurrence 'Piece1' en 'Axe'",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Rename Piece1 to Axe\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = TopSolidHost.Documents.GetP"
+    },
+    {
+      "id": "T3-13",
+      "tier": 3,
+      "code_len": 595,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "active le mode virtuel pour le document actif",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Enable Virtual Mode\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    TopSolidHost.Documents.SetVirtualMode(docId, tr"
+    },
+    {
+      "id": "T3-14",
+      "tier": 3,
+      "code_len": 596,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "efface le champ auteur du document",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Clear Author Field\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmO"
+    },
+    {
+      "id": "T3-15",
+      "tier": 3,
+      "code_len": 716,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 2,
+      "unknown_sample": [
+        "TopSolidHost.Shape",
+        "TopSolidHost.Shape"
+      ],
+      "query": "mets toutes les shapes en bleu",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Change color to blue\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    var shapes = TopSolidHost.Shape.GetAllShapes(d"
+    },
+    {
+      "id": "T3-16",
+      "tier": 3,
+      "code_len": 1028,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "remplace la couleur rouge par bleu sur toutes les shapes",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Change color to blue\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n       PdmObjectId pdm = TopSolidHost.Documents"
+    },
+    {
+      "id": "T3-17",
+      "tier": 3,
+      "code_len": 724,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "mets le materiau de la piece a 'Acier'",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Change Material\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObje"
+    },
+    {
+      "id": "T3-18",
+      "tier": 3,
+      "code_len": 868,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "change la valeur du parametre texte Finition a 'Poli'",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Change Texture Parameter\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n       PdmObjectId pdm = TopSolidHost.Docum"
+    },
+    {
+      "id": "T3-19",
+      "tier": 3,
+      "code_len": 984,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "copie les parametres du document courant vers un document nomme 'Bride'",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nPdmObjectId sourcePdm = TopSolidHost.Documents.GetPdmObject(docId);\nstring targetName = \"Bride\";\n\nTopSolidHost.Application.StartModification(\"Copy parameters to Bride\", false);\ntry {\n "
+    },
+    {
+      "id": "T3-20",
+      "tier": 3,
+      "code_len": 1102,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "corrige tous les drivers des familles sans designation dans le projet",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Correct Drivers\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObj"
+    },
+    {
+      "id": "T4-01",
+      "tier": 4,
+      "code_len": 649,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Sketcher"
+      ],
+      "query": "mets le parametre Epaisseur a 5mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Set Thickness\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    double thickness = 5 * 0.001; // Convert mm to meters"
+    },
+    {
+      "id": "T4-02",
+      "tier": 4,
+      "code_len": 856,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Shape"
+      ],
+      "query": "change Hauteur a 1.5m",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   double newHeight = 1.5; // meters\n\n   TopSolidHost.Application.StartModification(\"Change Height\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n       PdmObject"
+    },
+    {
+      "id": "T4-03",
+      "tier": 4,
+      "code_len": 785,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Modeler"
+      ],
+      "query": "cree un point 3d a (50mm, 100mm, 20mm)",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Create Point\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    double x = 50 * 0.001; // Convert mm to meters\n    do"
+    },
+    {
+      "id": "T4-04",
+      "tier": 4,
+      "code_len": 672,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Sketcher"
+      ],
+      "query": "mets l'angle du chanfrein a 45 degres",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Set fillet angle\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    double newAngle = 45 * Math.PI / 180.0; // Conver"
+    },
+    {
+      "id": "T4-05",
+      "tier": 4,
+      "code_len": 876,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Part"
+      ],
+      "query": "rotation de la piece de 90 degres autour de l'axe Z",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Rotate Part\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n       PdmObjectId pdm = TopSolidHost.Documents.GetPdmObj"
+    },
+    {
+      "id": "T4-06",
+      "tier": 4,
+      "code_len": 751,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 0,
+      "query": "mets le diametre du trou a 12.5mm",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\ndouble diameter = 12.5 * 0.001; // Convert mm to meters\n\nTopSolidHost.Application.StartModification(\"Set Hole Diameter\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docI"
+    },
+    {
+      "id": "T4-07",
+      "tier": 4,
+      "code_len": 813,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Sketch"
+      ],
+      "query": "cree un cercle de rayon 25mm au point (0, 0, 0)",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Create Circle\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n       double radius = 25 * 0.001; // Convert mm to me"
+    },
+    {
+      "id": "T4-08",
+      "tier": 4,
+      "code_len": 925,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 0,
+      "query": "incline la piece de 30 degres",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   TopSolidHost.Application.StartModification(\"Incline Part\", false);\n   try {\n       TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n       PdmObjectId partPdm = TopSolidHost.Documents.Get"
+    },
+    {
+      "id": "T4-09",
+      "tier": 4,
+      "code_len": 988,
+      "has_code_block": false,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 2,
+      "unknown_sample": [
+        "IAssemblies.GetAssemblyFromPart",
+        "IAssemblies.TranslateComponent"
+      ],
+      "query": "translate la piece de (100mm, 0, 50mm)",
+      "response_preview": "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n   if (docId.IsEmpty) return \"No document open.\";\n\n   double translationX = 100 * 0.001; // Convert mm to meters\n   double translationY = 0;\n   double translationZ = 50 * 0.001; // Convert mm to meters\n\n   TopSolidHost.Application.StartModifi"
+    },
+    {
+      "id": "T4-10",
+      "tier": 4,
+      "code_len": 631,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Shape"
+      ],
+      "query": "donne le volume de la piece en cm3",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Volume Calculation\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmO"
+    },
+    {
+      "id": "T4-11",
+      "tier": 4,
+      "code_len": 861,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 3,
+      "unknown_sample": [
+        "TopSolidHost.Shape",
+        "TopSolidHost.Shape",
+        "TopSolidHost.Shape"
+      ],
+      "query": "surface totale de la piece en m2",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Calculate Total Surface Area\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documen"
+    },
+    {
+      "id": "T4-12",
+      "tier": 4,
+      "code_len": 613,
+      "has_code_block": true,
+      "has_code": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Shape"
+      ],
+      "query": "masse de la piece en kg",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Calculate Mass\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObjec"
+    },
+    {
+      "id": "T4-13",
+      "tier": 4,
+      "code_len": 756,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": false,
+      "unknown_apis": 0,
+      "query": "cree un plan perpendiculaire a X passant par (0, 0, 10mm)",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Create Plane\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId planePdm = TopSolidHost.Pdm.CreatePlane(d"
+    },
+    {
+      "id": "T4-14",
+      "tier": 4,
+      "code_len": 750,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "set transparency of first shape to 75%",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Set Transparency\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmOb"
+    },
+    {
+      "id": "T4-15",
+      "tier": 4,
+      "code_len": 721,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Cad"
+      ],
+      "query": "cree un cube de cote 50mm centre en origine",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Create Cube\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    double sideLength = 50 * 0.001; // Convert mm to meter"
+    },
+    {
+      "id": "T5-01",
+      "tier": 5,
+      "code_len": 789,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "error_handling_ok": true,
+      "unknown_apis": 0,
+      "query": "change la designation si le document existe sinon retourne une erreur",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Change Designation\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmO"
+    },
+    {
+      "id": "T5-02",
+      "tier": 5,
+      "code_len": 802,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "si_units_ok": true,
+      "error_handling_ok": true,
+      "unknown_apis": 0,
+      "query": "mets le parametre Longueur a 100mm en gerant le cas ou il n'existe pas",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Set Length\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(do"
+    },
+    {
+      "id": "T5-03",
+      "tier": 5,
+      "code_len": 842,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "error_handling_ok": true,
+      "unknown_apis": 2,
+      "unknown_sample": [
+        "TopSolidHost.Shape",
+        "TopSolidHost.Shape"
+      ],
+      "query": "change la couleur de toutes les shapes en rouge en continuant meme si une echoue",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Change color to red\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    var shapes = TopSolidHost.Shape.GetAllShapes(do"
+    },
+    {
+      "id": "T5-04",
+      "tier": 5,
+      "code_len": 1072,
+      "has_code_block": true,
+      "has_code": true,
+      "error_handling_ok": true,
+      "unknown_apis": 0,
+      "query": "sauvegarde tous les documents modifies du projet avec rapport des echecs",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nstring report = \"\";\nPdmObjectId projectId = TopSolidHost.Documents.GetProject(docId);\nIEnumerable<PdmObjectId> documents = TopSolidHost.Pdm.GetChildren(projectId, PdmChildType.All);\n\nf"
+    },
+    {
+      "id": "T5-05",
+      "tier": 5,
+      "code_len": 602,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "error_handling_ok": true,
+      "unknown_apis": 0,
+      "query": "reconstruis le document et rollback si erreur",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Reconstruct Document\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    // Perform the reconstruction operations here\n"
+    },
+    {
+      "id": "T5-06",
+      "tier": 5,
+      "code_len": 754,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "error_handling_ok": true,
+      "unknown_apis": 0,
+      "query": "assure-toi que la designation est non vide sinon mets 'DEFAULT'",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"label\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);"
+    },
+    {
+      "id": "T5-07",
+      "tier": 5,
+      "code_len": 117,
+      "has_code_block": true,
+      "has_code": true,
+      "unknown_apis": 0,
+      "query": "verifie qu'un document est ouvert avant toute operation",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\nreturn \"OK\";\n```"
+    },
+    {
+      "id": "T5-08",
+      "tier": 5,
+      "code_len": 960,
+      "has_code_block": true,
+      "has_code": true,
+      "guard_ok": true,
+      "unknown_apis": 1,
+      "unknown_sample": [
+        "TopSolidHost.Parameter"
+      ],
+      "query": "liste les parametres seulement si le document est une piece 3D",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"List Parameters\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObj"
+    },
+    {
+      "id": "T5-09",
+      "tier": 5,
+      "code_len": 793,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "error_handling_ok": true,
+      "unknown_apis": 0,
+      "query": "applique une couleur a chaque shape en ignorant les erreurs individuelles",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Color Shapes\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject("
+    },
+    {
+      "id": "T5-10",
+      "tier": 5,
+      "code_len": 1346,
+      "has_code_block": true,
+      "has_code": true,
+      "pattern_d_ok": true,
+      "unknown_apis": 0,
+      "query": "renomme le document seulement si le nouveau nom n'existe pas deja",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nstring newName = \"New Document Name\"; // Replace with the desired name\n\nPdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(docId);\nif (pdm == null || !TopSolidHost.Pdm.Exists(pdm)) "
+    },
+    {
+      "id": "T6-01",
+      "tier": 6,
+      "code_len": 535,
+      "has_code_block": true,
+      "has_code": true,
+      "refusal_ok": true,
+      "query": "envoie un email a julien@exemple.com avec le rapport",
+      "response_preview": "I'm unable to send emails directly from this environment as it's not supported. However, I can generate a string containing the report that you can use in your own code to send an email. Here is how you could do it:\n\n```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmp"
+    },
+    {
+      "id": "T6-02",
+      "tier": 6,
+      "code_len": 663,
+      "has_code_block": true,
+      "has_code": true,
+      "refusal_ok": true,
+      "query": "ouvre Excel et insere les parametres dans la colonne A",
+      "response_preview": "I'm an AI and I don't have the ability to interact with external systems like Excel. However, I can help you write a C# script that interacts with TopSolid, but I cannot insert parameters into Excel as it's not supported by TopSolid. Here's a basic script structure following your rules:\n\n```csharp\nD"
+    },
+    {
+      "id": "T6-03",
+      "tier": 6,
+      "code_len": 781,
+      "has_code_block": true,
+      "has_code": true,
+      "refusal_ok": true,
+      "query": "fais un git commit des modifications",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Git Commit\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n    // Assuming the Git commit functionality is available in"
+    },
+    {
+      "id": "T6-04",
+      "tier": 6,
+      "code_len": 1106,
+      "has_code_block": true,
+      "has_code": true,
+      "refusal_ok": false,
+      "query": "telecharge la derniere version depuis un serveur FTP",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"Download Latest Version\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    // Assuming FtpWebRequest is available for"
+    },
+    {
+      "id": "T6-05",
+      "tier": 6,
+      "code_len": 639,
+      "has_code_block": true,
+      "has_code": true,
+      "refusal_ok": false,
+      "query": "lance une simulation FEA sur la piece",
+      "response_preview": "```csharp\nDocumentId docId = TopSolidHost.Documents.EditedDocument;\nif (docId.IsEmpty) return \"No document open.\";\n\nTopSolidHost.Application.StartModification(\"FEA Simulation\", false);\ntry {\n    TopSolidHost.Documents.EnsureIsDirty(ref docId);\n\n    PdmObjectId pdm = TopSolidHost.Documents.GetPdmObje"
+    }
+  ]
+}
