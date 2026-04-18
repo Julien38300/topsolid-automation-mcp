@@ -30,6 +30,91 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>
+        /// Compile a user C# script WITHOUT executing it. Used by
+        /// <c>topsolid_compile</c> for dry-run validation by LLMs generating code.
+        /// Returns "OK" on success (with a diagnostic summary), or the error list.
+        /// No TopSolid connection required (only the DLLs need to load).
+        /// </summary>
+        public static string CompileOnly(string userCode, bool forceModification = false)
+        {
+            try
+            {
+                string preprocessed = PreprocessCode(userCode);
+                bool isModification = forceModification || DetectModification(preprocessed);
+                string wrappedCode = WrapCode(preprocessed, isModification, false);
+
+                using (var provider = new CSharpCodeProvider())
+                {
+                    var parameters = new CompilerParameters
+                    {
+                        GenerateInMemory = true,
+                        GenerateExecutable = false,
+                        TreatWarningsAsErrors = false,
+                    };
+
+                    parameters.ReferencedAssemblies.Add("System.dll");
+                    parameters.ReferencedAssemblies.Add("System.Core.dll");
+                    parameters.ReferencedAssemblies.Add("System.Data.dll");
+                    parameters.ReferencedAssemblies.Add("System.Xml.dll");
+                    parameters.ReferencedAssemblies.Add("System.Linq.dll");
+
+                    string topSolidDllPath = Path.Combine(TopSolidBinPath, TopSolidDllName);
+                    if (!File.Exists(topSolidDllPath))
+                    {
+                        return "Error: TopSolid DLL not found at " + topSolidDllPath;
+                    }
+                    parameters.ReferencedAssemblies.Add(topSolidDllPath);
+
+                    string designDllPath = Path.Combine(TopSolidBinPath, TopSolidDesignDllName);
+                    if (File.Exists(designDllPath)) parameters.ReferencedAssemblies.Add(designDllPath);
+
+                    string draftingDllPath = Path.Combine(TopSolidBinPath, TopSolidDraftingDllName);
+                    if (File.Exists(draftingDllPath)) parameters.ReferencedAssemblies.Add(draftingDllPath);
+
+                    var results = provider.CompileAssemblyFromSource(parameters, wrappedCode);
+
+                    if (results.Errors.HasErrors)
+                    {
+                        var sb = new StringBuilder();
+                        sb.AppendLine("COMPILE ERRORS (" + results.Errors.Count + ")");
+                        foreach (CompilerError err in results.Errors)
+                        {
+                            if (err.IsWarning) continue;
+                            sb.AppendLine(string.Format("  Line {0}: {1} - {2}",
+                                err.Line - 14, err.ErrorNumber, err.ErrorText));
+                        }
+                        return sb.ToString();
+                    }
+
+                    // Success: report warnings if any
+                    int warnCount = 0;
+                    foreach (CompilerError err in results.Errors)
+                    {
+                        if (err.IsWarning) warnCount++;
+                    }
+
+                    var okSb = new StringBuilder();
+                    okSb.AppendLine("OK: code compiles successfully.");
+                    okSb.AppendLine("Mode: " + (isModification ? "WRITE (transactional)" : "READ"));
+                    if (warnCount > 0)
+                    {
+                        okSb.AppendLine("Warnings: " + warnCount);
+                        foreach (CompilerError err in results.Errors)
+                        {
+                            if (!err.IsWarning) continue;
+                            okSb.AppendLine("  Line " + (err.Line - 14) + ": " + err.ErrorText);
+                        }
+                    }
+                    return okSb.ToString();
+                }
+            }
+            catch (Exception ex)
+            {
+                return "Error: " + ex.Message;
+            }
+        }
+
+        /// <summary>
         /// Exécute un script C# dynamique.
         /// </summary>
         /// <param name="userCode">Le fragment de code C# (corps de la méthode Run).</param>
