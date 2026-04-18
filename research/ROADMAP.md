@@ -85,16 +85,38 @@ Phase L  ████████████████████ 100%  Laun
 | Priorite | Mission | Description |
 |----------|---------|-------------|
 | ~~1~~ | ~~Phase 9a~~ | ✅ **DONE** — LoRA 3B recettes : 100/100 eval, OpenClaw prefix, PROD |
-| 2 | Phase 9b | LoRA 14-24B automation : modele qui genere du C# via graph API (DEC-011) |
-| 3 | M-58 | Recettes Tier 3 restantes : mise en plan, nomenclature, mise a plat |
-| 4 | M-59 | Documenter exporteurs et options (batch, formats) |
-| 5 | M-60 | Recettes proprietes utilisateur + occurrence |
-| 6 | M-61 | **Publier LoRA sur Hugging Face** (`ministral-topsolid` GGUF + Modelfile + SKILL.md) — que les users fassent `ollama pull hf.co/Julien38300/ministral-topsolid` |
-| ~~7~~ | ~~M-62~~ | ✅ **DONE** — Pipeline auto-sync TopSolid API depuis CHM (extract/parse/diff/enrich/propose/report) |
-| 7 | — | Tier 2 avance (S-087 DerivePartForModification, S-088 substitution) |
-| 8 | M-57 | Injecter aide en ligne MD dans RAG/ChromaDB |
-| 9 | M-36 | Benchmark latence/tokens/taux de succes |
-| 10 | Phase 11 | Multilingue : agent repond dans la langue de l'utilisateur (dico 69K paires) |
+| 2 | Phase 9b | LoRA 22B automation : Codestral-22B qui genere du C# via graph API (DEC-011). Baseline vanilla OK sur Pattern D (100%) / SI units (97%), faiblesses : Tier 4 creation APIs (27%), Tier 6 refusals (60%). Training en cours. |
+| 3 | **M-70** | **Doc "MCP as knowledge base for standalone C# dev"** — documenter dans VitePress comment Claude Code / un dev humain peut utiliser le MCP pour ecrire des apps C# TopSolid standalone (pas juste en runtime MCP). Cas d'usage : industriels qui veulent une app Visual Studio, formateurs, devs internes. |
+| 4 | **M-71** | **Nouveaux outils MCP** pour renforcer le knowledge-base use case : (a) `topsolid_get_recipe(name)` retourne le code C# d'une recette, (b) `topsolid_compile(code)` dry-run compile check, (c) `topsolid_search_examples(pattern)` indexe les corpora AF/RoB/FEA, (d) `topsolid_whats_new(version)` tire du changelog-X.md du pipeline CHM. |
+| 5 | **M-72** | **Indexer corpus C# production** — AF (21 files), RoB (373 files), **FEA Quality** (34 files, new — `C:\Users\jup\OneDrive\4 - VB\Projects\Script Qualité FEA`). Exposer via `search_examples` et injecter dans le dataset LoRA 22B. |
+| 6 | M-58 | Recettes Tier 3 restantes : mise en plan, nomenclature, mise a plat |
+| 7 | M-59 | Documenter exporteurs et options (batch, formats) |
+| 8 | M-60 | Recettes proprietes utilisateur + occurrence |
+| 9 | M-61 | **Publier LoRA sur Hugging Face** (`ministral-topsolid` GGUF + Modelfile + SKILL.md) — que les users fassent `ollama pull hf.co/Julien38300/ministral-topsolid` |
+| ~~10~~ | ~~M-62~~ | ✅ **DONE** — Pipeline auto-sync TopSolid API depuis CHM (extract/parse/diff/enrich/propose/report) |
+| 11 | — | Tier 2 avance (S-087 DerivePartForModification, S-088 substitution) |
+| 12 | M-57 | Injecter aide en ligne MD dans RAG/ChromaDB |
+| 13 | M-36 | Benchmark latence/tokens/taux de succes |
+| 14 | Phase 11 | Multilingue : agent repond dans la langue de l'utilisateur (dico 69K paires) |
+
+## Vision élargie : MCP as Knowledge Base
+
+Au-delà du runtime MCP pour agents IA, le serveur MCP est une **base de connaissance vivante** de l'API TopSolid Automation :
+
+**Ressources exposées** :
+- `graph.json` enrichi (4119 edges, 1728 methodes, 100% descriptions, 79% remarks, since versions, deprecation)
+- `methods.json` / `types.json` (snapshot par version TopSolid via pipeline CHM)
+- 118 recettes production (code C# self-contained validé)
+- 500+ methodes transactionnelles avec Pattern D explicite dans les Remarks
+- Pipeline auto-sync : nouveau CHM → graph + proposals a chaque release
+
+**Cas d'usage "knowledge base"** (M-70, M-71, M-72) :
+1. **Claude Code + MCP** = developpeur TopSolid senior instantane. Ecrit une app C# TopSolid "du premier coup" en 80-90% des cas en utilisant `find_path`, `api_help`, `get_recipe`, `compile` au fil de l'ecriture.
+2. **Industriel** qui veut automatiser son PDM : lance Claude Code + MCP, decrit son besoin, obtient une app Visual Studio prete a deployer.
+3. **Formateur TopSolid** : utilise le MCP comme tutor interactif avec code testable.
+4. **Dev interne** : genere ses scripts via MCP, les extrait en projet .NET standalone.
+
+Le MCP devient **le cerveau**, le graph **la memoire**, les recettes **le savoir-faire valide**, les exemples FEA/AF/RoB **les patterns production**.
 
 ## Risques
 
