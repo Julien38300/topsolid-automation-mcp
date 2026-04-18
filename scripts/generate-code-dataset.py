@@ -34,6 +34,7 @@ STATS_FILE = DATA_DIR / "code-dataset-stats.json"
 
 AF_DIR = Path(r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER")
 ROB_DIR = Path(r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB")
+FEA_DIR = Path(r"C:\Users\jup\OneDrive\4 - VB\Projects\Script Qualité FEA")  # FEA Quality automation — 34 files, prod-grade
 
 
 SYSTEM_PROMPT = """You are a TopSolid C# code generator. Given a user request, emit a self-contained C# script body (no namespace, no class, no `using` — these are auto-injected). The code runs inside a `Run()` method that must return a string.
@@ -445,6 +446,11 @@ def main() -> None:
     rob_entries = extract_from_corpus(ROB_DIR, n_target=600)
     print(f"RoB corpus entries: {len(rob_entries)}")
     all_entries.extend(rob_entries)
+
+    # 4b. FEA Quality corpus (prod-grade TopSolid+Excel automation)
+    fea_entries = extract_from_corpus(FEA_DIR, n_target=150)
+    print(f"FEA Quality corpus entries: {len(fea_entries)}")
+    all_entries.extend(fea_entries)
 
     # 5. SI units positives
     si_entries = generate_si_units()
