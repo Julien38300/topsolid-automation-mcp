@@ -105,3 +105,59 @@ Trouve le chemin le plus court (Dijkstra) entre deux types dans le graphe API.
 ## topsolid_explore_paths
 
 Explore plusieurs chemins (BFS) entre deux types. Timeout 5 secondes pour eviter les freezes.
+
+## topsolid_get_recipe (v1.5.0+)
+
+Retourne le code C# d'une recette par nom, sans l'executer. Utile pour apprendre les patterns valides ou adapter une recette dans une app standalone.
+
+**Sans TopSolid connecte.** Pure knowledge-base lookup.
+
+```json
+{ "name": "topsolid_get_recipe", "arguments": { "recipe": "read_mass_volume" } }
+```
+
+Sans `recipe` : retourne la liste des 118 recettes avec mode READ/WRITE + description.
+
+## topsolid_compile (v1.5.1+)
+
+Compile un script C# contre l'API TopSolid SANS l'executer. Detecte les APIs hallucinees, erreurs de syntaxe, types manquants.
+
+```json
+{
+  "name": "topsolid_compile",
+  "arguments": {
+    "code": "DocumentId docId = TopSolidHost.Documents.EditedDocument; return TopSolidHost.Pdm.GetName(TopSolidHost.Documents.GetPdmObject(docId));"
+  }
+}
+```
+
+Reponse : `OK: code compiles successfully. Mode: READ` ou liste d'erreurs avec numeros de ligne.
+
+**Sans TopSolid connecte.**
+
+## topsolid_search_examples (v1.5.2+)
+
+Cherche dans 225+ snippets de corpora production (REDACTED, FEA Quality). Match sur corps de methode + nom.
+
+```json
+{
+  "name": "topsolid_search_examples",
+  "arguments": { "query": "StartModification", "max_results": 3, "corpus": "AF" }
+}
+```
+
+Retourne des snippets method-level avec label corpus + chemin fichier. Cache 10 min.
+
+**Sans TopSolid connecte.**
+
+## topsolid_whats_new (v1.5.2+)
+
+Retourne le changelog markdown de l'API TopSolid pour une version donnee (ou la plus recente), tel que genere par le pipeline `sync-topsolid-api`.
+
+```json
+{ "name": "topsolid_whats_new", "arguments": { "version": "7.21.164.0" } }
+```
+
+Lists : methodes ajoutees, changements de signature, deprecations, propositions de recettes.
+
+**Sans TopSolid connecte.**

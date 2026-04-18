@@ -45,6 +45,7 @@ export default defineConfig({
             { text: 'Graphe API', link: '/guide/graphe' },
             { text: 'Graphe Interactif', link: '/reference/graphe-interactif' },
             { text: 'Recettes', link: '/guide/recettes' },
+            { text: 'Base de connaissance (dev standalone)', link: '/guide/knowledge-base' },
             { text: 'Tests', link: '/guide/tests' }
           ]
         },
