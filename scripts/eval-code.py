@@ -107,11 +107,15 @@ def load_graph_symbols() -> set[str]:
 # ---------------------------------------------------------------------------
 
 def extract_code(response: str) -> str:
-    """Pull the first ```csharp ... ``` block (or any code block)."""
+    """Pull the first ```csharp ... ``` block, or return raw if it looks like C#."""
     m = re.search(r"```(?:csharp|cs|c#)?\s*\n(.*?)```", response, re.DOTALL | re.IGNORECASE)
     if m:
         return m.group(1).strip()
-    return response.strip()
+    # Fallback: treat as raw C# if it looks like code (contains TopSolidHost. or return)
+    stripped = response.strip()
+    if "TopSolidHost." in stripped or ("return " in stripped and ";" in stripped):
+        return stripped
+    return ""  # empty = not code
 
 
 def has_pattern_d(code: str) -> bool:
@@ -226,6 +230,7 @@ def score_prompt(prompt: dict[str, Any], response: str) -> dict[str, Any]:
         "tier": tier,
         "code_len": len(code),
         "has_code_block": "```" in response,
+        "has_code": bool(code) and "TopSolidHost." in code,  # extracted AND looks like TopSolid C#
     }
 
     # Tier 6: refusal expected
