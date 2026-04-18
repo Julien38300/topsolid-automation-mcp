@@ -171,6 +171,12 @@ namespace TopSolidMcpServer
                 var compileTool = new CompileTool();
                 compileTool.Register(registry);
 
+                var searchExamplesTool = new SearchExamplesTool();
+                searchExamplesTool.Register(registry);
+
+                var whatsNewTool = new WhatsNewTool();
+                whatsNewTool.Register(registry);
+
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
