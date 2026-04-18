@@ -2456,7 +2456,32 @@ namespace TopSolidMcpServer.Tools
                 return ScriptExecutor.Execute(code);
         }
 
-        private class RecipeEntry
+        /// <summary>
+        /// Returns the recipe definition for a given name, or null if not found.
+        /// Used by GetRecipeTool to expose recipe code as API reference for
+        /// developers writing standalone C# TopSolid apps.
+        /// </summary>
+        public static RecipeEntry GetRecipe(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            Recipes.TryGetValue(name.Trim(), out var entry);
+            return entry;
+        }
+
+        /// <summary>
+        /// Returns all available recipe names (sorted).
+        /// </summary>
+        public static List<string> GetAllRecipeNames()
+        {
+            var names = new List<string>(Recipes.Keys);
+            names.Sort(StringComparer.OrdinalIgnoreCase);
+            return names;
+        }
+
+        /// <summary>
+        /// A recipe definition: human description + C# body + transactional mode flag.
+        /// </summary>
+        public class RecipeEntry
         {
             public string Description { get; }
             public string Code { get; }
