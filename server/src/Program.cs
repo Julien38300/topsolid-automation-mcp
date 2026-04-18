@@ -165,6 +165,9 @@ namespace TopSolidMcpServer
                 var recipeTool = new RecipeTool(() => connector);
                 recipeTool.Register(registry);
 
+                var getRecipeTool = new GetRecipeTool();
+                getRecipeTool.Register(registry);
+
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
