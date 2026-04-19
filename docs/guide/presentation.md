@@ -62,8 +62,8 @@ L'outil principal. Le LLM choisit une recette par nom, aucune generation de code
 | Document | 7 | type, sauvegarder, reconstruire, proprietes utilisateur |
 | Interactif | 3 | selection shape/face/point dans TopSolid |
 
-### Dataset LoRA (`lora-dataset.jsonl`)
-2161 paires d'entrainement au format ShareGPT pour fine-tuner un modele 3B sur la selection de recettes. Couvre les 112 recettes avec variantes francais naturel/metier et paires d'ambiguite Smart params.
+### Dataset LoRA (`lora-dataset-en.jsonl`)
+2114 entrees d'entrainement au format ShareGPT (v6 conversational) pour fine-tuner le sous-agent 3B. Couvre les 124 recettes + patterns multi-turn + error-handling + acknowledgments. Eval : **100/100** (50 questions, 5 tiers). Deploye en PROD comme `ministral-topsolid` via Ollama.
 
 ### Tests
 Suite de tests automatises contre une instance TopSolid vivante. Scripts PowerShell executables en batch.
@@ -79,18 +79,19 @@ OpenClaw Main (cloud, leger — routing + conversation)
   |     Classification : intent → nom de recette
   |     Latence : ~2-4 secondes
   |
-  └── topsolid-automation (14-24B, local — a venir)
-        → topsolid_execute_script + api_help + find_path
-        Generation C# via le graphe API
+  └── codestral-topsolid (22B Q4_K_M vanilla, local — PROD)
+        → execute_script + modify_script + api_help + find_path
+           + explore_paths + compile + search_examples
+        Generation C# via le graphe API + validation Roslyn
         Cas hors-recettes, scripts ad-hoc
-        Latence cible : < 30 secondes
+        Latence : ~20-30 secondes
 ```
 
 Le Main (cloud) garde la coherence conversationnelle et route les demandes :
 - **Recette connue** (80% des cas) → sous-agent 3B, rapide et fiable
-- **Cas custom** (20%) → sous-agent 14-24B, generation de code via le graphe
+- **Cas custom** (20%) → Codestral 22B, generation de code via le graphe + `compile` avant execution
 
-Le LoRA cible le 3B pour ameliorer sa connaissance TopSolid. Un second LoRA (futur) ciblera le 14-24B pour la generation C#.
+Le LoRA 3B v6 est en PROD (eval 100/100). Le fine-tuning LoRA 22B a ete tente mais abandonne (VRAM saturee, training > 9h30) — on shippe Codestral vanilla avec Modelfile enrichi (48 accessors `TopSolidHost.*` listes, Pattern D, SI-units, 6 few-shot examples).
 
 ## Projet Cortana / Noemid
 

@@ -14,7 +14,7 @@ DocumentId --GetElements()--> List<ElementId>
 ElementId  --GetName()------> String
 ```
 
-## Statistiques (2026-04-09)
+## Statistiques (2026-04-19)
 
 | Metrique | Valeur |
 |----------|--------|

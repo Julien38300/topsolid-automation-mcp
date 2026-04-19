@@ -377,9 +377,14 @@ Une fois connecte, votre assistant IA dispose de **12 outils** :
 | `topsolid_run_recipe` | Execute une des 124 recettes pre-construites |
 | `topsolid_api_help` | Recherche dans 1728 methodes API (52 synonymes FR) |
 | `topsolid_execute_script` | Compile et execute du C# contre TopSolid (lecture seule) |
-| `topsolid_modify_script` | Compile et execute du C# (modification avec transaction) |
+| `topsolid_modify_script` | Compile et execute du C# (modification avec transaction, Pattern D auto) |
 | `topsolid_find_path` | Chemin Dijkstra entre types API |
 | `topsolid_explore_paths` | Exploration BFS multi-chemins |
+| `topsolid_get_recipe` **(v1.5.0+)** | Retourne le code C# source d'une recette |
+| `topsolid_compile` **(v1.5.1+)** | Compile-check Roslyn d'un script (dry-run) |
+| `topsolid_search_examples` **(v1.5.2+)** | Recherche dans 225+ snippets AF/REDACTED |
+| `topsolid_whats_new` **(v1.5.2+)** | Diff API entre deux versions TopSolid |
+| `topsolid_search_help` **(v1.6.0+)** | FTS5 sur 5809 pages de l'aide en ligne |
 
 ::: tip Pour la plupart des usages
 `topsolid_run_recipe` suffit. Les 124 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature, audit et bien plus. Demandez simplement a votre assistant ce que vous voulez faire en francais.

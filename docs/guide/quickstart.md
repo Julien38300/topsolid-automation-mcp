@@ -42,14 +42,9 @@ L'executable sera dans `server/src/bin/Debug/net48/TopSolidMcpServer.exe`.
 
 Choisissez votre client IA et ajoutez le serveur MCP :
 
-### ChatGPT Desktop (Windows)
-
-Dans ChatGPT Desktop : **Settings > Beta features > Model Context Protocol**
-
-Ajoutez un serveur avec la commande :
-```
-C:\TopSolidMCP\TopSolidMcpServer.exe
-```
+::: info ChatGPT Desktop
+ChatGPT Desktop ne supporte **pas** les serveurs MCP stdio locaux (avril 2026). Cote OpenAI, seules les integrations cloud (custom GPTs) sont possibles.
+:::
 
 ### Claude Desktop
 

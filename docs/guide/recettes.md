@@ -175,29 +175,35 @@ Outils de controle qualite : verification des proprietes, coherence des noms de 
 | `batch_audit_parameter_names` | Meme audit sur tous les documents du projet. Rapport global. | Iteration complete + analyse syntaxique | READ |
 | `batch_audit_driver_designations` | Liste les designations de drivers de toutes les familles pour inspection visuelle (fautes, incoherences). | `GetCatalogColumnParameters()` → `GetDescription()` sur toutes les familles | READ |
 
-### Mise en plan (6 recettes)
+### Mise en plan (10 recettes)
 
 La mise en plan (Drafting) est le dessin technique 2D genere a partir d'une piece ou assemblage 3D. Elle contient des vues, une echelle, un format papier.
 
 | Recette | Description | Technique | Mode |
 |---------|-------------|-----------|------|
-| `detect_drafting` | Verifie si le document est une mise en plan. Retourne le nombre de vues et le format. | `DraftingDocuments.IsDraftingDocument()` | READ |
+| `detect_drafting` | Verifie si le document est une mise en plan. Retourne le nombre de vues et le format. | `Draftings.IsDrafting()` | READ |
 | `open_drafting` | Cherche la mise en plan associee a la piece courante (via back-references PDM) et l'ouvre. | `Pdm.SearchMajorRevisionBackReferences()` filtre `.TopDft` → `Documents.Open()` | WRITE |
-| `list_drafting_views` | Liste les vues du plan avec nom, echelle et type (projection, coupe, detail, isometrique...). | `DraftingDocuments.GetViews()` → `GetViewScale()` | READ |
-| `read_drafting_scale` | Lit l'echelle globale du plan et l'echelle de chaque vue individuellement. | `DraftingDocuments.GetDocumentScale()` + `GetViewScale()` par vue | READ |
-| `read_drafting_format` | Format papier : taille (A4, A3...), dimensions en mm, orientation, nombre de pages. | `DraftingDocuments.GetSheetSize/Margins/PageCount` | READ |
-| `read_main_projection` | Identifie la piece source de la mise en plan et les vues principales. | `DraftingDocuments.GetProjectionDocument()` | READ |
+| `list_drafting_views` | Liste les vues du plan avec nom et titre. | `Draftings.GetDraftingViews()` | READ |
+| `read_drafting_scale` | Lit l'echelle globale du plan et l'echelle de chaque vue individuellement. | `Draftings.GetScaleFactorParameterValue()` + `GetViewScaleFactor()` | READ |
+| `read_drafting_format` | Format papier (A3/A4), dimensions en mm, nombre de pages, mode de projection. | `Draftings.GetDraftingFormatName/Dimensions/PageCount` | READ |
+| `read_main_projection` | Identifie la piece source de la mise en plan et les vues principales. | `Draftings.GetMainProjectionSet()` | READ |
+| `set_drafting_scale` **(v1.6.1)** | Change l'echelle globale du plan. `value=denominateur` (ex: `10` → 1:10). | `Draftings.SetScaleFactorParameterValue()` — Pattern D | WRITE |
+| `set_drafting_format` **(v1.6.1)** | Change le format papier. `value=nom` (ex: `A3`, `A4`). | `Draftings.SetDraftingFormatName()` — Pattern D | WRITE |
+| `set_projection_quality` **(v1.6.1)** | Qualite de projection. `value=exact` (precis) ou `fast` (rapide). | `Draftings.SetProjectionMode()` — Pattern D | WRITE |
+| `print_drafting` **(v1.6.1)** | Imprime toutes les pages du plan (N&B, 300 DPI, a l'echelle). | `Draftings.Print()` | READ |
 
-### Nomenclature / BOM (4 recettes)
+### Nomenclature / BOM (6 recettes)
 
 La nomenclature (Bill of Materials) est le tableau des composants d'un assemblage. Elle est generalement dans la mise en plan.
 
 | Recette | Description | Technique | Mode |
 |---------|-------------|-----------|------|
-| `detect_bom` | Verifie si le document contient une nomenclature. Retourne le nombre de lignes. | `Nomenclatures.GetNomenclatures()` | READ |
-| `read_bom_columns` | Liste les colonnes du tableau (Repere, Designation, Quantite, Reference...). | `Nomenclatures.GetColumns()` → `GetColumnName()` | READ |
-| `read_bom_contents` | Lit le tableau complet : toutes les lignes avec toutes les cellules. Format texte tabulaire. | `Nomenclatures.GetRows()` → `GetCellValue()` par colonne | READ |
-| `count_bom_rows` | Compte les lignes actives et inactives de la nomenclature. | `Nomenclatures.GetRows()` + `IsRowActive()` | READ |
+| `detect_bom` | Verifie si le document contient une nomenclature. Retourne le nombre de colonnes. | `Boms.IsBom()` | READ |
+| `read_bom_columns` | Liste les colonnes du tableau (Repere, Designation, Quantite, Reference...). | `Boms.GetColumnCount()` + `GetColumnTitle()` | READ |
+| `read_bom_contents` | Lit le tableau complet : toutes les lignes actives avec toutes les cellules. Format texte tabulaire. | `Boms.GetRowChildrenRows()` + `GetRowContents()` | READ |
+| `count_bom_rows` | Compte les lignes actives et inactives de la nomenclature. | `Boms.IsRowActive()` sur chaque ligne | READ |
+| `activate_bom_row` **(v1.6.1)** | Active une ligne BOM par index. `value=row_index`. | `Boms.ActivateRow()` — Pattern D | WRITE |
+| `deactivate_bom_row` **(v1.6.1)** | Desactive une ligne BOM par index. `value=row_index`. | `Boms.DeactivateRow()` — Pattern D | WRITE |
 
 ### Mise a plat / Depliage (3 recettes)
 
@@ -306,4 +312,23 @@ TopSolidHost.Pdm.Save(pdmId, true);
 
 ## Dataset LoRA
 
-732 paires d'entrainement dans `data/lora-dataset.jsonl` pour fine-tuner le sous-agent 3B. Script regenerable : `scripts/generate-lora-dataset.py`.
+2114 entrees ShareGPT dans `data/lora-dataset-en.jsonl` pour fine-tuner le sous-agent 3B (`ministral-topsolid` v6 conversational). Couvre les 124 recettes + patterns multi-turn + error-handling + acknowledgments. Script regenerable : `scripts/generate-lora-dataset-en.py`.
+
+Eval : **100/100** sur 50 questions (5 tiers, trivial → piege), multi-turn verifie manuellement.
+
+## Pattern d'ecriture dans modify_script
+
+Les recettes WRITE passent par `topsolid_modify_script` qui wrappe automatiquement `StartModification` / `EnsureIsDirty` / `EndModification` / `Pdm.Save`. Contraintes :
+
+- **NE PAS utiliser `return "..."`** — le wrapper l'interdit.
+- Utiliser `__message = "..."` pour personnaliser le message de retour.
+- `return;` (void) est autorise pour les early exits — transforme en `goto __done;`.
+- Variables pre-declarees : `docId`, `pdmId`, `__message`.
+
+Exemple (extrait de `set_drafting_scale`) :
+```csharp
+if (docId.IsEmpty) { __message = "No document open."; return; }
+double factor = 1.0 / denom;
+TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);
+__message = "OK: drafting scale set to 1:" + denom;
+```

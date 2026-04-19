@@ -31,13 +31,13 @@ L'index de l'exporteur change selon l'installation TopSolid. **Toujours le cherc
 
 | Recette | Format | Methode |
 |---------|--------|---------|
-| R-004 | STEP | `Export` simple |
-| R-015 | FBX/glTF/Parasolid | `ExportWithOptions` |
-| R-016 | STEP import | `ImportWithOptions` |
-| R-019 | Lister tous les formats | `ExporterCount` + boucle |
-| R-072 | DXF | `Export` simple |
-| R-073 | PDF | `Export` simple |
-| R-074 | IFC | `Export` simple |
+| `export_step` | STEP | `Export` simple |
+| `export_fbx` / `export_gltf` | FBX / glTF / Parasolid | `ExportWithOptions` |
+| `import_step` | STEP import | `ImportWithOptions` |
+| `list_exporters` | Lister tous les formats | `ExporterCount` + boucle |
+| `export_dxf` | DXF | `Export` simple |
+| `export_pdf` | PDF | `Export` simple |
+| `export_ifc` | IFC | `Export` simple |
 
 ## Export avec options
 
