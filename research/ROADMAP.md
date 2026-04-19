@@ -85,7 +85,7 @@ Phase L  ████████████████████ 100%  Laun
 | Priorite | Mission | Description |
 |----------|---------|-------------|
 | ~~1~~ | ~~Phase 9a~~ | ✅ **DONE** — LoRA 3B recettes : 100/100 eval, OpenClaw prefix, PROD |
-| 2 | Phase 9b | LoRA 22B automation : Codestral-22B qui genere du C# via graph API (DEC-011). Baseline vanilla OK sur Pattern D (100%) / SI units (97%), faiblesses : Tier 4 creation APIs (27%), Tier 6 refusals (60%). Training en cours. |
+| ~~2~~ | ~~Phase 9b~~ | ⚠️ **SHIPPED Option 1** — Codestral-22B vanilla + enhanced Modelfile (pas de LoRA, training kille a 61%/9h30 car VRAM sature). Deploye comme `codestral-topsolid` Ollama tag. Eval : +16% code emission, Pattern D 100%, SI 97%, clean_rate ~55%. Hallucination `TopSolidHost.Shape` persiste (priors Codestral trop forts). Usable avec `topsolid_compile` pour iterer. LoRA 22B possible plus tard sur machine plus puissante. |
 | ~~3~~ | ~~M-70~~ | ✅ **DONE** (v1.5.2) — Doc VitePress `/guide/knowledge-base.md` "MCP as knowledge base for standalone C# dev" |
 | ~~4~~ | ~~M-71~~ | ✅ **DONE** (v1.5.0/1/2) — 4 nouveaux outils MCP : `topsolid_get_recipe`, `topsolid_compile`, `topsolid_search_examples`, `topsolid_whats_new`. MCP expose maintenant 11 outils au total. |
 | ~~5~~ | ~~M-72~~ | ✅ **DONE** — Corpus AF/REDACTED indexes (225 snippets method-level) via `topsolid_search_examples`. FEA Quality (34 files) integre. |
