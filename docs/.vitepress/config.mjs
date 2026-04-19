@@ -20,8 +20,8 @@ export default defineConfig({
       { text: 'Roadmap', link: '/guide/roadmap' }
     ],
 
-    sidebar: {
-      '/guide/': [
+    sidebar: (() => {
+      const common = [
         {
           text: 'Demarrage',
           items: [
@@ -50,27 +50,18 @@ export default defineConfig({
           ]
         },
         {
-          text: 'Metier TopSolid',
-          items: [
-            { text: 'Glossaire FR/EN', link: '/reference/glossaire' },
-            { text: 'Exporteurs', link: '/reference/exporteurs' },
-            { text: 'Proprietes PDM', link: '/reference/proprietes-pdm' }
-          ]
-        }
-      ],
-      '/reference/': [
-        {
           text: 'Reference',
           items: [
             { text: 'Glossaire FR/EN', link: '/reference/glossaire' },
-            { text: 'Proprietes PDM', link: '/reference/proprietes-pdm' },
             { text: 'Exporteurs', link: '/reference/exporteurs' },
-            { text: 'Interfaces API', link: '/reference/interfaces' },
-            { text: 'Graphe Interactif', link: '/reference/graphe-interactif' }
+            { text: 'Proprietes PDM', link: '/reference/proprietes-pdm' },
+            { text: 'Interfaces API', link: '/reference/interfaces' }
           ]
         }
       ]
-    },
+      // Same sidebar for /guide/ and /reference/ so navigation stays consistent
+      return { '/guide/': common, '/reference/': common }
+    })(),
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/Julien38300/noemid-topsolid-automation' }
