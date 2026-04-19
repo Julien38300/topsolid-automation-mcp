@@ -1725,6 +1725,29 @@ def make_tool_call(recipe, value=None):
     return f'[TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{{"recipe":"{recipe}"}}'
 
 
+def make_multi_turn(turns, system=None):
+    """Build a multi-turn ShareGPT entry.
+
+    `turns` is a list of (role, content) pairs where role is one of:
+      'user', 'assistant', 'tool'.
+    The training script maps:
+      user      -> [INST]...[/INST]
+      assistant -> content + </s>
+      tool      -> [TOOL_RESULTS]...[/TOOL_RESULTS]
+    """
+    conv = [{"from": "system", "value": system or SYSTEM_PROMPT}]
+    for role, content in turns:
+        if role == "user":
+            conv.append({"from": "human", "value": content})
+        elif role == "assistant":
+            conv.append({"from": "gpt", "value": content})
+        elif role == "tool":
+            conv.append({"from": "tool", "value": content})
+        else:
+            raise ValueError(f"Unknown role: {role}")
+    return {"conversations": conv}
+
+
 # ============================================================================
 # STEP 1: Migrate v5 FR dataset -> EN recipe names
 # ============================================================================
@@ -2291,7 +2314,19 @@ def main():
     hallucination = generate_hallucination_guard()
     all_entries.extend(hallucination)
 
-    # Step 5b: Deduplicate by question text
+    # Step 6 (v6 NEW): Multi-turn + error handling + formatting + chaining + follow-up + write ack + remarks
+    # Import the v6 generator module (kept separate to not bloat this file)
+    import importlib.util as _ils
+    _v6_path = SCRIPT_DIR / "lib" / "v6_generators.py"
+    _spec = _ils.spec_from_file_location("v6_generators", _v6_path)
+    _v6 = _ils.module_from_spec(_spec)
+    _spec.loader.exec_module(_v6)
+    v6_by_cat = _v6.generate_all_v6(make_multi_turn, make_tool_call)
+    for cat_name, cat_entries in v6_by_cat.items():
+        print(f"Generated {cat_name}: {len(cat_entries)} entries")
+        all_entries.extend(cat_entries)
+
+    # Step 5b: Deduplicate by first USER question (conversations[1] is always the first user turn)
     seen_questions = set()
     deduped = []
     for e in all_entries:

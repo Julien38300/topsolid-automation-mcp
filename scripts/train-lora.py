@@ -81,20 +81,29 @@ def step_train():
     )
 
     # Mistral [INST] chat template — must match Ollama Modelfile TEMPLATE
+    # Handles multi-turn conversations (system/human/gpt/tool roles).
     def formatting_prompts_func(examples):
         convs = examples["conversations"]
         texts = []
         for conv in convs:
-            system_text = user_text = assistant_text = ""
+            parts = []
             for msg in conv:
-                if msg["from"] == "system":
-                    system_text = msg["value"]
-                elif msg["from"] == "human":
-                    user_text = msg["value"]
-                elif msg["from"] == "gpt":
-                    assistant_text = msg["value"]
-            text = f"[SYSTEM_PROMPT]{system_text}[/SYSTEM_PROMPT][INST]{user_text}[/INST]{assistant_text}</s>"
-            texts.append(text)
+                role = msg["from"]
+                value = msg["value"]
+                if role == "system":
+                    parts.append(f"[SYSTEM_PROMPT]{value}[/SYSTEM_PROMPT]")
+                elif role == "human":
+                    parts.append(f"[INST]{value}[/INST]")
+                elif role == "gpt":
+                    # Assistant content. If it's a tool_call, no trailing </s> separator
+                    # here — Mistral native expects [TOOL_CALLS]...[ARGS]...</s> as a unit.
+                    if value.startswith("[TOOL_CALLS]"):
+                        parts.append(f"{value}</s>")
+                    else:
+                        parts.append(f"{value}</s>")
+                elif role == "tool":
+                    parts.append(f"[TOOL_RESULTS]{value}[/TOOL_RESULTS]")
+            texts.append("".join(parts))
         return {"text": texts}
 
     print(f"[TRAIN] Loading dataset: {DATASET_FILE}")

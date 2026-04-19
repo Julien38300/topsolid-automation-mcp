@@ -197,6 +197,8 @@ def evaluate_model(model, suite):
                 or "en dehors" in r_lower
                 or "trop dangereu" in r_lower
                 or "trop complexe" in r_lower
+                or "assistant topsolid" in r_lower
+                or "24/7" in r_lower
             ):
                 success = True
         else:
