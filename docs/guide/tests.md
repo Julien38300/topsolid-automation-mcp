@@ -1,13 +1,13 @@
 # Tests
 
-Le projet inclut une suite de tests automatises qui verifient que le serveur MCP et les 113 recettes fonctionnent correctement contre une instance TopSolid vivante.
+Le projet inclut une suite de tests automatises qui verifient que le serveur MCP et les 124 recettes fonctionnent correctement contre une instance TopSolid vivante.
 
 ## Architecture de test
 
 ```
 tests/
 ├── run-tests.ps1           ← Lance la suite complete (72 tests)
-├── test_recipes_live.ps1   ← Teste les 113 recettes en LIVE
+├── test_recipes_live.ps1   ← Teste les 124 recettes en LIVE
 ├── TestSuite.json          ← Definition des 72 tests (JSON-RPC)
 ├── TestSuite_Drafting.json ← Tests specifiques mise en plan
 ├── TestDocument.md         ← Reference du document de test attendu
@@ -65,7 +65,7 @@ T-03  api_help sketch                         PASS    203ms
 TOTAL: 68/72 PASS (4 FAIL perf = bruit)
 ```
 
-### Tests recettes LIVE (113 recettes)
+### Tests recettes LIVE (124 recettes)
 
 ```powershell
 cd tests

@@ -300,7 +300,7 @@ Ajoutez `"topsolid"` dans le bloc `mcpServers` existant, **sans supprimer les au
 ```
 
 Sauvegardez (`Ctrl+S`). L'extension detecte le changement automatiquement.
-Verifiez dans le panneau MCP (icone prise electrique) que les 7 outils TopSolid apparaissent.
+Verifiez dans le panneau MCP (icone prise electrique) que les 12 outils TopSolid apparaissent.
 
 ### Cline / Roo Code
 
@@ -369,12 +369,12 @@ Tout logiciel supportant le protocole MCP stdio peut utiliser le serveur.
 
 ## Outils disponibles
 
-Une fois connecte, votre assistant IA dispose de **7 outils** :
+Une fois connecte, votre assistant IA dispose de **12 outils** :
 
 | Outil | Description |
 |-------|-------------|
 | `topsolid_get_state` | Etat de connexion, document actif, projet courant |
-| `topsolid_run_recipe` | Execute une des 113 recettes pre-construites |
+| `topsolid_run_recipe` | Execute une des 124 recettes pre-construites |
 | `topsolid_api_help` | Recherche dans 1728 methodes API (52 synonymes FR) |
 | `topsolid_execute_script` | Compile et execute du C# contre TopSolid (lecture seule) |
 | `topsolid_modify_script` | Compile et execute du C# (modification avec transaction) |
@@ -382,7 +382,7 @@ Une fois connecte, votre assistant IA dispose de **7 outils** :
 | `topsolid_explore_paths` | Exploration BFS multi-chemins |
 
 ::: tip Pour la plupart des usages
-`topsolid_run_recipe` suffit. Les 113 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature, audit et bien plus. Demandez simplement a votre assistant ce que vous voulez faire en francais.
+`topsolid_run_recipe` suffit. Les 124 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature, audit et bien plus. Demandez simplement a votre assistant ce que vous voulez faire en francais.
 :::
 
 ---

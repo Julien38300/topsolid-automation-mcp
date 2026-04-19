@@ -15,7 +15,7 @@
 │ recipes (3B)   │             │ automation (14-24B)   │
 │                │             │ (a venir — M-35)      │
 │ run_recipe     │             │ execute_script        │
-│ 113 recettes   │             │ api_help, find_path   │
+│ 124 recettes   │             │ api_help, find_path   │
 └─────┬──────────┘             │ explore_paths         │
       │                        └────────────┬──────────┘
       │                                     │
@@ -27,9 +27,9 @@
               │                   │
               │  TypeGraph        │  graph.json (4119 edges)
               │  KeywordIdx       │  api-index.json (1728 methods)
-              │  RecipeTool       │  113 recettes
+              │  RecipeTool       │  124 recettes
               │                   │
-              │  7 outils MCP :   │
+              │  12 outils MCP :   │
               │  - run_recipe     │
               │  - get_state      │
               │  - api_help       │
@@ -106,7 +106,7 @@ Pour les scripts de modification, un wrapper supplementaire gere `StartModificat
 |---------|------|--------|
 | `data/graph.json` | Graphe API enrichi | ~2.9 MB |
 | `data/api-index.json` | Index plat des 1728 methodes | ~400 KB |
-| `server/src/Tools/RecipeTool.cs` | 113 recettes C# pre-construites | ~120 KB |
+| `server/src/Tools/RecipeTool.cs` | 124 recettes C# pre-construites | ~120 KB |
 | `data/lora-dataset.jsonl` | 2161 paires LoRA (ShareGPT) | ~1.5 MB |
 | `data/help-md/` | Aide en ligne convertie (FR+EN) | ~9 MB |
 | `tests/TestSuite.json` | 72 tests automatises | ~50 KB |

@@ -49,7 +49,7 @@
 
 **Temps total : 4 secondes.**
 
-## Les 7 outils MCP
+## Les 12 outils MCP
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -58,7 +58,7 @@
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
 │  │ get_state   │  │ api_help     │  │ run_recipe    │  │
 │  │             │  │              │  │               │  │
-│  │ Etat de     │  │ Cherche dans │  │ 113 recettes  │  │
+│  │ Etat de     │  │ Cherche dans │  │ 124 recettes  │  │
 │  │ TopSolid    │  │ 1728 methodes│  │ pre-codees    │  │
 │  │ connexion   │  │ 52 synonymes │  │ Le LLM choisit│  │
 │  │ document    │  │ FR/EN        │  │ par nom       │  │
@@ -136,7 +136,7 @@ A mesure qu'on ajoute des recettes, le mode 3B couvre de plus en plus de cas.
 | **run_recipe** | Execute une recette pre-codee par nom | La solution pour les petits modeles : zero code a generer. |
 | **execute_script** | Compile et execute du C# libre | La puissance brute : peut tout faire si le code est correct. |
 | **modify_script** | Comme execute_script + auto-wrap modification/save | Pour les ecritures : gere StartModification/EndModification/Save. |
-| **RecipeTool** | 113 recettes pre-construites en C# | La reference pour les humains et les LLM : comment faire chaque operation. |
+| **RecipeTool** | 124 recettes pre-construites en C# | La reference pour les humains et les LLM : comment faire chaque operation. |
 | **Skill** (system.md) | Instructions pour chaque sous-agent : outils autorises et routing | Chaque agent a son propre system.md dans OpenClaw. |
 | **Glossaire FR** | Mapping termes TopSolid FR → API EN | "Designation" → SetDescription, "mise au coffre" → CheckIn, etc. |
 

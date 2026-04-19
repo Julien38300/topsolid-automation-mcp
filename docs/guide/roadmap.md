@@ -5,7 +5,7 @@
 | Phase | Description | Avancement |
 |-------|-------------|------------|
 | Phase 1 | Fondations (extraction, graphe, pathfinding) | 100% |
-| Phase 2 | Serveur MCP (protocole, 7 outils) | 100% |
+| Phase 2 | Serveur MCP (protocole, 12 outils) | 100% |
 | Phase 3 | Intelligence semantique (regles, pruning) | 100% |
 | Phase 4 | Connexion TopSolid & execution scripts | 100% |
 | Phase 5 | Connaissance API (graphe enrichi, api_help, 52 synonymes) | 100% |
@@ -28,8 +28,8 @@
 - **1728 methodes** uniques couvertes
 - **1194 edges** avec exemples reels (2174 snippets, 29%)
 - **85%** d'edges avec hints semantiques FR/EN
-- **113 recettes** RecipeTool — tests LIVE sur TopSolid vivant
-- **7 outils MCP** (run_recipe, get_state, execute_script, modify_script, api_help, find_path, explore_paths)
+- **124 recettes** RecipeTool — tests LIVE sur TopSolid vivant
+- **12 outils MCP** (run_recipe, get_state, execute_script, modify_script, api_help, find_path, explore_paths)
 - **2161 paires** dataset LoRA (format ShareGPT, 112 recettes + domaine)
 - **5/5 exports** testes LIVE (STEP, STL, IGES, DXF, PDF)
 - **5809 pages** d'aide en ligne converties en MD

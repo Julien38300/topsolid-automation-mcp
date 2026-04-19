@@ -9,7 +9,7 @@ Agent IA (OpenClaw / Claude / tout client MCP)
   |
   v
 TopSolidMcpServer.exe (stdio JSON-RPC)
-  |  - run_recipe : execute une des 113 recettes pre-construites
+  |  - run_recipe : execute une des 124 recettes pre-construites
   |  - api_help : cherche les bonnes methodes API (52 synonymes FR)
   |  - execute_script : compile et execute du C# contre TopSolid
   |  - find_path / explore_paths : navigue dans le graphe de types
@@ -36,9 +36,9 @@ Le coeur du systeme. Un graphe oriente representant toutes les methodes de l'API
 | Snippets de code | 2174 |
 
 ### Serveur MCP (`TopSolidMcpServer.exe`)
-Executable .NET Framework 4.8, communique en stdio JSON-RPC. **7 outils** exposes a l'agent.
+Executable .NET Framework 4.8, communique en stdio JSON-RPC. **12 outils** exposes a l'agent.
 
-### RecipeTool — 113 recettes
+### RecipeTool — 124 recettes
 L'outil principal. Le LLM choisit une recette par nom, aucune generation de code necessaire.
 
 | Categorie | Recettes | Exemples |
@@ -75,7 +75,7 @@ OpenClaw Main (cloud, leger — routing + conversation)
   |
   ├── topsolid-recipes (3B LoRA, local)
   |     → topsolid_run_recipe
-  |     113 recettes pre-construites
+  |     124 recettes pre-construites
   |     Classification : intent → nom de recette
   |     Latence : ~2-4 secondes
   |

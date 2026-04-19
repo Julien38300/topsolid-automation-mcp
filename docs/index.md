@@ -17,11 +17,11 @@ features:
   - title: Graphe API enrichi
     details: 4119 edges, 1728 methodes, 1194 avec exemples reels, 85% de hints semantiques FR/EN.
     icon: "&#x1F9E0;"
-  - title: 6 outils MCP
-    details: get_state, execute_script, modify_script, run_recipe, api_help (52 synonymes FR), find_path, explore_paths.
+  - title: 12 outils MCP
+    details: run_recipe, api_help, find_path, explore_paths, get_state, execute_script, modify_script, get_recipe, compile, search_examples, whats_new, search_help.
     icon: "&#x1F6E0;"
-  - title: 113 recettes
-    details: Pilotage complet sans code — PDM, parametres, masse, export, assemblages, familles, mise en plan, nomenclature, comparaison, audit batch.
+  - title: 124 recettes
+    details: Pilotage complet sans code — PDM, parametres, masse, export, assemblages, familles, mise en plan (scale/format/qualite/print), nomenclature (BOM read+write), mise a plat, comparaison, audit batch.
     icon: "&#x1F4D6;"
   - title: Tests LIVE valides
     details: Suite de tests automatises contre TopSolid vivant. Recettes testees en LIVE sur assemblage reel.
@@ -29,7 +29,7 @@ features:
   - title: Glossaire metier complet
     details: 250+ termes TopSolid FR/EN. Proprietes systeme, operations PDM, revisions, parametres avances, concepts metier.
     icon: "&#x1F1EB;&#x1F1F7;"
-  - title: Dataset LoRA + 5809 pages aide
-    details: 732 paires d'entrainement pour fine-tuner un modele 3B. Aide en ligne convertie en Markdown (FR + EN).
+  - title: Full-text search aide TopSolid
+    details: 5809 pages (2974 EN + 2835 FR) indexees en SQLite FTS5. Tool search_help avec bm25 + snippets. 100% embedded (pas de dep externe).
     icon: "&#x1F4DA;"
 ---

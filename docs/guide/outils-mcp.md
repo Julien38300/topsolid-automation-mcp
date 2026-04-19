@@ -1,12 +1,12 @@
 # Outils MCP
 
-Le serveur expose 7 outils au protocole MCP. L'agent IA les appelle via JSON-RPC sur stdin/stdout.
+Le serveur expose 12 outils au protocole MCP. L'agent IA les appelle via JSON-RPC sur stdin/stdout.
 
 ## topsolid_run_recipe
 
 **L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.
 
-**113 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles.
+**124 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles.
 
 ```json
 { "name": "topsolid_run_recipe", "arguments": { "recipe": "read_mass_volume" } }
@@ -116,7 +116,7 @@ Retourne le code C# d'une recette par nom, sans l'executer. Utile pour apprendre
 { "name": "topsolid_get_recipe", "arguments": { "recipe": "read_mass_volume" } }
 ```
 
-Sans `recipe` : retourne la liste des 118 recettes avec mode READ/WRITE + description.
+Sans `recipe` : retourne la liste des 124 recettes avec mode READ/WRITE + description.
 
 ## topsolid_compile (v1.5.1+)
 
@@ -161,3 +161,30 @@ Retourne le changelog markdown de l'API TopSolid pour une version donnee (ou la 
 Lists : methodes ajoutees, changements de signature, deprecations, propositions de recettes.
 
 **Sans TopSolid connecte.**
+
+## topsolid_search_help (v1.6.0+)
+
+Full-text search (SQLite FTS5) sur **5809 pages** de l'aide en ligne TopSolid (2974 EN + 2835 FR). Tokenizer unicode61 avec folding des diacritiques — `esquisse` matche `ésquissé`. Ranking bm25, snippets avec terme surligne `[...]`.
+
+**Filtres** : `lang` (EN / FR), `domain` (Cad / Cae / Cam / Erp / Kernel / Pdm / WorkManager), `max_results` (defaut 5, max 20).
+
+```json
+{
+  "name": "topsolid_search_help",
+  "arguments": { "query": "mise en plan section", "lang": "FR", "max_results": 5 }
+}
+```
+
+Base `data/help.db` embarquee (~20 MB). Pas de dependance externe (ChromaDB / Ollama / Python). Index construit offline via `scripts/build-help-index.py`.
+
+**Sans TopSolid connecte.** Reponse typique :
+
+```
+Found 3 help pages (of 5809 indexed) for 'mise en plan section':
+
+---
+Title: Vue de coupe
+Lang: FR  Domain: Cad
+Path: help-md/FR/Cad/Drafting/UI/Views/Sections/...md
+Excerpt: ... crée une vue de [coupe] à partir de la vue principale de la mise en plan ...
+```
