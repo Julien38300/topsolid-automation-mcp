@@ -799,14 +799,123 @@ namespace TopSolidMcpServer.Tools
                 "return \"OK: Exported to PDF → \" + path;") },
 
             // =====================================================================
-            // USER PROPERTIES
+            // USER PROPERTIES (M-60: fixed + new)
             // =====================================================================
-            { "read_user_property", R("Reads a text user property. Param: value=property_name",
+            // Fixed: the legacy GetTextUserProperty(pdmId, string) overload does
+            // not exist in the API — it expects a PdmObjectId property pointer.
+            // The portable path is: iterate document parameters, filter those
+            // with a non-empty UserPropertyDefinition, match by name.
+            { "read_user_property", R("Reads a user property (text or real) by its visible name. Param: value=property_name",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
-                "string val = TopSolidHost.Pdm.GetTextUserProperty(pdmId, \"{value}\");\n" +
-                "return string.IsNullOrEmpty(val) ? \"Propriete '{value}': (empty)\" : \"Propriete '{value}': \" + val;") },
+                "string pName = (\"{value}\" ?? \"\").Trim();\n" +
+                "if (pName.Length == 0) return \"ERROR: value=property_name required.\";\n" +
+                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
+                "foreach (var p in pList)\n" +
+                "{\n" +
+                "    DocumentId def; try { def = TopSolidHost.Parameters.GetUserPropertyDefinition(p); } catch { continue; }\n" +
+                "    if (def.IsEmpty) continue;\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    if (!name.Equals(pName, StringComparison.OrdinalIgnoreCase) && name.IndexOf(pName, StringComparison.OrdinalIgnoreCase) < 0) continue;\n" +
+                "    var pType = TopSolidHost.Parameters.GetParameterType(p);\n" +
+                "    if (pType == ParameterType.Text) return \"UserProp '\" + name + \"': \\\"\" + TopSolidHost.Parameters.GetTextValue(p) + \"\\\"\";\n" +
+                "    if (pType == ParameterType.Real) return \"UserProp '\" + name + \"': \" + TopSolidHost.Parameters.GetRealValue(p).ToString(\"F6\");\n" +
+                "    if (pType == ParameterType.Integer) return \"UserProp '\" + name + \"': \" + TopSolidHost.Parameters.GetIntegerValue(p);\n" +
+                "    if (pType == ParameterType.Boolean) return \"UserProp '\" + name + \"': \" + TopSolidHost.Parameters.GetBooleanValue(p);\n" +
+                "    return \"UserProp '\" + name + \"' (type \" + pType + \", use read_parameter for full access).\";\n" +
+                "}\n" +
+                "return \"User property '\" + pName + \"' not found. Use list_user_properties to list defined ones.\";") },
+
+            { "list_user_properties", R("Lists all user properties defined on the document with their current value",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "int count = 0;\n" +
+                "foreach (var p in pList)\n" +
+                "{\n" +
+                "    DocumentId def; try { def = TopSolidHost.Parameters.GetUserPropertyDefinition(p); } catch { continue; }\n" +
+                "    if (def.IsEmpty) continue;\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    var pType = TopSolidHost.Parameters.GetParameterType(p);\n" +
+                "    string val = \"?\";\n" +
+                "    try {\n" +
+                "        if (pType == ParameterType.Text) val = \"\\\"\" + TopSolidHost.Parameters.GetTextValue(p) + \"\\\"\";\n" +
+                "        else if (pType == ParameterType.Real) val = TopSolidHost.Parameters.GetRealValue(p).ToString(\"F6\");\n" +
+                "        else if (pType == ParameterType.Integer) val = TopSolidHost.Parameters.GetIntegerValue(p).ToString();\n" +
+                "        else if (pType == ParameterType.Boolean) val = TopSolidHost.Parameters.GetBooleanValue(p).ToString();\n" +
+                "    } catch { val = \"(unreadable)\"; }\n" +
+                "    sb.AppendLine(\"  \" + name + \" [\" + pType + \"] = \" + val);\n" +
+                "    count++;\n" +
+                "}\n" +
+                "if (count == 0) return \"No user properties defined on this document.\";\n" +
+                "return \"User properties: \" + count + \"\\n\" + sb.ToString();") },
+
+            { "set_user_property", RW("Sets a user property by its visible name. Param: value=property_name:new_value (auto-typed)",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "int idx = \"{value}\".IndexOf(':');\n" +
+                "if (idx < 0) { __message = \"Format: property_name:new_value\"; return; }\n" +
+                "string pName = \"{value}\".Substring(0, idx).Trim();\n" +
+                "string newVal = \"{value}\".Substring(idx + 1).Trim();\n" +
+                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
+                "foreach (var p in pList)\n" +
+                "{\n" +
+                "    DocumentId def; try { def = TopSolidHost.Parameters.GetUserPropertyDefinition(p); } catch { continue; }\n" +
+                "    if (def.IsEmpty) continue;\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    if (!name.Equals(pName, StringComparison.OrdinalIgnoreCase) && name.IndexOf(pName, StringComparison.OrdinalIgnoreCase) < 0) continue;\n" +
+                "    var pType = TopSolidHost.Parameters.GetParameterType(p);\n" +
+                "    if (pType == ParameterType.Text) { TopSolidHost.Parameters.SetTextValue(p, newVal); __message = \"OK: UserProp '\" + name + \"' = \\\"\" + newVal + \"\\\"\"; return; }\n" +
+                "    if (pType == ParameterType.Real) {\n" +
+                "        double d;\n" +
+                "        if (!double.TryParse(newVal, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d)) { __message = \"ERROR: '\" + newVal + \"' is not a valid real number.\"; return; }\n" +
+                "        TopSolidHost.Parameters.SetRealValue(p, d);\n" +
+                "        __message = \"OK: UserProp '\" + name + \"' = \" + d.ToString(\"F6\"); return;\n" +
+                "    }\n" +
+                "    if (pType == ParameterType.Integer) {\n" +
+                "        int iv; if (!int.TryParse(newVal, out iv)) { __message = \"ERROR: '\" + newVal + \"' is not a valid integer.\"; return; }\n" +
+                "        TopSolidHost.Parameters.SetIntegerValue(p, iv);\n" +
+                "        __message = \"OK: UserProp '\" + name + \"' = \" + iv; return;\n" +
+                "    }\n" +
+                "    if (pType == ParameterType.Boolean) {\n" +
+                "        bool bv = newVal.Equals(\"true\", StringComparison.OrdinalIgnoreCase) || newVal == \"1\";\n" +
+                "        TopSolidHost.Parameters.SetBooleanValue(p, bv);\n" +
+                "        __message = \"OK: UserProp '\" + name + \"' = \" + bv; return;\n" +
+                "    }\n" +
+                "    __message = \"ERROR: UserProp '\" + name + \"' has type \" + pType + \" — not supported.\"; return;\n" +
+                "}\n" +
+                "__message = \"User property '\" + pName + \"' not found. Use list_user_properties.\";") },
+
+            { "list_document_properties", R("Lists all document properties (system + user) via IDocuments.GetProperties. Useful to discover fullName format.",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "List<string> props;\n" +
+                "try { props = TopSolidHost.Documents.GetProperties(docId); }\n" +
+                "catch (Exception ex) { return \"ERROR: \" + ex.Message; }\n" +
+                "if (props == null || props.Count == 0) return \"No properties reported by IDocuments.GetProperties.\";\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"Properties: \" + props.Count);\n" +
+                "foreach (var fn in props)\n" +
+                "{\n" +
+                "    string t = \"?\"; try { t = TopSolidHost.Documents.GetPropertyType(docId, fn).ToString(); } catch {}\n" +
+                "    sb.AppendLine(\"  \" + fn + \"  [\" + t + \"]\");\n" +
+                "}\n" +
+                "return sb.ToString();") },
+
+            { "read_document_property", R("Reads any document property by its full name (auto-detects type). Param: value=fullName (from list_document_properties)",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "string fn = (\"{value}\" ?? \"\").Trim();\n" +
+                "if (fn.Length == 0) return \"ERROR: value=fullName required (use list_document_properties).\";\n" +
+                "try {\n" +
+                "    var t = TopSolidHost.Documents.GetPropertyType(docId, fn);\n" +
+                "    if (t == PropertyType.Text) return \"'\" + fn + \"' [Text] = \\\"\" + TopSolidHost.Documents.GetPropertyTextValue(docId, fn) + \"\\\"\";\n" +
+                "    if (t == PropertyType.Real) return \"'\" + fn + \"' [Real] = \" + TopSolidHost.Documents.GetPropertyRealValue(docId, fn).ToString(\"F6\");\n" +
+                "    if (t == PropertyType.Integer) return \"'\" + fn + \"' [Integer] = \" + TopSolidHost.Documents.GetPropertyIntegerValue(docId, fn);\n" +
+                "    if (t == PropertyType.Boolean) return \"'\" + fn + \"' [Boolean] = \" + TopSolidHost.Documents.GetPropertyBooleanValue(docId, fn);\n" +
+                "    if (t == PropertyType.DateTime) return \"'\" + fn + \"' [DateTime] = \" + TopSolidHost.Documents.GetPropertyDateTimeValue(docId, fn).ToString(\"u\");\n" +
+                "    return \"'\" + fn + \"' [\" + t + \"] — type not supported by this recipe.\";\n" +
+                "} catch (Exception ex) { return \"ERROR: \" + ex.Message; }") },
 
             // =====================================================================
             // PART AUDIT — High-value composite scenarios
@@ -995,19 +1104,80 @@ namespace TopSolidMcpServer.Tools
                 "__message = \"Occurrence '\" + oldName + \"' not found.\";") },
 
             // =====================================================================
-            // USER PROPERTIES — Ecriture
+            // OCCURRENCES — Additional recipes (M-60)
             // =====================================================================
-            { "set_user_property", R("Sets a text user property. Param: value=property_name:value",
+            { "count_occurrences", R("Counts occurrences in the active assembly (total + inclusions + unique parts)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "int idx = \"{value}\".IndexOf(':');\n" +
-                "if (idx < 0) return \"Format: property_name:value\";\n" +
-                "string propName = \"{value}\".Substring(0, idx).Trim();\n" +
-                "string propVal = \"{value}\".Substring(idx + 1).Trim();\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
-                "TopSolidHost.Pdm.SetTextUserProperty(pdmId, propName, propVal);\n" +
-                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
-                "return \"OK: Property '\" + propName + \"' = '\" + propVal + \"'\";") },
+                "bool isAsm = false;\n" +
+                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Not an assembly.\"; }\n" +
+                "if (!isAsm) return \"Not an assembly.\";\n" +
+                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
+                "int inclusions = 0;\n" +
+                "var uniqueDocs = new HashSet<string>();\n" +
+                "foreach (var p in parts)\n" +
+                "{\n" +
+                "    bool isOcc = false; try { isOcc = TopSolidHost.Entities.IsOccurrence(p); } catch { }\n" +
+                "    if (isOcc) inclusions++;\n" +
+                "    DocumentId defDoc = DocumentId.Empty;\n" +
+                "    try { defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(p); } catch { }\n" +
+                "    if (!defDoc.IsEmpty) {\n" +
+                "        PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(defDoc);\n" +
+                "        uniqueDocs.Add(TopSolidHost.Pdm.GetName(pdm));\n" +
+                "    }\n" +
+                "}\n" +
+                "return \"Parts: \" + parts.Count + \"  Inclusions (occurrences): \" + inclusions + \"  Unique definitions: \" + uniqueDocs.Count;") },
+
+            { "list_inclusions_with_reference", R("For each inclusion in the assembly, list its occurrence name + PDM reference + designation of the definition document",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "bool isAsm = false;\n" +
+                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Not an assembly.\"; }\n" +
+                "if (!isAsm) return \"Not an assembly.\";\n" +
+                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "int count = 0;\n" +
+                "foreach (var p in parts)\n" +
+                "{\n" +
+                "    bool isOcc = false; try { isOcc = TopSolidHost.Entities.IsOccurrence(p); } catch { continue; }\n" +
+                "    if (!isOcc) continue;\n" +
+                "    string occName = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    DocumentId defDoc = DocumentId.Empty;\n" +
+                "    try { defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(p); } catch { }\n" +
+                "    string defName = \"?\"; string defRef = \"\"; string defDesc = \"\";\n" +
+                "    if (!defDoc.IsEmpty) {\n" +
+                "        PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(defDoc);\n" +
+                "        defName = TopSolidHost.Pdm.GetName(pdm);\n" +
+                "        try { defRef = TopSolidHost.Pdm.GetPartNumber(pdm); } catch { }\n" +
+                "        try { defDesc = TopSolidHost.Pdm.GetDescription(pdm); } catch { }\n" +
+                "    }\n" +
+                "    sb.AppendLine(\"  [\" + count + \"] \" + occName + \"  ->  \" + defName + (string.IsNullOrEmpty(defRef) ? \"\" : \" (ref=\" + defRef + \")\") + (string.IsNullOrEmpty(defDesc) ? \"\" : \" — \" + defDesc));\n" +
+                "    count++;\n" +
+                "}\n" +
+                "if (count == 0) return \"No inclusions found.\";\n" +
+                "return \"Inclusions: \" + count + \"\\n\" + sb.ToString();") },
+
+            { "find_occurrence", R("Finds an occurrence by name (substring match). Param: value=name_fragment",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "bool isAsm = false;\n" +
+                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Not an assembly.\"; }\n" +
+                "if (!isAsm) return \"Not an assembly.\";\n" +
+                "string q = (\"{value}\" ?? \"\").Trim();\n" +
+                "if (q.Length == 0) return \"ERROR: value=name_fragment required.\";\n" +
+                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "int count = 0;\n" +
+                "foreach (var p in parts)\n" +
+                "{\n" +
+                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
+                "    if (name.IndexOf(q, StringComparison.OrdinalIgnoreCase) < 0) continue;\n" +
+                "    bool isOcc = false; try { isOcc = TopSolidHost.Entities.IsOccurrence(p); } catch { }\n" +
+                "    sb.AppendLine(\"  \" + name + (isOcc ? \" [occ]\" : \"\"));\n" +
+                "    count++;\n" +
+                "}\n" +
+                "if (count == 0) return \"No occurrence matches '\" + q + \"'.\";\n" +
+                "return \"Matches: \" + count + \"\\n\" + sb.ToString();") },
 
             // =====================================================================
             // BOUNDING BOX / STOCK
