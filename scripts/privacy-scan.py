@@ -1,26 +1,25 @@
 #!/usr/bin/env python3
-"""Privacy scanner — fails if any published artifact contains private-corpus markers.
+# -*- coding: utf-8 -*-
+"""Privacy scanner - fails if any published artifact contains private-corpus markers.
 
 Runs on every push via .github/workflows/privacy-scan.yml.
 
 Rationale:
 Earlier versions of graph.json embedded ~1193 verbatim C# snippets copied
 from private corpora (contributor real names, customer project folders,
-TOPSOLID SAS copyright headers). This script ensures that pattern cannot
-come back.
+TOPSOLID SAS copyright headers). History was rewritten on 2026-04-20 via
+git filter-repo; this scanner guards against regression at HEAD.
 
 Exit code 0 = clean. Non-zero = contamination found; CI must block the push.
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 
-# File globs to scan — everything that can be published.
-# Do NOT scan node_modules, venv, build output, or the docs/.vitepress cache.
+# File globs to scan - everything that can be published.
 SCAN_GLOBS = [
     "data/**/*.json",
     "data/**/*.jsonl",
@@ -39,35 +38,34 @@ SCAN_GLOBS = [
 ]
 
 # Literal markers that must never appear in published artifacts.
-# Matching is case-sensitive to minimize false positives on common words.
+# Case-sensitive to minimize false positives on common words.
 #
-# Note: bare "TOPSOLID SAS" is NOT listed because it appears in legitimate
-# trademark attributions ("marque déposée de TOPSOLID SAS"). The actual
-# leak pattern — an assembly copyright attribute copied verbatim from
-# private code — is caught by the "Copyright REDACTED" / "Copyright (c)"
-# patterns below.
+# Bare "TOPSOLID SAS" is NOT listed - it appears in legitimate trademark
+# attributions. The actual leak pattern (assembly copyright attribute copied
+# verbatim) is caught via "Copyright REDACTED" / "AssemblyRedacted" below.
 BAD_MARKERS = [
-    "REDACTED-USER",
+    # Build markers as strings rather than literals so filter-repo's
+    # text-replacement passes do not rewrite this file itself when run on
+    # the repo. Reconstructing via chr()/join avoids literal substring matches.
+    chr(97) + "nne-francoise",
+    chr(65) + "nne-francoise",
+    chr(65) + "nne-Francoise",
+    chr(65) + "nne-Fran" + chr(231) + "oise",  # with cedilla
     "REDACTED",
     "REDACTED",
-    "REDACTED",          # legacy name, typically leaks via Windows paths
+    "REDACTED",
     "REDACTED.cs",
     "REDACTED.cs",
     "RedactedMaker",
     "RedactedViewModel",
     "Copyright REDACTED",
-    "Copyright REDACTED",
-    "AssemblyRedacted",  # catches any copyright-attribute leak regardless of wording
+    "Copyright " + chr(169) + " TopSolid",
+    "AssemblyRedacted",
+    "REDACTED-USER",   # residue from filter-repo pass - should be gone at HEAD
 ]
 
-# Explicit allow-list: some files are allowed to mention a marker (e.g.
-# this scanner itself, or local-only tool source code that references a
-# user-local path). Use glob-style patterns.
 ALLOW = [
     "scripts/privacy-scan.py",
-    # SearchExamplesTool.cs references the user-local corpus paths by
-    # design — they only exist on the author's disk, never shipped, and
-    # the labels have been made opaque. Reviewed manually.
     "server/src/Tools/SearchExamplesTool.cs",
 ]
 
@@ -77,7 +75,7 @@ def is_allowed(rel_path: str) -> bool:
 
 
 def main() -> int:
-    findings: list[tuple[str, int, str, str]] = []  # (path, line, marker, excerpt)
+    findings: list[tuple[str, int, str, str]] = []
 
     for pattern in SCAN_GLOBS:
         for p in ROOT.glob(pattern):
@@ -102,17 +100,18 @@ def main() -> int:
         print("[OK] privacy scan: no private-corpus markers found.")
         return 0
 
-    print(f"[FAIL] privacy scan: {len(findings)} contaminated line(s) found.")
-    # Group by path
+    print("[FAIL] privacy scan: " + str(len(findings)) + " contaminated line(s) found.")
     by_path: dict[str, list[tuple[int, str, str]]] = {}
     for path, line, marker, excerpt in findings:
         by_path.setdefault(path, []).append((line, marker, excerpt))
     for path, items in sorted(by_path.items()):
-        print(f"\n  {path}  ({len(items)} hits)")
+        print("\n  " + path + "  (" + str(len(items)) + " hits)")
         for line, marker, excerpt in items[:5]:
-            print(f"    L{line:>5}  [{marker}]  {excerpt}")
+            # ASCII-safe to avoid cp1252 issues in Windows CI
+            safe = excerpt.encode("ascii", errors="replace").decode("ascii")
+            print("    L" + str(line).rjust(5) + "  [" + marker + "]  " + safe)
         if len(items) > 5:
-            print(f"    ... and {len(items)-5} more")
+            print("    ... and " + str(len(items) - 5) + " more")
     print("\nAction: strip the contaminated content before committing.")
     print("        See scripts/privacy-scan.py BAD_MARKERS list.")
     return 1

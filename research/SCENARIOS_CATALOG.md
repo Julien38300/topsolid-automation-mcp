@@ -1,6 +1,6 @@
 # SCENARIOS CATALOG — TopSolid Automation Layer 1
 Derniere mise a jour : 2026-04-06
-Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples unitaires VB/C#
+Sources : Exemples corpora prives (local), TopSolidKernelAutomationExamples, exemples unitaires VB/C#
 
 ## Legende
 - R = READ, W = WRITE, RW = READ+WRITE
@@ -20,12 +20,12 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 | S-005 | Chercher un document par nom (CONTAINS) | R | Pdm.SearchDocumentByName, Pdm.GetType | Simple | ✅ T-20 | 🟢 | KernelExamples |
 | S-006 | Arbre recursif projet complet | R | Pdm.GetConstituents (recursif), Pdm.GetName | Complex | ❌ | 🟢 | ExtractionCSV |
 | S-007 | Lire metadata PDM (description, reference, fabricant) | R | Pdm.GetDescription, Pdm.GetPartNumber, Pdm.GetManufacturer | Simple | ❌ | 🟡 | ExtractionCSV |
-| S-008 | Chercher objets par proprietes | R | Pdm.SearchObjectsWithProperties | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-009 | Lister tous les projets (working + libraries) | R | Pdm.GetProjects(bool, bool) | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-010 | Lister dossiers de projets (racine) | R | Pdm.WorkingProjectsRootFolder, Pdm.GetProjectFolderConstituents | Simple | ❌ | 🟡 | REDACTED-USER |
-| S-011 | Date sauvegarde et commentaire PDM | R | Pdm.GetSavingDate, Pdm.GetComment | Simple | ❌ | 🟡 | REDACTED-USER |
-| S-012 | Afficher dans arbre projets | R | Pdm.ShowInProjectTree | Simple | ❌ | 🟡 | REDACTED-USER |
-| S-013 | Lister connexions PDM disponibles | R | Pdm.GetAvailablePdmConnections | Simple | ❌ | 🟡 | REDACTED-USER |
+| S-008 | Chercher objets par proprietes | R | Pdm.SearchObjectsWithProperties | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-009 | Lister tous les projets (working + libraries) | R | Pdm.GetProjects(bool, bool) | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-010 | Lister dossiers de projets (racine) | R | Pdm.WorkingProjectsRootFolder, Pdm.GetProjectFolderConstituents | Simple | ❌ | 🟡 | corpora prives (local) |
+| S-011 | Date sauvegarde et commentaire PDM | R | Pdm.GetSavingDate, Pdm.GetComment | Simple | ❌ | 🟡 | corpora prives (local) |
+| S-012 | Afficher dans arbre projets | R | Pdm.ShowInProjectTree | Simple | ❌ | 🟡 | corpora prives (local) |
+| S-013 | Lister connexions PDM disponibles | R | Pdm.GetAvailablePdmConnections | Simple | ❌ | 🟡 | corpora prives (local) |
 
 ### PDM — Ecriture
 
@@ -84,10 +84,10 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 | S-053 | Creer parametre avec formule (SmartReal) | W | Parameters.CreateSmartRealParameter | Complex | ❌ | 🟢 | PreParametrage |
 | S-054 | Parametrer le nom du document (formule) | W | Parameters.GetNameParameter, Parameters.SetTextParameterizedValue | Medium | ❌ | 🟡 | AffectationVB |
 | S-055 | Creer propriete utilisateur | W | Parameters.CreateUserPropertyParameter, Pdm.SearchDocumentByName | Medium | ❌ | 🟡 | TraitementParLot |
-| S-056 | Creer parametre couleur | W | Parameters.CreateColorParameter | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-057 | Creer parametres relayes (Real/Bool/Int/Text/Color) | W | Parameters.Create*RelayedParameter | Medium | ❌ | 🟢 | REDACTED-USER |
-| S-058 | Gerer valeurs possibles couleur | RW | Parameters.Get/SetColorParameterPossibleValues | Medium | ❌ | 🟢 | REDACTED-USER |
-| S-059 | Creer parametres table (Real/Color) | W | Parameters.CreateRealTableParameter, CreateColorTableParameter | Complex | ❌ | 🟢 | REDACTED-USER |
+| S-056 | Creer parametre couleur | W | Parameters.CreateColorParameter | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-057 | Creer parametres relayes (Real/Bool/Int/Text/Color) | W | Parameters.Create*RelayedParameter | Medium | ❌ | 🟢 | corpora prives (local) |
+| S-058 | Gerer valeurs possibles couleur | RW | Parameters.Get/SetColorParameterPossibleValues | Medium | ❌ | 🟢 | corpora prives (local) |
+| S-059 | Creer parametres table (Real/Color) | W | Parameters.CreateRealTableParameter, CreateColorTableParameter | Complex | ❌ | 🟢 | corpora prives (local) |
 
 ---
 
@@ -106,14 +106,14 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
-| S-070 | Lister les shapes du document | R | Shapes.GetShapes, Elements.GetFriendlyName | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-071 | Lire les faces d'un shape | R | Shapes.GetFaces, Shapes.GetFaceEnclosingCoordinatesWithGivenFrame | Medium | ❌ | 🟢 | REDACTED-USER |
-| S-072 | Creer un point 3D | W | Geometries3D.CreatePoint + Pattern D | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-073 | Creer un repere (frame) | W | Geometries3D.CreateFrame + Pattern D | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-074 | Creer repere point + 2 directions | W | Geometries3D.CreateFrameByPointAndTwoDirections + Pattern D | Medium | ❌ | 🟢 | REDACTED-USER |
-| S-075 | Creer repere avec offset | W | Geometries3D.CreateFrameWithOffset + Pattern D | Medium | ❌ | 🟢 | REDACTED-USER |
+| S-070 | Lister les shapes du document | R | Shapes.GetShapes, Elements.GetFriendlyName | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-071 | Lire les faces d'un shape | R | Shapes.GetFaces, Shapes.GetFaceEnclosingCoordinatesWithGivenFrame | Medium | ❌ | 🟢 | corpora prives (local) |
+| S-072 | Creer un point 3D | W | Geometries3D.CreatePoint + Pattern D | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-073 | Creer un repere (frame) | W | Geometries3D.CreateFrame + Pattern D | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-074 | Creer repere point + 2 directions | W | Geometries3D.CreateFrameByPointAndTwoDirections + Pattern D | Medium | ❌ | 🟢 | corpora prives (local) |
+| S-075 | Creer repere avec offset | W | Geometries3D.CreateFrameWithOffset + Pattern D | Medium | ❌ | 🟢 | corpora prives (local) |
 | S-076 | Lire plans absolus (XY, XZ, YZ) | R | Geometries3D.GetAbsoluteXYPlane, GetAbsoluteOriginPoint | Simple | ❌ | 🟢 | InclusionManager |
-| S-077 | Transformer un element (translation/rotation) | W | Entities.Transform + Pattern D | Medium | ❌ | 🟢 | REDACTED-USER |
+| S-077 | Transformer un element (translation/rotation) | W | Entities.Transform + Pattern D | Medium | ❌ | 🟢 | corpora prives (local) |
 
 ---
 
@@ -123,14 +123,14 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 |----|----------|------|-----------|-----------|------|--------|--------|
 | S-080 | Detecter si document est un assemblage | R | Documents.GetTypeFullName (check "Assembly") | Simple | ✅ T-18 | 🟢 | KernelExamples |
 | S-081 | Lister les inclusions et leur definition | R | Entities.GetFunctions, Assemblies.GetInclusionDefinitionDocument | Medium | ✅ T-19 | 🟢 | KernelExamples |
-| S-082 | Lire codes et pilotes d'une inclusion | R | Assemblies.GetInclusionCodeAndDrivers | Medium | ❌ | 🟢 | REDACTED-USER |
-| S-083 | Creer inclusion simple (CreateInclusion2) | W | Assemblies.CreateInclusion2 + Pattern D | Complex | ❌ | 🟢 | REDACTED-USER |
-| S-084 | Creer inclusion parametree (SmartPoint/Profile/Real) | W | Assemblies.CreateInclusion + SmartObjects + Pattern D | Complex | ❌ | 🟢 | REDACTED-USER |
+| S-082 | Lire codes et pilotes d'une inclusion | R | Assemblies.GetInclusionCodeAndDrivers | Medium | ❌ | 🟢 | corpora prives (local) |
+| S-083 | Creer inclusion simple (CreateInclusion2) | W | Assemblies.CreateInclusion2 + Pattern D | Complex | ❌ | 🟢 | corpora prives (local) |
+| S-084 | Creer inclusion parametree (SmartPoint/Profile/Real) | W | Assemblies.CreateInclusion + SmartObjects + Pattern D | Complex | ❌ | 🟢 | corpora prives (local) |
 | S-085 | Creer contrainte frame-on-frame | W | Assemblies.CreateFrameOnFrameConstraint | Complex | ❌ | 🟢 | InclusionManager |
-| S-086 | Modifier code/pilotes inclusion | W | Assemblies.SetInclusionCodeAndDrivers2 + Pattern D | Complex | ❌ | 🟢 | REDACTED-USER |
-| S-087 | Derive Part for Modification | W | Assemblies.DerivePartForModification | Complex | ❌ | 🟡 | REDACTED-USER |
-| S-088 | Substitution composants | RW | Substitutions.SubstituteGlobalComponent, GetSubstitutableElements | Complex | ❌ | 🟡 | REDACTED-USER |
-| S-089 | Gerer collisions assemblage | W | Assemblies.SetCollisionsManagement | Medium | ❌ | 🟡 | REDACTED-USER |
+| S-086 | Modifier code/pilotes inclusion | W | Assemblies.SetInclusionCodeAndDrivers2 + Pattern D | Complex | ❌ | 🟢 | corpora prives (local) |
+| S-087 | Derive Part for Modification | W | Assemblies.DerivePartForModification | Complex | ❌ | 🟡 | corpora prives (local) |
+| S-088 | Substitution composants | RW | Substitutions.SubstituteGlobalComponent, GetSubstitutableElements | Complex | ❌ | 🟡 | corpora prives (local) |
+| S-089 | Gerer collisions assemblage | W | Assemblies.SetCollisionsManagement | Medium | ❌ | 🟡 | corpora prives (local) |
 | S-090 | Drop document dans assemblage | W | Documents.Drop | Simple | ❌ | 🟡 | InclusionManager |
 
 ---
@@ -140,15 +140,15 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
 | S-100 | Detecter document famille | R | Families.IsFamily, Families.IsExplicit | Simple | ❌ | 🟢 | KernelExamples |
-| S-101 | Lire codes famille | R | Families.GetCodes | Simple | ❌ | 🟢 | REDACTED-USER |
+| S-101 | Lire codes famille | R | Families.GetCodes | Simple | ❌ | 🟢 | corpora prives (local) |
 | S-102 | Lire instances explicites | R | Families.GetExplicitInstances | Medium | ❌ | 🟢 | KernelExamples |
-| S-103 | Lire document generique | R | Families.GetGenericDocument | Simple | ❌ | 🟢 | REDACTED-USER |
+| S-103 | Lire document generique | R | Families.GetGenericDocument | Simple | ❌ | 🟢 | corpora prives (local) |
 | S-104 | Creer famille explicite | W | Families.SetAsExplicit + Pattern D | Medium | ❌ | 🟢 | FamilyManager |
 | S-105 | Ajouter instance explicite | W | Families.AddExplicitInstance | Medium | ❌ | 🟢 | FamilyManager |
 | S-106 | Affecter document generique | W | Families.SetGenericDocument | Simple | ❌ | 🟢 | FamilyManager |
-| S-107 | Lire contraintes famille | R | Families.GetConstrainedEntityCount, GetOrderedConstrainedDrivers | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-108 | Gerer colonnes catalogue famille | W | Families.AddCatalogColumn, RemoveCatalogColumn | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-109 | Lire/modifier conditions pilotes famille | RW | Families.GetDriverCondition, GetDriverFolderCondition | Complex | ❌ | 🟡 | REDACTED-USER |
+| S-107 | Lire contraintes famille | R | Families.GetConstrainedEntityCount, GetOrderedConstrainedDrivers | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-108 | Gerer colonnes catalogue famille | W | Families.AddCatalogColumn, RemoveCatalogColumn | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-109 | Lire/modifier conditions pilotes famille | RW | Families.GetDriverCondition, GetDriverFolderCondition | Complex | ❌ | 🟡 | corpora prives (local) |
 
 ---
 
@@ -156,15 +156,15 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
-| S-110 | Lister les exporteurs disponibles | R | Application.ExporterCount, GetExporterFileType | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-111 | Lister les importeurs disponibles | R | Application.ImporterCount, GetImporterFileType | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-112 | Verifier si export possible | R | Documents.CanExport | Simple | ❌ | 🟢 | REDACTED-USER |
-| S-113 | Exporter en STEP | W | Documents.Export (index STEP) | Medium | ❌ | 🟢 | REDACTED-USER |
-| S-114 | Exporter avec options (CATPart, FBX, GLTF) | W | Documents.ExportWithOptions | Medium | ❌ | 🟢 | REDACTED-USER |
-| S-115 | Importer STEP avec options | RW | Documents.ImportWithOptions | Complex | ❌ | 🟢 | REDACTED-USER |
-| S-116 | Importer avec representations | RW | Documents.Import + Representations management | Complex | ❌ | 🟢 | REDACTED-USER |
-| S-117 | Export Parasolid avec Enclosing Box | RW | Parts.SetEnclosingBoxManagement + ExportWithOptions | Complex | ❌ | 🟡 | REDACTED-USER |
-| S-118 | Export Viewer Package | W | Pdm.ExportViewerPackage | Medium | ❌ | 🟡 | REDACTED-USER |
+| S-110 | Lister les exporteurs disponibles | R | Application.ExporterCount, GetExporterFileType | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-111 | Lister les importeurs disponibles | R | Application.ImporterCount, GetImporterFileType | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-112 | Verifier si export possible | R | Documents.CanExport | Simple | ❌ | 🟢 | corpora prives (local) |
+| S-113 | Exporter en STEP | W | Documents.Export (index STEP) | Medium | ❌ | 🟢 | corpora prives (local) |
+| S-114 | Exporter avec options (CATPart, FBX, GLTF) | W | Documents.ExportWithOptions | Medium | ❌ | 🟢 | corpora prives (local) |
+| S-115 | Importer STEP avec options | RW | Documents.ImportWithOptions | Complex | ❌ | 🟢 | corpora prives (local) |
+| S-116 | Importer avec representations | RW | Documents.Import + Representations management | Complex | ❌ | 🟢 | corpora prives (local) |
+| S-117 | Export Parasolid avec Enclosing Box | RW | Parts.SetEnclosingBoxManagement + ExportWithOptions | Complex | ❌ | 🟡 | corpora prives (local) |
+| S-118 | Export Viewer Package | W | Pdm.ExportViewerPackage | Medium | ❌ | 🟡 | corpora prives (local) |
 | S-119 | Imprimer un document | W | Documents.Print, Application.PrinterNames | Medium | ❌ | 🟡 | ExportManager |
 
 ---
@@ -173,12 +173,12 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
-| S-120 | Lire tableaux cotation | R | Tables.GetDraftTables, GetDraftTableCellType, GetDraftTableCellText | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-121 | Creer cotation lineaire | W | Draftings.CreateLinearDimensionBetweenTwoPoints | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-122 | Lire vues projection | R | Draftings.GetDraftingViews | Simple | ❌ | 🟡 | REDACTED-USER |
-| S-123 | Creer ensemble projection | W | Draftings.CreateNewProjectionSet | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-124 | Modifier couleur fond cellule | W | Tables.SetDraftTableCellBackgroundColor | Simple | ❌ | 🟡 | REDACTED-USER |
-| S-125 | Appliquer style texte | W | Styles.GetStyles, Styles.ApplyStyle | Simple | ❌ | 🟡 | REDACTED-USER |
+| S-120 | Lire tableaux cotation | R | Tables.GetDraftTables, GetDraftTableCellType, GetDraftTableCellText | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-121 | Creer cotation lineaire | W | Draftings.CreateLinearDimensionBetweenTwoPoints | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-122 | Lire vues projection | R | Draftings.GetDraftingViews | Simple | ❌ | 🟡 | corpora prives (local) |
+| S-123 | Creer ensemble projection | W | Draftings.CreateNewProjectionSet | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-124 | Modifier couleur fond cellule | W | Tables.SetDraftTableCellBackgroundColor | Simple | ❌ | 🟡 | corpora prives (local) |
+| S-125 | Appliquer style texte | W | Styles.GetStyles, Styles.ApplyStyle | Simple | ❌ | 🟡 | corpora prives (local) |
 
 ---
 
@@ -197,9 +197,9 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
 | S-140 | Affecter materiau a une piece | W | Parts.SetMaterial + Pattern D | Simple | ❌ | 🟢 | TraitementParLot |
-| S-141 | Creer document materiau | W | Pdm.CreateDocument + Materials.SetCategory/SetDensity/SetMaterialModel | Complex | ❌ | 🟡 | REDACTED-USER |
-| S-142 | Creer textures PBR (Albedo, Roughness, etc.) | W | Textures.SetPicture, SetCategory, Coatings.SetAlbedoTextureDocument | Complex | ❌ | 🟡 | REDACTED-USER |
-| S-143 | Recuperer images textures | R | Materials.OpenTextureRetrievalSession, GetTextureImage | Medium | ❌ | 🟡 | REDACTED-USER |
+| S-141 | Creer document materiau | W | Pdm.CreateDocument + Materials.SetCategory/SetDensity/SetMaterialModel | Complex | ❌ | 🟡 | corpora prives (local) |
+| S-142 | Creer textures PBR (Albedo, Roughness, etc.) | W | Textures.SetPicture, SetCategory, Coatings.SetAlbedoTextureDocument | Complex | ❌ | 🟡 | corpora prives (local) |
+| S-143 | Recuperer images textures | R | Materials.OpenTextureRetrievalSession, GetTextureImage | Medium | ❌ | 🟡 | corpora prives (local) |
 
 ---
 
@@ -207,11 +207,11 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
-| S-150 | Lire/modifier categorie multi-couche | RW | MultiLayers.GetCategory, SetCategory | Simple | ❌ | 🟡 | REDACTED-USER |
-| S-151 | Gerer coatings multi-couche | RW | MultiLayers.Get/SetTopCoating, Get/SetBottomCoating | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-152 | Gerer finishings multi-couche | RW | MultiLayers.Get/SetTopFinishing, Get/SetBottomFinishing | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-153 | Definir couches multi-materiaux | W | MultiLayers.SetMultiMaterialLayers, AddMultiMaterialLayer | Medium | ❌ | 🟡 | REDACTED-USER |
-| S-154 | Lire epaisseur totale | R | MultiLayers.GetMultiLayerTotalThickness | Simple | ❌ | 🟡 | REDACTED-USER |
+| S-150 | Lire/modifier categorie multi-couche | RW | MultiLayers.GetCategory, SetCategory | Simple | ❌ | 🟡 | corpora prives (local) |
+| S-151 | Gerer coatings multi-couche | RW | MultiLayers.Get/SetTopCoating, Get/SetBottomCoating | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-152 | Gerer finishings multi-couche | RW | MultiLayers.Get/SetTopFinishing, Get/SetBottomFinishing | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-153 | Definir couches multi-materiaux | W | MultiLayers.SetMultiMaterialLayers, AddMultiMaterialLayer | Medium | ❌ | 🟡 | corpora prives (local) |
+| S-154 | Lire epaisseur totale | R | MultiLayers.GetMultiLayerTotalThickness | Simple | ❌ | 🟡 | corpora prives (local) |
 
 ---
 
@@ -231,10 +231,10 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
-| S-170 | Lire Von Mises min/max | R | CaeHost.Results.GetVonMisesMinAndMaxResults | Simple | ❌ | 🔴 | REDACTED-USER |
-| S-171 | Lire Displacement min/max | R | CaeHost.Results.GetDisplacementMinAndMaxResults | Simple | ❌ | 🔴 | REDACTED-USER |
-| S-172 | Lire limite elastique materiau | R | CaeHost.Results.GetMaterialElasticLimit | Simple | ❌ | 🔴 | REDACTED-USER |
-| S-173 | Modifier taille maillage + resoudre | W | CaeHost.Documents.SetMeshTargetSize, Solve | Medium | ❌ | 🔴 | REDACTED-USER |
+| S-170 | Lire Von Mises min/max | R | CaeHost.Results.GetVonMisesMinAndMaxResults | Simple | ❌ | 🔴 | corpora prives (local) |
+| S-171 | Lire Displacement min/max | R | CaeHost.Results.GetDisplacementMinAndMaxResults | Simple | ❌ | 🔴 | corpora prives (local) |
+| S-172 | Lire limite elastique materiau | R | CaeHost.Results.GetMaterialElasticLimit | Simple | ❌ | 🔴 | corpora prives (local) |
+| S-173 | Modifier taille maillage + resoudre | W | CaeHost.Documents.SetMeshTargetSize, Solve | Medium | ❌ | 🔴 | corpora prives (local) |
 
 ---
 
@@ -242,9 +242,9 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
-| S-180 | Generer code ISO (NC) | W | NCPostProcessor.GenerateNCCodesWithOptions | Complex | ❌ | 🔴 | REDACTED-USER |
-| S-181 | Creer operation process usinage | W | Parts.CreateMachiningProcessOperation | Complex | ❌ | 🟡 | REDACTED-USER |
-| S-182 | Lire conditions de coupe | R | Operations.GetNCOperation, GetAllCuttingConditionsAbacus | Complex | ❌ | 🔴 | REDACTED-USER |
+| S-180 | Generer code ISO (NC) | W | NCPostProcessor.GenerateNCCodesWithOptions | Complex | ❌ | 🔴 | corpora prives (local) |
+| S-181 | Creer operation process usinage | W | Parts.CreateMachiningProcessOperation | Complex | ❌ | 🟡 | corpora prives (local) |
+| S-182 | Lire conditions de coupe | R | Operations.GetNCOperation, GetAllCuttingConditionsAbacus | Complex | ❌ | 🔴 | corpora prives (local) |
 
 ---
 
@@ -252,9 +252,9 @@ Sources : Exemples REDACTED-USER, TopSolidKernelAutomationExamples, exemples uni
 
 | ID | Scenario | Type | APIs cles | Complexite | Test | Graphe | Source |
 |----|----------|------|-----------|-----------|------|--------|--------|
-| S-190 | Creer layer | W | Layers.CreateLayer + Pattern D | Simple | ❌ | 🟡 | REDACTED-USER |
-| S-191 | Creer percage (drilling) | W | Parts.CreateDrillingOperation + Pattern D | Complex | ❌ | 🟡 | REDACTED-USER |
-| S-192 | Definir process sur piece | W | Processes.DefineProcess | Medium | ❌ | 🟡 | REDACTED-USER |
+| S-190 | Creer layer | W | Layers.CreateLayer + Pattern D | Simple | ❌ | 🟡 | corpora prives (local) |
+| S-191 | Creer percage (drilling) | W | Parts.CreateDrillingOperation + Pattern D | Complex | ❌ | 🟡 | corpora prives (local) |
+| S-192 | Definir process sur piece | W | Processes.DefineProcess | Medium | ❌ | 🟡 | corpora prives (local) |
 | S-193 | Export parametres vers CSV | R | (boucle Parameters + Elements) | Complex | ❌ | 🟢 | AttributeImporter |
 | S-194 | Import parametres depuis CSV | W | (boucle Parameters.Set*Value + Create*) | Complex | ❌ | 🟢 | AttributeImporter |
 
