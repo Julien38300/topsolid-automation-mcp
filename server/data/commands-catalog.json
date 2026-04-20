@@ -1,0 +1,2106 @@
+{
+  "version": "M-30-poc-drafting",
+  "count": 207,
+  "entries": [
+    {
+      "name": "MagneticCurveOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Annotations/MagneticCurves/MagneticCurveOptionSetCommand.md",
+      "title": "Magnetic line options",
+      "summary": "This command allows you to set by default options of the [Magnetic Line](MagneticLineCreationCommand.md).",
+      "menu": "Cad / Drafting / Annotations / MagneticCurves",
+      "related": [
+        "MagneticLineCreationCommand"
+      ]
+    },
+    {
+      "name": "MagneticLineCreationCommand",
+      "path": "EN/Cad/Drafting/UI/Annotations/MagneticCurves/MagneticLineCreationCommand.md",
+      "title": "Magnetic line",
+      "summary": "This command allows you to create lines where BOM indexes or some annotations can be positioned. By moving the line, the attached indexes and annotations will move too.",
+      "menu": "Cad / Drafting / Annotations / MagneticCurves",
+      "related": [
+        "MagneticCurveOptionSetCommand"
+      ]
+    },
+    {
+      "name": "BendingTextsGenerationCommand",
+      "path": "EN/Cad/Drafting/UI/Bends/BendingTextsGenerationCommand.md",
+      "title": "Automatic bend notes",
+      "summary": "This command allows you to generate automatically all the bending notes on a view that contains an unfolding.",
+      "menu": "Cad / Drafting / Bends",
+      "related": [
+        "BendingTextStyleCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "AutomaticBomRichTextCommand",
+      "path": "EN/Cad/Drafting/UI/Bom/AutomaticBomRichTextCommand.md",
+      "title": "Automatic Bill of Material Index",
+      "summary": "This command allows you to automatically locate all parts of a view.",
+      "menu": "Cad / Drafting / Bom",
+      "related": [
+        "BomRichTextCommand",
+        "BomRichTextStyleCommand",
+        "ViewMagneticBorderOptionSetCommand"
+      ]
+    },
+    {
+      "name": "BomInclusionCommand",
+      "path": "EN/Cad/Drafting/UI/Bom/BomInclusionCommand.md",
+      "title": "Inclusion bill of material table",
+      "summary": "This command allows a dimension table to the inserted in your draft document.",
+      "menu": "Cad / Drafting / Bom",
+      "related": [
+        "DefineDisplayedPropertiesCommand",
+        "ExportTableCommand",
+        "SetManufacturingIndexPropertyCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "BomIndexStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Bom/BomIndexStyleCommand.md",
+      "title": "Index Style",
+      "summary": "This command allows you to create/modify index styles, which will then be used to create [BOM indexes](../Detailing/Bom/BomRichTextCommand.md).",
+      "menu": "Cad / Drafting / Bom",
+      "related": [
+        "BomRichTextCommand",
+        "SetMaskCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "BomTableCommand",
+      "path": "EN/Cad/Drafting/UI/Bom/BomTableCommand.md",
+      "title": "Bill of material table",
+      "summary": "This command allows a dimension table to the inserted in your draft document.",
+      "menu": "Cad / Drafting / Bom",
+      "related": [
+        "DefineDisplayedPropertiesCommand",
+        "ExportTableCommand",
+        "SetManufacturingIndexPropertyCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "BookCommand",
+      "path": "EN/Cad/Drafting/UI/Books/BookCommand.md",
+      "title": "This command activate a specific management of the document.",
+      "summary": "This command activate a specific management of the document.",
+      "menu": "Cad / Drafting / Books",
+      "related": [
+        "ChapterCommand",
+        "OpenCompanyProjectTemplatesCommand",
+        "OpenCompanyTemplatesCommand",
+        "OpenMyProjectTemplatesCommand",
+        "ParagraphModelCommand",
+        "PropertyTableCommand"
+      ]
+    },
+    {
+      "name": "ChapterCommand",
+      "path": "EN/Cad/Drafting/UI/Books/ChapterCommand.md",
+      "title": "This command allows you to create a chapter of the [book](BookCommand.md) that will be automatically filled according to its settings and the [paragraph model](Models/ParagraphModelCommand.md) used",
+      "summary": "This command allows you to create a chapter of the [book](BookCommand.md) that will be automatically filled according to its settings and the [paragraph model](Models/ParagraphModelCommand.md) used",
+      "menu": "Cad / Drafting / Books",
+      "related": [
+        "BookCommand",
+        "ParagraphModelCommand"
+      ]
+    },
+    {
+      "name": "ParagraphModelCommand",
+      "path": "EN/Cad/Drafting/UI/Books/Models/ParagraphModelCommand.md",
+      "title": "This command allows you to create a paragraph model that will be used by a [chapiter](../ChapterCommand.md) of a draft document in which the \"[Book](../BookCommand.md)\" has been activated.",
+      "summary": "This command allows you to create a paragraph model that will be used by a [chapiter](../ChapterCommand.md) of a draft document in which the \"[Book](../BookCommand.md)\" has been activated.",
+      "menu": "Cad / Drafting / Books / Models",
+      "related": [
+        "BookCommand",
+        "ChapterCommand",
+        "ModelViewCommand",
+        "TextWithoutOperationCommand"
+      ]
+    },
+    {
+      "name": "SetPageCommand",
+      "path": "EN/Cad/Drafting/UI/Books/Pages/SetPageCommand.md",
+      "title": "This command allows to customize the display of a view in a draft with several pages.",
+      "summary": "Possibility to combine multiple options.",
+      "menu": "Cad / Drafting / Books / Pages",
+      "related": []
+    },
+    {
+      "name": "PropertyTableCommand",
+      "path": "EN/Cad/Drafting/UI/Books/Tables/PropertyTableCommand.md",
+      "title": "This command allows to create inside a [book](../BookCommand.md), a table that displays properties.",
+      "summary": "This command allows to create inside a [book](../BookCommand.md), a table that displays properties.",
+      "menu": "Cad / Drafting / Books / Tables",
+      "related": [
+        "BookCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "TextCommand",
+      "path": "EN/Cad/Drafting/UI/Books/Texts/TextCommand.md",
+      "title": "The **Text** command from the draft allows to insert a text into a draft, a title block, the detailing of a view, a sketch...",
+      "summary": "The **Text** command from the draft allows to insert a text into a draft, a title block, the detailing of a view, a sketch...",
+      "menu": "Cad / Drafting / Books / Texts",
+      "related": [
+        "ExternalParameterCommand",
+        "ImportedTextParameterCommand",
+        "ProjectParameterCommand",
+        "SmartTextParameterCommand",
+        "TextParameterCommand",
+        "TextStyleCommand",
+        "UpdateTableOfContentsCommand"
+      ]
+    },
+    {
+      "name": "ModelViewCommand",
+      "path": "EN/Cad/Drafting/UI/Books/Views/ModelViewCommand.md",
+      "title": "This command allows to insert a projected view into a [paragraph model](../Models/ParagraphModelCommand.md). This view can, for example, display the tool associated with a process or the state of the part .",
+      "summary": "This command allows to insert a projected view into a [paragraph model](../Models/ParagraphModelCommand.md). This view can, for example, display the tool associated with a process or the state of the part .",
+      "menu": "Cad / Drafting / Books / Views",
+      "related": [
+        "MainViewCommand",
+        "ParagraphModelCommand"
+      ]
+    },
+    {
+      "name": "AntiClockwiseQuarterTurnCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Commands/AntiClockwiseQuarterTurnCommand.md",
+      "title": "This command allows to rotate aquarter turnin thecounterclockwise, the draft during its positioning in a bundle.",
+      "summary": "This command allows to rotate aquarter turnin thecounterclockwise, the draft during its positioning in a bundle.",
+      "menu": "Cad / Drafting / Bundle / Commands",
+      "related": []
+    },
+    {
+      "name": "ClockwiseQuarterTurnCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Commands/ClockwiseQuarterTurnCommand.md",
+      "title": "This command allows to rotate aquarter turnin theclockwise, the draft during its positioning in a bundle.",
+      "summary": "This command allows to rotate aquarter turnin theclockwise, the draft during its positioning in a bundle.",
+      "menu": "Cad / Drafting / Bundle / Commands",
+      "related": []
+    },
+    {
+      "name": "UpdateTableOfContentsCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Commands/UpdateTableOfContentsCommand.md",
+      "title": "This command allows to update folios of drafts included in a bundle.",
+      "summary": "This command allows to update folios of drafts included in a bundle.",
+      "menu": "Cad / Drafting / Bundle / Commands",
+      "related": []
+    },
+    {
+      "name": "ShowAllConstraintsModeCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Constraints/ShowAllConstraintsModeCommand.md",
+      "title": "Show constraints",
+      "summary": "This mode activates or deactivates the viewing of positioning constraints during the positioning edition of a draft.",
+      "menu": "Cad / Drafting / Bundle / Constraints",
+      "related": []
+    },
+    {
+      "name": "StartCrossSectionCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Draftings/StartCrossSectionCommand.md",
+      "title": "Cross Section (Drafting Bundle)",
+      "summary": "This command allows to copy a cross section on another drafting of drafting bundle.",
+      "menu": "Cad / Drafting / Bundle / Draftings",
+      "related": []
+    },
+    {
+      "name": "StartDetailViewCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Draftings/StartDetailViewCommand.md",
+      "title": "Detail View (Drafting Bundle)",
+      "summary": "This command allows to copy a detail view on another drafting of drafting bundle.",
+      "menu": "Cad / Drafting / Bundle / Draftings",
+      "related": []
+    },
+    {
+      "name": "StartDirectionViewCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Draftings/StartDirectionViewCommand.md",
+      "title": "View along a Direction",
+      "summary": "This command allows to copy a view along a direction on another drafting of drafting bundle.",
+      "menu": "Cad / Drafting / Bundle / Draftings",
+      "related": []
+    },
+    {
+      "name": "IncludeDraftingCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Inclusion/IncludeDraftingCommand.md",
+      "title": "Inclusion",
+      "summary": "This command allows to",
+      "menu": "Cad / Drafting / Bundle / Inclusion",
+      "related": []
+    },
+    {
+      "name": "IncludeInLastPositioningModeCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Inclusion/IncludeInLastPositioningModeCommand.md",
+      "title": "Inclusion in last positioning",
+      "summary": "The deactivated mode gives better performances when drafts are moved with the mouse.",
+      "menu": "Cad / Drafting / Bundle / Inclusion",
+      "related": [
+        "MergePositioningsCommand"
+      ]
+    },
+    {
+      "name": "NestingDraftingsCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/NestingDraftings/NestingDraftingsCommand.md",
+      "title": "This command allows to automatically position a selection of draftings",
+      "summary": "This command allows to automatically position a selection of draftings into a Bundle",
+      "menu": "Cad / Drafting / Bundle / NestingDraftings",
+      "related": [
+        "MultipleDraftingsMenuCommand"
+      ]
+    },
+    {
+      "name": "PaperCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Papers/PaperCommand.md",
+      "title": "This document allows to define the border of a [draft bundle](../Documents/DraftingBundleDocumentWindowFactory.md). It will contain all draft documents to be able to print them.",
+      "summary": "This document allows to define the border of a [draft bundle](../Documents/DraftingBundleDocumentWindowFactory.md). It will contain all draft documents to be able to print them.",
+      "menu": "Cad / Drafting / Bundle / Papers",
+      "related": []
+    },
+    {
+      "name": "AutomaticPositioningCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/AutomaticPositioningCommand.md",
+      "title": "Constraint",
+      "summary": "This command automatically constrains the draft to be included by recognition.",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": [
+        "AxisOnAxisConstraintCommand",
+        "AxisOnPointConstraintCommand",
+        "IncludeInLastPositioningModeCommand",
+        "OrientationCommand",
+        "PointOnAxisConstraintCommand",
+        "PointOnPointConstraintCommand"
+      ]
+    },
+    {
+      "name": "AxisOnAxisConstraintCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/AxisOnAxisConstraintCommand.md",
+      "title": "This command constrains an axis of the draft to be included in a [bundle](../Documents/DraftingBundleDocumentWindowFactory.md) in relation to an axis of the destination geometry.",
+      "summary": "",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": []
+    },
+    {
+      "name": "AxisOnPointConstraintCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/AxisOnPointConstraintCommand.md",
+      "title": "This command constrains an axis of the draft to be included in a [bundle](../Documents/DraftingBundleDocumentWindowFactory.md) in relation to a point of the destination geometry.",
+      "summary": "",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": []
+    },
+    {
+      "name": "DynamicPositioningModeCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/DynamicPositioningModeCommand.md",
+      "title": "This mode activates or deactivates the dynamic positioning of drafts in a bundle of drafts.",
+      "summary": "To improve the response time when inserting drafts in the bundle of drafts including many constraints, it may be wise to deactivate this mode.",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": []
+    },
+    {
+      "name": "MergePositioningsCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/MergePositioningsCommand.md",
+      "title": "Merge positionings",
+      "summary": "",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": []
+    },
+    {
+      "name": "OrientationCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/OrientationCommand.md",
+      "title": "This command allows to orient the draft to be included in a [bundle](../Documents/DraftingBundleDocumentWindowFactory.md) in relation to a destination geometry.",
+      "summary": "- By default, during a draft inclusion in a bundle, the orientation constraint is automatically created.",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": []
+    },
+    {
+      "name": "PointOnAxisConstraintCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/PointOnAxisConstraintCommand.md",
+      "title": "This command constrains a point of the draft to be included in a [bundle](../Documents/DraftingBundleDocumentWindowFactory.md) in relation to an axis of the destination geometry.",
+      "summary": "",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": []
+    },
+    {
+      "name": "PointOnPointConstraintCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Positioning/PointOnPointConstraintCommand.md",
+      "title": "Point on point",
+      "summary": "",
+      "menu": "Cad / Drafting / Bundle / Positioning",
+      "related": []
+    },
+    {
+      "name": "BundleSketchCommand",
+      "path": "EN/Cad/Drafting/UI/Bundle/Sketches/BundleSketchCommand.md",
+      "title": "Sketch",
+      "summary": "This command allows to create a sketch in a [drafts bundle](../Documents/DraftingBundleDocumentWindowFactory.md). The sketch of a bundle always uses a scale factor to 1.",
+      "menu": "Cad / Drafting / Bundle / Sketches",
+      "related": [
+        "EditSketchOptionSetCommand",
+        "SectionCommand"
+      ]
+    },
+    {
+      "name": "DraftingDocumentCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/DraftingDocumentCommand.md",
+      "title": "This command allows you to create the draft of the selected document (Assembly, Part, Exploded, ...)",
+      "summary": "This command allows you to create the draft of the selected document (Assembly, Part, Exploded, ...)",
+      "menu": "Cad / Drafting / Commands",
+      "related": []
+    },
+    {
+      "name": "DraftingMultiplePrintCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/DraftingMultiplePrintCommand.md",
+      "title": "This command allows you to print all the draft document of a project or a folder (and its sub-folder).",
+      "summary": "This command allows you to print all the draft document of a project or a folder (and its sub-folder).",
+      "menu": "Cad / Drafting / Commands",
+      "related": [
+        "ApplicationOptionsCommand"
+      ]
+    },
+    {
+      "name": "InstanceDraftingDocumentCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/InstanceDraftingDocumentCommand.md",
+      "title": "Predefined draft",
+      "summary": "This contextual command allows to use a predefined draft of a family instance included in an assembly.",
+      "menu": "Cad / Drafting / Commands",
+      "related": [
+        "PredefinedDraftCommand"
+      ]
+    },
+    {
+      "name": "IsolateDraftingCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/IsolateDraftingCommand.md",
+      "title": "Isolate drafting",
+      "summary": "- This operation is irreversible and the elements based on elements to isolate become basic. It will not be possible to reconnect broken links",
+      "menu": "Cad / Drafting / Commands",
+      "related": []
+    },
+    {
+      "name": "MirrorDraftingCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/MirrorDraftingCommand.md",
+      "title": "Mirror drafting",
+      "summary": "This command allows to create a mirror drafting of a part or an assembly.",
+      "menu": "Cad / Drafting / Commands",
+      "related": [
+        "CreateAssemblyMirroringCommand",
+        "CreatePartMirroringCommand"
+      ]
+    },
+    {
+      "name": "PredefinedDraftCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/PredefinedDraftCommand.md",
+      "title": "Predefined draft",
+      "summary": "This command allows to create a predefined draft from a [family](../../../Design/UI/Families/FamilyDocumentCommand.md), to be able to use this draft for each instance of this family.",
+      "menu": "Cad / Drafting / Commands",
+      "related": [
+        "FamilyDocumentCommand",
+        "InstanceDraftingDocumentCommand",
+        "MultipleDraftingsCommand"
+      ]
+    },
+    {
+      "name": "PrintCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/PrintCommand.md",
+      "title": "This command allows the current draft document to be printed.",
+      "summary": "This command allows the current draft document to be printed.",
+      "menu": "Cad / Drafting / Commands",
+      "related": []
+    },
+    {
+      "name": "ReplaceModelCommand",
+      "path": "EN/Cad/Drafting/UI/Commands/ReplaceModelCommand.md",
+      "title": "Replace Model",
+      "summary": "This command allows to Replace a model (frame, title block,...) by another.",
+      "menu": "Cad / Drafting / Commands",
+      "related": []
+    },
+    {
+      "name": "CoordinatesTableCommand",
+      "path": "EN/Cad/Drafting/UI/CoordinatesTable/CoordinatesTableCommand.md",
+      "title": "Coordinates Table",
+      "summary": "When the height is fixed, it can also be modified with a drag and drop of the upper separation of this line.",
+      "menu": "Cad / Drafting / CoordinatesTable",
+      "related": [
+        "CoordinatesTableCommand",
+        "CoordinatesTableIndexStyleCommand",
+        "TextStyleCommand",
+        "ViewOriginStyleCommand"
+      ]
+    },
+    {
+      "name": "CoordinatesTableIndexStyleCommand",
+      "path": "EN/Cad/Drafting/UI/CoordinatesTable/CoordinatesTableIndexStyleCommand.md",
+      "title": "Coordinates Table Index Style",
+      "summary": "This command allows to create/ modify coordinates table index usable during [coordinates table](CoordinatesTableCommand.md) creation.",
+      "menu": "Cad / Drafting / CoordinatesTable",
+      "related": [
+        "CoordinatesTableCommand",
+        "LayerCommand"
+      ]
+    },
+    {
+      "name": "CoordinatesTableStyleCommand",
+      "path": "EN/Cad/Drafting/UI/CoordinatesTable/CoordinatesTableStyleCommand.md",
+      "title": "Coordinates Table style",
+      "summary": "This command allows to create/modify [coordinates table](CoordinatesTableCommand.md) styles usable during coordinates tables creation.",
+      "menu": "Cad / Drafting / CoordinatesTable",
+      "related": [
+        "CoordinatesTableCommand"
+      ]
+    },
+    {
+      "name": "BendingTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Bendings/BendingTextCommand.md",
+      "title": "Bend note",
+      "summary": "This command allows to rapidly add a bend note by displaying all informations about the selected bend.",
+      "menu": "Cad / Drafting / Detailing / Bendings",
+      "related": [
+        "BendingTextStyleCommand"
+      ]
+    },
+    {
+      "name": "BendingTextStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Bendings/BendingTextStyleCommand.md",
+      "title": "Bend note style",
+      "summary": "This command allows creating a customized bend note style.",
+      "menu": "Cad / Drafting / Detailing / Bendings",
+      "related": [
+        "BendingTextCommand"
+      ]
+    },
+    {
+      "name": "BomRichTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Bom/BomRichTextCommand.md",
+      "title": "Bill of material index",
+      "summary": "This command allows dimension index to be created in your draft document.",
+      "menu": "Cad / Drafting / Detailing / Bom",
+      "related": [
+        "BomRichTextStyleCommand",
+        "LayerCommand",
+        "ViewMagneticBorderOptionSetCommand"
+      ]
+    },
+    {
+      "name": "BomRichTextStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Bom/BomRichTextStyleCommand.md",
+      "title": "Bom Index Style",
+      "summary": "This command allows you to create/modify index styles, which will then be used to create [BOM indexes](BomRichTextCommand.md).",
+      "menu": "Cad / Drafting / Detailing / Bom",
+      "related": [
+        "AutomaticBomRichTextCommand",
+        "BomRichTextCommand",
+        "LayerCommand",
+        "RichTextCommand"
+      ]
+    },
+    {
+      "name": "toolingbomrichtextscommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Bom/Tooling/toolingbomrichtextscommand.md",
+      "title": "This command allows you to crate a bill of material index in your Draft document, like the [Bill of material index](../BomRichTextCommand.md). It allows moreover, to index automatically the same part in complementary views, like the [Automatic BOM Index](../../../Bom/AutomaticBomRichTextCommand.md).",
+      "summary": "This command allows you to crate a bill of material index in your Draft document, like the [Bill of material index](../BomRichTextCommand.md). It allows moreover, to index automatically the same part in complementary views, like the [Automatic BOM Index](../../../Bom/AutomaticBomRichTextCommand.md).",
+      "menu": "Cad / Drafting / Detailing / Bom / Tooling",
+      "related": [
+        "AutomaticBomRichTextCommand",
+        "BomRichTextCommand",
+        "BomRichTextStyleCommand"
+      ]
+    },
+    {
+      "name": "ChamferTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Chamfers/ChamferTextCommand.md",
+      "title": "Chamfer Dimension",
+      "summary": "This command allows you to create chamfer dimensions.",
+      "menu": "Cad / Drafting / Detailing / Chamfers",
+      "related": [
+        "ChamferTextStyleCommand",
+        "UnitsOptionSetCommand"
+      ]
+    },
+    {
+      "name": "ChamferTextStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Chamfers/ChamferTextStyleCommand.md",
+      "title": "Chamfer Dimension Style",
+      "summary": "This command allows you to create a customized chamfer dimension style.",
+      "menu": "Cad / Drafting / Detailing / Chamfers",
+      "related": [
+        "ChamferTextCommand"
+      ]
+    },
+    {
+      "name": "DrillingRichTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Drillings/DrillingRichTextCommand.md",
+      "title": "Drilling note",
+      "summary": "This command allows a note to be applied quickly to a drilling by indicating the information suitable for the selected geometry.",
+      "menu": "Cad / Drafting / Detailing / Drillings",
+      "related": [
+        "DrillingRichTextCommand",
+        "DrillingRichTextStyleCommand",
+        "LayerCommand",
+        "MachiningProcessCommand",
+        "RedimensioningCommand"
+      ]
+    },
+    {
+      "name": "DrillingRichTextStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Drillings/DrillingRichTextStyleCommand.md",
+      "title": "Drilling note style",
+      "summary": "This command allows a customized drilling note style to be created.",
+      "menu": "Cad / Drafting / Detailing / Drillings",
+      "related": [
+        "DrillingRichTextCommand"
+      ]
+    },
+    {
+      "name": "EdgeStateCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/EdgeStates/EdgeStateCommand.md",
+      "title": "This command allows to create an edge state note compatible with the",
+      "summary": "This command allows to create an edge state note compatible with the ISO 13715 standard.",
+      "menu": "Cad / Drafting / Detailing / EdgeStates",
+      "related": []
+    },
+    {
+      "name": "EdgeStateStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/EdgeStates/EdgeStateStyleCommand.md",
+      "title": "This command allows edge state styles to be created / modified which",
+      "summary": "This command allows edge state styles to be created / modified which will then be usable when creating an [edge state](EdgeStateCommand.md).",
+      "menu": "Cad / Drafting / Detailing / EdgeStates",
+      "related": [
+        "EdgeStateCommand"
+      ]
+    },
+    {
+      "name": "KnurlingTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Knurlings/KnurlingTextCommand.md",
+      "title": "Knurling Dimension",
+      "summary": "This command allows you to create knurling dimensions.",
+      "menu": "Cad / Drafting / Detailing / Knurlings",
+      "related": [
+        "KnurlingTextStyleCommand"
+      ]
+    },
+    {
+      "name": "KnurlingTextStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Knurlings/KnurlingTextStyleCommand.md",
+      "title": "Knurling Dimension Style",
+      "summary": "This command allows you to create a customized knurling dimension style.",
+      "menu": "Cad / Drafting / Detailing / Knurlings",
+      "related": [
+        "KnurlingTextCommand"
+      ]
+    },
+    {
+      "name": "LevelRichTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Levels/LevelRichTextCommand.md",
+      "title": "Level note",
+      "summary": "This command allows to locate altitudes on a part or an assembly.",
+      "menu": "Cad / Drafting / Detailing / Levels",
+      "related": [
+        "IsolateDraftingCommand",
+        "LayerCommand",
+        "LevelReferencesManagementEditCommand",
+        "SetMaskCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "LevelRichTextStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Levels/LevelRichTextStyleCommand.md",
+      "title": "Level note style",
+      "summary": "This command allows a customized level note style to be created.",
+      "menu": "Cad / Drafting / Detailing / Levels",
+      "related": [
+        "LayerCommand",
+        "LevelRichTextCommand",
+        "SetMaskCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "ViewOriginCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Origins/ViewOriginCommand.md",
+      "title": "View Origin",
+      "summary": "Several origin symbols can be positioned on the same view.",
+      "menu": "Cad / Drafting / Detailing / Origins",
+      "related": [
+        "ProjectionSetCommand"
+      ]
+    },
+    {
+      "name": "RichTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/RichTexts/RichTextCommand.md",
+      "title": "Rich text",
+      "summary": "This command allows to create text and the result is directly visible during the entering. Symbols and parameters can be included during the entering. This kind of text is useful to force a too long description to be automatically on 2 lines.",
+      "menu": "Cad / Drafting / Detailing / RichTexts",
+      "related": [
+        "SmartTextParameterCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "SurfaceFinishCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/SurfaceFinishes/SurfaceFinishCommand.md",
+      "title": "Surface Finish",
+      "summary": "This command allows a **Surface finish** symbol to be created in your draft document.",
+      "menu": "Cad / Drafting / Detailing / SurfaceFinishes",
+      "related": [
+        "SurfaceFinishStyleCommand"
+      ]
+    },
+    {
+      "name": "TaperRichTextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Taper/TaperRichTextCommand.md",
+      "title": "Cone Note",
+      "summary": "This command allows to create a note displaying the conicity of a conical face.",
+      "menu": "Cad / Drafting / Detailing / Taper",
+      "related": []
+    },
+    {
+      "name": "taperrichtextstylecommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Taper/taperrichtextstylecommand.md",
+      "title": "Cone Note Style",
+      "summary": "This command allows to define the style of a [cone note](TaperRichTextCommand.md).",
+      "menu": "Cad / Drafting / Detailing / Taper",
+      "related": [
+        "TaperRichTextCommand"
+      ]
+    },
+    {
+      "name": "TextCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Texts/TextCommand.md",
+      "title": "The **Text** command allows text to be inserted",
+      "summary": "For a **multi-line text**, use the Ctrl+Entr keys on the keyboard.",
+      "menu": "Cad / Drafting / Detailing / Texts",
+      "related": [
+        "LayerCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "DatumFeatureCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Tolerancing/DatumFeatureCommand.md",
+      "title": "Datum Feature",
+      "summary": "This command allows a tolerance reference symbol to be created.",
+      "menu": "Cad / Drafting / Detailing / Tolerancing",
+      "related": [
+        "DatumFeatureStyleCommand"
+      ]
+    },
+    {
+      "name": "datumtargetcommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Tolerancing/DatumTargets/datumtargetcommand.md",
+      "title": "Datum target",
+      "summary": "This command allows to create datum targets for ISO geometric tolerancing according to the ISO 5459 standard.",
+      "menu": "Cad / Drafting / Detailing / Tolerancing / DatumTargets",
+      "related": [
+        "ProjectedAnnotationsCommand"
+      ]
+    },
+    {
+      "name": "BasicDimensionCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Tolerancing/Dimensions/BasicDimensionCommand.md",
+      "title": "Basic dimension",
+      "summary": "- It is possible to hook again an item by double clicking on the dimension line or the attachment line and moving the handle onto another geometry.",
+      "menu": "Cad / Drafting / Detailing / Tolerancing / Dimensions",
+      "related": [
+        "DimensionStyleCommand"
+      ]
+    },
+    {
+      "name": "GeometricToleranceCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Tolerancing/GeometricToleranceCommand.md",
+      "title": "Geometric tolerance",
+      "summary": "This command allows a geometric tolerance symbol to be created on an item.",
+      "menu": "Cad / Drafting / Detailing / Tolerancing",
+      "related": [
+        "DatumFeatureCommand",
+        "GeometricToleranceStyleCommand"
+      ]
+    },
+    {
+      "name": "GeometricToleranceStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Tolerancing/GeometricToleranceStyleCommand.md",
+      "title": "Geometric tolerance style",
+      "summary": "This command allows geometric tolerance styles to be created / modified which will then be usable with the [Geometric tolerance](GeometricToleranceCommand.md) command.",
+      "menu": "Cad / Drafting / Detailing / Tolerancing",
+      "related": [
+        "GeometricToleranceCommand"
+      ]
+    },
+    {
+      "name": "WeldCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Welds/WeldCommand.md",
+      "title": "Welding symbol",
+      "summary": "This command allows a welding **symbol** to be created in your draft document.",
+      "menu": "Cad / Drafting / Detailing / Welds",
+      "related": [
+        "WeldStyleCommand"
+      ]
+    },
+    {
+      "name": "WeldStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Detailing/Welds/WeldStyleCommand.md",
+      "title": "Welding style",
+      "summary": "This command allow a customized welding style to be created.",
+      "menu": "Cad / Drafting / Detailing / Welds",
+      "related": [
+        "WeldCommand"
+      ]
+    },
+    {
+      "name": "ArcLengthDimensionCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/ArcLengthDimensions/ArcLengthDimensionCommand.md",
+      "title": "Arc length dimension",
+      "summary": "This command allows you to dimension the length of an arc.",
+      "menu": "Cad / Drafting / Dimensions / ArcLengthDimensions",
+      "related": [
+        "DimensionStyleCommand",
+        "LayerCommand",
+        "ReorganizationAnnotationCommand",
+        "StackingAnnotationCommand"
+      ]
+    },
+    {
+      "name": "AutomaticDimensionsCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/AutomaticDimensions/AutomaticDimensionsCommand.md",
+      "title": "Automatic Dimensions",
+      "summary": "This command allows to dimension automatically some dimensions on a view. This command is mainly useful to dimensions extruded bars draft (length, cutting dimensions and angle...)",
+      "menu": "Cad / Drafting / Dimensions / AutomaticDimensions",
+      "related": [
+        "DimensionStyleCommand",
+        "LayerCommand"
+      ]
+    },
+    {
+      "name": "AutomaticCompositeDimensionsCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/CompositeDimensions/AutomaticCompositeDimensions/AutomaticCompositeDimensionsCommand.md",
+      "title": "Automatic composite dimensions",
+      "summary": "This command allows to rapidly and automatically dimension a set of drillings with [composites dimensions](../CompositeDimensionCommand.md). Composite dimensions are positioned following 2 directions.",
+      "menu": "Cad / Drafting / Dimensions / CompositeDimensions / AutomaticCompositeDimensions",
+      "related": [
+        "AutomaticAxesCommand",
+        "CompositeDimensionCommand",
+        "CompositeDimensionStyleCommand",
+        "CopyDimensionToleranceCommand",
+        "DimensionAsCommand",
+        "DimensionCommand",
+        "EditDimensionToleranceCommand",
+        "StartInterruptedViewCommand"
+      ]
+    },
+    {
+      "name": "bendingsautomaticcompositedimensionscommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/CompositeDimensions/AutomaticCompositeDimensions/Bends/bendingsautomaticcompositedimensionscommand.md",
+      "title": "Automatic bendings composite dimension",
+      "summary": "- Only the bendings parallel with the view axes will be taken in consideration.",
+      "menu": "Cad / Drafting / Dimensions / CompositeDimensions / AutomaticCompositeDimensions / Bends",
+      "related": [
+        "AutomaticAxesCommand",
+        "CompositeDimensionCommand",
+        "CompositeDimensionStyleCommand",
+        "CopyDimensionToleranceCommand",
+        "DimensionAsCommand",
+        "DimensionCommand",
+        "EditDimensionToleranceCommand",
+        "StartInterruptedViewCommand"
+      ]
+    },
+    {
+      "name": "ChangeCompositeDimensionsLineAxisCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/CompositeDimensions/ChangeCompositeDimensionsLineAxisCommand.md",
+      "title": "This contextual command allows to permute a dimension on the other side of the view.",
+      "summary": "This contextual command allows to permute a dimension on the other side of the view.",
+      "menu": "Cad / Drafting / Dimensions / CompositeDimensions",
+      "related": []
+    },
+    {
+      "name": "CompositeDimensionCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/CompositeDimensions/CompositeDimensionCommand.md",
+      "title": "Composite dimension",
+      "summary": "Double clicking on a constituent of a dimension (dimension line or projection line) allows the [handles](javascript:void(0);) to be displayed coupled with reference geometries.",
+      "menu": "Cad / Drafting / Dimensions / CompositeDimensions",
+      "related": [
+        "CompositeDimensionStyleCommand",
+        "DimensionStyleCommand"
+      ]
+    },
+    {
+      "name": "CompositeDimensionStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/CompositeDimensions/CompositeDimensionStyleCommand.md",
+      "title": "Composite Dimension Style",
+      "summary": "This command allows you to create/modify composite dimension styles that can then be use to create a [composite dimension](CompositeDimensionCommand.md).",
+      "menu": "Cad / Drafting / Dimensions / CompositeDimensions",
+      "related": [
+        "CompositeDimensionCommand"
+      ]
+    },
+    {
+      "name": "DimensionAsCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/DimensionAsCommand.md",
+      "title": "This command allows you to retrieve the style of a dimension in order to create a new dimension.",
+      "summary": "A dimension created from another dimension retrieves the style and options, which can be modified if necessary. There is no link between the 2 dimensions, so modifying the options of one of the dimensions does not modify the options of the other.",
+      "menu": "Cad / Drafting / Dimensions",
+      "related": []
+    },
+    {
+      "name": "DimensionCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/DimensionCommand.md",
+      "title": "The command **Dimension** allows your draft to",
+      "summary": "- When creating a dimension between 2 points, it is possible to select a reference direction.",
+      "menu": "Cad / Drafting / Dimensions",
+      "related": [
+        "DimensionStyleCommand",
+        "ExtremePointCommand",
+        "IntersectionPointCommand"
+      ]
+    },
+    {
+      "name": "DraftAngleDimensionCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/DraftAngleDimensions/DraftAngleDimensionCommand.md",
+      "title": "Draft angle dimension",
+      "summary": "This command allows to dimension a draft.",
+      "menu": "Cad / Drafting / Dimensions / DraftAngleDimensions",
+      "related": [
+        "DimensionStyleCommand"
+      ]
+    },
+    {
+      "name": "EditDimensionToleranceCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/EditDimensionToleranceCommand.md",
+      "title": "This command allows you to edit a tolerance to be able to modify it.",
+      "summary": "This command allows you to edit a tolerance to be able to modify it.",
+      "menu": "Cad / Drafting / Dimensions",
+      "related": [
+        "DimensionCommand"
+      ]
+    },
+    {
+      "name": "HalfPartDimensionCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/HalfPartDimensions/HalfPartDimensionCommand.md",
+      "title": "Half part dimension",
+      "summary": "This command allows to dimension symmetric parts (half representation of the part) or revolution parts. It allows as well to dimension of long diameter (when the part is partially represented).",
+      "menu": "Cad / Drafting / Dimensions / HalfPartDimensions",
+      "related": [
+        "DimensionStyleCommand"
+      ]
+    },
+    {
+      "name": "SetMaskCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/SetMaskCommand.md",
+      "title": "SetMaskCommand",
+      "summary": "**The mask** allows to define if an element hide or not the lines behind in order to make the draft comprehension easier. There is 3 masking level: Low, Medium, High.",
+      "menu": "Cad / Drafting / Dimensions",
+      "related": [
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "SpatialDimensionCommand",
+      "path": "EN/Cad/Drafting/UI/Dimensions/SpatialDimensions/SpatialDimensionCommand.md",
+      "title": "3D Dimension",
+      "summary": "This command allows you to dimension a perspective view.",
+      "menu": "Cad / Drafting / Dimensions / SpatialDimensions",
+      "related": [
+        "DimensionStyleCommand",
+        "ViewPlaneCommand"
+      ]
+    },
+    {
+      "name": "DimensionsTableCommand",
+      "path": "EN/Cad/Drafting/UI/DimensionsTable/DimensionsTableCommand.md",
+      "title": "Dimensions Table",
+      "summary": "- For symbols with more than one piece of information, such as roughness symbols, it is possible to select each of the elements separately.",
+      "menu": "Cad / Drafting / DimensionsTable",
+      "related": [
+        "DimensionsTableIndexStyleCommand",
+        "DimensionsTableStyleCommand",
+        "ExportTableCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "DimensionsTableIndexStyleCommand",
+      "path": "EN/Cad/Drafting/UI/DimensionsTable/DimensionsTableIndexStyleCommand.md",
+      "title": "Dimensions Table Index Style",
+      "summary": "This command allows to create/ modify dimensions table index usable during [dimensions table](DimensionsTableCommand.md) creation.",
+      "menu": "Cad / Drafting / DimensionsTable",
+      "related": [
+        "DimensionsTableCommand",
+        "LayerCommand"
+      ]
+    },
+    {
+      "name": "DimensionsTableStyleCommand",
+      "path": "EN/Cad/Drafting/UI/DimensionsTable/DimensionsTableStyleCommand.md",
+      "title": "Dimensions Table Style",
+      "summary": "This command allows to create/modify [dimensions table](DimensionsTableCommand.md) styles usable during dimensions tables creation.",
+      "menu": "Cad / Drafting / DimensionsTable",
+      "related": [
+        "DimensionsTableCommand"
+      ]
+    },
+    {
+      "name": "MultipleDraftingsChooseBomCommand",
+      "path": "EN/Cad/Drafting/UI/Documents/MultipleDraftings/MultipleDraftingsChooseBomCommand.md",
+      "title": "This command allows to select or to create a bill of material to use for the multiple drafts.",
+      "summary": "This command allows to select or to create a bill of material to use for the multiple drafts.",
+      "menu": "Cad / Drafting / Documents / MultipleDraftings",
+      "related": [
+        "MultipleDraftingsCommand"
+      ]
+    },
+    {
+      "name": "MultipleDraftingsCommand",
+      "path": "EN/Cad/Drafting/UI/Documents/MultipleDraftings/MultipleDraftingsCommand.md",
+      "title": "Multiple Draftings",
+      "summary": "This command allows you to draft several documents from an assembly document.",
+      "menu": "Cad / Drafting / Documents / MultipleDraftings",
+      "related": [
+        "BomCommand",
+        "BomDocumentCommand",
+        "DefineDisplayedPropertiesCommand",
+        "MultipleDraftingsMenuCommand",
+        "PredefinedDraftCommand"
+      ]
+    },
+    {
+      "name": "MultipleDraftingsMenuCommand",
+      "path": "EN/Cad/Drafting/UI/Documents/MultipleDraftings/MultipleDraftingsMenuCommand.md",
+      "title": "Multiple Draftings",
+      "summary": "This command allows you to draft several documents from a bill of material document. This command is also available from the popup menu of the assembly tab.",
+      "menu": "Cad / Drafting / Documents / MultipleDraftings",
+      "related": [
+        "MultipleDraftingsCommand",
+        "PredefinedDraftCommand"
+      ]
+    },
+    {
+      "name": "BorderCommand",
+      "path": "EN/Cad/Drafting/UI/DraftingFormats/BorderCommand.md",
+      "title": "Frame",
+      "summary": "This command allows you to modify the format of the border and various options.",
+      "menu": "Cad / Drafting / DraftingFormats",
+      "related": []
+    },
+    {
+      "name": "DraftingFormatCommand",
+      "path": "EN/Cad/Drafting/UI/DraftingFormats/DraftingFormatCommand.md",
+      "title": "This command allows you to modify the format of the drafting document.",
+      "summary": "This command allows you to modify the format of the drafting document.",
+      "menu": "Cad / Drafting / DraftingFormats",
+      "related": []
+    },
+    {
+      "name": "EditDraftingFormatCommand",
+      "path": "EN/Cad/Drafting/UI/DraftingFormats/EditDraftingFormatCommand.md",
+      "title": "Format Editing",
+      "summary": "",
+      "menu": "Cad / Drafting / DraftingFormats",
+      "related": []
+    },
+    {
+      "name": "DrillingsTableCommand",
+      "path": "EN/Cad/Drafting/UI/Drillings/DrillingsTableCommand.md",
+      "title": "Drillings table",
+      "summary": "- By click the upper line of the title block, the table use the same width than the title block.",
+      "menu": "Cad / Drafting / Drillings",
+      "related": [
+        "DrillingsTableIndexStyleCommand",
+        "DrillingsTableStyleCommand",
+        "ExportTableCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "DrillingsTableIndexStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Drillings/Styles/DrillingsTableIndexStyleCommand.md",
+      "title": "Drillings table index style",
+      "summary": "This command allows to create/ modify drillings table index usable during [drillings table](../DrillingsTableCommand.md) creation.",
+      "menu": "Cad / Drafting / Drillings / Styles",
+      "related": [
+        "DrillingsTableCommand",
+        "DrillingsTableStyleCommand"
+      ]
+    },
+    {
+      "name": "DrillingsTableStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Drillings/Styles/DrillingsTableStyleCommand.md",
+      "title": "Drillings table style",
+      "summary": "This command allows to create/modify drillings table styles usable during drillings tables creation.",
+      "menu": "Cad / Drafting / Drillings / Styles",
+      "related": [
+        "MachiningProcessCommand"
+      ]
+    },
+    {
+      "name": "DrillingsTableStyleEditCommand",
+      "path": "EN/Cad/Drafting/UI/Drillings/Styles/DrillingsTableStyleEditCommand.md",
+      "title": "Drillings table styyle (editing)",
+      "summary": "This command allows to modify drillings table styles usable during drillings tables creation.",
+      "menu": "Cad / Drafting / Drillings / Styles",
+      "related": [
+        "MachiningProcessCommand"
+      ]
+    },
+    {
+      "name": "ExcelTableCommand",
+      "path": "EN/Cad/Drafting/UI/ExcelTable/ExcelTableCommand.md",
+      "title": "Excel Table",
+      "summary": "- This table can be [exported](../../../../Kernel/UI/D2/Tables/ExportTableCommand.md) in a csv file or text file.",
+      "menu": "Cad / Drafting / ExcelTable",
+      "related": [
+        "ExportTableCommand"
+      ]
+    },
+    {
+      "name": "DifferenceNoteCommand",
+      "path": "EN/Cad/Drafting/UI/IndexTables/DifferenceNoteCommand.md",
+      "title": "Difference note",
+      "summary": "This command allows to create difference note that refers to a line of the [index table](IndexTableCommand.md).",
+      "menu": "Cad / Drafting / IndexTables",
+      "related": [
+        "DifferenceNoteStyleCommand",
+        "IndexTableCommand",
+        "ViewMagneticBorderOptionSetCommand"
+      ]
+    },
+    {
+      "name": "DifferenceNoteStyleCommand",
+      "path": "EN/Cad/Drafting/UI/IndexTables/DifferenceNoteStyleCommand.md",
+      "title": "Difference note style",
+      "summary": "If a difference note style is modified, the difference notes that are using this style will be automatically updated.",
+      "menu": "Cad / Drafting / IndexTables",
+      "related": [
+        "DifferenceNoteCommand"
+      ]
+    },
+    {
+      "name": "IndexTableCommand",
+      "path": "EN/Cad/Drafting/UI/IndexTables/IndexTableCommand.md",
+      "title": "Index table",
+      "summary": "- After validating, the table is in edit mode. Use the popup commands or tooltips to complete the table. The table must then be validated by clicking the blue checkmark.",
+      "menu": "Cad / Drafting / IndexTables",
+      "related": [
+        "DifferenceNoteCommand",
+        "ExportTableCommand",
+        "IndexTableStyleCommand",
+        "ModificationCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "IndexTableStyleCommand",
+      "path": "EN/Cad/Drafting/UI/IndexTables/IndexTableStyleCommand.md",
+      "title": "This command allows to define the style of an index table by choosing columns to include.",
+      "summary": "This command allows to define the style of an index table by choosing columns to include.",
+      "menu": "Cad / Drafting / IndexTables",
+      "related": [
+        "IndexTableCommand"
+      ]
+    },
+    {
+      "name": "coolingstylecommand",
+      "path": "EN/Cad/Drafting/UI/Mold/Cooling/coolingstylecommand.md",
+      "title": "Cooling Circuit Style",
+      "summary": "The modification of an cooling attributes style used as the basic style by another style will automatically cause the modification of the later.",
+      "menu": "Cad / Drafting / Mold / Cooling",
+      "related": []
+    },
+    {
+      "name": "pinsymbolviewstylecommand",
+      "path": "EN/Cad/Drafting/UI/Mold/Pins/pinsymbolviewstylecommand.md",
+      "title": "This command allows you to create / modify pin symbol style which can be used with the [Pin Symbol](../../../../Mold/UI/Drafting/Views/Pins/pinsymbolviewcommand.md) command.",
+      "summary": "This command allows you to create / modify pin symbol style which can be used with the [Pin Symbol](../../../../Mold/UI/Drafting/Views/Pins/pinsymbolviewcommand.md) command.",
+      "menu": "Cad / Drafting / Mold / Pins",
+      "related": []
+    },
+    {
+      "name": "BomParameterCommand",
+      "path": "EN/Cad/Drafting/UI/Parameters/BomParameterCommand.md",
+      "title": "Parameter from bill of material",
+      "summary": "This command allows to create a parameter which uses the value of a bill of material cell. For example, if a part is in a draft, and this part is also used in an assembly which has a bill of material document, it is possible to use its index in the draft.",
+      "menu": "Cad / Drafting / Parameters",
+      "related": []
+    },
+    {
+      "name": "importedpropertytextparametercommand",
+      "path": "EN/Cad/Drafting/UI/Parameters/importedpropertytextparametercommand.md",
+      "title": "Occurrence parameter",
+      "summary": "This command allows to retrieve a property on the occurrence of a part.",
+      "menu": "Cad / Drafting / Parameters",
+      "related": [
+        "OccurrencePropertiesCommand"
+      ]
+    },
+    {
+      "name": "ImportedTextParameterCommand",
+      "path": "EN/Cad/Drafting/UI/Parameters/ImportedTextParameterCommand.md",
+      "title": "Parameter from set",
+      "summary": "This parameter can be used in the title block for example to retrieve the description value.",
+      "menu": "Cad / Drafting / Parameters",
+      "related": [
+        "ProjectionSetCommand"
+      ]
+    },
+    {
+      "name": "ProjectTextParameterCommand",
+      "path": "EN/Cad/Drafting/UI/Parameters/ProjectTextParameterCommand.md",
+      "title": "Parameter from project",
+      "summary": "",
+      "menu": "Cad / Drafting / Parameters",
+      "related": []
+    },
+    {
+      "name": "TextParameterCommand",
+      "path": "EN/Cad/Drafting/UI/Parameters/TextParameterCommand.md",
+      "title": "Parameter from document",
+      "summary": "",
+      "menu": "Cad / Drafting / Parameters",
+      "related": []
+    },
+    {
+      "name": "EditDraftingScaleFactorCommand",
+      "path": "EN/Cad/Drafting/UI/ScaleFactors/EditDraftingScaleFactorCommand.md",
+      "title": "This command allows the scale factor of the draft document to be modified.",
+      "summary": "This command allows the scale factor of the draft document to be modified.",
+      "menu": "Cad / Drafting / ScaleFactors",
+      "related": []
+    },
+    {
+      "name": "scheduletablecommand",
+      "path": "EN/Cad/Drafting/UI/ScheduleTable/scheduletablecommand.md",
+      "title": "Scenario table",
+      "summary": "This command allows to display in table form the tasks of a mechanism [scenario](../../../Design/UI/Simulations/Scenarios/ScenarioCommand.md), an exploded scenario or a machining scenario.",
+      "menu": "Cad / Drafting / ScheduleTable",
+      "related": [
+        "ExportTableCommand",
+        "ProjectionSetCommand",
+        "ScenarioCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "DivideCellCommand",
+      "path": "EN/Cad/Drafting/UI/Sketches/DivideCellCommand.md",
+      "title": "This command allows to divide one or several cell(s) of a title block or sketch.",
+      "summary": "Constraints are automatically added to lines resulting from the cell division.",
+      "menu": "Cad / Drafting / Sketches",
+      "related": []
+    },
+    {
+      "name": "DraftingSketchCommand",
+      "path": "EN/Cad/Drafting/UI/Sketches/DraftingSketchCommand.md",
+      "title": "This command allows to create a sketch into a draft document. In opposition to the [detailing](../Views/Areas/EditDrawingViewAreaCommand.md) that is associated with a view and it scale factor, the sketch of a draft always use a scale factor to 1.",
+      "summary": "This command allows to create a sketch into a draft document. In opposition to the [detailing](../Views/Areas/EditDrawingViewAreaCommand.md) that is associated with a view and it scale factor, the sketch of a draft always use a scale factor to 1.",
+      "menu": "Cad / Drafting / Sketches",
+      "related": [
+        "EditDrawingViewAreaCommand",
+        "EditSketchOptionSetCommand",
+        "SectionCommand"
+      ]
+    },
+    {
+      "name": "ImageCommand",
+      "path": "EN/Cad/Drafting/UI/Sketches/Images/ImageCommand.md",
+      "title": "This command allows an image to be included in a title block.",
+      "summary": "This command allows an image to be included in a title block.",
+      "menu": "Cad / Drafting / Sketches / Images",
+      "related": []
+    },
+    {
+      "name": "LockSketchModeCommand",
+      "path": "EN/Cad/Drafting/UI/Sketches/LockSketchModeCommand.md",
+      "title": "This mode allows to lock texts or symbols of a sketch to avoid to accidentally move them.",
+      "summary": "This mode allows to lock texts or symbols of a sketch to avoid to accidentally move them.",
+      "menu": "Cad / Drafting / Sketches",
+      "related": []
+    },
+    {
+      "name": "TextCommand",
+      "path": "EN/Cad/Drafting/UI/Sketches/Texts/TextCommand.md",
+      "title": "Text",
+      "summary": "",
+      "menu": "Cad / Drafting / Sketches / Texts",
+      "related": []
+    },
+    {
+      "name": "BackgroundColorCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/BackgroundColorCommand.md",
+      "title": "Background Color",
+      "summary": "",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": []
+    },
+    {
+      "name": "BorderTypesCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/BorderTypesCommand.md",
+      "title": "Border Types",
+      "summary": "",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": []
+    },
+    {
+      "name": "InsertImageEntityCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/InsertImageEntityCommand.md",
+      "title": "Insert Image",
+      "summary": "",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": []
+    },
+    {
+      "name": "InsertParameterCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/InsertParameterCommand.md",
+      "title": "Insert parameter",
+      "summary": "",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": []
+    },
+    {
+      "name": "MargesCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/MargesCommand.md",
+      "title": "Margins",
+      "summary": "",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": []
+    },
+    {
+      "name": "SplitCellsCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/SplitCellsCommand.md",
+      "title": "Split Cell",
+      "summary": "",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": []
+    },
+    {
+      "name": "TableCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/TableCommand.md",
+      "title": "This command allows you to create a table.",
+      "summary": "- After validating, the table is in edit mode. Use contextual commands or tooltips to complete the table. The table must then be validated by clicking the blue checkmark.",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": [
+        "ExportTableCommand",
+        "TextStyleCommand"
+      ]
+    },
+    {
+      "name": "TextStyleEditCommand",
+      "path": "EN/Cad/Drafting/UI/Tables/Commands/TextStyleEditCommand.md",
+      "title": "Edit Text Style",
+      "summary": "",
+      "menu": "Cad / Drafting / Tables / Commands",
+      "related": []
+    },
+    {
+      "name": "CreateCellMiddleLinesCommand",
+      "path": "EN/Cad/Drafting/UI/TitleBlocks/CreateCellMiddleLinesCommand.md",
+      "title": "This command allows the middle axes of a cell to be created.",
+      "summary": "A middle axis is considered as a default construction item and inside the sketch.",
+      "menu": "Cad / Drafting / TitleBlocks",
+      "related": [
+        "TextCommand"
+      ]
+    },
+    {
+      "name": "TitleBlockCommand",
+      "path": "EN/Cad/Drafting/UI/TitleBlocks/TitleBlockCommand.md",
+      "title": "This command allows a **title block** to be created in your draft document.",
+      "summary": "The title block is part of the \"background\" step. This is why the items of the draft (views, dimensions, etc.) are not displayed during editing of a title block.",
+      "menu": "Cad / Drafting / TitleBlocks",
+      "related": [
+        "DivideCellCommand",
+        "LineCommand",
+        "RectangleCommand",
+        "TextCommand"
+      ]
+    },
+    {
+      "name": "EditDrawingViewAreaCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Areas/EditDrawingViewAreaCommand.md",
+      "title": "This popup command allows you to edit a view in order to complete it with detail (sketch, image, text, ...).",
+      "summary": "This popup command allows you to edit a view in order to complete it with detail (sketch, image, text, ...).",
+      "menu": "Cad / Drafting / Views / Areas",
+      "related": []
+    },
+    {
+      "name": "viewareaitemsattributescommand",
+      "path": "EN/Cad/Drafting/UI/Views/Areas/viewareaitemsattributescommand.md",
+      "title": "Geometries Attributes",
+      "summary": "This command allows you to modify the attributes (linetype, width, color, ...) of the view geometries (segments, points).",
+      "menu": "Cad / Drafting / Views / Areas",
+      "related": []
+    },
+    {
+      "name": "viewareaitemshidingcommand",
+      "path": "EN/Cad/Drafting/UI/Views/Areas/viewareaitemshidingcommand.md",
+      "title": "Hide Geometries",
+      "summary": "This command allows you to mask the geometries of a view.",
+      "menu": "Cad / Drafting / Views / Areas",
+      "related": [
+        "ExactProjectionCommand"
+      ]
+    },
+    {
+      "name": "AuxiliaryViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Auxiliaries/AuxiliaryViewCommand.md",
+      "title": "Auxiliary view",
+      "summary": "The use of the right button on an existing auxiliary view allows:",
+      "menu": "Cad / Drafting / Views / Auxiliaries",
+      "related": [
+        "AuxiliaryViewCommand",
+        "ProjectionSetCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "ConvertAuxiliaryViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Auxiliaries/ConvertAuxiliaryViewCommand.md",
+      "title": "This command allows you to convert an auxiliary view to a main view. The link with the main view is then broken. This view will be independent from the other views.",
+      "summary": "This command allows you to convert an auxiliary view to a main view. The link with the main view is then broken. This view will be independent from the other views.",
+      "menu": "Cad / Drafting / Views / Auxiliaries",
+      "related": []
+    },
+    {
+      "name": "AutomaticAxesCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Axes/AutomaticAxesCommand.md",
+      "title": "Automatic Axes",
+      "summary": "An axis generated by this command cannot be **deleted**. A right-click deleted on an axis will delete the \"Automatic axes\" operation and therefore destroy all created axes.",
+      "menu": "Cad / Drafting / Views / Axes",
+      "related": []
+    },
+    {
+      "name": "AxisCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Axes/AxisCommand.md",
+      "title": "The command Axis allows you to create axes in your document.",
+      "summary": "The selection of a circular profile (fillet, circle, etc.) or a profile from a cylindrical face will automatically cause the creation of the item's middle axis.",
+      "menu": "Cad / Drafting / Views / Axes",
+      "related": []
+    },
+    {
+      "name": "extendedaxiscommand",
+      "path": "EN/Cad/Drafting/UI/Views/Axes/extendedaxiscommand.md",
+      "title": "Resize",
+      "summary": "The axis resize command create a new axis on the view that replace the original one.",
+      "menu": "Cad / Drafting / Views / Axes",
+      "related": []
+    },
+    {
+      "name": "ManualAxisCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Axes/ManualAxisCommand.md",
+      "title": "Manual Axis",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / Axes",
+      "related": []
+    },
+    {
+      "name": "SnapCameraCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Cameras/SnapCameraCommand.md",
+      "title": "This contextual command allows to modify the orientation of the selected view. It will change for the nearest standard orientation (front, left, top,...) of its actual orientation. This command is only available if the view has been created with the unchecked [snap mode](SnapCameraModeCommand.md), and if the part or the assembly has be turned (with the mouse wheel).",
+      "summary": "This contextual command allows to modify the orientation of the selected view. It will change for the nearest standard orientation (front, left, top,...) of its actual orientation. This command is only available if the view has been created with the unchecked [snap mode](SnapCameraModeCommand.md), and if the part or the assembly has be turned (with the mouse wheel).",
+      "menu": "Cad / Drafting / Views / Cameras",
+      "related": [
+        "SnapCameraModeCommand"
+      ]
+    },
+    {
+      "name": "SnapCameraModeCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Cameras/SnapCameraModeCommand.md",
+      "title": "During a dynamic modification of the orientation of the [main view](../MainViewCommand.md), this mode allows the closest standard orientation to be recognized and applied to the view.",
+      "summary": "This mode is activated by default. When it is deactivated, it is then possible to give an arbitrary orientation to the view.",
+      "menu": "Cad / Drafting / Views / Cameras",
+      "related": [
+        "MainViewCommand"
+      ]
+    },
+    {
+      "name": "ViewComparisonBuildingCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Comparisons/ViewComparisonBuildingCommand.md",
+      "title": "This dialog allows to customize the result of [views comparison](ViewComparisonCreationCommand.md).",
+      "summary": "This dialog allows to customize the result of [views comparison](ViewComparisonCreationCommand.md).",
+      "menu": "Cad / Drafting / Views / Comparisons",
+      "related": [
+        "LayerCommand",
+        "ViewComparisonCreationCommand"
+      ]
+    },
+    {
+      "name": "ViewComparisonCreationCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Comparisons/ViewComparisonCreationCommand.md",
+      "title": "This command allows to compare the content of one view/several views with another minor revision of the same document.",
+      "summary": "This command allows to compare the content of one view/several views with another minor revision of the same document.",
+      "menu": "Cad / Drafting / Views / Comparisons",
+      "related": [
+        "ExactProjectionCommand",
+        "ViewComparisonBuildingCommand"
+      ]
+    },
+    {
+      "name": "StartCroppedViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CroppedViews/StartCroppedViewCommand.md",
+      "title": "Cropped View",
+      "summary": "This command allows you to crop a view by sketch.",
+      "menu": "Cad / Drafting / Views / CroppedViews",
+      "related": []
+    },
+    {
+      "name": "crosssectionpolygonbuildingcommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/crosssectionpolygonbuildingcommand.md",
+      "title": "This command allows to define the attributes of the cross section polygon.",
+      "summary": "This command allows to define the attributes of the cross section polygon.",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "CrossSectionPolygonCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/CrossSectionPolygonCommand.md",
+      "title": "Cross section Polygon",
+      "summary": "This command allows you to quickly create a cross section polygon. A cross section polygon must be edited.",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "crosssectionpolygonwizardsketchcommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/crosssectionpolygonwizardsketchcommand.md",
+      "title": "This command allows to create the cross section polygon using the sketch commands.",
+      "summary": "This command allows to create the cross section polygon using the sketch commands.",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "CrossSectionViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/CrossSectionViewCommand.md",
+      "title": "Cross section",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "EditCrossSectionSketchMenuCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/EditCrossSectionSketchMenuCommand.md",
+      "title": "This popup command allows you to edit an existing cross section polygon.",
+      "summary": "This popup command allows you to edit an existing cross section polygon.",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "EndCrossSectionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/EndCrossSectionCommand.md",
+      "title": "EndCrossSectionCommand",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "EndLocalCrossSectionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/LocalCrossSections/EndLocalCrossSectionCommand.md",
+      "title": "EndLocalCrossSectionCommand",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / CrossSections / LocalCrossSections",
+      "related": []
+    },
+    {
+      "name": "StartLocalCrossSectionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/LocalCrossSections/StartLocalCrossSectionCommand.md",
+      "title": "This command allows a view to be cut locally in order to show an precise zone inside a part or parts.",
+      "summary": "The reference item defines the depth of the cross section inside the part.",
+      "menu": "Cad / Drafting / Views / CrossSections / LocalCrossSections",
+      "related": []
+    },
+    {
+      "name": "StartCrossSectionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/StartCrossSectionCommand.md",
+      "title": "StartCrossSectionCommand",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "StartCrossSectionPolygonCommand",
+      "path": "EN/Cad/Drafting/UI/Views/CrossSections/StartCrossSectionPolygonCommand.md",
+      "title": "Cross Section Polygon",
+      "summary": "This command allows to create a cross section polygon that can be used during the creation of a cross section in the same document or in another document.",
+      "menu": "Cad / Drafting / Views / CrossSections",
+      "related": []
+    },
+    {
+      "name": "DetailSketchStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Details/DetailSketchStyleCommand.md",
+      "title": "This command allows detail sketch styles to be created / modified which",
+      "summary": "The modification of a dimension style used as the basic style by another style will automatically cause the modification of the later.",
+      "menu": "Cad / Drafting / Views / Details",
+      "related": [
+        "DetailViewCommand"
+      ]
+    },
+    {
+      "name": "DetailViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Details/DetailViewCommand.md",
+      "title": "Detailed view",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / Details",
+      "related": []
+    },
+    {
+      "name": "EndDetailViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Details/EndDetailViewCommand.md",
+      "title": "EndDetailViewCommand",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / Details",
+      "related": []
+    },
+    {
+      "name": "startdetailsketchcommand",
+      "path": "EN/Cad/Drafting/UI/Views/Details/startdetailsketchcommand.md",
+      "title": "This command allows to create a detail sketch that can be used during the creation of a detailed view in the same document or in another document.",
+      "summary": "This command allows to create a detail sketch that can be used during the creation of a detailed view in the same document or in another document.",
+      "menu": "Cad / Drafting / Views / Details",
+      "related": []
+    },
+    {
+      "name": "StartDetailViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Details/StartDetailViewCommand.md",
+      "title": "StartDetailViewCommand",
+      "summary": "- You can easily move the frame of the detail view by selecting and dragging it.",
+      "menu": "Cad / Drafting / Views / Details",
+      "related": [
+        "ProjectionSetCommand"
+      ]
+    },
+    {
+      "name": "DirectionSketchStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Views/DirectionAuxiliaries/DirectionSketchStyleCommand.md",
+      "title": "Direction Sketch Style",
+      "summary": "The modification of a dimension style used as the basic style by another style will automatically cause the modification of the later.",
+      "menu": "Cad / Drafting / Views / DirectionAuxiliaries",
+      "related": [
+        "StartDirectionViewCommand"
+      ]
+    },
+    {
+      "name": "startdirectionsketchcommand",
+      "path": "EN/Cad/Drafting/UI/Views/DirectionAuxiliaries/startdirectionsketchcommand.md",
+      "title": "Direction Sketch",
+      "summary": "This command allows to create a direction sketch that can be used during the creation of a [view along a direction](StartDirectionViewCommand.md) in the same document or in another document.",
+      "menu": "Cad / Drafting / Views / DirectionAuxiliaries",
+      "related": [
+        "StartDirectionViewCommand"
+      ]
+    },
+    {
+      "name": "StartDirectionViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/DirectionAuxiliaries/StartDirectionViewCommand.md",
+      "title": "View along a direction",
+      "summary": "By right clicking on an existing view along a direction you can:",
+      "menu": "Cad / Drafting / Views / DirectionAuxiliaries",
+      "related": [
+        "AuxiliaryViewCommand",
+        "ProjectionSetCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "AutomaticExceptionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Exceptions/AutomaticExceptionCommand.md",
+      "title": "Automatic exception",
+      "summary": "- The exception can be done for one element only (part or sub-assembly). - Once an automatic exception has been applied to a view, it is no longer possible to apply a [manual exception](ExceptionCommand.md) (and vice versa).",
+      "menu": "Cad / Drafting / Views / Exceptions",
+      "related": [
+        "ExceptionCommand",
+        "ExceptionStyleCommand",
+        "LayoutSketchCommand",
+        "OptimizeViewLayoutCommand",
+        "ProjectionSetCommand"
+      ]
+    },
+    {
+      "name": "ExceptionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Exceptions/ExceptionCommand.md",
+      "title": "This command allows to personalize the contents of a view by applying",
+      "summary": "This command allows to personalize the contents of a view by applying exceptions (lines attributes, unsectionability,...) to entities of this view. The selected parts use parameters defined in the exception. For example, if the lines are black and if the exception of the part A indicates green, part A lines in the view will be green.",
+      "menu": "Cad / Drafting / Views / Exceptions",
+      "related": [
+        "ExceptionStyleCommand"
+      ]
+    },
+    {
+      "name": "ExceptionStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Exceptions/ExceptionStyleCommand.md",
+      "title": "Exception style",
+      "summary": "This style allows to personalize the contents of a view by applying exceptions (lines attributes, unsectionability,...) to entities of this view. The selected parts use parameters defined in the exception. For example, if the lines are black and the part An exception indicates green, part A lines in the view will be green.",
+      "menu": "Cad / Drafting / Views / Exceptions",
+      "related": [
+        "DisplayOffsetTypeCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "ExceptionStyleEditCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Exceptions/ExceptionStyleEditCommand.md",
+      "title": "This style allows to personalize the contents of a view by applying",
+      "summary": "This style allows to personalize the contents of a view by applying exceptions (lines attributes, unsectionability,...) to entities of this view. The selected parts use parameters defined in the exception. For example, if the lines are black and the part An exception indicates green, part A lines in the view will be green.",
+      "menu": "Cad / Drafting / Views / Exceptions",
+      "related": [
+        "DisplayOffsetTypeCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "fiberssymbolstylecommand",
+      "path": "EN/Cad/Drafting/UI/Views/FibersSymbols/fiberssymbolstylecommand.md",
+      "title": "Fibers symbol style",
+      "summary": "This command allows a customized fibers symbol style to be created.",
+      "menu": "Cad / Drafting / Views / FibersSymbols",
+      "related": []
+    },
+    {
+      "name": "fiberssymbolviewcommand",
+      "path": "EN/Cad/Drafting/UI/Views/FibersSymbols/fiberssymbolviewcommand.md",
+      "title": "Fibers symbol",
+      "summary": "This command allows to add the [fibers](../../../../Design/UI/Analysis/PartFibersCommand.md) symbol on a view.",
+      "menu": "Cad / Drafting / Views / FibersSymbols",
+      "related": [
+        "PartFibersCommand",
+        "RefreshOperationAutoCommand"
+      ]
+    },
+    {
+      "name": "AutomaticHatchingCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Hatchings/AutomaticHatchingCommand.md",
+      "title": "Automatic Hatching",
+      "summary": "When we click on hatching area in a view, the area is automatically added in the option Borders. It can be easily to define the borders value. It is more visual.",
+      "menu": "Cad / Drafting / Views / Hatchings",
+      "related": [
+        "HatchingCommand",
+        "MaterialAndCoatingCommand"
+      ]
+    },
+    {
+      "name": "CopyHatchingCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Hatchings/CopyHatchingCommand.md",
+      "title": "This command allows you to copy the hatching of a part in order to apply it in other sections. During this copy, some modifications (spacing, angle, type of hatchings, ...) can be done to copied hatchings.",
+      "summary": "This command allows you to copy the hatching of a part in order to apply it in other sections. During this copy, some modifications (spacing, angle, type of hatchings, ...) can be done to copied hatchings.",
+      "menu": "Cad / Drafting / Views / Hatchings",
+      "related": [
+        "AutomaticHatchingCommand",
+        "MaterialAndCoatingCommand"
+      ]
+    },
+    {
+      "name": "HatchingCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Hatchings/HatchingCommand.md",
+      "title": "Edit Hatching Lines",
+      "summary": "By default, hatches are defined regarding the [material](../../../../Design/UI/Materials/MaterialAndCoatingCommand.md) of the part.",
+      "menu": "Cad / Drafting / Views / Hatchings",
+      "related": [
+        "AutomaticHatchingCommand",
+        "MaterialAndCoatingCommand"
+      ]
+    },
+    {
+      "name": "StartInterruptedViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/InterruptedViews/StartInterruptedViewCommand.md",
+      "title": "Interrupted View",
+      "summary": "- When selecting the reference view, a connection direction is automatically proposed. This corresponds to the longest axis in the view.",
+      "menu": "Cad / Drafting / Views / InterruptedViews",
+      "related": [
+        "CrossSectionViewCommand",
+        "StartLocalCrossSectionCommand"
+      ]
+    },
+    {
+      "name": "KinematicsgraphCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Kinematicsgraph/KinematicsgraphCommand.md",
+      "title": "This command allows to create a kinematics graph in a draft. This graph displays existing rigid groups and joints like a scheme.",
+      "summary": "This command allows to create a kinematics graph in a draft. This graph displays existing rigid groups and joints like a scheme.",
+      "menu": "Cad / Drafting / Views / Kinematicsgraph",
+      "related": [
+        "KinematicsGraphResetPositionCommand",
+        "KinematicsGraphStyleCommand",
+        "SetMaskCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "KinematicsGraphResetPositionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Kinematicsgraph/KinematicsGraphResetPositionCommand.md",
+      "title": "This contextual command allows to restore initial graph boxes positions.",
+      "summary": "This contextual command allows to restore initial graph boxes positions.",
+      "menu": "Cad / Drafting / Views / Kinematicsgraph",
+      "related": []
+    },
+    {
+      "name": "KinematicsGraphStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Kinematicsgraph/KinematicsGraphStyleCommand.md",
+      "title": "Kinematics graph style",
+      "summary": "This command allows to create / modify a kinematics graph style which can be used when creating a [kinematics graph](KinematicsgraphCommand.md).",
+      "menu": "Cad / Drafting / Views / Kinematicsgraph",
+      "related": [
+        "KinematicsgraphCommand",
+        "SetMaskCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "AlignMainViewsCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Layouts/AlignMainViewsCommand.md",
+      "title": "Alignment of Views",
+      "summary": "- The alignment is done regarding the center point of views or the 3d reference points if they have been used in the projection view options.",
+      "menu": "Cad / Drafting / Views / Layouts",
+      "related": []
+    },
+    {
+      "name": "LayoutSketchCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Layouts/LayoutSketchCommand.md",
+      "title": "This command allows to create different rectangles. They will be used to position hooked views. Each view has to be positioned in a rectangle by using the [Optimize view layout](OptimizeViewLayoutCommand.md) command.",
+      "summary": "This command allows to create different rectangles. They will be used to position hooked views. Each view has to be positioned in a rectangle by using the [Optimize view layout](OptimizeViewLayoutCommand.md) command.",
+      "menu": "Cad / Drafting / Views / Layouts",
+      "related": [
+        "OptimizeViewLayoutCommand",
+        "ViewLayoutProfileCommand"
+      ]
+    },
+    {
+      "name": "OptimizeViewLayoutCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Layouts/OptimizeViewLayoutCommand.md",
+      "title": "This function optimizes the space available on the plan.",
+      "summary": "This command is useful for a [template](../../../../../Pdm/UI/Items/Overview.md#Template) with empty views when using it to create a new draft or multiple drafts.",
+      "menu": "Cad / Drafting / Views / Layouts",
+      "related": [
+        "LayoutSketchCommand"
+      ]
+    },
+    {
+      "name": "PositionConstraintCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Layouts/PositionConstraintCommand.md",
+      "title": "This command allows relative position constraints to be added between views.",
+      "summary": "To update your plane after adding constraints, use the command [Optimize views layout](OptimizeViewLayoutCommand.md).",
+      "menu": "Cad / Drafting / Views / Layouts",
+      "related": [
+        "OptimizeViewLayoutCommand"
+      ]
+    },
+    {
+      "name": "ViewLayoutProfileCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Layouts/ViewLayoutProfileCommand.md",
+      "title": "This command allows to hook a view to one of [layout sketch](LayoutSketchCommand.md) rectangles, to be able to [optimize the view layout](OptimizeViewLayoutCommand.md) of a draft.",
+      "summary": "This command allows to hook a view to one of [layout sketch](LayoutSketchCommand.md) rectangles, to be able to [optimize the view layout](OptimizeViewLayoutCommand.md) of a draft.",
+      "menu": "Cad / Drafting / Views / Layouts",
+      "related": [
+        "LayoutSketchCommand",
+        "OptimizeViewLayoutCommand"
+      ]
+    },
+    {
+      "name": "ViewMagneticBorderOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/MagneticBorders/ViewMagneticBorderOptionSetCommand.md",
+      "title": "This command allows to define the position of a virtual border where the [automatic bill of material indexes](../../Bom/AutomaticBomRichTextCommand.md) will be automatically positioned. The entered value is the distance between this border and the enclosing box of the view.",
+      "summary": "This command allows to define the position of a virtual border where the [automatic bill of material indexes](../../Bom/AutomaticBomRichTextCommand.md) will be automatically positioned. The entered value is the distance between this border and the enclosing box of the view.",
+      "menu": "Cad / Drafting / Views / MagneticBorders",
+      "related": [
+        "AutomaticBomRichTextCommand",
+        "BomRichTextCommand"
+      ]
+    },
+    {
+      "name": "MainViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/MainViewCommand.md",
+      "title": "Main view",
+      "summary": "A conical view has some limitations. It can only be cropped or used by a detail view (Cross section view, interrupted view, ...) are not allowed. Also, it is not possible to dimension it.",
+      "menu": "Cad / Drafting / Views",
+      "related": [
+        "AuxiliaryViewCommand",
+        "ExactProjectionCommand",
+        "ProjectionSetCommand",
+        "SnapCameraModeCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "ExactProjectionCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/ExactProjectionCommand.md",
+      "title": "This button allows you to turn on the **exact projection** mode.",
+      "summary": "- If a view is **incomplete**, change to **exact projection** mode.",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": [
+        "RefreshingModeCommand"
+      ]
+    },
+    {
+      "name": "HatchingOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/HatchingOptionSetCommand.md",
+      "title": "This command allows you to define globaly the hatching parameters (type, spacing, orientation, color and layer) of the material categories.",
+      "summary": "The parameters defined using this command have low level priority, they can be modified using the other hatching modification commands (automatic hatching, hatching edition,...).",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": [
+        "PartFibersCommand"
+      ]
+    },
+    {
+      "name": "PerspectiveTypeOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/PerspectiveTypeOptionSetCommand.md",
+      "title": "This command allows to define a perspective type.It can be inherited for the standard or can be forced as **Dimetric** or as **Isometric**.",
+      "summary": "This command allows to define a perspective type.It can be inherited for the standard or can be forced as **Dimetric** or as **Isometric**.",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": []
+    },
+    {
+      "name": "ProjectionModeOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/ProjectionModeOptionSetCommand.md",
+      "title": "Projection mode",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": []
+    },
+    {
+      "name": "ProjectionTypeOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/ProjectionTypeOptionSetCommand.md",
+      "title": "This command allows to define the projection type. It can be inherited or forced to ISO or ANSI.",
+      "summary": "This command allows to define the projection type. It can be inherited or forced to ISO or ANSI.",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": []
+    },
+    {
+      "name": "RefreshingModeCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/RefreshingModeCommand.md",
+      "title": "Auto Refresh",
+      "summary": "This mode allows to automatically update or not, each modification of the draft.",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": [
+        "ExactProjectionCommand"
+      ]
+    },
+    {
+      "name": "RefreshingModeOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/RefreshingModeOptionSetCommand.md",
+      "title": "This command allows to define the views refreshing mode.(this option is only available for the [Exact projection](ExactProjectionCommand.md) mode).",
+      "summary": "This command allows to define the views refreshing mode.(this option is only available for the [Exact projection](ExactProjectionCommand.md) mode).",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": [
+        "ExactProjectionCommand"
+      ]
+    },
+    {
+      "name": "ScaleFactorOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/ScaleFactorOptionSetCommand.md",
+      "title": "This command allows to activate automatic scaling of projected sets.",
+      "summary": "This command allows to activate automatic scaling of projected sets.",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": []
+    },
+    {
+      "name": "ViewIndexModeOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/OptionSets/ViewIndexModeOptionSetCommand.md",
+      "title": "This command allows to define how are managed the views index. If these indexes are general in a draft, each view index will be different (for example, the detail view will be B, the cross section C-C). If the view index is done by type of view, a detail view A and a cross section A-A can exist in the draft.",
+      "summary": "This command allows to define how are managed the views index. If these indexes are general in a draft, each view index will be different (for example, the detail view will be B, the cross section C-C). If the view index is done by type of view, a detail view A and a cross section A-A can exist in the draft.",
+      "menu": "Cad / Drafting / Views / OptionSets",
+      "related": []
+    },
+    {
+      "name": "ViewOriginCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Origins/ViewOriginCommand.md",
+      "title": "This contextual command allows to define the view origin representation displayed when creating a [drillings table](../../Drillings/DrillingsTableCommand.md).",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / Origins",
+      "related": [
+        "DrillingsTableCommand"
+      ]
+    },
+    {
+      "name": "ViewOriginStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Origins/ViewOriginStyleCommand.md",
+      "title": "View origin style",
+      "summary": "This command allows to create a customized style of the view origin representation.",
+      "menu": "Cad / Drafting / Views / Origins",
+      "related": [
+        "DrillingsTableCommand",
+        "ViewOriginCommand"
+      ]
+    },
+    {
+      "name": "ViewPlaneCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Planes/ViewPlaneCommand.md",
+      "title": "View Plane",
+      "summary": "In a Draft document, this command allows you to create a plane for positioning a [3D Dimension](../../Dimensions/SpatialDimensions/SpatialDimensionCommand.md).",
+      "menu": "Cad / Drafting / Views / Planes",
+      "related": [
+        "SpatialDimensionCommand"
+      ]
+    },
+    {
+      "name": "PlanningMainViewCommand",
+      "path": "EN/Cad/Drafting/UI/Views/PlanningViews/PlanningMainViewCommand.md",
+      "title": "This command allows to display in strong lines the elements located",
+      "summary": "This command allows to display in strong lines the elements located under a plane and to display in dotted lines those located above.",
+      "menu": "Cad / Drafting / Views / PlanningViews",
+      "related": [
+        "ProjectionSetCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "ProjectedAnnotationsCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectedAnnotations/ProjectedAnnotationsCommand.md",
+      "title": "Projected Annotations",
+      "summary": "This command allows you to project annotations (dimensions, tolerance references, tolerances, ...) in a view of the template document.",
+      "menu": "Cad / Drafting / Views / ProjectedAnnotations",
+      "related": [
+        "DatumFeatureStyleCommand",
+        "DimensionStyleCommand",
+        "HalfPartDimensionCommand"
+      ]
+    },
+    {
+      "name": "ProjectedScreenSizeTextsCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectedAnnotations/ProjectedScreenSizeTextsCommand.md",
+      "title": "This command allows you to get the screen texts of the 3d document into a view of the drafting document.",
+      "summary": "This command allows you to get the screen texts of the 3d document into a view of the drafting document.",
+      "menu": "Cad / Drafting / Views / ProjectedAnnotations",
+      "related": []
+    },
+    {
+      "name": "ProjectionModeCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectionModes/ProjectionModeCommand.md",
+      "title": "This command allows the projection mode of your draft document to be chosen.",
+      "summary": "This command allows the projection mode of your draft document to be chosen.",
+      "menu": "Cad / Drafting / Views / ProjectionModes",
+      "related": []
+    },
+    {
+      "name": "ProjectionModeOptionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectionModes/ProjectionModeOptionSetCommand.md",
+      "title": "Projection mode",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / ProjectionModes",
+      "related": []
+    },
+    {
+      "name": "DisplayOffsetTypeCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectionSets/DisplayOffsetTypeCommand.md",
+      "title": "Display Priority",
+      "summary": "In a view, when several shapes are superposed, this command allows you to set one (or several) of them on foreground and the others one on background.",
+      "menu": "Cad / Drafting / Views / ProjectionSets",
+      "related": [
+        "EntityAttributesCommand"
+      ]
+    },
+    {
+      "name": "EditViewProjectionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectionSets/EditViewProjectionSetCommand.md",
+      "title": "Edit Set",
+      "summary": "This command allows you to define sets which will be referenced in the draft.",
+      "menu": "Cad / Drafting / Views / ProjectionSets",
+      "related": [
+        "AddCompositeBackgroundDocumentCommand",
+        "ConstrainedConfigurationCommand",
+        "EntitiesFilterCommand",
+        "ExactProjectionCommand",
+        "MainViewCommand",
+        "RepresentationCommand",
+        "SetCommand",
+        "StartLocalCrossSectionCommand",
+        "TrimmingVolumeCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "MainProjectionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectionSets/MainProjectionSetCommand.md",
+      "title": "Main Set",
+      "summary": "This command allows you to define the main set of the draft document.",
+      "menu": "Cad / Drafting / Views / ProjectionSets",
+      "related": [
+        "AddCompositeBackgroundDocumentCommand",
+        "ConstrainedConfigurationCommand",
+        "EntitiesFilterCommand",
+        "ExactProjectionCommand",
+        "MainViewCommand",
+        "RepresentationCommand",
+        "SetCommand",
+        "StartLocalCrossSectionCommand",
+        "TrimmingVolumeCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "ProjectionSetCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectionSets/ProjectionSetCommand.md",
+      "title": "This command allows you to define sets which will be referenced in the",
+      "summary": "In the case the source document is an **electrode document**, the options of this section are different.",
+      "menu": "Cad / Drafting / Views / ProjectionSets",
+      "related": [
+        "AddCompositeBackgroundDocumentCommand",
+        "ConstrainedConfigurationCommand",
+        "EntitiesFilterCommand",
+        "ExactProjectionCommand",
+        "ExplodedDocumentCommand",
+        "MainViewCommand",
+        "MountingStageContextCommand",
+        "RepresentationCommand",
+        "SetCommand",
+        "StartLocalCrossSectionCommand",
+        "TrimmingVolumeCommand",
+        "ViewStyleCommand"
+      ]
+    },
+    {
+      "name": "ProjectionSetOccurrenceCommand",
+      "path": "EN/Cad/Drafting/UI/Views/ProjectionSets/ProjectionSetOccurrenceCommand.md",
+      "title": "This command allows to create a set from a projection set defined in another document.",
+      "summary": "",
+      "menu": "Cad / Drafting / Views / ProjectionSets",
+      "related": [
+        "AuxiliaryViewCommand",
+        "MainViewCommand"
+      ]
+    },
+    {
+      "name": "ViewStyleCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Styles/ViewStyleCommand.md",
+      "title": "View Style",
+      "summary": "- The modification of a view style used as a basic style by another style will automatically cause the modification of the latter.",
+      "menu": "Cad / Drafting / Views / Styles",
+      "related": [
+        "AuxiliaryViewCommand",
+        "CrossSectionViewCommand",
+        "HatchingCommand",
+        "MainViewCommand",
+        "ProjectionSetCommand"
+      ]
+    },
+    {
+      "name": "ViewStyleDoubleClickCommand",
+      "path": "EN/Cad/Drafting/UI/Views/Styles/ViewStyleDoubleClickCommand.md",
+      "title": "View Style",
+      "summary": "- The modification of a view style used as a basic style by another style will automatically cause the modification of the latter.",
+      "menu": "Cad / Drafting / Views / Styles",
+      "related": [
+        "AuxiliaryViewCommand",
+        "CrossSectionViewCommand",
+        "HatchingCommand",
+        "MainViewCommand"
+      ]
+    },
+    {
+      "name": "RemoveTrimmingVolumeCommand",
+      "path": "EN/Cad/Drafting/UI/Views/TrimmingVolume/RemoveTrimmingVolumeCommand.md",
+      "title": "This contextual command allows to remove a [trimming volume](TrimmingVolumeCommand.md).",
+      "summary": "This contextual command allows to remove a [trimming volume](TrimmingVolumeCommand.md).",
+      "menu": "Cad / Drafting / Views / TrimmingVolume",
+      "related": [
+        "TrimmingVolumeCommand"
+      ]
+    },
+    {
+      "name": "TrimmingVolumeCommand",
+      "path": "EN/Cad/Drafting/UI/Views/TrimmingVolume/TrimmingVolumeCommand.md",
+      "title": "This command allows to use a trimming volume in a view.",
+      "summary": "The defined trimming volume is linked to the [set to project](../ProjectionSets/ProjectionSetCommand.md) which is used in the selected view.",
+      "menu": "Cad / Drafting / Views / TrimmingVolume",
+      "related": [
+        "ProjectionSetCommand",
+        "RemoveTrimmingVolumeCommand"
+      ]
+    }
+  ]
+}

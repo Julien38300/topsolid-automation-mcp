@@ -180,6 +180,9 @@ namespace TopSolidMcpServer
                 var searchHelpTool = new SearchHelpTool();
                 searchHelpTool.Register(registry);
 
+                var searchCommandsTool = new SearchCommandsTool();
+                searchCommandsTool.Register(registry);
+
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
