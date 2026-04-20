@@ -1,0 +1,19 @@
+{
+  "inserted": 5809,
+  "by_lang": {
+    "EN": 2974,
+    "FR": 2835
+  },
+  "by_domain": {
+    "Cad": 2795,
+    "Cae": 243,
+    "Cam": 2,
+    "Erp": 10,
+    "Kernel": 2328,
+    "Pdm": 407,
+    "WorkManager": 24
+  },
+  "db_size_mb": 19.59,
+  "build_elapsed_s": 4.8,
+  "built_at": "2026-04-19T08:05:01Z"
+}

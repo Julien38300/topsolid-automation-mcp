@@ -646,6 +646,89 @@ namespace TopSolidMcpServer.Tools
                 "return sb.ToString();") },
 
             // =====================================================================
+            // DRAFTING / BOM / UNFOLDING — Write Recipes (M-58)
+            // =====================================================================
+            { "set_drafting_scale", RW("Sets the global scale of a drafting. Param: value=denominator (e.g. '10' for 1:10)",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "bool isDrafting = false;\n" +
+                "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = \"Not a drafting.\"; return; }\n" +
+                "if (!isDrafting) { __message = \"Not a drafting.\"; return; }\n" +
+                "double denom;\n" +
+                "if (!double.TryParse(\"{value}\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out denom) || denom <= 0)\n" +
+                "{ __message = \"ERROR: value must be a positive number (e.g. '10' for 1:10).\"; return; }\n" +
+                "double factor = 1.0 / denom;\n" +
+                "TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);\n" +
+                "__message = \"OK: drafting scale set to 1:\" + denom;") },
+
+            { "set_drafting_format", RW("Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "bool isDrafting = false;\n" +
+                "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = \"Not a drafting.\"; return; }\n" +
+                "if (!isDrafting) { __message = \"Not a drafting.\"; return; }\n" +
+                "string fmt = \"{value}\";\n" +
+                "if (string.IsNullOrWhiteSpace(fmt)) { __message = \"ERROR: value required (e.g. 'A3').\"; return; }\n" +
+                "TopSolidDraftingHost.Draftings.SetDraftingFormatName(docId, fmt);\n" +
+                "__message = \"OK: drafting format set to \" + fmt;") },
+
+            { "set_projection_quality", RW("Sets the drafting projection quality. Param: value='exact' (precise) or 'fast' (quick)",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "bool isDrafting = false;\n" +
+                "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = \"Not a drafting.\"; return; }\n" +
+                "if (!isDrafting) { __message = \"Not a drafting.\"; return; }\n" +
+                "string mode = (\"{value}\" ?? \"\").Trim().ToLowerInvariant();\n" +
+                "TopSolid.Cad.Drafting.Automating.ProjectionMode pm;\n" +
+                "if (mode == \"exact\" || mode == \"precise\" || mode == \"precis\") pm = TopSolid.Cad.Drafting.Automating.ProjectionMode.Exact;\n" +
+                "else if (mode == \"fast\" || mode == \"quick\" || mode == \"rapide\") pm = TopSolid.Cad.Drafting.Automating.ProjectionMode.Fast;\n" +
+                "else { __message = \"ERROR: value must be 'exact' or 'fast'.\"; return; }\n" +
+                "TopSolidDraftingHost.Draftings.SetProjectionMode(docId, pm);\n" +
+                "__message = \"OK: projection quality set to \" + pm;") },
+
+            { "print_drafting", R("Prints the current drafting (all pages, black & white, 300 DPI, printed to scale)",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "bool isDrafting = false;\n" +
+                "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { return \"Not a drafting.\"; }\n" +
+                "if (!isDrafting) return \"Not a drafting.\";\n" +
+                "int pages = TopSolidDraftingHost.Draftings.GetPageCount(docId);\n" +
+                "try {\n" +
+                "    TopSolidDraftingHost.Draftings.Print(docId,\n" +
+                "        TopSolid.Cad.Drafting.Automating.PrintMode.PrintToScale,\n" +
+                "        TopSolid.Cad.Drafting.Automating.PrintColorMapping.BlackAndWhite,\n" +
+                "        300, 1, pages);\n" +
+                "    return \"OK: print job sent (\" + pages + \" pages, B&W, 300 DPI, to scale).\";\n" +
+                "} catch (Exception ex) {\n" +
+                "    return \"ERROR: \" + ex.Message;\n" +
+                "}") },
+
+            { "activate_bom_row", RW("Activates a BOM row by its index (0-based, among root-children). Param: value=row_index",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "bool isBom = false;\n" +
+                "try { isBom = TopSolidDesignHost.Boms.IsBom(docId); } catch { __message = \"Not a BOM.\"; return; }\n" +
+                "if (!isBom) { __message = \"Not a BOM.\"; return; }\n" +
+                "int idx;\n" +
+                "if (!int.TryParse(\"{value}\", out idx) || idx < 0) { __message = \"ERROR: value must be a non-negative integer.\"; return; }\n" +
+                "int rootRow = TopSolidDesignHost.Boms.GetRootRow(docId);\n" +
+                "var children = TopSolidDesignHost.Boms.GetRowChildrenRows(docId, rootRow);\n" +
+                "if (idx >= children.Count) { __message = \"ERROR: row_index out of range (0..\" + (children.Count-1) + \").\"; return; }\n" +
+                "int rowId = children[idx];\n" +
+                "TopSolidDesignHost.Boms.ActivateRow(docId, rowId);\n" +
+                "__message = \"OK: BOM row \" + idx + \" activated.\";") },
+
+            { "deactivate_bom_row", RW("Deactivates a BOM row by its index (0-based, among root-children). Param: value=row_index",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "bool isBom = false;\n" +
+                "try { isBom = TopSolidDesignHost.Boms.IsBom(docId); } catch { __message = \"Not a BOM.\"; return; }\n" +
+                "if (!isBom) { __message = \"Not a BOM.\"; return; }\n" +
+                "int idx;\n" +
+                "if (!int.TryParse(\"{value}\", out idx) || idx < 0) { __message = \"ERROR: value must be a non-negative integer.\"; return; }\n" +
+                "int rootRow = TopSolidDesignHost.Boms.GetRootRow(docId);\n" +
+                "var children = TopSolidDesignHost.Boms.GetRowChildrenRows(docId, rootRow);\n" +
+                "if (idx >= children.Count) { __message = \"ERROR: row_index out of range (0..\" + (children.Count-1) + \").\"; return; }\n" +
+                "int rowId = children[idx];\n" +
+                "TopSolidDesignHost.Boms.DeactivateRow(docId, rowId);\n" +
+                "__message = \"OK: BOM row \" + idx + \" deactivated.\";") },
+
+            // =====================================================================
             // EXPORT
             // =====================================================================
             { "list_exporters", R("Lists all available exporters",

@@ -7,7 +7,7 @@
     <RootNamespace>TopSolidMcpServer</RootNamespace>
     <Platforms>AnyCPU</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <Version>1.5.2</Version>
+    <Version>1.6.1</Version>
     <ApplicationIcon>topsolid-mcp.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
@@ -16,6 +16,8 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.27" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.6" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="TopSolidApiGraph.Core">
@@ -38,6 +40,10 @@
   <ItemGroup>
     <Content Include="..\data\graph.json">
       <Link>data\graph.json</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\data\help.db">
+      <Link>data\help.db</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="topsolid-mcp.ico">

@@ -36,6 +36,13 @@ Fermez avec `Ctrl+C`. Si vous voyez `Graph data not found`, placez `graph.json` 
 | **OpenClaw** | Via sous-agent | Avance |
 | **ChatGPT Desktop** | Non | - |
 | **Copilot standalone** | Non | - |
+| **claude.ai (web + app)** | Non (HTTP/SSE uniquement) | - |
+
+::: warning claude.ai n'est pas Claude Desktop
+**claude.ai** (le site web + l'app Windows qui affiche Settings > Connecteurs) accepte uniquement les MCP **distants HTTP/SSE** via URL + OAuth. Le `TopSolidMcpServer.exe` est stdio local — il ne peut pas etre ajoute via cette dialog. Un MCP ajoute avec `claude mcp add` (CLI) existe dans Claude Code, pas sur claude.ai : les deux canaux sont independants.
+
+Pour utiliser TopSolid MCP depuis un navigateur, il faudrait envelopper le serveur stdio dans un pont HTTP/SSE — pas encore livre (voir roadmap M-80).
+:::
 
 ---
 
