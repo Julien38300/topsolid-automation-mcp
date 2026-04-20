@@ -107,20 +107,97 @@ def main() -> None:
     # Build edges between interfaces that share relevant types
     edges = []
     iface_list = list(ifaces.keys())
+    pair_weight: dict[tuple[str, str], dict] = {}
+
+    def ordered_pair(a: str, b: str) -> tuple[str, str]:
+        return (a, b) if a < b else (b, a)
+
     for i, a in enumerate(iface_list):
         for b in iface_list[i + 1:]:
             shared = stats[a]["types"] & stats[b]["types"]
             if not shared:
                 continue
-            # Bidirectional edge; Cytoscape can render it undirected via style
-            edges.append({
-                "data": {
-                    "source": a,
-                    "target": b,
-                    "weight": len(shared),
-                    "types": sorted(shared),
-                }
-            })
+            key = ordered_pair(a, b)
+            pair_weight[key] = {"types": sorted(shared), "cooccur": 0}
+
+    # Augment with co-occurrence edges: if two interfaces appear in the same
+    # recipe body, they are operationally related (typical case: IApplication
+    # StartModification/EndModification called alongside IDraftings /
+    # IBoms / etc. in Pattern D write recipes).
+    recipe_tool = ROOT / "server" / "src" / "Tools" / "RecipeTool.cs"
+    if recipe_tool.exists():
+        # Accessor name -> interface name it refers to. TopSolidHost exposes
+        # each interface as a plural-ish property (TopSolidHost.Documents for
+        # IDocuments, etc.) — derive the map from api-index.
+        accessor_to_iface: dict[str, str] = {}
+        # Manual overrides for accessors whose plural doesn't just drop the leading "I"
+        manual = {
+            "Application": "IApplication",
+            "Documents": "IDocuments",
+            "Pdm": "IPdm",
+            "Parameters": "IParameters",
+            "Elements": "IElements",
+            "Shapes": "IShapes",
+            "Sketches": "ISketches",
+            "Assemblies": "IAssemblies",
+            "Families": "IFamilies",
+            "Inclusions": "IInclusions",
+            "Patterns": "IPatterns",
+            "Draftings": "IDraftings",
+            "Boms": "IBoms",
+            "Unfoldings": "IUnfoldings",
+            "Units": "IUnits",
+            "Licenses": "ILicenses",
+            "Materials": "IMaterials",
+            "Layers": "ILayers",
+            "Textures": "ITextures",
+            "Classifications": "IClassifications",
+            "Options": "IOptions",
+        }
+        for acc, iname in manual.items():
+            if iname in ifaces:
+                accessor_to_iface[acc] = iname
+
+        body = recipe_tool.read_text(encoding="utf-8", errors="replace")
+        # Split on recipe entries (lines starting with `{ "recipe_name", R(` or RW()
+        recipe_re = re.compile(r'\{\s*"[^"]+",\s*RW?\(.+?(?=\n\s*\{\s*"[^"]+",\s*RW?\(|\n\s*\};\s*$)', re.DOTALL)
+        accessor_re = re.compile(r"TopSolid(?:Design|Drafting)?Host\.([A-Z][a-zA-Z]+)")
+        recipes_found = 0
+        cooccur_pairs_count: dict[tuple[str, str], int] = defaultdict(int)
+        for m in recipe_re.finditer(body):
+            recipes_found += 1
+            chunk = m.group(0)
+            ifaces_in_recipe = {
+                accessor_to_iface[a]
+                for a in accessor_re.findall(chunk)
+                if a in accessor_to_iface
+            }
+            ifaces_in_recipe = sorted(ifaces_in_recipe)
+            for i, a in enumerate(ifaces_in_recipe):
+                for b in ifaces_in_recipe[i + 1:]:
+                    cooccur_pairs_count[ordered_pair(a, b)] += 1
+
+        print(f"     recipe co-occurrence scan: {recipes_found} recipes, "
+              f"{len(cooccur_pairs_count)} unique interface pairs")
+        for pair, count in cooccur_pairs_count.items():
+            if pair in pair_weight:
+                pair_weight[pair]["cooccur"] = count
+            else:
+                # New edge from co-occurrence only (no shared ID types)
+                pair_weight[pair] = {"types": [], "cooccur": count}
+
+    # Emit edges (weight = shared_types + co-occurrences in recipes)
+    for (a, b), info in pair_weight.items():
+        weight = len(info["types"]) + info["cooccur"]
+        edges.append({
+            "data": {
+                "source": a,
+                "target": b,
+                "weight": weight,
+                "types": info["types"],
+                "cooccur": info["cooccur"],
+            }
+        })
 
     # Unique methods in the graph (by interface::name::signature)
     unique_methods = set()
