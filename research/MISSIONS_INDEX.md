@@ -127,7 +127,7 @@ APIs hors scope (modules separes non charges) :
 - `ITables.GetDraftTables` (Drafting — a verifier si dans DLL chargee)
 
 **Couverture graphe : 30/38 APIs verifiees (79%) — excellent pour Layer 1**
-| M-27 | Extraire exemples REDACTED-USER → champ `Examples` dans graphe (792 edges) | ApiGraph | ✅ | `scripts/enrich-graph.py` Phase 3 |
+| M-27 | Extraire exemples corpora prives (local) → champ `Examples` dans graphe (792 edges) | ApiGraph | ✅ | `scripts/enrich-graph.py` Phase 3 |
 | M-52 | Extraire exemples Romain (RoB) → graphe (897 edges) + 8 recettes R-064..R-071 + 8 tests T-73..T-80 | ApiGraph | ✅ | `.agent/workflows/apiGraph/mission-52-inject-rob-examples.md` |
 | M-13 | Tuning semantique data-driven (130 regles, 339 hints, Phase 4 enrich-graph.py) | ApiGraph | ✅ | `scripts/enrich-graph.py` Phase 4 |
 | M-53 | Fix DetectModification + return + wrapper (66/66 fonctionnel) | McpServer | ✅ | `.agent/workflows/mcpServer/mission-53-fix-detect-modification.md` |

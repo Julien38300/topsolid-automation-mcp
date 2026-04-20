@@ -260,15 +260,26 @@ def enrich_graph():
     }
     edges.append(new_edge)
 
-    # Phase 3: Extract examples from REDACTED-USER .cs files
+    # Phase 3: Extract examples from user-local private .cs corpora.
+    # Paths are supplied via env var TOPSOLID_EXAMPLES_DIRS (';'-separated)
+    # so this published file never pins real private paths.
     print("\n--- Phase 3: Extracting examples from .cs files ---")
 
-    EXAMPLES_DIRS = [
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\SelfLearning-Exercises-master",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\TopSolidKernelAutomationExamples-main",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\ExportMAPMEPdepuisNomenclature",
+    import os as _os
+    _env = _os.environ.get("TOPSOLID_EXAMPLES_DIRS", "").strip()
+    if _env:
+        EXAMPLES_DIRS = [p for p in _env.split(";") if p.strip()]
+    else:
+        # No env var -> skip example extraction (public CI runs without real paths).
+        print("  TOPSOLID_EXAMPLES_DIRS not set - skipping example extraction.")
+        EXAMPLES_DIRS = []
+
+    _unused_stub = [
+        r"%EXAMPLES_ROOT%\corp-a",
+        r"%EXAMPLES_ROOT%\corp-b",
+        r"%EXAMPLES_ROOT%\public-sample-1",
+        r"%EXAMPLES_ROOT%\public-sample-2",
+        r"%EXAMPLES_ROOT%\public-sample-3",
         r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\DraftSwitch",
         r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Extraction CSV Liste de documents TopSolid",
         r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\TopSolid Material Creator",

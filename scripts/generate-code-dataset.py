@@ -32,9 +32,12 @@ METHODS_JSON = DATA_DIR / "api" / "7.21.164.0" / "methods.json"
 OUT_FILE = DATA_DIR / "code-dataset.jsonl"
 STATS_FILE = DATA_DIR / "code-dataset-stats.json"
 
-AF_DIR = Path(r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER")
-ROB_DIR = Path(r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB")
-FEA_DIR = Path(r"C:\Users\jup\OneDrive\4 - VB\Projects\Script Qualité FEA")  # FEA Quality automation — 34 files, prod-grade
+# Private corpora paths come from env vars so this published file never
+# pins real user-local paths. Set TOPSOLID_CORPUS_A / _B / _C locally.
+import os
+AF_DIR = Path(os.environ.get("TOPSOLID_CORPUS_A", ""))
+ROB_DIR = Path(os.environ.get("TOPSOLID_CORPUS_B", ""))
+FEA_DIR = Path(os.environ.get("TOPSOLID_CORPUS_C", ""))
 
 
 SYSTEM_PROMPT = """You are a TopSolid C# code generator. Given a user request, emit a self-contained C# script body (no namespace, no class, no `using` — these are auto-injected). The code runs inside a `Run()` method that must return a string.
