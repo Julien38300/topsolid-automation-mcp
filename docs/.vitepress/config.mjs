@@ -27,6 +27,7 @@ export default defineConfig({
           items: [
             { text: 'Demarrage rapide', link: '/guide/quickstart' },
             { text: 'Integration MCP', link: '/guide/integration' },
+            { text: 'Bridge HTTP/SSE (claude.ai web)', link: '/guide/bridge-http' },
             { text: 'Depannage', link: '/guide/troubleshooting' }
           ]
         },

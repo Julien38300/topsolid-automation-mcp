@@ -1,0 +1,15 @@
+{
+  "name": "topsolid-mcp-bridge",
+  "version": "0.1.0",
+  "description": "HTTP/SSE bridge exposing the local TopSolid MCP stdio server to remote clients (claude.ai web, etc).",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "mcp-proxy --port 8080 --host 127.0.0.1 -- \"%TOPSOLID_MCP_EXE%\"",
+    "start:open": "mcp-proxy --port 8080 --host 0.0.0.0 -- \"%TOPSOLID_MCP_EXE%\"",
+    "start:auth": "mcp-proxy --port 8080 --host 127.0.0.1 --apiKey \"%TOPSOLID_MCP_API_KEY%\" -- \"%TOPSOLID_MCP_EXE%\""
+  },
+  "dependencies": {
+    "mcp-proxy": "^6.4.6"
+  }
+}
