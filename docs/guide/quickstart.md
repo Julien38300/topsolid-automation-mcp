@@ -42,11 +42,22 @@ L'executable sera dans `server/src/bin/Debug/net48/TopSolidMcpServer.exe`.
 
 Choisissez votre client IA et ajoutez le serveur MCP :
 
-::: info ChatGPT Desktop
-ChatGPT Desktop ne supporte **pas** les serveurs MCP stdio locaux (avril 2026). Cote OpenAI, seules les integrations cloud (custom GPTs) sont possibles.
+::: warning Stdio local vs HTTP distant
+`TopSolidMcpServer.exe` est un **MCP stdio local** — il tourne sur ta machine et communique par stdin/stdout. La plupart des clients de bureau (Claude Code CLI, Claude Desktop, VS Code, Cursor, Antigravity, OpenClaw) le supportent via un fichier de config.
+
+En revanche, **claude.ai** (le site web + l'app Windows) accepte uniquement des **MCP distants en HTTP/SSE** via Settings → Connecteurs → "Ajouter un connecteur personnalise" (qui demande une URL + OAuth). Le TopSolid MCP n'est pas compatible avec ce canal sans un pont HTTP dedicace.
+
+Même chose pour ChatGPT Desktop : pas de support stdio local (avril 2026, seuls les custom GPTs cloud).
 :::
 
-### Claude Desktop
+### Claude Code (CLI terminal)
+
+```powershell
+claude mcp add topsolid C:\TopSolidMCP\TopSolidMcpServer.exe
+claude mcp list   # verification
+```
+
+### Claude Desktop (app Windows)
 
 Editez le fichier `%APPDATA%\Claude\claude_desktop_config.json` :
 
@@ -59,6 +70,8 @@ Editez le fichier `%APPDATA%\Claude\claude_desktop_config.json` :
   }
 }
 ```
+
+Puis redemarrez Claude Desktop. Le serveur apparait avec son icone "prise" dans la barre de saisie.
 
 ### VS Code + GitHub Copilot
 
