@@ -177,6 +177,9 @@ namespace TopSolidMcpServer
                 var whatsNewTool = new WhatsNewTool();
                 whatsNewTool.Register(registry);
 
+                var searchHelpTool = new SearchHelpTool();
+                searchHelpTool.Register(registry);
+
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
