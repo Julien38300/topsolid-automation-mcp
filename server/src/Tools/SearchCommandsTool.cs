@@ -15,8 +15,12 @@ namespace TopSolidMcpServer.Tools
     /// calling `IApplication.InvokeCommand(fullName)` via the `invoke_command`
     /// recipe — or decide to use an Automation API path instead.
     ///
-    /// POC scope: 207 Drafting commands. Will be extended to the full 2428 EN
-    /// commands once we validate the filename-to-FullName mapping live.
+    /// Full EN catalog: 2428 commands (Cad, Kernel, Pdm, Cae, ...). FullName
+    /// mapping verified live 2026-04-20:
+    ///   help-md/EN/Kernel/UI/D3/Points/MidpointCommand.md
+    ///   -> TopSolid.Kernel.UI.D3.Points.MidpointCommand
+    /// The catalog pre-computes `fullName` for each entry — ready for
+    /// direct use with invoke_command.
     ///
     /// No TopSolid connection required. Catalog is loaded once from
     /// data/commands-catalog.json and cached in memory.
@@ -32,12 +36,13 @@ namespace TopSolidMcpServer.Tools
             {
                 Name = "topsolid_search_commands",
                 Description = "Search the catalog of TopSolid UI commands (ribbon/menu actions) " +
-                    "by keyword. Returns filename, human title, menu location, summary. Use this " +
-                    "to discover which command to invoke via `IApplication.InvokeCommand(fullName)` " +
-                    "or the `invoke_command` recipe, when the Automation API has no direct method " +
-                    "for what you want (~85% of TopSolid features have a UI command but no Automation " +
-                    "equivalent). Current POC scope: 207 Drafting commands; full catalog of 2428 " +
-                    "commands coming in a follow-up.",
+                    "by keyword. Returns the human title, menu location, summary, and the " +
+                    "**fullName** ready to pass to `IApplication.InvokeCommand(fullName)` " +
+                    "via the `invoke_command` recipe. Covers 2428 EN commands across all " +
+                    "modules (Cad, Kernel, Pdm, Cae, Mold, Tooling...) — useful when the " +
+                    "Automation API has no direct method for what you want (many TopSolid " +
+                    "features are only reachable via their ribbon command). FullName " +
+                    "mapping verified live on 2026-04-20.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -98,19 +103,22 @@ namespace TopSolidMcpServer.Tools
                 foreach (var (s, e) in scored.Take(maxResults))
                 {
                     sb.AppendLine("---");
-                    sb.AppendLine("Name  : " + e.Name);
-                    sb.AppendLine("Title : " + e.Title);
-                    sb.AppendLine("Menu  : " + e.Menu);
+                    sb.AppendLine("Title    : " + e.Title);
+                    sb.AppendLine("FullName : " + e.FullName);
+                    sb.AppendLine("Menu     : " + e.Menu);
                     if (!string.IsNullOrEmpty(e.Summary))
-                        sb.AppendLine("Brief : " + e.Summary);
+                        sb.AppendLine("Brief    : " + e.Summary);
                     if (e.Related != null && e.Related.Count > 0)
-                        sb.AppendLine("See   : " + string.Join(", ", e.Related.Take(6)));
-                    sb.AppendLine("Path  : help-md/" + e.Path);
+                        sb.AppendLine("See also : " + string.Join(", ", e.Related.Take(6)));
+                    sb.AppendLine("HelpDoc  : help-md/" + e.Path);
                 }
                 sb.AppendLine();
-                sb.AppendLine("To invoke one of these: use the `invoke_command` recipe. " +
-                    "Note: the exact FullName accepted by IApplication.InvokeCommand " +
-                    "is still being validated. Start by trying the command `Name` (e.g. 'BomTableCommand').");
+                sb.AppendLine("To invoke any of these, pass the FullName to the `invoke_command` recipe:");
+                sb.AppendLine("  topsolid_run_recipe(recipe=\"invoke_command\", value=\"" +
+                    (scored.Count > 0 ? scored[0].entry.FullName : "TopSolid...") + "\")");
+                sb.AppendLine("Modal commands (those that wait for user selection) stay 'active' " +
+                    "until the user validates or escapes — check IApplication.ActiveCommandFullName " +
+                    "to observe. Non-modal commands execute immediately.");
                 return sb.ToString();
             }
             catch (Exception ex)
@@ -129,6 +137,12 @@ namespace TopSolidMcpServer.Tools
             if (e.Summary != null && e.Summary.ToLowerInvariant().Contains(q)) score += 2;
             // Prefer shorter names (more "canonical" command)
             if (score > 0 && e.Name != null) score += Math.Max(0, 40 - e.Name.Length) / 10;
+            // Slight preference for top-level modules users hit most
+            if (score > 0 && e.FullName != null)
+            {
+                if (e.FullName.StartsWith("TopSolid.Cad.", StringComparison.Ordinal)) score += 1;
+                else if (e.FullName.StartsWith("TopSolid.Kernel.", StringComparison.Ordinal)) score += 1;
+            }
             return score;
         }
 
@@ -161,6 +175,7 @@ namespace TopSolidMcpServer.Tools
                             list.Add(new CommandEntry
                             {
                                 Name = (string)item["name"],
+                                FullName = (string)item["fullName"],
                                 Path = (string)item["path"],
                                 Title = (string)item["title"],
                                 Summary = (string)item["summary"],
@@ -185,6 +200,7 @@ namespace TopSolidMcpServer.Tools
         private class CommandEntry
         {
             public string Name;
+            public string FullName;
             public string Path;
             public string Title;
             public string Summary;

@@ -37,7 +37,9 @@ HELP_ROOT_CANDIDATES = [
 ]
 OUT_PATH = ROOT / "server" / "data" / "commands-catalog.json"
 
-SCOPE_GLOB = "EN/Cad/Drafting/**/*Command*.md"
+# Full EN catalog — scaled from the Drafting POC (207 pages) on 2026-04-20
+# after the FullName mapping rule was verified live on Midpoint command.
+SCOPE_GLOB = "EN/**/*Command*.md"
 
 
 def extract_title(lines: list[str]) -> str | None:
@@ -129,9 +131,22 @@ def main() -> None:
         title = extract_title(lines) or f.stem
         summary = extract_summary(lines)
         rel = f.relative_to(help_root)
+        rel_posix = str(rel).replace("\\", "/")
+        # FullName rule: strip leading "EN/" and trailing ".md", replace "/"
+        # with ".", prepend "TopSolid.". Verified live on
+        # EN/Kernel/UI/D3/Points/MidpointCommand.md ->
+        # TopSolid.Kernel.UI.D3.Points.MidpointCommand (Julien, 2026-04-20).
+        # Same convention holds for every other EN command file we indexed.
+        _dot_path = rel_posix
+        if _dot_path.startswith("EN/"):
+            _dot_path = _dot_path[3:]
+        if _dot_path.lower().endswith(".md"):
+            _dot_path = _dot_path[:-3]
+        full_name = "TopSolid." + _dot_path.replace("/", ".")
         entry = {
-            "name": f.stem,  # e.g. BomTableCommand
-            "path": str(rel).replace("\\", "/"),
+            "name": f.stem,                         # e.g. BomTableCommand
+            "fullName": full_name,                  # e.g. TopSolid.Cad.Drafting.UI.Bom.BomTableCommand
+            "path": rel_posix,
             "title": title,
             "summary": summary[:500] if summary else "",
             "menu": derive_menu_path(rel),
