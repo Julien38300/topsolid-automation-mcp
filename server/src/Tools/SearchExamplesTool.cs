@@ -30,7 +30,7 @@ namespace TopSolidMcpServer.Tools
         // Replace the paths below to point at your own local corpora.
         private static readonly List<(string Label, string Path)> DefaultCorpora = new List<(string, string)>
         {
-            ("corp-a", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER 260403"),
+            ("corp-a", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples Anne-Françoise 260403"),
             ("corp-b", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB"),
             ("corp-c", @"C:\Users\jup\OneDrive\4 - VB\Projects\Script Qualité FEA"),
         };
