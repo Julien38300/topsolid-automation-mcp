@@ -96,63 +96,64 @@ if (-not (Test-Path $icoDst) -and (Test-Path $icoSrc)) {
 $relDataDir = Join-Path $releaseDir "data"
 if (-not (Test-Path $relDataDir)) { New-Item -ItemType Directory -Path $relDataDir -Force | Out-Null }
 
-$dataFiles = @("graph.json", "api-index.json")
+$dataFiles = @(
+    "graph.json",
+    "api-index.json",
+    "help.db",                  # v1.6.0+ — SQLite FTS5 help index (5809 pages)
+    "help-index-meta.json",     # v1.6.0+ — meta
+    "commands-catalog.json",    # v1.6.3+ — UI commands catalog (2428 cmds)
+    "recipe-list.txt"           # recipe manifest (reference)
+)
 foreach ($file in $dataFiles) {
     $src = Join-Path $dataDir $file
     if (Test-Path $src) {
         Copy-Item $src (Join-Path $relDataDir $file) -Force
-        Write-Host "  + data/$file" -ForegroundColor Gray
+        $sz = [math]::Round((Get-Item $src).Length / 1KB, 1)
+        Write-Host "  + data/$file ($sz KB)" -ForegroundColor Gray
+    } else {
+        Write-Host "  - data/$file skipped (not found)" -ForegroundColor DarkGray
     }
+}
+# Also ship Microsoft.Data.Sqlite + SQLitePCLRaw DLLs (required at runtime for help.db)
+$binDir = Join-Path $srcDir "bin\Release\net48"
+$sqliteDlls = @(Get-ChildItem $binDir -EA SilentlyContinue | Where-Object {
+    $_.Name -like "*Sqlite*.dll" -or $_.Name -like "*SQLite*.dll"
+})
+foreach ($dll in $sqliteDlls) {
+    Copy-Item $dll.FullName (Join-Path $releaseDir $dll.Name) -Force
+    Write-Host "  + $($dll.Name)" -ForegroundColor Gray
+}
+
+# System.* support DLLs required by Microsoft.Data.Sqlite on net48
+$systemDlls = @("System.Buffers.dll","System.Memory.dll","System.Numerics.Vectors.dll","System.Runtime.CompilerServices.Unsafe.dll")
+foreach ($name in $systemDlls) {
+    $src = Join-Path $binDir $name
+    if (Test-Path $src) {
+        Copy-Item $src (Join-Path $releaseDir $name) -Force
+        Write-Host "  + $name" -ForegroundColor Gray
+    }
+}
+
+# runtimes/ subtree (native e_sqlite3.dll per OS/arch)
+$runtimesSrc = Join-Path $binDir "runtimes"
+if (Test-Path $runtimesSrc) {
+    $runtimesDst = Join-Path $releaseDir "runtimes"
+    if (Test-Path $runtimesDst) { Remove-Item $runtimesDst -Recurse -Force }
+    Copy-Item $runtimesSrc $runtimesDst -Recurse -Force
+    $archCount = (Get-ChildItem $runtimesDst -Directory).Count
+    Write-Host "  + runtimes/ ($archCount OS/arch - native e_sqlite3)" -ForegroundColor Gray
 }
 
 # version.txt
 Set-Content -Path (Join-Path $releaseDir "version.txt") -Value $Version -NoNewline
 Write-Host "  + version.txt ($Version)" -ForegroundColor Gray
 
-# --- Verify skill sync ---
+# --- Recipe count summary (informational) ---
 Write-Host ""
-Write-Host "Verification sync skills..." -ForegroundColor Yellow
 $recipeFile = Join-Path $srcDir "Tools\RecipeTool.cs"
-$skillFile = Join-Path (Split-Path (Split-Path $projectRoot)) "noemid-topsolid\skills\topsolid-mcp\SKILL.md"
-$openclawFile = Join-Path $env:USERPROFILE ".openclaw\agents\topsolid\system.md"
-
 if (Test-Path $recipeFile) {
     $mcpRecipes = [regex]::Matches((Get-Content $recipeFile -Raw), '\{ "([a-z_]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
-    $mcpCount = $mcpRecipes.Count
-    Write-Host "  MCP: $mcpCount recettes" -ForegroundColor Gray
-
-    $missingSkill = @()
-    $missingOC = @()
-
-    if (Test-Path $skillFile) {
-        $skillContent = Get-Content $skillFile -Raw
-        foreach ($r in $mcpRecipes) {
-            if ($skillContent -notmatch [regex]::Escape($r)) { $missingSkill += $r }
-        }
-        if ($missingSkill.Count -gt 0) {
-            Write-Host "  ATTENTION: $($missingSkill.Count) recettes manquantes dans Hermes SKILL.md !" -ForegroundColor Red
-            $missingSkill | ForEach-Object { Write-Host "    - $_" -ForegroundColor Red }
-        } else {
-            Write-Host "  Hermes SKILL.md: OK ($mcpCount/$mcpCount)" -ForegroundColor Green
-        }
-    } else {
-        Write-Host "  Hermes SKILL.md: non trouve ($skillFile)" -ForegroundColor Yellow
-    }
-
-    if (Test-Path $openclawFile) {
-        $ocContent = Get-Content $openclawFile -Raw
-        foreach ($r in $mcpRecipes) {
-            if ($ocContent -notmatch [regex]::Escape($r)) { $missingOC += $r }
-        }
-        if ($missingOC.Count -gt 0) {
-            Write-Host "  ATTENTION: $($missingOC.Count) recettes manquantes dans OpenClaw system.md !" -ForegroundColor Red
-            $missingOC | ForEach-Object { Write-Host "    - $_" -ForegroundColor Red }
-        } else {
-            Write-Host "  OpenClaw system.md: OK ($mcpCount/$mcpCount)" -ForegroundColor Green
-        }
-    } else {
-        Write-Host "  OpenClaw system.md: non trouve" -ForegroundColor Yellow
-    }
+    Write-Host "Packaged recipes: $($mcpRecipes.Count)" -ForegroundColor Gray
 }
 
 # --- Create zip ---
