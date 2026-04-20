@@ -137,12 +137,12 @@ Reponse : `OK: code compiles successfully. Mode: READ` ou liste d'erreurs avec n
 
 ## topsolid_search_examples (v1.5.2+)
 
-Cherche dans 225+ snippets de corpora production (REDACTED, FEA Quality). Match sur corps de methode + nom.
+Cherche dans les corpora prives locaux de l'utilisateur (non livres avec le serveur, paths configures dans `SearchExamplesTool.cs`). Match sur corps de methode + nom.
 
 ```json
 {
   "name": "topsolid_search_examples",
-  "arguments": { "query": "StartModification", "max_results": 3, "corpus": "AF" }
+  "arguments": { "query": "StartModification", "max_results": 3, "corpus": "corp-a" }
 }
 ```
 

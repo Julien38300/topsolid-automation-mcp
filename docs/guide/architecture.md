@@ -85,7 +85,7 @@ Chaque edge porte :
 - `Description` : documentation officielle
 - `SemanticHint` : mots-cles FR/EN pour la recherche
 - `Weight` : priorite (1 = important, 10 = primitif, 20+ = niche)
-- `Examples` : snippets C# reels (source: REDACTED-USER + Romain)
+- `Examples` : snippets C# reels (source : corpora prives de l'auteur, non redistribues)
 
 ## Compilation de scripts
 

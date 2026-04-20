@@ -11,22 +11,28 @@ using TopSolidMcpServer.Protocol.Models;
 namespace TopSolidMcpServer.Tools
 {
     /// <summary>
-    /// Searches the production C# corpora (REDACTED, FEA Quality, etc.) for
-    /// code snippets matching a keyword or API name. Returns method-level
-    /// chunks with file reference, so Claude Code / developers can learn
-    /// from real production patterns.
+    /// Searches local, user-private C# corpora for code snippets matching a
+    /// keyword or API name. Returns method-level chunks with file reference.
+    /// Useful for Claude Code / developers to learn from production patterns
+    /// the user has on their own disk — these corpora are NEVER shipped with
+    /// the public server and the paths/labels are user-local.
     ///
-    /// Corpus paths are configurable via appsettings — see ExampleCorpus.cs.
+    /// Override paths via env var TOPSOLID_EXAMPLES_ROOT (not implemented yet)
+    /// or by editing DefaultCorpora locally before build.
     /// No TopSolid connection required.
     /// </summary>
     public class SearchExamplesTool
     {
-        // Default corpus paths — can be overridden by env var TOPSOLID_EXAMPLES_ROOT
+        // Default corpus paths — user-local only, NEVER shipped publicly.
+        // Labels are opaque placeholders (corp-a/b/c) on purpose: the sources
+        // are private (provided by author's network + internal scripts) and
+        // should not be named in any MCP response that the client may log.
+        // Replace the paths below to point at your own local corpora.
         private static readonly List<(string Label, string Path)> DefaultCorpora = new List<(string, string)>
         {
-            ("AF",  @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER"),
-            ("RoB", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB"),
-            ("FEA", @"C:\Users\jup\OneDrive\4 - VB\Projects\Script Qualité FEA"),
+            ("corp-a", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER"),
+            ("corp-b", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB"),
+            ("corp-c", @"C:\Users\jup\OneDrive\4 - VB\Projects\Script Qualité FEA"),
         };
 
         // Cache: lazily built index of method-level chunks
@@ -39,10 +45,11 @@ namespace TopSolidMcpServer.Tools
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_search_examples",
-                Description = "Search the TopSolid production C# corpora (REDACTED, FEA Quality) " +
-                    "for code snippets matching a keyword or API name. Returns method-level " +
-                    "chunks with file reference. Useful for Claude Code / developers to learn " +
-                    "from real production patterns.",
+                Description = "Search the user's LOCAL private corpora of TopSolid C# snippets " +
+                    "(opaque labels, not shipped with the server) for method-level samples " +
+                    "matching a keyword or API name. Returns file reference + code body. " +
+                    "Useful for Claude Code / developers to learn from production patterns " +
+                    "they already have on disk.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -63,7 +70,7 @@ namespace TopSolidMcpServer.Tools
                         ["corpus"] = new JObject
                         {
                             ["type"] = "string",
-                            ["description"] = "Filter by corpus label: 'AF', 'RoB', or 'FEA'. Omit for all."
+                            ["description"] = "Optional: filter by local corpus label (opaque, user-defined). Omit to search all configured corpora."
                         }
                     },
                     ["required"] = new JArray { "query" }

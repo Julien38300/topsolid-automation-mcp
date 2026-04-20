@@ -37,7 +37,7 @@ ElementId  --GetName()------> String
 | `SemanticHint` | Mots-cles FR/EN pour recherche | "parametre, liste, document" |
 | `Weight` | Priorite (1=important, 10=primitif, 20+=niche) | `2` |
 | `Since` | Version minimum TopSolid | `v7.6` |
-| `Examples` | Snippets C# reels (max 3) | Code de REDACTED-USER / Romain |
+| `Examples` | Snippets C# reels (max 3) | Code provenant de corpora prives locaux (non redistribues) |
 
 ## Interfaces principales
 
@@ -60,6 +60,6 @@ Le graphe est enrichi via le script `scripts/enrich-graph.py` qui execute 5 phas
 
 1. **Phase 1** : Enrichit les edges existantes depuis `api-index.json` (descriptions, since)
 2. **Phase 2** : Injecte les methodes absentes du graphe (64 methodes ajoutees)
-3. **Phase 3** : Extrait des exemples depuis les fichiers .cs (REDACTED-USER + Romain)
+3. **Phase 3** : Extrait des exemples depuis des fichiers .cs locaux (corpora prives de l'auteur)
 4. **Phase 4** : Applique des regles semantiques manuelles (poids, hints critiques)
 5. **Phase 5** : Auto-genere des hints FR depuis les descriptions (130+ traductions)

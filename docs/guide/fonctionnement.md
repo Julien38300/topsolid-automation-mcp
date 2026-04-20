@@ -87,8 +87,8 @@
 │                                                         │
 │  ┌─────────────────┐  ┌───────────┐  ┌───────────────┐ │
 │  │ search_examples │  │ whats_new │  │ search_help   │ │
-│  │ 225+ snippets   │  │ API diff  │  │ FTS5 sur 5809 │ │
-│  │ AF/REDACTED      │  │ par ver.  │  │ pages d'aide  │ │
+│  │ corpora prives  │  │ API diff  │  │ FTS5 sur 5809 │ │
+│  │ (local only)    │  │ par ver.  │  │ pages d'aide  │ │
 │  └─────────────────┘  └───────────┘  └───────────────┘ │
 └─────────────────────────────────────────────────────────┘
 ```

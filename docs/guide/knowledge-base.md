@@ -26,7 +26,7 @@ Le serveur MCP expose **12 outils** (v1.6.1+). Huit d'entre eux sont utilisables
 | `topsolid_explore_paths(...)` | Plusieurs variantes de chemins rankées |
 | `topsolid_get_recipe(name)` | Code C# d'une des 124 recettes production |
 | `topsolid_compile(code)` | Dry-run compile check sans exécuter |
-| `topsolid_search_examples(query)` | Cherche dans 225+ snippets de corpora production (AF/REDACTED) |
+| `topsolid_search_examples(query)` | Cherche dans les corpora prives locaux de l'utilisateur (non livres avec le serveur) |
 | `topsolid_whats_new(version)` | Changelog de l'API par version TopSolid |
 | `topsolid_search_help(query)` | Full-text search sur 5809 pages de l'aide en ligne (FR + EN) |
 
@@ -87,7 +87,7 @@ Claude corrige et réessaie jusqu'à ce que ça compile. **Aucune hallucination 
 [claude] appel topsolid_search_examples("StartModification")
 ```
 
-Retourne 5 méthodes réelles de production (REDACTED, FEA Quality) montrant comment appliquer Pattern D dans différents contextes (attributs, paramètres, création de géométrie...).
+Retourne 5 méthodes issues des corpora privés locaux de l'utilisateur (non livrés avec le serveur), montrant comment appliquer Pattern D dans différents contextes (attributs, paramètres, création de géométrie...).
 
 ### 6. Vérifier ce qui est nouveau
 
@@ -188,7 +188,7 @@ L'app tourne **sans serveur MCP** en production, tout en ayant bénéficié du M
 │  ┌─────────────────────────────────────┐    │
 │  │  graph.json (4119 edges enrichis)   │    │
 │  │  recipes (124 scripts validés)      │    │
-│  │  corpora AF+RoB+FEA (225 snippets)  │    │
+│  │  corpora privés (local only)        │    │
 │  │  changelog-<version>.md             │    │
 │  └─────────────────────────────────────┘    │
 └─────────────────────────────────────────────┘
@@ -208,4 +208,4 @@ L'app tourne **sans serveur MCP** en production, tout en ayant bénéficié du M
 └─────────────────────────────────────────────┘
 ```
 
-Le MCP est le **cerveau** (connaissance), `graph.json` la **mémoire** (structure), les recettes le **savoir-faire validé**, les corpora AF/REDACTED les **patterns de production réelle**.
+Le MCP est le **cerveau** (connaissance), `graph.json` la **mémoire** (structure), les recettes le **savoir-faire validé**, les corpora privés locaux (non redistribués) les **patterns de production réelle**.

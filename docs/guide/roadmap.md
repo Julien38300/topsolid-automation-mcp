@@ -26,7 +26,7 @@
 | M-62 | Pipeline auto-sync CHM (extract/diff/propose/report par release) | 100% |
 | M-70 | Guide "MCP as knowledge base for standalone C# dev" | 100% |
 | M-71 | 4 nouveaux outils (get_recipe, compile, search_examples, whats_new) | 100% |
-| M-72 | Corpus AF/REDACTED indexes method-level (225 snippets) | 100% |
+| M-72 | Corpora prives locaux indexes method-level (non redistribues) | 100% |
 
 ## Chiffres cles (2026-04-19, v1.6.1)
 
@@ -38,7 +38,7 @@
 - **12 outils MCP** : run_recipe, get_state, execute_script, modify_script, api_help, find_path, explore_paths, get_recipe (v1.5.0), compile (v1.5.1), search_examples (v1.5.2), whats_new (v1.5.2), search_help (v1.6.0)
 - **2114 entrees** dataset LoRA v6 conversational (ShareGPT EN, eval 100/100)
 - **5809 pages** d'aide en ligne indexees en SQLite FTS5 (~20 MB embedded)
-- **225+ snippets** production AF/REDACTED method-level
+- **Corpora prives locaux** indexes method-level (user-local uniquement, non inclus dans le serveur public)
 - `ministral-topsolid` (3B v6 PROD) + `codestral-topsolid` (22B vanilla + Modelfile PROD)
 
 ## Prochaines etapes

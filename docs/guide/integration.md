@@ -389,7 +389,7 @@ Une fois connecte, votre assistant IA dispose de **12 outils** :
 | `topsolid_explore_paths` | Exploration BFS multi-chemins |
 | `topsolid_get_recipe` **(v1.5.0+)** | Retourne le code C# source d'une recette |
 | `topsolid_compile` **(v1.5.1+)** | Compile-check Roslyn d'un script (dry-run) |
-| `topsolid_search_examples` **(v1.5.2+)** | Recherche dans 225+ snippets AF/REDACTED |
+| `topsolid_search_examples` **(v1.5.2+)** | Recherche dans les corpora prives locaux de l'utilisateur (non livres publiquement) |
 | `topsolid_whats_new` **(v1.5.2+)** | Diff API entre deux versions TopSolid |
 | `topsolid_search_help` **(v1.6.0+)** | FTS5 sur 5809 pages de l'aide en ligne |
 
@@ -415,7 +415,7 @@ Get-Process TopSolidMcpServer -ErrorAction SilentlyContinue | Stop-Process
 ```
 
 ### `Connect() retourne false`
-C'est **normal** sur TopSolid v7.20 (bug connu REDACTED). Le serveur verifie la connexion via `TopSolidHost.Version > 0` a la place. Si les outils fonctionnent, tout va bien.
+C'est **normal** sur TopSolid v7.20 (bug connu de TopSolid). Le serveur verifie la connexion via `TopSolidHost.Version > 0` a la place. Si les outils fonctionnent, tout va bien.
 
 ### Les outils n'apparaissent pas dans mon client
 1. Verifiez que **TopSolid est ouvert** avant de lancer votre client IA
