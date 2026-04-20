@@ -1,6 +1,6 @@
 # Recettes
 
-124 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
+130 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
 
 ## Tableau interactif
 
@@ -122,7 +122,7 @@ Recettes qui ouvrent une boite de dialogue TopSolid pour que l'utilisateur point
 | `select_face` | L'utilisateur clique sur une face. Retourne le shape parent et l'index de la face. | `User.AskFace()` | ASK |
 | `select_3d_point` | L'utilisateur clique un point dans l'espace 3D. Retourne les coordonnees X, Y, Z en mm. | `User.AskPoint3D()` | ASK |
 
-### Assemblages (5 recettes)
+### Assemblages (8 recettes)
 
 Un assemblage TopSolid contient des inclusions (instances de pieces) avec des contraintes de positionnement. Chaque inclusion reference un document "definition".
 
@@ -130,9 +130,12 @@ Un assemblage TopSolid contient des inclusions (instances de pieces) avec des co
 |---------|-------------|-----------|------|
 | `detect_assembly` | Verifie si le document courant est un assemblage. Si oui, liste les pieces. | `Assemblies.IsAssembly()` → `GetParts()` | READ |
 | `list_inclusions` | Liste les inclusions avec le document de definition de chaque instance. Montre la structure assemblage → piece. | `Operations.GetOperations()` filtre `IsInclusion()` → `GetInclusionDefinitionDocument()` | READ |
-| `read_occurrences` | Liste les occurrences (instances visibles) avec leur document de definition. | `Assemblies.GetOccurrences()` → `GetOccurrenceDefinitionDocument()` | READ |
+| `read_occurrences` | Liste les occurrences (instances visibles) avec leur document de definition. | `Assemblies.GetParts()` + `GetOccurrenceDefinition()` | READ |
 | `count_assembly_parts` | Compte les pieces groupees par reference (type). Retourne quantite par piece unique et total. Ex: "Vis M8: 4, Plaque: 2 → 6 pieces". | `GetParts()` groupe par `GetInclusionDefinitionDocument()` | READ |
 | `rename_occurrence` | Renomme une occurrence dans l'assemblage. Match par nom partiel (insensible a la casse). | `Entities.SetFunctionOccurrenceName()` — `value` = `ancien_nom:nouveau_nom` | WRITE |
+| `count_occurrences` **(v1.6.2)** | Compte total / inclusions / definitions uniques. | `GetParts()` + `IsOccurrence()` + `GetOccurrenceDefinition()` | READ |
+| `list_inclusions_with_reference` **(v1.6.2)** | Pour chaque inclusion : nom + reference PDM + designation de la definition. Utile pour audit BOM. | `GetParts()` + `Pdm.GetPartNumber/GetDescription` | READ |
+| `find_occurrence` **(v1.6.2)** | Recherche d'occurrence par fragment de nom. `value=fragment`. | Substring match sur `GetFriendlyName()` | READ |
 
 ### Familles (5 recettes)
 
@@ -225,9 +228,19 @@ Operations sur le document actif : sauvegarde, reconstruction, proprietes utilis
 | `save_document` | Sauvegarde le document actif. | `Pdm.Save(pdmId, true)` | WRITE |
 | `rebuild_document` | Force la reconstruction du modele (recalcul de toutes les operations). Utile apres modification de parametres. | `Documents.Rebuild(docId)` | WRITE |
 | `save_all_project` | Sauvegarde tous les documents du projet en une passe. | `Pdm.Save()` en boucle sur tous les docs | WRITE |
-| `read_user_property` | Lit une propriete utilisateur personnalisee (texte). Ces proprietes sont definies par l'entreprise. | `Pdm.GetUserPropertyValue()` — `value` = nom de la propriete | READ |
-| `set_user_property` | Modifie une propriete utilisateur. | `Pdm.SetUserPropertyValue()` — `value` = `nom:valeur` | WRITE |
 | `invoke_command` | Execute une commande menu TopSolid par son nom interne. Attention : certaines commandes ouvrent des dialogues. | `Application.InvokeCommand(value)` — `value` = nom de la commande | WRITE |
+
+### Proprietes utilisateur et document (5 recettes)
+
+Les proprietes utilisateur sont definies par l'entreprise (dossier PDM dedie) et materialisees dans chaque document comme des parametres speciaux. La resolution par `Pdm.GetTextUserProperty(pdmId, "name_string")` ne fonctionne pas — l'API attend une `PdmObjectId` pointant sur la definition. Le pattern fiable est d'iterer `Parameters.GetParameters()` et filtrer ceux avec une `UserPropertyDefinition` non-vide.
+
+| Recette | Description | Technique | Mode |
+|---------|-------------|-----------|------|
+| `read_user_property` **(v1.6.2 fixed)** | Lit une propriete utilisateur par son nom visible (text/real/integer/boolean, auto-type). | `Parameters.GetUserPropertyDefinition()` + match par `GetFriendlyName()` | READ |
+| `list_user_properties` **(v1.6.2)** | Liste toutes les proprietes utilisateur du document avec type + valeur courante. | Iteration `GetParameters()` + filtre `GetUserPropertyDefinition() != Empty` | READ |
+| `set_user_property` **(v1.6.2 fixed)** | Modifie une propriete utilisateur par son nom visible, parse la valeur selon le type. `value=nom:valeur`. | `Parameters.SetTextValue/SetRealValue/...` apres lookup UserPropertyDefinition | WRITE |
+| `list_document_properties` **(v1.6.2)** | Liste TOUTES les proprietes document (systeme + user) via `IDocuments.GetProperties()` — utile pour decouvrir le fullName exact d'une propriete. | `Documents.GetProperties(docId)` + `GetPropertyType()` | READ |
+| `read_document_property` **(v1.6.2)** | Lit n'importe quelle propriete document par son fullName (auto-detect type). `value=fullName`. | `Documents.GetPropertyType()` + `GetPropertyXxxValue()` | READ |
 
 ### Comparaison de documents (3 recettes)
 
