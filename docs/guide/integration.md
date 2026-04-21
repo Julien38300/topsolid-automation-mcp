@@ -5,7 +5,7 @@ TopSolid MCP est un serveur [Model Context Protocol](https://modelcontextprotoco
 ## Prerequis
 
 1. **TopSolid 7.15+** ouvert (teste sur 7.20)
-2. **TopSolidMcpServer.exe** telecharge depuis la [release GitHub](https://github.com/julien38300/noemid-topsolid-automation/releases)
+2. **TopSolidMcpServer.exe** telecharge depuis la [release GitHub](https://github.com/julien38300/topsolid-automation-mcp/releases)
 3. Decompresser le .zip dans un dossier, par exemple `C:\TopSolidMCP\`
 
 ::: warning Verification rapide

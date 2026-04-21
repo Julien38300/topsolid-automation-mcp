@@ -65,12 +65,12 @@ $tests = @(
     @("RC-06", "assembly_mass_report","",  "RAPPORT MASSE"),
 
     # TIER D: WRITE PDM
-    @("RD-01", "set_designation",  "Test-Noemid-Recipe-Live", "OK:"),
-    @("RD-02", "read_designation",      "",    "Test-Noemid-Recipe-Live"),
-    @("RD-03", "set_reference",    "REF-NOEMID-TEST", "OK:"),
-    @("RD-04", "read_reference",        "",    "REF-NOEMID-TEST"),
-    @("RD-05", "set_manufacturer",    "Noemid-Fabricant-Test", "OK:"),
-    @("RD-06", "read_manufacturer",        "",    "Noemid-Fabricant-Test"),
+    @("RD-01", "set_designation",  "Test-MCPTEST-Recipe-Live", "OK:"),
+    @("RD-02", "read_designation",      "",    "Test-MCPTEST-Recipe-Live"),
+    @("RD-03", "set_reference",    "REF-MCPTEST-TEST", "OK:"),
+    @("RD-04", "read_reference",        "",    "REF-MCPTEST-TEST"),
+    @("RD-05", "set_manufacturer",    "MCPTEST-Fabricant-Test", "OK:"),
+    @("RD-06", "read_manufacturer",        "",    "MCPTEST-Fabricant-Test"),
 
     # TIER E: WRITE Attributs
     @("RE-01", "attr_set_color_all", "255,0,0", "OK:"),
@@ -78,11 +78,11 @@ $tests = @(
     @("RE-03", "attr_set_color_all", "0,128,255", "OK:"),
 
     # TIER F: Export
-    @("RF-01", "export_step",  "C:\temp\noemid_test.stp",  "OK:"),
-    @("RF-02", "export_stl",   "C:\temp\noemid_test.stl",  "OK:"),
-    @("RF-03", "export_iges",  "C:\temp\noemid_test.igs",  "OK:"),
-    @("RF-04", "export_dxf",   "C:\temp\noemid_test.dxf",  ""),
-    @("RF-05", "export_pdf",   "C:\temp\noemid_test.pdf",  "")
+    @("RF-01", "export_step",  "C:\temp\mcptest_test.stp",  "OK:"),
+    @("RF-02", "export_stl",   "C:\temp\mcptest_test.stl",  "OK:"),
+    @("RF-03", "export_iges",  "C:\temp\mcptest_test.igs",  "OK:"),
+    @("RF-04", "export_dxf",   "C:\temp\mcptest_test.dxf",  ""),
+    @("RF-05", "export_pdf",   "C:\temp\mcptest_test.pdf",  "")
 )
 
 # Build all JSON-RPC requests

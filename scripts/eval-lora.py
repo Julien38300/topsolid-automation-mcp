@@ -29,7 +29,7 @@ try:
     SYSTEM_PROMPT = _cfg["system_prompt"]
 except Exception:
     SYSTEM_PROMPT = (
-        "You are Noemid, a TopSolid assistant. "
+        "You are a TopSolid MCP Assistant. "
         "You ONLY use topsolid__topsolid_run_recipe with a recipe name. "
         "You NEVER generate C# code. You act directly, without asking for confirmation."
     )

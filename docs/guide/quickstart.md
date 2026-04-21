@@ -22,7 +22,7 @@ Sans cette option activee, le serveur MCP ne pourra pas se connecter a TopSolid.
 
 ### Option A — Telecharger (recommande)
 
-1. Aller sur la [page Releases](https://github.com/Julien38300/noemid-topsolid-automation/releases)
+1. Aller sur la [page Releases](https://github.com/Julien38300/topsolid-automation-mcp/releases)
 2. Telecharger `TopSolidMcpServer.zip` de la derniere version
 3. Dezipper dans un dossier, par exemple `C:\TopSolidMCP\`
 
@@ -31,8 +31,8 @@ C'est tout. L'executable `TopSolidMcpServer.exe` est pret a l'emploi.
 ### Option B — Compiler depuis les sources (developpeurs)
 
 ```bash
-git clone https://github.com/Julien38300/noemid-topsolid-automation.git
-cd noemid-topsolid-automation/server
+git clone https://github.com/Julien38300/topsolid-automation-mcp.git
+cd topsolid-automation-mcp/server
 dotnet build TopSolidMcpServer.sln
 ```
 

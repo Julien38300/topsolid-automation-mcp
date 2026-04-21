@@ -93,6 +93,8 @@ Le Main (cloud) garde la coherence conversationnelle et route les demandes :
 
 Le LoRA 3B v6 est en PROD (eval 100/100). Le fine-tuning LoRA 22B a ete tente mais abandonne (VRAM saturee, training > 9h30) — on shippe Codestral vanilla avec Modelfile enrichi (48 accessors `TopSolidHost.*` listes, Pattern D, SI-units, 6 few-shot examples).
 
-## Projet Cortana / Noemid
+## Independance
 
-TopSolid MCP fait partie du projet **Cortana** (prototype) qui migre vers **Noemid** (produit final). Le serveur MCP et le graphe API sont les composants qui survivent a la migration.
+`topsolid-automation-mcp` est un projet open-source maintenu par la communaute. Il n'est ni endosse ni affilie a TOPSOLID SAS. "TopSolid" est une marque deposee de TOPSOLID SAS.
+
+Le serveur reste autonome : il n'a pas besoin de l'ecosysteme d'agents qui l'a fait naitre. N'importe quel client MCP compatible stdio (Claude Desktop, Claude Code, Cursor, Windsurf, OpenClaw, etc.) peut s'y connecter, et la specification fonctionnelle ne depend d'aucun produit tiers au-dela de TopSolid 7 lui-meme.

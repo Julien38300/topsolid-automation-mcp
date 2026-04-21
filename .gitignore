@@ -51,3 +51,11 @@ __pycache__/
 *.TopFam
 *.TopDrf
 unsloth_compiled_cache/
+
+# Internal planning / personal notes (kept local, not part of the public community repo)
+/research/
+/.agent/
+
+# Release artifacts (published as GitHub Release assets, not tracked in git)
+/server/TopSolidMcpServer-v*.zip
+/server/release-staging/

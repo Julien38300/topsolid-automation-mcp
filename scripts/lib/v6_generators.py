@@ -1,6 +1,6 @@
 """LoRA 3B v6 — conversational pattern generators.
 
-Addresses Noemid session 19 MAJ findings (multi-turn tool_result + error
+Addresses LoRA v6 session MAJ findings (multi-turn tool_result + error
 handling) plus Cortana-identified UX gaps (formatting, chaining, follow-up
 disambiguation, write acks, graph Remarks relay).
 
