@@ -4,10 +4,10 @@ export default defineConfig({
   title: 'TopSolid MCP',
   description: 'Serveur MCP et Graphe API enrichi pour TopSolid Automation',
   lang: 'fr-FR',
-  base: '/noemid-topsolid-automation/',
+  base: '/topsolid-automation-mcp/',
 
   head: [
-    ['link', { rel: 'icon', href: '/noemid-topsolid-automation/favicon.ico' }]
+    ['link', { rel: 'icon', href: '/topsolid-automation-mcp/favicon.ico' }]
   ],
 
   themeConfig: {
@@ -65,7 +65,7 @@ export default defineConfig({
     })(),
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/Julien38300/noemid-topsolid-automation' }
+      { icon: 'github', link: 'https://github.com/Julien38300/topsolid-automation-mcp' }
     ],
 
     search: {

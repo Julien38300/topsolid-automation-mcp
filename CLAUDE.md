@@ -1,50 +1,67 @@
-# Noemid TopSolid — Regles Projet
+# TopSolid Automation MCP — Project Rules
 
-## Structure
-Ce repo contient le serveur MCP et le graphe API pour piloter TopSolid 7 par IA.
+Community-maintained Model Context Protocol server for TopSolid 7 CAD/PDM Automation API.
+
+## Repository structure
 
 ```
-noemid-topsolid/
+topsolid-automation-mcp/
 ├── server/        — TopSolid MCP Server (.NET 4.8, stdio JSON-RPC)
 ├── graph/         — TopSolid API Graph builder (.NET 4.8)
-├── plugin/        — TopSolid Plugin (WCF bridge)
-├── scripts/       — Python scripts (enrich-graph, convert-help)
-├── data/          — graph.json, api-index.json, recipes.md
-├── tests/         — 72 tests automatises
-├── docs/          — Site VitePress (documentation)
-├── research/      — Roadmap, missions, decisions
-└── skills/        — YAML skills for OpenClaw
+├── bridge/        — HTTP/SSE bridge for remote MCP clients (Node wrapper)
+├── scripts/       — Python utilities (graph enrichment, help index, catalog builder)
+├── data/          — graph.json, api-index.json, help.db, commands-catalog.json
+├── docs/          — VitePress documentation site
+├── tests/         — Automated test harness
+├── research/      — Roadmap, missions, decisions (internal planning)
+└── skills/        — Optional YAML skills for MCP-aware agents
 ```
 
-## Contribuer
-Voir le guide [CONTRIBUTING.md](CONTRIBUTING.md) pour ajouter des recettes ou modifier le serveur.
+## Contributing
 
-## Language
-- Code : **anglais** (noms, variables, commentaires inline)
-- Descriptions MCP / UI : **francais**
-- Messages utilisateur : **francais**
-- XML doc comments : **anglais**
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Short version:
 
-## Tech Stack
-- **.NET Framework 4.8** / C# 7.3 max (compatibilite TopSolid)
-- **Newtonsoft.Json** pour JSON-RPC
-- **VitePress** pour la documentation
-- **Python 3.11+** pour les scripts d'enrichissement
+- One file per class (.NET).
+- New recipes go into `server/src/Tools/RecipeTool.cs`. Keep them self-contained and under ~60 lines of C#.
+- Never commit secrets. `.gitignore` covers the usual suspects.
+- CI runs `scripts/privacy-scan.py` on every push — see that file for the regex-guarded patterns.
 
-## Conventions
-- Un fichier = une classe (blocs .NET)
-- Logs sur stderr (stdout = protocole MCP)
-- Pas de secrets commites
-- graph.json charge une seule fois au demarrage
+## Language conventions
 
-## Glossaire TopSolid FR
-- Designation = Description (pas Name)
-- Reference = PartNumber
-- Mise au coffre = CheckIn
-- Sorti de coffre = CheckOut
-- Mise a plat = Unfolding (pas depliage)
-- Rafale = batch generation depuis nomenclature
+- **Code** (identifiers, inline comments): English.
+- **MCP tool descriptions** (visible to any MCP client via `tools/list`): English.
+- **User-facing doc site prose**: French (the primary audience is French-speaking CAD users). English PRs welcome.
+- **XML doc comments**: English.
 
-## Relation avec Noemid
-Ce repo est le composant TopSolid de l'ecosysteme Noemid.
-L'agent TopSolid se connecte via OpenClaw (sous-agent dedie avec system.md + tool scoping).
+## Tech stack — non-negotiable
+
+- **.NET Framework 4.8**, C# 7.3 (TopSolid Automation assemblies target this runtime).
+- **Newtonsoft.Json 13** for JSON-RPC serialization.
+- **Microsoft.Data.Sqlite 6.0.x** for the embedded help FTS5 index.
+- **VitePress 1.6** for the docs site.
+- **Python 3.11+** for the enrichment / catalog scripts.
+- MCP protocol version **2025-03-26** (Streamable HTTP) + legacy 2024-11-05 fallback.
+
+## Runtime contracts
+
+- Logs on `stderr`. `stdout` is reserved for the MCP JSON-RPC protocol — a single stray `Console.WriteLine` breaks the client.
+- `graph.json` is loaded once at startup, held in memory.
+- The server must never crash — catch exceptions at the top level and return a JSON-RPC error.
+- Mutex `Global\\TopSolidMcpServer_Singleton` enforces single-instance locally.
+
+## TopSolid glossary (FR → EN mapping)
+
+| FR | EN API |
+|---|---|
+| Désignation | Description |
+| Référence | PartNumber |
+| Mise au coffre | CheckIn |
+| Sorti de coffre | CheckOut |
+| Mise à plat | Unfolding |
+| Rafale | batch generation from BOM |
+| Nomenclature | Bill of Materials (BOM) |
+| Mise en plan | Drafting |
+
+## Independence
+
+This project is community-maintained and independent. It is not endorsed by, sponsored by, or affiliated with TOPSOLID SAS. "TopSolid" is a registered trademark of TOPSOLID SAS.

@@ -16,7 +16,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$repo = "Julien38300/noemid-topsolid-automation"
+$repo = "Julien38300/topsolid-automation-mcp"
 $baseDir = Split-Path -Parent $PSScriptRoot
 if (-not (Test-Path (Join-Path $baseDir "TopSolidMcpServer.exe"))) {
     # Script is next to the exe (release layout)

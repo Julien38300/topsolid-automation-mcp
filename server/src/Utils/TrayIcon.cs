@@ -14,8 +14,8 @@ namespace TopSolidMcpServer.Utils
     /// </summary>
     public class TrayIcon : IDisposable
     {
-        private const string GitHubUrl = "https://github.com/Julien38300/noemid-topsolid-automation";
-        private const string DocsUrl = "https://julien38300.github.io/noemid-topsolid-automation/";
+        private const string GitHubUrl = "https://github.com/Julien38300/topsolid-automation-mcp";
+        private const string DocsUrl = "https://julien38300.github.io/topsolid-automation-mcp/";
 
         private NotifyIcon _notifyIcon;
         private Thread _thread;

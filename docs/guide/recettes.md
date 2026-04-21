@@ -309,7 +309,7 @@ TopSolidHost.Pdm.Save(pdmId, true);
 
 ## Tests LIVE
 
-59/61 tests PASS sur TopSolid vivant (assemblage REF-NOEMID-TEST).
+59/61 tests PASS sur TopSolid vivant (assemblage REF-MCPTEST).
 
 | Categorie | PASS | Total |
 |-----------|------|-------|
