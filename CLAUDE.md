@@ -1,6 +1,6 @@
-# TopSolid Automation MCP — Project Rules
+# topsolid-automation-mcp — Project Rules
 
-Community-maintained Model Context Protocol server for TopSolid 7 CAD/PDM Automation API.
+**Community-maintained** Model Context Protocol server for TopSolid® 7 CAD/PDM Automation API. Independent project, not affiliated with TOPSOLID SAS.
 
 ## Repository structure
 

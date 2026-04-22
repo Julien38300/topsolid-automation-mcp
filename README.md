@@ -1,13 +1,13 @@
 # topsolid-automation-mcp
 
-**Community Model Context Protocol server for TopSolid 7** — bring any MCP-compatible AI agent (Claude, ChatGPT-MCP clients, Cursor, Windsurf, JetBrains, VS Code + Copilot, OpenClaw, etc.) into your TopSolid workflow.
+**Community Model Context Protocol server for TopSolid® 7** — bring any MCP-compatible AI agent (Claude, ChatGPT-MCP clients, Cursor, Windsurf, JetBrains, VS Code + Copilot, OpenClaw, etc.) into your TopSolid workflow.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![Docs](https://img.shields.io/badge/docs-vitepress-brightgreen)](https://julien38300.github.io/topsolid-automation-mcp/)
 [![Release](https://img.shields.io/github/v/release/Julien38300/topsolid-automation-mcp)](https://github.com/Julien38300/topsolid-automation-mcp/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/Julien38300/topsolid-automation-mcp/privacy-scan.yml?branch=main&label=privacy-scan)](https://github.com/Julien38300/topsolid-automation-mcp/actions)
 
-> TopSolid(R) is a registered trademark of [TOPSOLID SAS](https://www.topsolid.com/). This project is independent and not endorsed by or affiliated with TOPSOLID SAS. It wraps the publicly documented TopSolid Automation API.
+> **Community project.** TopSolid® is a registered trademark of [TOPSOLID SAS](https://www.topsolid.com/). This repository is an **independent, community-maintained** MCP server. It is not endorsed by, sponsored by, or affiliated with TOPSOLID SAS. It wraps the publicly documented TopSolid Automation API and indexes the publicly shipped help documentation. A valid TopSolid license is required to run it against a live TopSolid instance.
 
 ## What is this?
 
