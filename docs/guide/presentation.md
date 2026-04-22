@@ -93,8 +93,17 @@ Le Main (cloud) garde la coherence conversationnelle et route les demandes :
 
 Le LoRA 3B v6 est en PROD (eval 100/100). Le fine-tuning LoRA 22B a ete tente mais abandonne (VRAM saturee, training > 9h30) — on shippe Codestral vanilla avec Modelfile enrichi (48 accessors `TopSolidHost.*` listes, Pattern D, SI-units, 6 few-shot examples).
 
-## Independance
+## Independance & sources
 
 `topsolid-automation-mcp` est un projet open-source (MIT) maintenu par la **communaute**. Il n'est ni endosse, ni sponsorise, ni affilie a TOPSOLID SAS. **TopSolid®** est une marque deposee de TOPSOLID SAS.
 
-Le serveur reste autonome : il n'a pas besoin de l'ecosysteme d'agents qui l'a fait naitre. N'importe quel client MCP compatible stdio (Claude Desktop, Claude Code, Cursor, Windsurf, OpenClaw, etc.) peut s'y connecter, et la specification fonctionnelle ne depend d'aucun produit tiers au-dela de TopSolid 7 lui-meme.
+**Tout le contenu redistribue vient de sources publiques TopSolid** :
+
+- Graphe API (4119 edges, 1728 methodes) : extrait par reflexion des DLL `TopSolid.*.Automating.dll` livrees avec chaque installation TopSolid, croise avec la reference API officielle sur [help.topsolid.com](https://help.topsolid.com/).
+- Index de l'aide (5809 pages EN+FR) : converti en Markdown depuis l'aide en ligne publique [help.topsolid.com](https://help.topsolid.com/).
+- Catalogue de commandes UI (2428 commandes) : parse depuis ces memes pages d'aide (fichiers `*Command.md`).
+- Recettes (130 snippets C#) : ecrites specifiquement pour ce projet, en reference a l'aide publique + graphe.
+
+**Aucun** exemple SDK proprietaire, code client, ou code prive identifie n'est inclus dans ce qui est distribue. L'acces aux corpora prives (`topsolid_search_examples`) est opt-in via des variables d'environnement pointant vers le disque local du contributeur — rien n'est bundle.
+
+Le serveur reste autonome : n'importe quel client MCP compatible stdio (Claude Desktop, Claude Code, Cursor, Windsurf, OpenClaw...) peut s'y connecter. La specification fonctionnelle ne depend d'aucun produit tiers au-dela de TopSolid 7 lui-meme.

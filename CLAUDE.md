@@ -62,6 +62,12 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Short version:
 | Nomenclature | Bill of Materials (BOM) |
 | Mise en plan | Drafting |
 
-## Independence
+## Independence & data sources
 
-This project is community-maintained and independent. It is not endorsed by, sponsored by, or affiliated with TOPSOLID SAS. "TopSolid" is a registered trademark of TOPSOLID SAS.
+This project is community-maintained and independent. It is not endorsed by, sponsored by, or affiliated with TOPSOLID SAS. "TopSolid®" is a registered trademark of TOPSOLID SAS.
+
+All knowledge the server ships comes from publicly available TopSolid material:
+- the Automation `.dll` assemblies included in every TopSolid install (reflected into `graph.json` + `api-index.json`);
+- the public help site at https://help.topsolid.com/ (indexed into `help.db` and `commands-catalog.json`).
+
+No proprietary sample code and no identified individual's private code is bundled. Private corpus access (`topsolid_search_examples`) is opt-in via environment variables — paths live only on the user's own machine.

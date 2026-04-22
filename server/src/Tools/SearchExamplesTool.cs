@@ -23,17 +23,33 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class SearchExamplesTool
     {
-        // Default corpus paths — user-local only, NEVER shipped publicly.
-        // Labels are opaque placeholders (corp-a/b/c) on purpose: the sources
-        // are private (provided by author's network + internal scripts) and
-        // should not be named in any MCP response that the client may log.
-        // Replace the paths below to point at your own local corpora.
-        private static readonly List<(string Label, string Path)> DefaultCorpora = new List<(string, string)>
+        // Corpus paths are read from environment variables so the published
+        // source code never pins anyone's local directory layout. If the
+        // env vars are unset, the tool returns an empty index — by design:
+        // public CI / forks have nothing to index.
+        //
+        // Local setup (PowerShell, user profile scope):
+        //   setx TOPSOLID_CORPUS_A "C:\path\to\your\first-corpus"
+        //   setx TOPSOLID_CORPUS_B "C:\path\to\your\second-corpus"
+        //   setx TOPSOLID_CORPUS_C "C:\path\to\your\third-corpus"
+        //
+        // Corpus labels in MCP responses stay opaque (corp-a/b/c) so a client
+        // logging the tools/list output never sees how the label maps to a
+        // real source. Never point these vars at proprietary code you do not
+        // own or have permission to expose — the server streams method bodies
+        // verbatim to whoever calls topsolid_search_examples.
+        private static List<(string Label, string Path)> BuildDefaultCorpora()
         {
-            ("corp-a", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples REDACTED-USER"),
-            ("corp-b", @"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Exemples RoB"),
-            ("corp-c", @"C:\Users\jup\OneDrive\4 - VB\Projects\Script Qualité FEA"),
-        };
+            var list = new List<(string, string)>();
+            string a = Environment.GetEnvironmentVariable("TOPSOLID_CORPUS_A");
+            string b = Environment.GetEnvironmentVariable("TOPSOLID_CORPUS_B");
+            string c = Environment.GetEnvironmentVariable("TOPSOLID_CORPUS_C");
+            if (!string.IsNullOrWhiteSpace(a)) list.Add(("corp-a", a));
+            if (!string.IsNullOrWhiteSpace(b)) list.Add(("corp-b", b));
+            if (!string.IsNullOrWhiteSpace(c)) list.Add(("corp-c", c));
+            return list;
+        }
+        private static readonly List<(string Label, string Path)> DefaultCorpora = BuildDefaultCorpora();
 
         // Cache: lazily built index of method-level chunks
         private static List<MethodChunk> _cache;

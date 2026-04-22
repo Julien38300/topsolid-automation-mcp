@@ -25,6 +25,8 @@ SOFTWARE.
 TopSolid® is a registered trademark of TOPSOLID SAS. This project is
 independent from and not endorsed by TOPSOLID SAS. It wraps the publicly
 documented TopSolid Automation API (a .NET SDK shipped with TopSolid 7) and
-indexes the publicly shipped help documentation. Users of this software must
-hold a valid TopSolid license to run it against a TopSolid instance; this MIT
+indexes the publicly published help documentation available at
+https://help.topsolid.com/ — all redistributed material comes from these
+publicly accessible sources. Users of this software must hold a valid
+TopSolid license to run it against a TopSolid instance; this MIT
 grant covers only the source in this repository.
