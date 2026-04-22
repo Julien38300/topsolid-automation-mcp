@@ -67,6 +67,17 @@ The agent picks `topsolid_run_recipe` with recipe `read_designation` and returns
 | `topsolid_search_help` | FTS5 search over 5809 help pages (EN+FR) | no |
 | `topsolid_search_commands` | Lookup UI commands in the 2428-command catalog | no |
 
+## Data sources & attribution
+
+All the knowledge this server exposes comes from **publicly available** TopSolid material:
+
+- **API graph** (4119 edges, 1728 methods) — extracted by reflection from the TopSolid Automation `.dll` assemblies shipped with every TopSolid installation, cross-referenced with the official API reference at [help.topsolid.com](https://help.topsolid.com/).
+- **Help index** (5809 pages, EN + FR) — converted to Markdown from the publicly shipped help site at [help.topsolid.com](https://help.topsolid.com/).
+- **UI commands catalog** (2428 commands) — parsed from those same help pages (files ending in `*Command.md`).
+- **Recipes** (130 C# snippets) — hand-written for this project, referring back to the public help and the graph for each API call.
+
+No proprietary TopSolid SDK sample code, no customer project, and no identified individual's private code is included in anything that ships with this repo. Private corpora support (`topsolid_search_examples`) is opt-in via environment variables on the user's own machine — nothing is ever bundled.
+
 ## Why this exists
 
 TopSolid ships a powerful .NET Automation API, but it is hard to discover: 1728 methods across 46 interfaces, ~10-20% of the product surface is only reachable via ribbon/menu commands, and half the "how do I..." answers are in help pages no one reads. This server collapses that discovery cost for an AI agent — and for a human developer who treats the MCP as a knowledge base for writing standalone TopSolid Automation apps.

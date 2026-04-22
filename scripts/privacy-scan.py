@@ -44,24 +44,25 @@ SCAN_GLOBS = [
 # attributions. The actual leak pattern (assembly copyright attribute copied
 # verbatim) is caught via "Copyright REDACTED" / "AssemblyRedacted" below.
 BAD_MARKERS = [
-    # Build markers as strings rather than literals so filter-repo's
-    # text-replacement passes do not rewrite this file itself when run on
-    # the repo. Reconstructing via chr()/join avoids literal substring matches.
+    # EVERY marker is obfuscated via chr() / string concatenation so a
+    # filter-repo text-replacement pass never rewrites this file itself.
+    # A literal "REDACTED" or "REDACTED.cs" would be rewritten by our replacements
+    # file on the next privacy pass, silently breaking the scanner.
     chr(97) + "nne-francoise",
     chr(65) + "nne-francoise",
     chr(65) + "nne-Francoise",
     chr(65) + "nne-Fran" + chr(231) + "oise",  # with cedilla
-    "REDACTED",
-    "REDACTED",
-    "REDACTED",
-    "REDACTED.cs",
-    "REDACTED.cs",
-    "RedactedMaker",
-    "RedactedViewModel",
-    "Copyright REDACTED",
-    "Copyright " + chr(169) + " TopSolid",
-    "AssemblyRedacted",
-    "REDACTED-USER",   # residue from filter-repo pass - should be gone at HEAD
+    "st" + "uyk",
+    "EG" + "GER",
+    "MIS" + "SLER",
+    "For" + "m1.cs",
+    "Au" + "tre.cs",
+    "RoBSt" + "ockParametersMaker",
+    "MainWin" + "dowViewModel",
+    "Copyright (c) To" + "pSolid",
+    "Copyright " + chr(169) + " To" + "pSolid",
+    "Assembly" + "Copyright",
+    "REDACTED-" + "USER",   # residue from a filter-repo pass (should be gone)
 ]
 
 ALLOW = [

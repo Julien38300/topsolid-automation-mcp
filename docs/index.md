@@ -39,6 +39,10 @@ features:
 
 <div style="max-width: 900px; margin: 3rem auto 0; padding: 1.25rem 1.5rem; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 0.9em; color: var(--vp-c-text-2);">
 
-**Note de marque** — TopSolid<sup>®</sup> est une marque déposée de <a href="https://www.topsolid.com/" target="_blank" rel="noopener">TOPSOLID SAS</a>. Le projet `topsolid-automation-mcp` est une initiative **communautaire indépendante** sous licence MIT. Il n'est ni endossé, ni sponsorisé, ni affilié à TOPSOLID SAS. Il encapsule l'API Automation publique livrée avec TopSolid 7 et indexe l'aide en ligne publiquement distribuée. Une licence TopSolid valide reste nécessaire pour utiliser ce serveur contre une instance TopSolid.
+**Note de marque & sources** — TopSolid<sup>®</sup> est une marque déposée de <a href="https://www.topsolid.com/" target="_blank" rel="noopener">TOPSOLID SAS</a>. Le projet `topsolid-automation-mcp` est une initiative **communautaire indépendante** sous licence MIT. Il n'est ni endossé, ni sponsorisé, ni affilié à TOPSOLID SAS.
+
+Toute la connaissance exposée par ce serveur provient de **sources publiques** : l'API Automation livrée avec TopSolid 7 (DLL .NET publiques), et l'aide en ligne officielle publiée sur <a href="https://help.topsolid.com/" target="_blank" rel="noopener">help.topsolid.com</a> (5809 pages EN/FR, 2428 commandes UI). Aucun exemple SDK propriétaire ni code privé d'un tiers n'est inclus dans le repo.
+
+Une licence TopSolid valide reste nécessaire pour utiliser ce serveur contre une instance TopSolid.
 
 </div>
