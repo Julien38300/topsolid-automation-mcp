@@ -5,6 +5,7 @@ export default defineConfig({
   description: 'Serveur MCP et Graphe API enrichi pour TopSolid Automation',
   lang: 'fr-FR',
   base: '/topsolid-automation-mcp/',
+  cleanUrls: true,
 
   head: [
     ['link', { rel: 'icon', href: '/topsolid-automation-mcp/favicon.ico' }]
