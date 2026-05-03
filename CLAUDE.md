@@ -17,6 +17,26 @@ topsolid-automation-mcp/
 └── skills/        — Optional YAML skills for MCP-aware agents
 ```
 
+## Recipe pipeline — mandatory after any recipe change
+
+After adding or modifying a recipe in `server/src/Tools/RecipeTool.cs`:
+
+```bash
+cd server
+make sync-ecosystem   # syncs docs + skill + LoRA dataset
+make check            # verify 0 FAIL before commit
+```
+
+After a new TopSolid version:
+
+```bash
+cd server
+make sync-api         # extract CHM → diff → enrich graph → propose new recipes
+make sync-ecosystem
+```
+
+Never commit `RecipeTool.cs` without `make check` passing (exit 0).
+
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR. Short version:

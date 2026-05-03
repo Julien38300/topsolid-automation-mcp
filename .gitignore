@@ -56,6 +56,9 @@ unsloth_compiled_cache/
 /research/
 /.agent/
 
+# Claude Code private project instructions (personal workflow, internal links)
+/.claude/
+
 # Release artifacts (published as GitHub Release assets, not tracked in git)
 /server/TopSolidMcpServer-v*.zip
 /server/release-staging/
