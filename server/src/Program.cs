@@ -165,6 +165,18 @@ namespace TopSolidMcpServer
                 var recipeTool = new RecipeTool(() => connector);
                 recipeTool.Register(registry);
 
+                var listDocumentsTool = new ListDocumentsTool(() => connector);
+                listDocumentsTool.Register(registry);
+
+                var listElementsTool = new ListElementsTool(() => connector);
+                listElementsTool.Register(registry);
+
+                var modifyDocumentsTool = new ModifyDocumentsTool(() => connector);
+                modifyDocumentsTool.Register(registry);
+
+                var getDocumentInfoTool = new GetDocumentInfoTool(() => connector);
+                getDocumentInfoTool.Register(registry);
+
                 var getRecipeTool = new GetRecipeTool();
                 getRecipeTool.Register(registry);
 
