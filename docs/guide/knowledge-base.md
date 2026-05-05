@@ -17,18 +17,19 @@ Sans aide, un développeur passe des heures à naviguer dans la CHM ou dans des 
 
 ## Le MCP comme solution
 
-Le serveur MCP expose **12 outils** (v1.6.1+). Huit d'entre eux sont utilisables **sans TopSolid lancé** — uniquement pour consulter la base de connaissance :
+Le serveur MCP expose **13 outils** (v1.6.3+). Neuf d'entre eux sont utilisables **sans TopSolid lancé** — uniquement pour consulter la base de connaissance :
 
 | Outil | Utilité pour le dev standalone |
 |---|---|
 | `topsolid_api_help(query)` | Cherche dans l'API par mot-clé (FR/EN, synonymes, CamelCase split) |
 | `topsolid_find_path(sourceType, targetType)` | Trouve la chaîne de méthodes exacte entre deux types (ex : `IPdm` → `String`) |
 | `topsolid_explore_paths(...)` | Plusieurs variantes de chemins rankées |
-| `topsolid_get_recipe(name)` | Code C# d'une des 124 recettes production |
+| `topsolid_get_recipe(name)` | Code C# d'une des 132 recettes production |
 | `topsolid_compile(code)` | Dry-run compile check sans exécuter |
 | `topsolid_search_examples(query)` | Cherche dans les corpora prives locaux de l'utilisateur (non livres avec le serveur) |
 | `topsolid_whats_new(version)` | Changelog de l'API par version TopSolid |
 | `topsolid_search_help(query)` | Full-text search sur 5809 pages de l'aide en ligne (FR + EN) |
+| `topsolid_search_commands(query)` | Recherche dans les 2428 commandes UI TopSolid (menus/rubans) |
 
 Les 4 autres outils (`execute_script`, `run_recipe`, `get_state`, `modify_script`) nécessitent TopSolid actif et servent au runtime agent.
 

@@ -9,7 +9,7 @@ Agent IA (OpenClaw / Claude / tout client MCP)
   |
   v
 TopSolidMcpServer.exe (stdio JSON-RPC)
-  |  - run_recipe : execute une des 124 recettes pre-construites
+  |  - run_recipe : execute une des 132 recettes pre-construites
   |  - api_help : cherche les bonnes methodes API (52 synonymes FR)
   |  - execute_script : compile et execute du C# contre TopSolid
   |  - find_path / explore_paths : navigue dans le graphe de types
@@ -36,9 +36,9 @@ Le coeur du systeme. Un graphe oriente representant toutes les methodes de l'API
 | Snippets de code | 2174 |
 
 ### Serveur MCP (`TopSolidMcpServer.exe`)
-Executable .NET Framework 4.8, communique en stdio JSON-RPC. **12 outils** exposes a l'agent.
+Executable .NET Framework 4.8, communique en stdio JSON-RPC. **13 outils** exposes a l'agent.
 
-### RecipeTool — 124 recettes
+### RecipeTool — 132 recettes
 L'outil principal. Le LLM choisit une recette par nom, aucune generation de code necessaire.
 
 | Categorie | Recettes | Exemples |
@@ -55,7 +55,7 @@ L'outil principal. Le LLM choisit une recette par nom, aucune generation de code
 | Mise a plat / Tolerie | 3 | detection, plis, dimensions depliage |
 | Comparaison documents | 4 | parametres, operations, entites, revisions |
 | Report modifications | 2 | copier parametres ou proprietes PDM vers un autre doc |
-| Batch projet | 13 | audit refs/desig, masse batch, export batch, auteur, virtuel |
+| Batch projet | 16 | audit refs/desig, masse batch, export batch, auteur, designation/ref/fabricant batch, virtuel |
 | Audit qualite | 6 | noms parametres, drivers famille, materiaux |
 | Familles | 5 | detection, catalogue, drivers |
 | Historique/Revisions | 2 | timeline revisions, comparaison revisions |
@@ -63,7 +63,7 @@ L'outil principal. Le LLM choisit une recette par nom, aucune generation de code
 | Interactif | 3 | selection shape/face/point dans TopSolid |
 
 ### Dataset LoRA (`lora-dataset-en.jsonl`)
-2114 entrees d'entrainement au format ShareGPT (v6 conversational) pour fine-tuner le sous-agent 3B. Couvre les 124 recettes + patterns multi-turn + error-handling + acknowledgments. Eval : **100/100** (50 questions, 5 tiers). Deploye en PROD comme `ministral-topsolid` via Ollama.
+2164 entrees d'entrainement au format ShareGPT (v7 conversational) pour fine-tuner le sous-agent 3B. Couvre les 132 recettes + patterns multi-turn + error-handling + acknowledgments. Eval : **96%** (50 questions, 5 tiers). Deploye en PROD comme `ministral-topsolid` via Ollama.
 
 ### Tests
 Suite de tests automatises contre une instance TopSolid vivante. Scripts PowerShell executables en batch.
@@ -75,7 +75,7 @@ OpenClaw Main (cloud, leger — routing + conversation)
   |
   ├── topsolid-recipes (3B LoRA, local)
   |     → topsolid_run_recipe
-  |     124 recettes pre-construites
+  |     132 recettes pre-construites
   |     Classification : intent → nom de recette
   |     Latence : ~2-4 secondes
   |
@@ -91,7 +91,7 @@ Le Main (cloud) garde la coherence conversationnelle et route les demandes :
 - **Recette connue** (80% des cas) → sous-agent 3B, rapide et fiable
 - **Cas custom** (20%) → Codestral 22B, generation de code via le graphe + `compile` avant execution
 
-Le LoRA 3B v6 est en PROD (eval 100/100). Le fine-tuning LoRA 22B a ete tente mais abandonne (VRAM saturee, training > 9h30) — on shippe Codestral vanilla avec Modelfile enrichi (48 accessors `TopSolidHost.*` listes, Pattern D, SI-units, 6 few-shot examples).
+Le LoRA 3B v7 est en PROD (eval 96%, 2164 paires ShareGPT EN). Le fine-tuning LoRA 22B a ete tente mais abandonne (VRAM saturee, training > 9h30) — on shippe Codestral vanilla avec Modelfile enrichi (48 accessors `TopSolidHost.*` listes, Pattern D, SI-units, 6 few-shot examples).
 
 ## Independance & sources
 
@@ -102,7 +102,7 @@ Le LoRA 3B v6 est en PROD (eval 100/100). Le fine-tuning LoRA 22B a ete tente ma
 - Graphe API (4119 edges, 1728 methodes) : extrait par reflexion des DLL `TopSolid.*.Automating.dll` livrees avec chaque installation TopSolid, croise avec la reference API officielle sur [help.topsolid.com](https://help.topsolid.com/).
 - Index de l'aide (5809 pages EN+FR) : converti en Markdown depuis l'aide en ligne publique [help.topsolid.com](https://help.topsolid.com/).
 - Catalogue de commandes UI (2428 commandes) : parse depuis ces memes pages d'aide (fichiers `*Command.md`).
-- Recettes (130 snippets C#) : ecrites specifiquement pour ce projet, en reference a l'aide publique + graphe.
+- Recettes (132 snippets C#) : ecrites specifiquement pour ce projet, en reference a l'aide publique + graphe.
 
 **Aucun** exemple SDK proprietaire, code client, ou code prive identifie n'est inclus dans ce qui est distribue. L'acces aux corpora prives (`topsolid_search_examples`) est opt-in via des variables d'environnement pointant vers le disque local du contributeur — rien n'est bundle.
 

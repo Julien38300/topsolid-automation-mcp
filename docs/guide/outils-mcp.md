@@ -116,7 +116,7 @@ Retourne le code C# d'une recette par nom, sans l'executer. Utile pour apprendre
 { "name": "topsolid_get_recipe", "arguments": { "recipe": "read_mass_volume" } }
 ```
 
-Sans `recipe` : retourne la liste des 124 recettes avec mode READ/WRITE + description.
+Sans `recipe` : retourne la liste des 132 recettes avec mode READ/WRITE + description.
 
 ## topsolid_compile (v1.5.1+)
 

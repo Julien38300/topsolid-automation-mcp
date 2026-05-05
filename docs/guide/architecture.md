@@ -13,9 +13,9 @@
 ┌─────v──────────┐             ┌────────────v──────────┐
 │ topsolid-      │             │ codestral-topsolid    │
 │ recipes (3B)   │             │ (22B Q4_K_M, vanilla) │
-│ v6 conv. PROD  │             │ enhanced Modelfile    │
+│ v7 conv. PROD  │             │ enhanced Modelfile    │
 │ run_recipe     │             │ execute_script        │
-│ 124 recettes   │             │ api_help, find_path   │
+│ 132 recettes   │             │ api_help, find_path   │
 └─────┬──────────┘             │ explore_paths, compile│
       │                        └────────────┬──────────┘
       │                                     │
@@ -27,9 +27,9 @@
               │                   │
               │  TypeGraph        │  graph.json (4119 edges)
               │  KeywordIdx       │  api-index.json (1728 methods)
-              │  RecipeTool       │  124 recettes
+              │  RecipeTool       │  132 recettes
               │                   │
-              │  12 outils MCP :   │
+              │  13 outils MCP :  │
               │  - run_recipe     │
               │  - get_state      │
               │  - api_help       │
@@ -42,6 +42,7 @@
               │  - search_examples│
               │  - whats_new      │
               │  - search_help    │
+              │  - search_commands│
               └────────┬──────────┘
                        │ WCF/TCP :8090
               ┌────────v──────────┐
@@ -64,7 +65,7 @@ Deux sous-agents specialises dans OpenClaw, chacun avec ses propres outils MCP :
 
 | Sous-agent | Modele | Outils MCP | Tache | Risque |
 |------------|--------|------------|-------|--------|
-| **topsolid-recipes** | 3B LoRA v6 conversational (ministral-topsolid, PROD) | `run_recipe` | Selection de recette par nom, multi-turn, error-handling | Faible (code pre-teste) |
+| **topsolid-recipes** | 3B LoRA v7 conversational (ministral-topsolid, PROD, 96%) | `run_recipe` | Selection de recette par nom, multi-turn, error-handling | Faible (code pre-teste) |
 | **codestral-topsolid** | Codestral 22B Q4_K_M vanilla + Modelfile enrichi | `execute_script` + `modify_script` + `api_help` + `find_path` + `explore_paths` + `compile` + `search_examples` | Generation C# via graphe pour cas custom | Eleve (code genere, a valider par `compile`) |
 
 **Routing** : le Main (cloud) analyse l'intention. Si une recette couvre le besoin → 3B. Sinon → Codestral 22B qui navigue le graphe, genere du C#, et le valide via `compile` avant execution.
@@ -111,8 +112,8 @@ Pour les scripts de modification, un wrapper supplementaire gere `StartModificat
 |---------|------|--------|
 | `data/graph.json` | Graphe API enrichi | ~2.9 MB |
 | `data/api-index.json` | Index plat des 1728 methodes | ~400 KB |
-| `server/src/Tools/RecipeTool.cs` | 124 recettes C# pre-construites | ~130 KB |
-| `data/lora-dataset-en.jsonl` | 2114 entrees LoRA v6 (ShareGPT EN) | ~1.5 MB |
+| `server/src/Tools/RecipeTool.cs` | 132 recettes C# pre-construites | ~135 KB |
+| `data/lora-dataset-en.jsonl` | 2164 entrees LoRA v7 (ShareGPT EN) | ~1.5 MB |
 | `data/help-md/` | Aide en ligne convertie (FR+EN) | ~9 MB |
 | `data/help.db` | Index SQLite FTS5 de l'aide (5809 pages) | ~20 MB |
 | `tests/TestSuite.json` | 72 tests automatises | ~50 KB |

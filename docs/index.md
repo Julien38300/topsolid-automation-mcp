@@ -23,7 +23,7 @@ features:
   - title: 13 outils MCP
     details: run_recipe, api_help, find_path, explore_paths, get_state, execute_script, modify_script, get_recipe, compile, search_examples, whats_new, search_help, search_commands.
     icon: "&#x1F6E0;"
-  - title: 130 recettes
+  - title: 132 recettes
     details: Pilotage complet sans code — PDM, parametres, masse, export, assemblages, familles, mise en plan, nomenclature (BOM read+write), mise a plat, comparaison, audit batch.
     icon: "&#x1F4D6;"
   - title: Aide TopSolid en FTS5

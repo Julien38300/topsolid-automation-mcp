@@ -1,6 +1,6 @@
 # Recettes
 
-130 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
+132 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
 
 ## Tableau interactif
 
@@ -26,7 +26,7 @@ Les proprietes PDM (Product Data Management) sont les metadonnees du document To
 | `set_reference` | Change la reference / part number. Sauvegarde auto. | `Pdm.SetPartNumber` — `value` = nouvelle ref | WRITE |
 | `set_manufacturer` | Change le fabricant. Sauvegarde auto. | `Pdm.SetManufacturer` — `value` = nom fabricant | WRITE |
 
-### Navigation projet (22 recettes)
+### Navigation projet (25 recettes)
 
 Recettes pour explorer l'arborescence du projet, chercher des documents, lister des dossiers. Le projet TopSolid est une hierarchie PDM avec dossiers et documents de differents types (.TopPrt, .TopAsm, .TopDft...).
 
@@ -51,6 +51,9 @@ Recettes pour explorer l'arborescence du projet, chercher des documents, lister 
 | `batch_export_step` | Exporte TOUTES les pieces et assemblages du projet en STEP dans un dossier. Un fichier par document. | `Documents.Export()` en boucle — `value` = chemin dossier (optionnel) | READ |
 | `batch_read_property` | Lit une propriete specifique sur tous les documents du projet. Retourne un tableau nom → valeur. | Iteration + `Pdm.Get{Description,PartNumber,...}` — `value` = nom propriete | READ |
 | `batch_clear_author` | Vide le champ Auteur de tous les documents du projet. Utile pour anonymiser avant livraison. | `Pdm.SetAuthor(pdmId, "")` en boucle | WRITE |
+| `batch_set_designation` **(v1.6.7)** | Applique la meme designation a TOUS les documents du projet. | `Pdm.SetDescription()` en boucle — `value` = texte | WRITE |
+| `batch_set_reference` **(v1.6.7)** | Applique la meme reference a TOUS les documents du projet. | `Pdm.SetPartNumber()` en boucle — `value` = reference | WRITE |
+| `batch_set_manufacturer` **(v1.6.7)** | Applique le meme fabricant a TOUS les documents du projet. | `Pdm.SetManufacturer()` en boucle — `value` = fabricant | WRITE |
 | `clear_document_author` | Vide le champ Auteur du document courant uniquement. | `Pdm.SetAuthor(pdmId, "")` | WRITE |
 | `batch_check_virtual` | Verifie la propriete "virtuel" (IsVirtualDocument) sur tous les documents. Liste les non-virtuels. | `Documents.IsVirtualDocument()` en boucle | READ |
 | `batch_enable_virtual` | Active le mode virtuel sur tous les documents non-virtuels du projet. | `Documents.SetVirtualDocumentMode(true)` en boucle | WRITE |
@@ -325,9 +328,9 @@ TopSolidHost.Pdm.Save(pdmId, true);
 
 ## Dataset LoRA
 
-2114 entrees ShareGPT dans `data/lora-dataset-en.jsonl` pour fine-tuner le sous-agent 3B (`ministral-topsolid` v6 conversational). Couvre les 124 recettes + patterns multi-turn + error-handling + acknowledgments. Script regenerable : `scripts/generate-lora-dataset-en.py`.
+2164 entrees ShareGPT dans `data/lora-dataset-en.jsonl` pour fine-tuner le sous-agent 3B (`ministral-topsolid` v7 conversational). Couvre les 132 recettes + patterns multi-turn + error-handling + acknowledgments. Script regenerable : `scripts/generate-lora-dataset-en.py`.
 
-Eval : **100/100** sur 50 questions (5 tiers, trivial → piege), multi-turn verifie manuellement.
+Eval : **96%** sur 50 questions (5 tiers, trivial → piege), multi-turn verifie manuellement.
 
 ## Pattern d'ecriture dans modify_script
 

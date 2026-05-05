@@ -375,7 +375,7 @@ Une fois connecte, votre assistant IA dispose des outils suivants :
 | Outil | Description |
 |-------|-------------|
 | `topsolid_get_state` | Etat de connexion, document actif, projet courant |
-| `topsolid_run_recipe` | Execute une des 129 recettes pre-construites |
+| `topsolid_run_recipe` | Execute une des 132 recettes pre-construites |
 | `topsolid_get_recipe` | Retourne le code source C# d'une recette |
 | `topsolid_api_help` | Recherche dans l'API TopSolid (1728 methodes, synonymes FR) |
 | `topsolid_execute_script` | Compile et execute du C# contre TopSolid (lecture seule) |
@@ -387,13 +387,9 @@ Une fois connecte, votre assistant IA dispose des outils suivants :
 | `topsolid_search_commands` | Recherche dans 2428 commandes UI TopSolid (Layer 2) |
 | `topsolid_search_examples` | Recherche dans les corpora prives locaux (opt-in, env var) |
 | `topsolid_whats_new` | Diff API entre deux versions TopSolid |
-| `topsolid_list_documents` | Liste les documents du projet PDM courant |
-| `topsolid_list_elements` | Liste les elements du document actif (parametres, esquisses...) |
-| `topsolid_modify_documents` | Modifie en batch les proprietes PDM de plusieurs documents |
-| `topsolid_get_document_info` | Informations PDM detaillees du document actif |
 
 ::: tip Pour la plupart des usages
-`topsolid_run_recipe` suffit. Les 129 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
+`topsolid_run_recipe` suffit. Les 132 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
 :::
 
 ---

@@ -91,7 +91,7 @@ Sortie :
 3. Laisser les champs OAuth vides (le connecteur passera en mode anonyme)
 4. **Ajouter**
 
-claude.ai envoie un `initialize` puis `tools/list` — tu dois voir apparaître les **12 outils TopSolid** dans l'UI du connecteur.
+claude.ai envoie un `initialize` puis `tools/list` — tu dois voir apparaître les **13 outils TopSolid** dans l'UI du connecteur.
 
 ## ⚠️ Sécurité — à lire avant d'exposer publiquement
 
