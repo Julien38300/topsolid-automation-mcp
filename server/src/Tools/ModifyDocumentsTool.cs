@@ -26,7 +26,7 @@ namespace TopSolidMcpServer.Tools
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_modify_documents",
-                Description = "Batch-modifies PDM properties on one or more TopSolid documents. Actions: set_description, set_partNumber, set_manufacturer, set_user_property (requires propertyName). Documents are identified by name within the current project.",
+                Description = "Batch-modifies standard PDM properties on one or more TopSolid documents. Actions: set_description, set_partNumber, set_manufacturer. Documents are identified by name within the current project. For user properties, use topsolid_run_recipe with the set_user_property recipe.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -42,17 +42,12 @@ namespace TopSolidMcpServer.Tools
                         ["action"] = new JObject
                         {
                             ["type"] = "string",
-                            ["description"] = "Action to perform: set_description | set_partNumber | set_manufacturer | set_user_property"
+                            ["description"] = "Action to perform: set_description | set_partNumber | set_manufacturer"
                         },
                         ["value"] = new JObject
                         {
                             ["type"] = "string",
                             ["description"] = "Value to set"
-                        },
-                        ["propertyName"] = new JObject
-                        {
-                            ["type"] = "string",
-                            ["description"] = "User property name (required for set_user_property action)"
                         }
                     }
                 }
@@ -73,17 +68,16 @@ namespace TopSolidMcpServer.Tools
 
                 string action = arguments["action"]?.ToString()?.ToLowerInvariant();
                 string value = arguments["value"]?.ToString() ?? "";
-                string propertyName = arguments["propertyName"]?.ToString();
 
                 if (string.IsNullOrEmpty(action))
-                    return "Error: 'action' is required. Use set_description, set_partNumber, set_manufacturer, or set_user_property.";
-
-                if (action == "set_user_property" && string.IsNullOrEmpty(propertyName))
-                    return "Error: 'propertyName' is required for the set_user_property action.";
+                    return "Error: 'action' is required. Use set_description, set_partNumber, or set_manufacturer.";
 
                 var projId = TopSolidHost.Pdm.GetCurrentProject();
                 if (projId.IsEmpty)
                     return "Error: No current project in TopSolid.";
+
+                if (action != "set_description" && action != "set_partnumber" && action != "set_manufacturer")
+                    return "Error: unknown action '" + action + "'. Use set_description, set_partNumber, or set_manufacturer.";
 
                 var sb = new StringBuilder();
                 int successCount = 0;
@@ -116,9 +110,6 @@ namespace TopSolidMcpServer.Tools
                             case "set_manufacturer":
                                 TopSolidHost.Pdm.SetManufacturer(pdmId, value);
                                 break;
-                            case "set_user_property":
-                                TopSolidHost.Pdm.SetTextUserProperty(pdmId, propertyName, value);
-                                break;
                             default:
                                 sb.AppendLine("  ERROR " + docName + ": unknown action '" + action + "'.");
                                 failCount++;
@@ -137,7 +128,7 @@ namespace TopSolidMcpServer.Tools
                     }
                 }
 
-                sb.Insert(0, "Action: " + action + (propertyName != null ? " [" + propertyName + "]" : "") + " = \"" + value + "\"\n");
+                sb.Insert(0, "Action: " + action + " = \"" + value + "\"\n");
                 sb.AppendLine("\nResult: " + successCount + " succeeded, " + failCount + " failed.");
                 return sb.ToString();
             }

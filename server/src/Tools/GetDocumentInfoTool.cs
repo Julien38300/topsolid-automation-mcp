@@ -83,15 +83,6 @@ namespace TopSolidMcpServer.Tools
                 if (!projId.IsEmpty)
                     sb.AppendLine("Project    : " + TopSolidHost.Pdm.GetName(projId));
 
-                // Folder path
-                try
-                {
-                    var folderId = TopSolidHost.Pdm.GetContainer(pdmId);
-                    if (!folderId.IsEmpty)
-                        sb.AppendLine("Folder     : " + TopSolidHost.Pdm.GetName(folderId));
-                }
-                catch { /* GetContainer may not be available in all versions */ }
-
                 // ── Standard PDM properties ──
                 sb.AppendLine("\n── PDM Properties ──");
 
