@@ -1,12 +1,12 @@
 # Outils MCP
 
-Le serveur expose **17 outils** au protocole MCP. L'agent IA les appelle via JSON-RPC — sur stdin/stdout (mode stdio) ou via HTTP/SSE (mode bridge).
+Le serveur expose **13 outils** au protocole MCP. L'agent IA les appelle via JSON-RPC — sur stdin/stdout (mode stdio) ou via HTTP/SSE (mode bridge).
 
 ## topsolid_run_recipe
 
 **L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.
 
-**129 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles, creation de geometrie (parametres Smart, esquisses, extrusions, inclusions).
+**132 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles, creation de geometrie (parametres Smart, esquisses, extrusions, inclusions).
 
 ```json
 { "name": "topsolid_run_recipe", "arguments": { "recipe": "read_mass_volume" } }
@@ -204,117 +204,41 @@ Retourne : nom de la commande, FullName, domaine, description. Index charge depu
 
 **Sans TopSolid connecte.**
 
-## topsolid_list_documents (v1.6.6+)
+## Recettes batch PDM (v1.6.7+)
 
-Liste les documents du projet PDM courant. Filtres optionnels : dossier, extension, recursif.
+Les operations batch PDM sont exposees comme **recettes** via `topsolid_run_recipe`, pas comme outils dedies. C'est le pattern recommande — uniforme, coherent avec le reste du catalogue.
+
+### batch_set_designation
+
+Applique la meme designation (Description PDM) a **tous** les documents du projet courant.
 
 ```json
-{
-  "name": "topsolid_list_documents",
-  "arguments": { "folder": "Pieces", "extension": ".TopPrt", "recursive": true }
-}
+{ "name": "topsolid_run_recipe", "arguments": { "recipe": "batch_set_designation", "value": "Bride de fixation" } }
 ```
-
-Parametres :
-- `folder` *(optionnel)* : nom du dossier dans le projet. Par defaut : racine du projet.
-- `extension` *(optionnel)* : filtre par extension — `.TopPrt`, `.TopAsm`, `.TopDrf`, etc.
-- `recursive` *(optionnel, defaut false)* : inclure les sous-dossiers.
 
 Reponse type :
 ```
-Project: MonProjet
-[Pieces/]
-  Bride.TopPrt
-  Axe.TopPrt
-Total: 2 document(s)
+OK: Designation set to 'Bride de fixation' on 12 document(s).
 ```
 
-**Necessite TopSolid connecte.**
+### batch_set_reference
 
-## topsolid_list_elements (v1.6.6+)
-
-Liste les elements du document actif. Filtre optionnel par type : `Parameter`, `Sketch`, `Shape`, `Part`.
+Applique la meme reference (PartNumber PDM) a tous les documents du projet courant.
 
 ```json
-{
-  "name": "topsolid_list_elements",
-  "arguments": { "typeFilter": "Parameter" }
-}
+{ "name": "topsolid_run_recipe", "arguments": { "recipe": "batch_set_reference", "value": "BRD-001" } }
 ```
 
-Sans `typeFilter` : liste tous les types disponibles (parametres, esquisses, solides, pieces d'assemblage).
+### batch_set_manufacturer
 
-Reponse type :
-```
-Document: MaPiece
-
-Parameters (3):
-  Longueur
-  Largeur
-  Epaisseur
-
-Sketches (1):
-  Esquisse_Rectangle
-```
-
-**Necessite TopSolid connecte avec un document ouvert.**
-
-## topsolid_modify_documents (v1.6.6+)
-
-Modifie en batch les proprietes PDM standard de plusieurs documents. Actions : `set_description`, `set_partNumber`, `set_manufacturer`.
+Applique le meme fabricant a tous les documents du projet courant.
 
 ```json
-{
-  "name": "topsolid_modify_documents",
-  "arguments": {
-    "documents": ["Piece1.TopPrt", "Piece2.TopPrt"],
-    "action": "set_description",
-    "value": "Bride de fixation"
-  }
-}
+{ "name": "topsolid_run_recipe", "arguments": { "recipe": "batch_set_manufacturer", "value": "Acme Corp" } }
 ```
 
-Parametres :
-- `documents` : tableau de noms de documents dans le projet courant.
-- `action` : `set_description` | `set_partNumber` | `set_manufacturer`
-- `value` : valeur a appliquer.
-
-::: tip Proprietes utilisateur
-Pour modifier une propriete utilisateur, utilisez `topsolid_run_recipe` avec la recette `set_user_property`.
+::: tip Proprietes unitaires et utilisateur
+- Pour modifier la designation d'un seul document : recette `set_designation`
+- Pour les proprietes utilisateur : recette `set_user_property`
+- Pour lister les documents du projet : recette `list_project_documents` ou `list_folder_documents`
 :::
-
-Reponse type :
-```
-Action: set_description = "Bride de fixation"
-  OK    Piece1.TopPrt
-  OK    Piece2.TopPrt
-
-Result: 2 succeeded, 0 failed.
-```
-
-**Necessite TopSolid connecte.**
-
-## topsolid_get_document_info (v1.6.6+)
-
-Retourne les informations PDM detaillees du document actif : nom, type (piece/assemblage), projet, designation, reference, fabricant.
-
-```json
-{ "name": "topsolid_get_document_info", "arguments": {} }
-```
-
-Reponse type :
-```
-Name       : Bride_Fixation
-Extension  : .TopPrt
-Type       : Part
-Project    : MonProjet
-
-── PDM Properties ──
-Description: Bride de fixation principale
-PartNumber : BRD-001
-Manufacturer: (empty)
-```
-
-Complement a `topsolid_get_state` (qui donne juste le nom + type + projet) : `get_document_info` ajoute toutes les proprietes PDM.
-
-**Necessite TopSolid connecte avec un document ouvert.**

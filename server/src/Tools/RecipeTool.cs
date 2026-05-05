@@ -259,6 +259,111 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"Parameter '\" + pName + \"' not found.\";") },
 
+            { "creer_parametre_reel", RW("Creates a new real parameter in the active document. " +
+                "Param: value=name:unit:SIvalue (e.g. Longueur:Length:0.05 for 50mm) or name::SIvalue for NoUnit. " +
+                "Supported units: Length, Mass, Angle, NoUnit.",
+                "string[] parts = \"{value}\".Split(':');\n" +
+                "if (parts.Length < 2) { __message = \"Format: name:unit:SIvalue (e.g. Longueur:Length:0.05)\"; return; }\n" +
+                "string paramName = parts[0].Trim();\n" +
+                "string unitStr = parts.Length >= 3 ? parts[1].Trim() : \"\";\n" +
+                "string valStr = parts.Length >= 3 ? parts[2].Trim() : parts[1].Trim();\n" +
+                "double siVal;\n" +
+                "if (!double.TryParse(valStr, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out siVal))\n" +
+                "    { __message = \"Invalid SI value: \" + valStr; return; }\n" +
+                "UnitType unit;\n" +
+                "switch (unitStr.ToLowerInvariant()) {\n" +
+                "    case \"length\": unit = UnitType.Length; break;\n" +
+                "    case \"mass\":   unit = UnitType.Mass;   break;\n" +
+                "    case \"angle\":  unit = UnitType.Angle;  break;\n" +
+                "    default:       unit = UnitType.NoUnit; break;\n" +
+                "}\n" +
+                "if (string.IsNullOrWhiteSpace(paramName)) { __message = \"Parameter name cannot be empty.\"; return; }\n" +
+                "ElementId paramId = TopSolidHost.Parameters.CreateRealParameter(docId, unit, siVal);\n" +
+                "TopSolidHost.Elements.SetName(paramId, paramName);\n" +
+                "__message = \"OK: parameter '\" + paramName + \"' created (\" + unit + \", value=\" + siVal.ToString(\"F6\") + \")\";") },
+
+            { "creer_parametre_formule", RW("Creates a new formula-driven real parameter in the active document. " +
+                "Param: value=name:unit:formula (e.g. DiagBolt:Length:Longueur * 1.414). " +
+                "The formula uses TopSolid expression syntax (parameter names, operators, SI units). " +
+                "Supported units: Length, Mass, Angle, NoUnit.",
+                "int sep1 = \"{value}\".IndexOf(':');\n" +
+                "if (sep1 < 0) { __message = \"Format: name:unit:formula\"; return; }\n" +
+                "int sep2 = \"{value}\".IndexOf(':', sep1 + 1);\n" +
+                "if (sep2 < 0) { __message = \"Format: name:unit:formula (unit required)\"; return; }\n" +
+                "string paramName = \"{value}\".Substring(0, sep1).Trim();\n" +
+                "string unitStr = \"{value}\".Substring(sep1 + 1, sep2 - sep1 - 1).Trim();\n" +
+                "string formula = \"{value}\".Substring(sep2 + 1).Trim();\n" +
+                "if (string.IsNullOrWhiteSpace(paramName)) { __message = \"Parameter name cannot be empty.\"; return; }\n" +
+                "if (string.IsNullOrWhiteSpace(formula)) { __message = \"Formula cannot be empty.\"; return; }\n" +
+                "UnitType unit;\n" +
+                "switch (unitStr.ToLowerInvariant()) {\n" +
+                "    case \"length\": unit = UnitType.Length; break;\n" +
+                "    case \"mass\":   unit = UnitType.Mass;   break;\n" +
+                "    case \"angle\":  unit = UnitType.Angle;  break;\n" +
+                "    default:       unit = UnitType.NoUnit; break;\n" +
+                "}\n" +
+                "ElementId paramId = TopSolidHost.Parameters.CreateSmartRealParameter(docId, new SmartReal(unit, formula));\n" +
+                "TopSolidHost.Elements.SetName(paramId, paramName);\n" +
+                "__message = \"OK: formula parameter '\" + paramName + \"' created (\" + unit + \", formula='\" + formula + \"')\";") },
+
+            { "creer_esquisse_rectangle", RW("Cree une esquisse 2D rectangulaire dans le document actif. Param: value=largeur:hauteur (mm)",
+                "string[] parts = \"{value}\".Split(':');\n" +
+                "if (parts.Length < 2) { __message = \"ERROR: format attendu largeur:hauteur (mm)\"; return; }\n" +
+                "double widthMm, heightMm;\n" +
+                "if (!double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out widthMm) ||\n" +
+                "    !double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out heightMm))\n" +
+                "    { __message = \"ERROR: valeurs numeriques invalides\"; return; }\n" +
+                "double w = widthMm * 0.001;\n" +
+                "double h = heightMm * 0.001;\n" +
+                "// On utilise docId mis a jour par le wrapper (EnsureIsDirty)\n" +
+                "ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn2D(docId, new SmartPoint2D(Point2D.O), new SmartDirection2D(Direction2D.DX), false);\n" +
+                "TopSolidHost.Elements.SetName(sketchId, \"Esquisse_Rectangle\");\n" +
+                "TopSolidHost.Sketches2D.StartModification(sketchId);\n" +
+                "ElementItemId pt1 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(0, 0));\n" +
+                "ElementItemId pt2 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(w, 0));\n" +
+                "ElementItemId pt3 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(w, h));\n" +
+                "ElementItemId pt4 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(0, h));\n" +
+                "var segs = new List<ElementItemId>();\n" +
+                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt1, pt2));\n" +
+                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt2, pt3));\n" +
+                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt3, pt4));\n" +
+                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1));\n" +
+                "TopSolidHost.Sketches2D.CreateProfile(segs);\n" +
+                "TopSolidHost.Sketches2D.EndModification();\n" +
+                "__message = \"OK: esquisse Esquisse_Rectangle creee (\" + widthMm + \"x\" + heightMm + \" mm)\";") },
+
+            { "extruder_esquisse", RW("Extrude la derniere esquisse 2D du document actif en solide 3D. Param: value=hauteur_mm",
+                "double heightMm;\n" +
+                "if (!double.TryParse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out heightMm))\n" +
+                "    { __message = \"ERROR: hauteur numerique invalide\"; return; }\n" +
+                "double heightM = heightMm * 0.001;\n" +
+                "var sketches = TopSolidHost.Sketches2D.GetSketches(docId);\n" +
+                "if (sketches == null || sketches.Count == 0)\n" +
+                "    { __message = \"ERROR: aucune esquisse dans ce document\"; return; }\n" +
+                "ElementId lastSketch = sketches[sketches.Count - 1];\n" +
+                "TopSolidHost.Shapes.CreateExtrudedShape(docId, new SmartSection3D(lastSketch), SmartDirection3D.DZ, new SmartReal(UnitType.Length, heightM), new SmartReal(UnitType.Angle, 0), false, false);\n" +
+                "__message = \"OK: extrusion de \" + heightMm + \"mm creee\";") },
+
+            { "ajouter_inclusion", RW("Ajoute une inclusion d'un document piece dans le document assemblage actif. Param: value=nom_document_piece",
+                "if (!TopSolidDesignHost.Assemblies.IsAssembly(docId))\n" +
+                "    { __message = \"ERROR: le document actif n'est pas un assemblage\"; return; }\n" +
+                "DocumentId partDoc = DocumentId.Empty;\n" +
+                "string targetName = \"{value}\".Trim();\n" +
+                "var allDocs = TopSolidHost.Documents.GetOpenDocuments();\n" +
+                "foreach (DocumentId d in allDocs) {\n" +
+                "    string docName = \"\";\n" +
+                "    try { docName = TopSolidHost.Documents.GetName(d); } catch { continue; }\n" +
+                "    if (docName == targetName || docName.StartsWith(targetName + \".\")) {\n" +
+                "        partDoc = d;\n" +
+                "        break;\n" +
+                "    }\n" +
+                "}\n" +
+                "if (partDoc.IsEmpty)\n" +
+                "    { __message = \"ERROR: document '\" + targetName + \"' introuvable (ouvrir le document d'abord)\"; return; }\n" +
+                "ElementId positioningId = TopSolidDesignHost.Assemblies.CreatePositioning(docId);\n" +
+                "TopSolidDesignHost.Assemblies.CreateInclusion(docId, positioningId, null, partDoc, null, null, null, true, ElementId.Empty, ElementId.Empty, false, false, false, false, Transform3D.Identity, false);\n" +
+                "__message = \"OK: document '\" + targetName + \"' inclus dans l'assemblage\";") },
+
             // =====================================================================
             // GEOMETRY — Read
             // =====================================================================
@@ -799,123 +904,14 @@ namespace TopSolidMcpServer.Tools
                 "return \"OK: Exported to PDF → \" + path;") },
 
             // =====================================================================
-            // USER PROPERTIES (M-60: fixed + new)
+            // USER PROPERTIES
             // =====================================================================
-            // Fixed: the legacy GetTextUserProperty(pdmId, string) overload does
-            // not exist in the API — it expects a PdmObjectId property pointer.
-            // The portable path is: iterate document parameters, filter those
-            // with a non-empty UserPropertyDefinition, match by name.
-            { "read_user_property", R("Reads a user property (text or real) by its visible name. Param: value=property_name",
+            { "read_user_property", R("Reads a text user property. Param: value=property_name",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "string pName = (\"{value}\" ?? \"\").Trim();\n" +
-                "if (pName.Length == 0) return \"ERROR: value=property_name required.\";\n" +
-                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
-                "foreach (var p in pList)\n" +
-                "{\n" +
-                "    DocumentId def; try { def = TopSolidHost.Parameters.GetUserPropertyDefinition(p); } catch { continue; }\n" +
-                "    if (def.IsEmpty) continue;\n" +
-                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
-                "    if (!name.Equals(pName, StringComparison.OrdinalIgnoreCase) && name.IndexOf(pName, StringComparison.OrdinalIgnoreCase) < 0) continue;\n" +
-                "    var pType = TopSolidHost.Parameters.GetParameterType(p);\n" +
-                "    if (pType == ParameterType.Text) return \"UserProp '\" + name + \"': \\\"\" + TopSolidHost.Parameters.GetTextValue(p) + \"\\\"\";\n" +
-                "    if (pType == ParameterType.Real) return \"UserProp '\" + name + \"': \" + TopSolidHost.Parameters.GetRealValue(p).ToString(\"F6\");\n" +
-                "    if (pType == ParameterType.Integer) return \"UserProp '\" + name + \"': \" + TopSolidHost.Parameters.GetIntegerValue(p);\n" +
-                "    if (pType == ParameterType.Boolean) return \"UserProp '\" + name + \"': \" + TopSolidHost.Parameters.GetBooleanValue(p);\n" +
-                "    return \"UserProp '\" + name + \"' (type \" + pType + \", use read_parameter for full access).\";\n" +
-                "}\n" +
-                "return \"User property '\" + pName + \"' not found. Use list_user_properties to list defined ones.\";") },
-
-            { "list_user_properties", R("Lists all user properties defined on the document with their current value",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
-                "var sb = new System.Text.StringBuilder();\n" +
-                "int count = 0;\n" +
-                "foreach (var p in pList)\n" +
-                "{\n" +
-                "    DocumentId def; try { def = TopSolidHost.Parameters.GetUserPropertyDefinition(p); } catch { continue; }\n" +
-                "    if (def.IsEmpty) continue;\n" +
-                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
-                "    var pType = TopSolidHost.Parameters.GetParameterType(p);\n" +
-                "    string val = \"?\";\n" +
-                "    try {\n" +
-                "        if (pType == ParameterType.Text) val = \"\\\"\" + TopSolidHost.Parameters.GetTextValue(p) + \"\\\"\";\n" +
-                "        else if (pType == ParameterType.Real) val = TopSolidHost.Parameters.GetRealValue(p).ToString(\"F6\");\n" +
-                "        else if (pType == ParameterType.Integer) val = TopSolidHost.Parameters.GetIntegerValue(p).ToString();\n" +
-                "        else if (pType == ParameterType.Boolean) val = TopSolidHost.Parameters.GetBooleanValue(p).ToString();\n" +
-                "    } catch { val = \"(unreadable)\"; }\n" +
-                "    sb.AppendLine(\"  \" + name + \" [\" + pType + \"] = \" + val);\n" +
-                "    count++;\n" +
-                "}\n" +
-                "if (count == 0) return \"No user properties defined on this document.\";\n" +
-                "return \"User properties: \" + count + \"\\n\" + sb.ToString();") },
-
-            { "set_user_property", RW("Sets a user property by its visible name. Param: value=property_name:new_value (auto-typed)",
-                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
-                "int idx = \"{value}\".IndexOf(':');\n" +
-                "if (idx < 0) { __message = \"Format: property_name:new_value\"; return; }\n" +
-                "string pName = \"{value}\".Substring(0, idx).Trim();\n" +
-                "string newVal = \"{value}\".Substring(idx + 1).Trim();\n" +
-                "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
-                "foreach (var p in pList)\n" +
-                "{\n" +
-                "    DocumentId def; try { def = TopSolidHost.Parameters.GetUserPropertyDefinition(p); } catch { continue; }\n" +
-                "    if (def.IsEmpty) continue;\n" +
-                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
-                "    if (!name.Equals(pName, StringComparison.OrdinalIgnoreCase) && name.IndexOf(pName, StringComparison.OrdinalIgnoreCase) < 0) continue;\n" +
-                "    var pType = TopSolidHost.Parameters.GetParameterType(p);\n" +
-                "    if (pType == ParameterType.Text) { TopSolidHost.Parameters.SetTextValue(p, newVal); __message = \"OK: UserProp '\" + name + \"' = \\\"\" + newVal + \"\\\"\"; return; }\n" +
-                "    if (pType == ParameterType.Real) {\n" +
-                "        double d;\n" +
-                "        if (!double.TryParse(newVal, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d)) { __message = \"ERROR: '\" + newVal + \"' is not a valid real number.\"; return; }\n" +
-                "        TopSolidHost.Parameters.SetRealValue(p, d);\n" +
-                "        __message = \"OK: UserProp '\" + name + \"' = \" + d.ToString(\"F6\"); return;\n" +
-                "    }\n" +
-                "    if (pType == ParameterType.Integer) {\n" +
-                "        int iv; if (!int.TryParse(newVal, out iv)) { __message = \"ERROR: '\" + newVal + \"' is not a valid integer.\"; return; }\n" +
-                "        TopSolidHost.Parameters.SetIntegerValue(p, iv);\n" +
-                "        __message = \"OK: UserProp '\" + name + \"' = \" + iv; return;\n" +
-                "    }\n" +
-                "    if (pType == ParameterType.Boolean) {\n" +
-                "        bool bv = newVal.Equals(\"true\", StringComparison.OrdinalIgnoreCase) || newVal == \"1\";\n" +
-                "        TopSolidHost.Parameters.SetBooleanValue(p, bv);\n" +
-                "        __message = \"OK: UserProp '\" + name + \"' = \" + bv; return;\n" +
-                "    }\n" +
-                "    __message = \"ERROR: UserProp '\" + name + \"' has type \" + pType + \" — not supported.\"; return;\n" +
-                "}\n" +
-                "__message = \"User property '\" + pName + \"' not found. Use list_user_properties.\";") },
-
-            { "list_document_properties", R("Lists all document properties (system + user) via IDocuments.GetProperties. Useful to discover fullName format.",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "List<string> props;\n" +
-                "try { props = TopSolidHost.Documents.GetProperties(docId); }\n" +
-                "catch (Exception ex) { return \"ERROR: \" + ex.Message; }\n" +
-                "if (props == null || props.Count == 0) return \"No properties reported by IDocuments.GetProperties.\";\n" +
-                "var sb = new System.Text.StringBuilder();\n" +
-                "sb.AppendLine(\"Properties: \" + props.Count);\n" +
-                "foreach (var fn in props)\n" +
-                "{\n" +
-                "    string t = \"?\"; try { t = TopSolidHost.Documents.GetPropertyType(docId, fn).ToString(); } catch {}\n" +
-                "    sb.AppendLine(\"  \" + fn + \"  [\" + t + \"]\");\n" +
-                "}\n" +
-                "return sb.ToString();") },
-
-            { "read_document_property", R("Reads any document property by its full name (auto-detects type). Param: value=fullName (from list_document_properties)",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "string fn = (\"{value}\" ?? \"\").Trim();\n" +
-                "if (fn.Length == 0) return \"ERROR: value=fullName required (use list_document_properties).\";\n" +
-                "try {\n" +
-                "    var t = TopSolidHost.Documents.GetPropertyType(docId, fn);\n" +
-                "    if (t == PropertyType.Text) return \"'\" + fn + \"' [Text] = \\\"\" + TopSolidHost.Documents.GetPropertyTextValue(docId, fn) + \"\\\"\";\n" +
-                "    if (t == PropertyType.Real) return \"'\" + fn + \"' [Real] = \" + TopSolidHost.Documents.GetPropertyRealValue(docId, fn).ToString(\"F6\");\n" +
-                "    if (t == PropertyType.Integer) return \"'\" + fn + \"' [Integer] = \" + TopSolidHost.Documents.GetPropertyIntegerValue(docId, fn);\n" +
-                "    if (t == PropertyType.Boolean) return \"'\" + fn + \"' [Boolean] = \" + TopSolidHost.Documents.GetPropertyBooleanValue(docId, fn);\n" +
-                "    if (t == PropertyType.DateTime) return \"'\" + fn + \"' [DateTime] = \" + TopSolidHost.Documents.GetPropertyDateTimeValue(docId, fn).ToString(\"u\");\n" +
-                "    return \"'\" + fn + \"' [\" + t + \"] — type not supported by this recipe.\";\n" +
-                "} catch (Exception ex) { return \"ERROR: \" + ex.Message; }") },
+                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "string val = TopSolidHost.Pdm.GetTextUserProperty(pdmId, \"{value}\");\n" +
+                "return string.IsNullOrEmpty(val) ? \"Propriete '{value}': (empty)\" : \"Propriete '{value}': \" + val;") },
 
             // =====================================================================
             // PART AUDIT — High-value composite scenarios
@@ -1104,80 +1100,19 @@ namespace TopSolidMcpServer.Tools
                 "__message = \"Occurrence '\" + oldName + \"' not found.\";") },
 
             // =====================================================================
-            // OCCURRENCES — Additional recipes (M-60)
+            // USER PROPERTIES — Ecriture
             // =====================================================================
-            { "count_occurrences", R("Counts occurrences in the active assembly (total + inclusions + unique parts)",
+            { "set_user_property", R("Sets a text user property. Param: value=property_name:value",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "bool isAsm = false;\n" +
-                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Not an assembly.\"; }\n" +
-                "if (!isAsm) return \"Not an assembly.\";\n" +
-                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
-                "int inclusions = 0;\n" +
-                "var uniqueDocs = new HashSet<string>();\n" +
-                "foreach (var p in parts)\n" +
-                "{\n" +
-                "    bool isOcc = false; try { isOcc = TopSolidHost.Entities.IsOccurrence(p); } catch { }\n" +
-                "    if (isOcc) inclusions++;\n" +
-                "    DocumentId defDoc = DocumentId.Empty;\n" +
-                "    try { defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(p); } catch { }\n" +
-                "    if (!defDoc.IsEmpty) {\n" +
-                "        PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(defDoc);\n" +
-                "        uniqueDocs.Add(TopSolidHost.Pdm.GetName(pdm));\n" +
-                "    }\n" +
-                "}\n" +
-                "return \"Parts: \" + parts.Count + \"  Inclusions (occurrences): \" + inclusions + \"  Unique definitions: \" + uniqueDocs.Count;") },
-
-            { "list_inclusions_with_reference", R("For each inclusion in the assembly, list its occurrence name + PDM reference + designation of the definition document",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "bool isAsm = false;\n" +
-                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Not an assembly.\"; }\n" +
-                "if (!isAsm) return \"Not an assembly.\";\n" +
-                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
-                "var sb = new System.Text.StringBuilder();\n" +
-                "int count = 0;\n" +
-                "foreach (var p in parts)\n" +
-                "{\n" +
-                "    bool isOcc = false; try { isOcc = TopSolidHost.Entities.IsOccurrence(p); } catch { continue; }\n" +
-                "    if (!isOcc) continue;\n" +
-                "    string occName = TopSolidHost.Elements.GetFriendlyName(p);\n" +
-                "    DocumentId defDoc = DocumentId.Empty;\n" +
-                "    try { defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(p); } catch { }\n" +
-                "    string defName = \"?\"; string defRef = \"\"; string defDesc = \"\";\n" +
-                "    if (!defDoc.IsEmpty) {\n" +
-                "        PdmObjectId pdm = TopSolidHost.Documents.GetPdmObject(defDoc);\n" +
-                "        defName = TopSolidHost.Pdm.GetName(pdm);\n" +
-                "        try { defRef = TopSolidHost.Pdm.GetPartNumber(pdm); } catch { }\n" +
-                "        try { defDesc = TopSolidHost.Pdm.GetDescription(pdm); } catch { }\n" +
-                "    }\n" +
-                "    sb.AppendLine(\"  [\" + count + \"] \" + occName + \"  ->  \" + defName + (string.IsNullOrEmpty(defRef) ? \"\" : \" (ref=\" + defRef + \")\") + (string.IsNullOrEmpty(defDesc) ? \"\" : \" — \" + defDesc));\n" +
-                "    count++;\n" +
-                "}\n" +
-                "if (count == 0) return \"No inclusions found.\";\n" +
-                "return \"Inclusions: \" + count + \"\\n\" + sb.ToString();") },
-
-            { "find_occurrence", R("Finds an occurrence by name (substring match). Param: value=name_fragment",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "bool isAsm = false;\n" +
-                "try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return \"Not an assembly.\"; }\n" +
-                "if (!isAsm) return \"Not an assembly.\";\n" +
-                "string q = (\"{value}\" ?? \"\").Trim();\n" +
-                "if (q.Length == 0) return \"ERROR: value=name_fragment required.\";\n" +
-                "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
-                "var sb = new System.Text.StringBuilder();\n" +
-                "int count = 0;\n" +
-                "foreach (var p in parts)\n" +
-                "{\n" +
-                "    string name = TopSolidHost.Elements.GetFriendlyName(p);\n" +
-                "    if (name.IndexOf(q, StringComparison.OrdinalIgnoreCase) < 0) continue;\n" +
-                "    bool isOcc = false; try { isOcc = TopSolidHost.Entities.IsOccurrence(p); } catch { }\n" +
-                "    sb.AppendLine(\"  \" + name + (isOcc ? \" [occ]\" : \"\"));\n" +
-                "    count++;\n" +
-                "}\n" +
-                "if (count == 0) return \"No occurrence matches '\" + q + \"'.\";\n" +
-                "return \"Matches: \" + count + \"\\n\" + sb.ToString();") },
+                "int idx = \"{value}\".IndexOf(':');\n" +
+                "if (idx < 0) return \"Format: property_name:value\";\n" +
+                "string propName = \"{value}\".Substring(0, idx).Trim();\n" +
+                "string propVal = \"{value}\".Substring(idx + 1).Trim();\n" +
+                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "TopSolidHost.Pdm.SetTextUserProperty(pdmId, propName, propVal);\n" +
+                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
+                "return \"OK: Property '\" + propName + \"' = '\" + propVal + \"'\";") },
 
             // =====================================================================
             // BOUNDING BOX / STOCK
@@ -1586,6 +1521,48 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "__message = \"OK: Author cleared on \" + cleared + \"/\" + docs.Count + \" documents.\";") },
+
+            { "batch_set_designation", RW("Sets Designation (Description) on ALL documents of the current project. Param: value=new_designation",
+                "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
+                "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
+                "TopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\n" +
+                "int updated = 0;\n" +
+                "foreach (var d in docs)\n" +
+                "{\n" +
+                "    TopSolidHost.Pdm.SetDescription(d, \"{value}\");\n" +
+                "    TopSolidHost.Pdm.Save(d, true);\n" +
+                "    updated++;\n" +
+                "}\n" +
+                "__message = \"OK: Designation set to '{value}' on \" + updated + \" document(s).\";") },
+
+            { "batch_set_reference", RW("Sets Reference (PartNumber) on ALL documents of the current project. Param: value=new_reference",
+                "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
+                "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
+                "TopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\n" +
+                "int updated = 0;\n" +
+                "foreach (var d in docs)\n" +
+                "{\n" +
+                "    TopSolidHost.Pdm.SetPartNumber(d, \"{value}\");\n" +
+                "    TopSolidHost.Pdm.Save(d, true);\n" +
+                "    updated++;\n" +
+                "}\n" +
+                "__message = \"OK: Reference set to '{value}' on \" + updated + \" document(s).\";") },
+
+            { "batch_set_manufacturer", RW("Sets Manufacturer on ALL documents of the current project. Param: value=new_manufacturer",
+                "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
+                "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
+                "TopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\n" +
+                "int updated = 0;\n" +
+                "foreach (var d in docs)\n" +
+                "{\n" +
+                "    TopSolidHost.Pdm.SetManufacturer(d, \"{value}\");\n" +
+                "    TopSolidHost.Pdm.Save(d, true);\n" +
+                "    updated++;\n" +
+                "}\n" +
+                "__message = \"OK: Manufacturer set to '{value}' on \" + updated + \" document(s).\";") },
 
             { "clear_document_author", RW("Clears the Author field on the current document",
                 "TopSolidHost.Pdm.SetAuthor(pdmId, \"\");\n" +

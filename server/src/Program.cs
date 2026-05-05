@@ -24,6 +24,21 @@ namespace TopSolidMcpServer
                 return;
             }
 
+            // --compile [file] flag for dry-run validation via CLI
+            if (args.Length > 1 && args[0] == "--compile")
+            {
+                string filePath = args[1];
+                if (!File.Exists(filePath))
+                {
+                    Console.WriteLine("Error: File not found: " + filePath);
+                    Environment.Exit(1);
+                }
+                string code = File.ReadAllText(filePath);
+                string result = ScriptExecutor.CompileOnly(code);
+                Console.WriteLine(result);
+                Environment.Exit(result.StartsWith("OK") ? 0 : 1);
+            }
+
             bool createdNew;
             using (var mutex = new Mutex(true, MutexName, out createdNew))
             {
@@ -164,18 +179,6 @@ namespace TopSolidMcpServer
 
                 var recipeTool = new RecipeTool(() => connector);
                 recipeTool.Register(registry);
-
-                var listDocumentsTool = new ListDocumentsTool(() => connector);
-                listDocumentsTool.Register(registry);
-
-                var listElementsTool = new ListElementsTool(() => connector);
-                listElementsTool.Register(registry);
-
-                var modifyDocumentsTool = new ModifyDocumentsTool(() => connector);
-                modifyDocumentsTool.Register(registry);
-
-                var getDocumentInfoTool = new GetDocumentInfoTool(() => connector);
-                getDocumentInfoTool.Register(registry);
 
                 var getRecipeTool = new GetRecipeTool();
                 getRecipeTool.Register(registry);

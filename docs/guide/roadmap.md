@@ -10,23 +10,23 @@
 | Phase 4 | Connexion TopSolid & execution scripts | 100% |
 | Phase 5 | Connaissance API (graphe enrichi, api_help, 52 synonymes) | 100% |
 | Phase 5b-e | Robustesse, qualite, fixes (66/66 tests) | 100% |
-| Phase 6 | 129 recettes Tier 1/2/3 + tests LIVE + graphe complet | 100% |
+| Phase 6 | 132 recettes Tier 1/2/3 + tests LIVE + graphe complet | 100% |
 | Phase 7 | Graphe multi-couche — Layer 2 Commands (2428 commandes) | 50% |
-| Phase 8 | Outils metier batch PDM (list/modify/info) | 100% |
+| Phase 8 | Recettes batch PDM (batch_set_designation/reference/manufacturer) | 100% |
 | Phase 9a | LoRA 3B v7 (96% eval, PROD) | 100% |
 | Phase 9b | Codestral 22B vanilla + enhanced Modelfile (PROD) | 100% |
 | Phase 10 | Test & validation complete | 85% |
 | Phase 11 | Bridge HTTP/SSE (mcp-proxy, Streamable HTTP + SSE legacy) | 100% |
 
-## Chiffres cles (2026-05-05, v1.6.6)
+## Chiffres cles (2026-05-05, v1.6.7)
 
 - **4119 edges** dans le graphe API
 - **1728 methodes** uniques couvertes, **242 nodes**, **46 interfaces**
 - **1194 edges** avec exemples reels (2174 snippets, 29%)
 - **85%** d'edges avec hints semantiques FR/EN, **90%** avec description
-- **129 recettes** RecipeTool (Tier 1/2/3 — PDM, parametres, export, assemblages, familles, mise en plan, BOM, creation, proprietes utilisateur)
+- **132 recettes** RecipeTool (Tier 1/2/3 — PDM, parametres, export, assemblages, familles, mise en plan, BOM, creation, proprietes utilisateur, batch PDM)
 - **2428 commandes UI** indexees en Layer 2 (outil `topsolid_search_commands`)
-- **17 outils MCP** : run_recipe, get_state, execute_script, modify_script, api_help, find_path, explore_paths, get_recipe, compile, search_examples, whats_new, search_help, search_commands, list_documents, list_elements, modify_documents, get_document_info
+- **13 outils MCP** : run_recipe, get_state, execute_script, modify_script, api_help, find_path, explore_paths, get_recipe, compile, search_examples, whats_new, search_help, search_commands
 - **2164 paires** dataset LoRA v7 (ShareGPT EN, eval 96%)
 - **5809 pages** d'aide en ligne indexees en SQLite FTS5 (~20 MB embedded)
 - `ministral-topsolid:latest` (3B LoRA v7, 96%) + `codestral:22b` (vanilla, 97.5% Pattern D)
