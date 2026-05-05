@@ -1,84 +1,66 @@
 # Integration avec un client MCP
 
-TopSolid MCP est un serveur [Model Context Protocol](https://modelcontextprotocol.io/) standard qui communique via stdin/stdout. Il fonctionne avec tous les clients IA compatibles MCP.
+TopSolid MCP supporte deux modes de connexion. Le bridge HTTP/SSE est recommande pour la majorite des cas.
 
-## Prerequis
+## Deux modes de connexion
 
-1. **TopSolid 7.15+** ouvert (teste sur 7.20)
-2. **TopSolidMcpServer.exe** telecharge depuis la [release GitHub](https://github.com/julien38300/topsolid-automation-mcp/releases)
-3. Decompresser le .zip dans un dossier, par exemple `C:\TopSolidMCP\`
+| | **Bridge HTTP/SSE** (recommande) | **Stdio direct** (alternatif) |
+|---|---|---|
+| Demarrage | `.\start-bridge.ps1` une fois | Automatique par le client |
+| Config client | `"url": "http://127.0.0.1:8080/mcp"` | `"command": "C:\\...\\TopSolidMcpServer.exe"` |
+| Multi-clients simultanes | Oui | Non (singleton) |
+| claude.ai web / app | Oui (via tunnel) | Non |
+| Node.js requis | Oui (18+) | Non |
 
-::: warning Verification rapide
-Ouvrez un terminal PowerShell dans le dossier de l'exe et tapez :
+**Pour demarrer le bridge :**
 ```powershell
-.\TopSolidMcpServer.exe
+cd C:\TopSolidMCP\bridge
+npm install        # premiere fois
+.\start-bridge.ps1
 ```
-Vous devez voir :
-```
-[MCP-INFO] TopSolid MCP Server starting...
-[MCP-INFO] Server ready. Listening on stdin.
-```
-Fermez avec `Ctrl+C`. Si vous voyez `Graph data not found`, placez `graph.json` dans un sous-dossier `data\` a cote de l'exe.
-:::
+Laissez le terminal ouvert. Le bridge reste actif jusqu'a ce que vous le fermiez.
+
+---
 
 ## Clients compatibles
 
-| Client | Support MCP stdio | Difficulte |
-|--------|-------------------|------------|
-| **Claude Desktop** | Oui | Facile |
-| **Claude Code** (terminal) | Oui | Facile |
-| **Cursor** | Oui | Facile |
-| **Windsurf** | Oui | Facile |
-| **VS Code + GitHub Copilot** | Oui (mode Agent) | Moyen |
-| **JetBrains + AI Assistant** | Oui | Moyen |
-| **Antigravity / Cline / Roo Code** | Oui | Moyen |
-| **Continue** | Oui | Moyen |
-| **OpenClaw** | Via sous-agent | Avance |
-| **ChatGPT Desktop** | Non | - |
-| **Copilot standalone** | Non | - |
-| **claude.ai (web + app)** | Non (HTTP/SSE uniquement) | - |
-
-::: warning claude.ai n'est pas Claude Desktop
-**claude.ai** (le site web + l'app Windows qui affiche Settings > Connecteurs) accepte uniquement les MCP **distants HTTP/SSE** via URL + OAuth. Le `TopSolidMcpServer.exe` est stdio local — il ne peut pas etre ajoute via cette dialog. Un MCP ajoute avec `claude mcp add` (CLI) existe dans Claude Code, pas sur claude.ai : les deux canaux sont independants.
-
-Pour utiliser TopSolid MCP depuis un navigateur, il faudrait envelopper le serveur stdio dans un pont HTTP/SSE — pas encore livre (voir roadmap M-80).
-:::
+| Client | Stdio | HTTP/SSE bridge | Notes |
+|--------|-------|-----------------|-------|
+| **Claude Desktop** | Oui | Oui | |
+| **Claude Code** (terminal) | Oui | Oui | |
+| **Cursor** | Oui | Oui | |
+| **Windsurf** | Oui | Oui | |
+| **VS Code + GitHub Copilot** | Oui | Oui | Mode Agent uniquement |
+| **JetBrains + AI Assistant** | Oui | Oui | |
+| **Antigravity / Cline / Roo Code** | Oui | Oui | |
+| **Continue** | Oui | Oui | |
+| **OpenClaw** | Via sous-agent | Via URL | Config `openclaw.json` |
+| **claude.ai** (web + app) | Non | Oui (tunnel requis) | Voir [bridge-http](./bridge-http) |
+| **ChatGPT Desktop** | Non | Non | Pas de support MCP local |
 
 ---
 
 ## Claude Desktop
 
-**Ou se trouve le fichier de config :**
+**Fichier de config :**
 ```
 %APPDATA%\Claude\claude_desktop_config.json
 ```
-Soit en clair : `C:\Users\VOTRE_NOM\AppData\Roaming\Claude\claude_desktop_config.json`
+Acces : Claude Desktop → menu hamburger → Settings → Developer → Edit Config.
 
-**Comment y acceder facilement :**
-1. Ouvrez Claude Desktop
-2. Cliquez le **menu hamburger** (3 barres, en haut a gauche)
-3. **Settings**
-4. **Developer** (dans la colonne de gauche)
-5. **Edit Config** (le bouton ouvre le fichier dans votre editeur)
-
-**Contenu a mettre :**
-
-```json
+::: code-group
+```json [Via bridge (recommande)]
 {
   "mcpServers": {
     "topsolid": {
-      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
+      "url": "http://127.0.0.1:8080/mcp"
     }
   }
 }
 ```
-
-::: tip Si le fichier contient deja du contenu
-Ne remplacez pas tout ! Ajoutez juste `"topsolid": {...}` dans le bloc `mcpServers` existant :
-```json
+```json [Via stdio]
 {
   "mcpServers": {
-    "mon-autre-serveur": { "..." },
     "topsolid": {
       "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
     }
@@ -87,22 +69,35 @@ Ne remplacez pas tout ! Ajoutez juste `"topsolid": {...}` dans le bloc `mcpServe
 ```
 :::
 
-**Apres modification :**
-- **Quittez completement** Claude Desktop (clic droit sur l'icone dans la zone de notification Windows > **Quit**)
-- Relancez Claude Desktop
-- Une icone **marteau** apparait en bas a droite du champ de saisie = le serveur est connecte
+Quittez completement Claude Desktop (clic droit icone notification > Quit) et relancez. L'icone marteau en bas du champ de saisie confirme la connexion.
 
 ---
 
 ## Claude Code (terminal)
 
-Claude Code utilise un fichier de configuration projet ou global.
+::: code-group
+```powershell [Via bridge (recommande)]
+claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp
+claude mcp list   # verification
+```
+```powershell [Via stdio]
+claude mcp add topsolid C:\TopSolidMCP\TopSolidMcpServer.exe
+```
+:::
 
-**Option 1 — Configuration projet** (recommande) :
+Ou en fichier `.mcp.json` a la racine du projet :
 
-Creez un fichier `.mcp.json` a la racine de votre projet :
-
-```json
+::: code-group
+```json [Via bridge]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```json [Via stdio]
 {
   "mcpServers": {
     "topsolid": {
@@ -111,40 +106,32 @@ Creez un fichier `.mcp.json` a la racine de votre projet :
   }
 }
 ```
-
-**Option 2 — Configuration globale :**
-
-Ajoutez dans `~/.claude/settings.json` :
-
-```json
-{
-  "mcpServers": {
-    "topsolid": {
-      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
-    }
-  }
-}
-```
-
-Relancez Claude Code. Les outils TopSolid apparaissent automatiquement.
+:::
 
 ---
 
 ## Cursor
 
-**Option A — Via l'interface (le plus simple) :**
-1. Ouvrez les Settings de Cursor (`Ctrl+,`)
-2. Cherchez **MCP** dans la barre de recherche
-3. Cliquez **Add new MCP server**
-4. Remplissez :
+**Option A — Via l'interface :**
+1. Settings (`Ctrl+,`) → MCP → Add new MCP server
+2. Remplissez :
    - **Name** : `topsolid`
-   - **Type** : `stdio`
-   - **Command** : `C:\TopSolidMCP\TopSolidMcpServer.exe`
+   - **Type** : `http` (ou `sse` pour la compat legacy)
+   - **URL** : `http://127.0.0.1:8080/mcp`
 
-**Option B — Via fichier** (pour partager la config) :
+**Option B — Via fichier** `%USERPROFILE%\.cursor\mcp.json` :
 
-Creez `%USERPROFILE%\.cursor\mcp.json` (configuration globale) :
-```json
+::: code-group
+```json [Via bridge (recommande)]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```json [Via stdio]
 {
   "mcpServers": {
     "topsolid": {
@@ -153,21 +140,25 @@ Creez `%USERPROFILE%\.cursor\mcp.json` (configuration globale) :
   }
 }
 ```
-
-Ou `.cursor/mcp.json` a la racine du projet (configuration projet).
-
-Redemarrez Cursor. Les outils apparaissent dans le mode **Agent** du chat.
+:::
 
 ---
 
 ## Windsurf
 
-**Option A — Via la palette de commandes :**
-1. `Ctrl+Shift+P`
-2. Tapez `Windsurf: Configure MCP Servers`
-3. Un fichier JSON s'ouvre, ajoutez :
+`Ctrl+Shift+P` → `Windsurf: Configure MCP Servers`, ou editez directement `%USERPROFILE%\.codeium\windsurf\mcp_config.json` :
 
-```json
+::: code-group
+```json [Via bridge (recommande)]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```json [Via stdio]
 {
   "mcpServers": {
     "topsolid": {
@@ -176,35 +167,30 @@ Redemarrez Cursor. Les outils apparaissent dans le mode **Agent** du chat.
   }
 }
 ```
-
-**Option B — Fichier direct :**
-
-Le fichier se trouve dans :
-```
-%USERPROFILE%\.codeium\windsurf\mcp_config.json
-```
-
-Creez le fichier et les dossiers parents s'ils n'existent pas.
-
-Redemarrez Windsurf.
+:::
 
 ---
 
 ## VS Code + GitHub Copilot
 
-GitHub Copilot supporte les serveurs MCP depuis VS Code 1.99+ (avril 2025), en mode **Agent** uniquement.
+GitHub Copilot supporte MCP depuis VS Code 1.99+ (avril 2025), en mode **Agent** uniquement.
 
-**Etape 1 — Activez MCP dans VS Code :**
-1. Ouvrez les Settings (`Ctrl+,`)
-2. Cherchez `mcp enabled`
-3. Cochez **Chat > Mcp: Enabled**
+**Etape 1 :** Settings (`Ctrl+,`) → cherchez `mcp enabled` → cochez **Chat > Mcp: Enabled**
 
-**Etape 2 — Ajoutez le serveur :**
+**Etape 2 :** Creez `.vscode/mcp.json` a la racine du projet :
 
-**Option A — Configuration projet** (recommande, se partage via git) :
-
-Creez `.vscode/mcp.json` a la racine du projet :
-```json
+::: code-group
+```json [Via bridge (recommande)]
+{
+  "servers": {
+    "topsolid": {
+      "type": "http",
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```json [Via stdio]
 {
   "servers": {
     "topsolid": {
@@ -214,41 +200,29 @@ Creez `.vscode/mcp.json` a la racine du projet :
   }
 }
 ```
-
-**Option B — settings.json global :**
-
-Ouvrez `%APPDATA%\Code\User\settings.json` et ajoutez :
-```json
-{
-  "mcp": {
-    "servers": {
-      "topsolid": {
-        "type": "stdio",
-        "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
-      }
-    }
-  }
-}
-```
+:::
 
 ::: warning Copilot Chat en mode Agent uniquement
-Les outils MCP apparaissent dans **Copilot Chat** (panneau lateral), pas dans l'autocompletion inline.
-En haut du panneau Chat, selectionnez le mode **Agent** (pas "Edit" ni "Ask").
+Selectionnez le mode **Agent** en haut du panneau Chat (pas "Edit" ni "Ask").
 :::
 
 ---
 
 ## JetBrains (IntelliJ, Rider, WebStorm...)
 
-MCP est supporte via le plugin **AI Assistant** integre (depuis 2025.1).
+**File** > **Settings** > **Tools** > **AI Assistant** > **Model Context Protocol (MCP)** > **+** > **As JSON** :
 
-1. **File** > **Settings** (`Ctrl+Alt+S`)
-2. **Tools** > **AI Assistant** > **Model Context Protocol (MCP)**
-3. Cliquez le bouton **+** (Add)
-4. Choisissez **As JSON**
-5. Collez :
-
-```json
+::: code-group
+```json [Via bridge (recommande)]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```json [Via stdio]
 {
   "mcpServers": {
     "topsolid": {
@@ -257,30 +231,30 @@ MCP est supporte via le plugin **AI Assistant** integre (depuis 2025.1).
   }
 }
 ```
+:::
 
-6. Cliquez **OK** et redemarrez l'IDE
-
-::: tip Import automatique depuis Claude Desktop
-Si vous avez deja configure Claude Desktop, cliquez **Import from Claude Desktop** dans l'ecran MCP de JetBrains — il reprend automatiquement vos serveurs.
+::: tip Import depuis Claude Desktop
+Si vous avez deja configure Claude Desktop, cliquez **Import from Claude Desktop** pour importer automatiquement.
 :::
 
 ---
 
 ## Antigravity / Cline / Roo Code
 
-Ces extensions VS Code ont leur **propre** gestion MCP, independante de VS Code.
+Ces extensions VS Code ont leur propre gestion MCP. Ouvrez leur panel → Settings → MCP Servers → Edit Config :
 
-### Antigravity (Gemini Code Assist)
-
-1. Ouvrez le panneau Antigravity dans VS Code (icone dans la barre laterale)
-2. Cliquez l'icone **engrenage** en haut du panneau
-3. Section **MCP Servers**
-4. Cliquez **Edit MCP Settings** — un fichier JSON s'ouvre
-
-**Si vous n'avez aucun serveur MCP configure :**
-
-Le fichier sera vide ou contiendra `{}`. Remplacez par :
-```json
+::: code-group
+```json [Via bridge (recommande)]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp",
+      "disabled": false
+    }
+  }
+}
+```
+```json [Via stdio]
 {
   "mcpServers": {
     "topsolid": {
@@ -290,36 +264,32 @@ Le fichier sera vide ou contiendra `{}`. Remplacez par :
   }
 }
 ```
+:::
 
-**Si vous avez deja des serveurs MCP :**
-
-Ajoutez `"topsolid"` dans le bloc `mcpServers` existant, **sans supprimer les autres** :
-```json
-{
-  "mcpServers": {
-    "mon-serveur-existant": { "command": "...", "disabled": false },
-    "topsolid": {
-      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe",
-      "disabled": false
-    }
-  }
-}
-```
-
-Sauvegardez (`Ctrl+S`). L'extension detecte le changement automatiquement.
-Verifiez dans le panneau MCP (icone prise electrique) que les 12 outils TopSolid apparaissent.
-
-### Cline / Roo Code
-
-Meme principe : **Settings** > **MCP Servers** > **Edit Config**, puis ajoutez le bloc `"topsolid"` comme ci-dessus.
+Sauvegardez (`Ctrl+S`). L'extension detecte le changement automatiquement. Verifiez que les outils TopSolid apparaissent dans le panneau MCP.
 
 ---
 
 ## Continue (VS Code / JetBrains)
 
-Continue est une extension open-source compatible MCP. Editez `~/.continue/config.json` :
+Editez `~/.continue/config.json` :
 
-```json
+::: code-group
+```json [Via bridge (recommande)]
+{
+  "experimental": {
+    "modelContextProtocolServers": [
+      {
+        "transport": {
+          "type": "http",
+          "url": "http://127.0.0.1:8080/mcp"
+        }
+      }
+    ]
+  }
+}
+```
+```json [Via stdio]
 {
   "experimental": {
     "modelContextProtocolServers": [
@@ -333,68 +303,97 @@ Continue est une extension open-source compatible MCP. Editez `~/.continue/confi
   }
 }
 ```
-
----
-
-## ChatGPT Desktop
-
-::: danger Non supporte
-ChatGPT Desktop **ne supporte pas** les serveurs MCP locaux en stdio (avril 2026).
-OpenAI travaille sur un support MCP via leur plateforme [mcp.run](https://mcp.run), mais c'est en beta fermee et uniquement pour les serveurs heberges dans le cloud — pas les executables locaux.
-
-**Alternative :** utilisez Claude Desktop, Cursor, ou Claude Code.
-:::
-
----
-
-## Copilot standalone (app desktop)
-
-::: danger Non supporte
-L'application Copilot standalone (anciennement Bing Chat) ne supporte pas les serveurs MCP.
-Pour utiliser MCP avec Copilot, passez par **VS Code + Copilot Chat** (voir section ci-dessus).
 :::
 
 ---
 
 ## OpenClaw
 
-Configuration avancee pour le framework multi-agents OpenClaw :
+Configuration pour le framework multi-agents OpenClaw.
 
-Le sous-agent TopSolid se configure dans `~/.openclaw/agents/topsolid/agent/system.md`.
-Le serveur MCP est lance automatiquement par OpenClaw via stdio. Chaque sous-agent a son propre workspace isole et ses outils MCP autorises (tool scoping via `openclaw.json`).
+Dans `~/.openclaw/openclaw.json`, le serveur MCP TopSolid peut etre configure en HTTP ou stdio :
+
+::: code-group
+```json [Via bridge (recommande)]
+{
+  "agents": {
+    "topsolid": {
+      "mcp": {
+        "topsolid": {
+          "url": "http://127.0.0.1:8080/mcp"
+        }
+      }
+    }
+  }
+}
+```
+```json [Via stdio]
+{
+  "agents": {
+    "topsolid": {
+      "mcp": {
+        "topsolid": {
+          "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
+        }
+      }
+    }
+  }
+}
+```
+:::
+
+Le sous-agent TopSolid est configure dans `~/.openclaw/agents/topsolid/agent/system.md`. Le skill et les tool permissions ne dependent pas du mode de transport.
 
 ---
 
-## Client generique
+## claude.ai (web + app Windows)
 
-Tout logiciel supportant le protocole MCP stdio peut utiliser le serveur.
-- **Commande** : chemin vers `TopSolidMcpServer.exe`
-- **Transport** : stdio (JSON-RPC 2.0 sur stdin/stdout)
-- **Arguments** : aucun
+claude.ai accepte uniquement des serveurs MCP distants via URL. Le bridge HTTP/SSE, expose via un tunnel, permet cette connexion.
+
+Voir le **[guide complet Bridge HTTP/SSE](./bridge-http)** pour l'installation pas-a-pas, la securite (Cloudflare Access) et le troubleshooting.
+
+Etapes resumees :
+1. Demarrez le bridge (`.\start-bridge.ps1`)
+2. Dans un second terminal : `cloudflared tunnel --url http://127.0.0.1:8080`
+3. Copiez l'URL `https://<random>.trycloudflare.com`
+4. claude.ai → Settings → Connecteurs → Ajouter → `https://<random>.trycloudflare.com/mcp`
+
+---
+
+## ChatGPT Desktop
+
+::: danger Non supporte
+ChatGPT Desktop ne supporte pas les serveurs MCP locaux (mai 2026). Utilisez Claude Desktop, Cursor ou Claude Code.
+:::
 
 ---
 
 ## Outils disponibles
 
-Une fois connecte, votre assistant IA dispose de **12 outils** :
+Une fois connecte, votre assistant IA dispose des outils suivants :
 
 | Outil | Description |
 |-------|-------------|
 | `topsolid_get_state` | Etat de connexion, document actif, projet courant |
-| `topsolid_run_recipe` | Execute une des 124 recettes pre-construites |
-| `topsolid_api_help` | Recherche dans 1728 methodes API (52 synonymes FR) |
+| `topsolid_run_recipe` | Execute une des 129 recettes pre-construites |
+| `topsolid_get_recipe` | Retourne le code source C# d'une recette |
+| `topsolid_api_help` | Recherche dans l'API TopSolid (1728 methodes, synonymes FR) |
 | `topsolid_execute_script` | Compile et execute du C# contre TopSolid (lecture seule) |
-| `topsolid_modify_script` | Compile et execute du C# (modification avec transaction, Pattern D auto) |
-| `topsolid_find_path` | Chemin Dijkstra entre types API |
+| `topsolid_modify_script` | Compile et execute du C# avec transaction (Pattern D auto) |
+| `topsolid_compile` | Compile-check Roslyn d'un script sans l'executer |
+| `topsolid_find_path` | Chemin Dijkstra entre types dans le graphe API |
 | `topsolid_explore_paths` | Exploration BFS multi-chemins |
-| `topsolid_get_recipe` **(v1.5.0+)** | Retourne le code C# source d'une recette |
-| `topsolid_compile` **(v1.5.1+)** | Compile-check Roslyn d'un script (dry-run) |
-| `topsolid_search_examples` **(v1.5.2+)** | Recherche dans les corpora prives locaux de l'utilisateur (non livres publiquement) |
-| `topsolid_whats_new` **(v1.5.2+)** | Diff API entre deux versions TopSolid |
-| `topsolid_search_help` **(v1.6.0+)** | FTS5 sur 5809 pages de l'aide en ligne |
+| `topsolid_search_help` | FTS5 sur 5809 pages de l'aide en ligne TopSolid |
+| `topsolid_search_commands` | Recherche dans 2428 commandes UI TopSolid (Layer 2) |
+| `topsolid_search_examples` | Recherche dans les corpora prives locaux (opt-in, env var) |
+| `topsolid_whats_new` | Diff API entre deux versions TopSolid |
+| `topsolid_list_documents` | Liste les documents du projet PDM courant |
+| `topsolid_list_elements` | Liste les elements du document actif (parametres, esquisses...) |
+| `topsolid_modify_documents` | Modifie en batch les proprietes PDM de plusieurs documents |
+| `topsolid_get_document_info` | Informations PDM detaillees du document actif |
 
 ::: tip Pour la plupart des usages
-`topsolid_run_recipe` suffit. Les 124 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature, audit et bien plus. Demandez simplement a votre assistant ce que vous voulez faire en francais.
+`topsolid_run_recipe` suffit. Les 129 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
 :::
 
 ---
@@ -402,23 +401,23 @@ Une fois connecte, votre assistant IA dispose de **12 outils** :
 ## Troubleshooting
 
 ### `Graph data not found at expected locations`
-Le fichier `graph.json` n'est pas au bon endroit. Le serveur cherche dans cet ordre :
+Le fichier `graph.json` n'est pas au bon endroit. Le serveur cherche dans :
 1. `data\graph.json` (sous-dossier a cote de l'exe)
-2. `graph.json` (a la racine, a cote de l'exe)
+2. `graph.json` (a cote de l'exe)
 3. En remontant 3 niveaux (mode developpement)
 
 ### `Another TopSolidMcpServer instance is already running`
-Le serveur est un singleton — une seule instance peut tourner a la fois.
-Fermez l'autre client IA qui utilise le serveur, ou forcez l'arret :
+Le serveur est un singleton (un seul processus). Avec le bridge, un seul processus sert tous les clients — ce message ne doit pas apparaitre.
+En mode stdio avec plusieurs clients, forcez l'arret :
 ```powershell
 Get-Process TopSolidMcpServer -ErrorAction SilentlyContinue | Stop-Process
 ```
 
 ### `Connect() retourne false`
-C'est **normal** sur TopSolid v7.20 (bug connu de TopSolid). Le serveur verifie la connexion via `TopSolidHost.Version > 0` a la place. Si les outils fonctionnent, tout va bien.
+Normal dans TopSolid v7.20 (bug connu). Le serveur verifie via `TopSolidHost.Version > 0` a la place. Si les outils fonctionnent, tout va bien.
 
-### Les outils n'apparaissent pas dans mon client
-1. Verifiez que **TopSolid est ouvert** avant de lancer votre client IA
-2. Verifiez le **chemin vers l'exe** (pas de guillemets manquants, doubles backslashs `\\` dans le JSON)
-3. **Quittez completement** votre client IA et relancez (pas juste fermer la fenetre)
-4. Verifiez les **logs** de votre client pour des erreurs MCP
+### Les outils n'apparaissent pas
+1. Verifiez que **TopSolid est ouvert** avant de lancer le client IA
+2. En mode bridge : verifiez que `.\start-bridge.ps1` tourne dans un terminal
+3. En mode stdio : verifiez le **chemin vers l'exe** (doubles backslashs `\\`)
+4. **Quittez completement** le client IA et relancez (pas juste fermer la fenetre)

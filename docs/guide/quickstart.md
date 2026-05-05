@@ -20,46 +20,101 @@ Sans cette option activee, le serveur MCP ne pourra pas se connecter a TopSolid.
 
 ## Etape 2 — Telecharger le serveur MCP
 
-### Option A — Telecharger (recommande)
-
 1. Aller sur la [page Releases](https://github.com/Julien38300/topsolid-automation-mcp/releases)
 2. Telecharger `TopSolidMcpServer.zip` de la derniere version
 3. Dezipper dans un dossier, par exemple `C:\TopSolidMCP\`
 
 C'est tout. L'executable `TopSolidMcpServer.exe` est pret a l'emploi.
 
-### Option B — Compiler depuis les sources (developpeurs)
-
+::: details Compiler depuis les sources (developpeurs)
 ```bash
 git clone https://github.com/Julien38300/topsolid-automation-mcp.git
 cd topsolid-automation-mcp/server
 dotnet build TopSolidMcpServer.sln
 ```
-
 L'executable sera dans `server/src/bin/Debug/net48/TopSolidMcpServer.exe`.
-
-## Etape 3 — Configurer votre assistant IA
-
-Choisissez votre client IA et ajoutez le serveur MCP :
-
-::: warning Stdio local vs HTTP distant
-`TopSolidMcpServer.exe` est un **MCP stdio local** — il tourne sur ta machine et communique par stdin/stdout. La plupart des clients de bureau (Claude Code CLI, Claude Desktop, VS Code, Cursor, Antigravity, OpenClaw) le supportent via un fichier de config.
-
-En revanche, **claude.ai** (le site web + l'app Windows) accepte uniquement des **MCP distants en HTTP/SSE** via Settings → Connecteurs → "Ajouter un connecteur personnalise" (qui demande une URL + OAuth). Le TopSolid MCP n'est pas compatible avec ce canal sans un pont HTTP dedicace.
-
-Même chose pour ChatGPT Desktop : pas de support stdio local (avril 2026, seuls les custom GPTs cloud).
 :::
 
-### Claude Code (CLI terminal)
+## Etape 3 — Demarrer le bridge HTTP/SSE (recommande)
+
+::: tip Pourquoi le bridge ?
+Le bridge lance le serveur **une seule fois** et l'expose comme un endpoint HTTP local. Tous vos clients IA s'y connectent via une simple URL — sans chemin vers l'exe, sans redemarrer les clients quand le serveur change, et avec la possibilite d'ouvrir le bridge a claude.ai web ou mobile via un tunnel.
+
+Sans bridge (mode stdio), chaque client IA relance un processus `TopSolidMcpServer.exe` separement. Ca marche, mais c'est plus lourd a configurer et le serveur singleton bloque le deuxieme client.
+:::
+
+**Prerequis : Node.js 18+** ([nodejs.org](https://nodejs.org/))
 
 ```powershell
-claude mcp add topsolid C:\TopSolidMCP\TopSolidMcpServer.exe
-claude mcp list   # verification
+cd C:\TopSolidMCP\bridge
+npm install          # premiere fois uniquement
+.\start-bridge.ps1   # demarre le bridge
 ```
 
-### Claude Desktop (app Windows)
+Sortie attendue :
+```
+[bridge] HTTP endpoint : http://127.0.0.1:8080/mcp   <- copiez cette URL
+[bridge] SSE (legacy)  : http://127.0.0.1:8080/sse
+[bridge] Auth          : NONE -- local only
+```
 
-Editez le fichier `%APPDATA%\Claude\claude_desktop_config.json` :
+Laissez ce terminal ouvert. Le bridge tourne tant que la fenetre est ouverte.
+
+## Etape 4 — Configurer votre assistant IA
+
+### Mode bridge (recommande) — une URL pour tous
+
+Une fois le bridge demarre, la config est identique pour tous les clients :
+
+::: code-group
+```json [Claude Desktop]
+// %APPDATA%\Claude\claude_desktop_config.json
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```powershell [Claude Code CLI]
+claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp
+```
+```json [Cursor / Windsurf]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```json [VS Code + Copilot]
+// .vscode/mcp.json
+{
+  "servers": {
+    "topsolid": {
+      "type": "http",
+      "url": "http://127.0.0.1:8080/mcp"
+    }
+  }
+}
+```
+```json [Antigravity]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp",
+      "disabled": false
+    }
+  }
+}
+```
+:::
+
+### Mode stdio (alternatif) — sans bridge, un client a la fois
+
+Si vous ne voulez pas utiliser le bridge ou n'avez pas Node.js :
 
 ```json
 {
@@ -71,45 +126,35 @@ Editez le fichier `%APPDATA%\Claude\claude_desktop_config.json` :
 }
 ```
 
-Puis redemarrez Claude Desktop. Le serveur apparait avec son icone "prise" dans la barre de saisie.
+::: warning Limite du mode stdio
+Le serveur est un singleton — un seul client IA peut l'utiliser a la fois. Le deuxieme client recevra `TopSolidMcpServer is already running`.
+:::
 
-### VS Code + GitHub Copilot
+---
 
-Dans VS Code, ouvrez les parametres (`Ctrl+,`), cherchez `mcp` et ajoutez dans `settings.json` :
+### claude.ai (web + app Windows)
 
-```json
-{
-  "github.copilot.chat.mcp.servers": {
-    "topsolid": {
-      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe"
-    }
-  }
-}
+claude.ai accepte uniquement des MCP distants via URL. Exposez le bridge avec un tunnel :
+
+```powershell
+# Dans un second terminal (bridge deja lance)
+cloudflared tunnel --url http://127.0.0.1:8080
+# -> https://<random>.trycloudflare.com
 ```
 
-### Cursor
+Dans claude.ai : **Settings → Connecteurs → Ajouter un connecteur personnalise** → `https://<random>.trycloudflare.com/mcp`
 
-Dans Cursor : **Settings > MCP Servers > Add Server**
+::: warning Securite
+Ne laissez pas le tunnel ouvert sans surveillance. Voir le [guide complet du bridge](./bridge-http) pour securiser avec Cloudflare Access.
+:::
 
-- Name : `topsolid`
-- Command : `C:\TopSolidMCP\TopSolidMcpServer.exe`
-- Type : `stdio`
-
-### Autres clients
-
-Tout client MCP compatible stdio fonctionne. Consultez le [guide d'integration complet](./integration) pour Claude Code, Antigravity, Windsurf, Continue, OpenClaw et plus.
-
-## Etape 4 — Tester
+## Etape 5 — Tester
 
 Dans votre assistant IA, demandez :
 
 > "Quelle est la designation de la piece ouverte dans TopSolid ?"
 
-L'assistant utilisera `topsolid_run_recipe` avec la recette `read_designation` et vous retournera la designation du document actif.
-
-::: tip Connect() retourne false ?
-C'est normal dans TopSolid v7.20. La connexion fonctionne quand meme. Verifiez que la version retournee est superieure a 0.
-:::
+L'assistant doit appeler `topsolid_run_recipe` avec la recette `read_designation` et retourner la designation du document actif.
 
 ## Ca ne marche pas ?
 
