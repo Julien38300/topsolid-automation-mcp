@@ -32,6 +32,41 @@ tasklist | findstr TopSolidMcpServer
 taskkill /F /IM TopSolidMcpServer.exe
 ```
 
+## Outils d'ecriture/execution echouent avec "DLL not found"
+
+**Symptome** : `topsolid_compile`, `topsolid_run_recipe`, `topsolid_execute_script` ou `topsolid_modify_script` retournent :
+
+```
+Error: TopSolid DLL not found at C:\Program Files\TOPSOLID\TopSolid 7.21\bin\...
+```
+
+**Cause** : le serveur n'a pas trouve votre installation TopSolid automatiquement.
+
+**Resolution (v1.6.8+)** : le serveur detecte automatiquement la version installee via le registre Windows. Si cela echoue encore, definissez la variable d'environnement `TOPSOLID_BIN_PATH` :
+
+```json
+{
+  "mcpServers": {
+    "topsolid": {
+      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe",
+      "env": {
+        "TOPSOLID_BIN_PATH": "C:\\Program Files\\TOPSOLID\\TopSolid 7.20\\bin"
+      }
+    }
+  }
+}
+```
+
+Remplacez `7.20` par votre version reelle (visible dans **Aide > A propos** dans TopSolid).
+
+**Resolution alternative (toutes versions)** : creer une jonction de repertoire en PowerShell admin :
+
+```powershell
+New-Item -ItemType Junction `
+  -Path "C:\Program Files\TOPSOLID\TopSolid 7.21" `
+  -Target "C:\Program Files\TOPSOLID\TopSolid 7.20"
+```
+
 ## Erreurs de compilation de scripts
 
 Le serveur compile du **C# 5** (.NET Framework 4.8). Les syntaxes C# 6+ ne sont pas supportees :

@@ -87,7 +87,7 @@ namespace TopSolidMcpServer
             // Register the TopSolid assembly resolver
             AppDomain.CurrentDomain.AssemblyResolve += (sender, resolveArgs) =>
             {
-                string topSolidBin = @"C:\Program Files\TOPSOLID\TopSolid 7.21\bin\";
+                string topSolidBin = TopSolidMcpServer.Utils.TopSolidPathResolver.Resolve();
                 string assemblyName = new System.Reflection.AssemblyName(resolveArgs.Name).Name;
                 string path = System.IO.Path.Combine(topSolidBin, assemblyName + ".dll");
                 return System.IO.File.Exists(path) ? System.Reflection.Assembly.LoadFrom(path) : null;
