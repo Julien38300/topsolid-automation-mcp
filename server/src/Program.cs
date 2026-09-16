@@ -40,7 +40,47 @@ namespace TopSolidMcpServer
             }
 
             bool createdNew;
-            using (var mutex = new Mutex(true, MutexName, out createdNew))
+            Mutex mutex;
+            try
+            {
+                // Full-control open (or create). Throws UnauthorizedAccessException when the
+                // existing Global\ mutex was created by another principal (e.g. the bridge
+                // child running as SYSTEM) and its default DACL denies us creation rights.
+                mutex = new Mutex(true, MutexName, out createdNew);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Mutex exists but was created by another session/principal (SYSTEM vs user).
+                // Fall back to opening it with SYNCHRONIZE-only rights: if WaitOne succeeds the
+                // owner exited (we take over); if it times out, another instance IS running.
+                createdNew = false;
+                mutex = null;
+                try
+                {
+                    var existing = Mutex.OpenExisting(MutexName, System.Security.AccessControl.MutexRights.Synchronize);
+                    bool acquired = false;
+                    try { acquired = existing.WaitOne(TimeSpan.FromSeconds(5)); }
+                    catch (AbandonedMutexException) { acquired = true; } // Previous instance crashed — we take over
+                    if (!acquired)
+                    {
+                        existing.Dispose();
+                        ReportAlreadyRunning();
+                        return;
+                    }
+                    // We took over an abandoned mutex — keep using it for the lifetime of the process.
+                    using (existing)
+                    {
+                        RunServer(args);
+                    }
+                    return;
+                }
+                catch (System.Threading.WaitHandleCannotBeOpenedException)
+                {
+                    // Gone between the two calls — create ours.
+                    mutex = new Mutex(true, MutexName, out createdNew);
+                }
+            }
+            using (mutex)
             {
                 if (!createdNew)
                 {
@@ -50,25 +90,7 @@ namespace TopSolidMcpServer
                     catch (AbandonedMutexException) { acquired = true; } // Previous instance crashed — we take over
                     if (!acquired)
                     {
-                        Console.Error.WriteLine("[Program] Another TopSolidMcpServer instance is already running. Exiting.");
-
-                        // Return a valid JSON-RPC error so OpenClaw doesn't retry
-                        var errorResponse = new
-                        {
-                            jsonrpc = "2.0",
-                            id = (object)null,
-                            error = new
-                            {
-                                code = -32000,
-                                message = "TopSolidMcpServer is already running in another process."
-                            }
-                        };
-
-                        using (var writer = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true })
-                        {
-                            writer.WriteLine(JsonConvert.SerializeObject(errorResponse));
-                        }
-
+                        ReportAlreadyRunning();
                         return;
                     }
                 }
@@ -76,6 +98,32 @@ namespace TopSolidMcpServer
                 RunServer(args);
 
             } // mutex released automatically
+        }
+
+        /// <summary>
+        /// Emits the "already running" notice (stderr + JSON-RPC error on stdout so MCP
+        /// clients don't retry blindly), then terminates the process.
+        /// </summary>
+        private static void ReportAlreadyRunning()
+        {
+            Console.Error.WriteLine("[Program] Another TopSolidMcpServer instance is already running. Exiting.");
+
+            // Return a valid JSON-RPC error so OpenClaw doesn't retry
+            var errorResponse = new
+            {
+                jsonrpc = "2.0",
+                id = (object)null,
+                error = new
+                {
+                    code = -32000,
+                    message = "TopSolidMcpServer is already running in another process."
+                }
+            };
+
+            using (var writer = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true })
+            {
+                writer.WriteLine(JsonConvert.SerializeObject(errorResponse));
+            }
         }
 
         /// <summary>
