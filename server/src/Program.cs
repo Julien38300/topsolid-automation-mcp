@@ -43,16 +43,24 @@ namespace TopSolidMcpServer
             Mutex mutex;
             try
             {
-                // Full-control open (or create). Throws UnauthorizedAccessException when the
-                // existing Global\ mutex was created by another principal (e.g. the bridge
-                // child running as SYSTEM) and its default DACL denies us creation rights.
-                mutex = new Mutex(true, MutexName, out createdNew);
+                // Create (or open) the Global\ mutex with an explicit DACL granting Everyone:
+                // without it, the SYSTEM-created mutex (bridge child in session 0) cannot even
+                // be OPENED from the user session, which crashed with UnauthorizedAccessException.
+                var security = new System.Security.AccessControl.MutexSecurity();
+                security.AddAccessRule(new System.Security.AccessControl.MutexAccessRule(
+                    new System.Security.Principal.SecurityIdentifier(
+                        System.Security.Principal.WellKnownSidType.WorldSid, null),
+                    System.Security.AccessControl.MutexRights.FullControl,
+                    System.Security.AccessControl.AccessControlType.Allow));
+                bool created;
+                mutex = new Mutex(true, MutexName, out created, security);
+                createdNew = created;
             }
             catch (UnauthorizedAccessException)
             {
-                // Mutex exists but was created by another session/principal (SYSTEM vs user).
-                // Fall back to opening it with SYNCHRONIZE-only rights: if WaitOne succeeds the
-                // owner exited (we take over); if it times out, another instance IS running.
+                // Mutex exists but was created by an older build without the Everyone DACL
+                // (e.g. the current bridge child as SYSTEM). Try SYNCHRONIZE-only open; if even
+                // that is denied, another instance IS running — report cleanly, never crash.
                 createdNew = false;
                 mutex = null;
                 try
@@ -74,10 +82,19 @@ namespace TopSolidMcpServer
                     }
                     return;
                 }
+                catch (UnauthorizedAccessException)
+                {
+                    // The existing mutex denies every open we can attempt (legacy SYSTEM-owned
+                    // DACL). Treat as "already running": the bridge enforces the singleton anyway.
+                    ReportAlreadyRunning();
+                    return;
+                }
                 catch (System.Threading.WaitHandleCannotBeOpenedException)
                 {
-                    // Gone between the two calls — create ours.
-                    mutex = new Mutex(true, MutexName, out createdNew);
+                    // Gone between the two calls — retry the Everyone-DACL creation.
+                    bool created;
+                    mutex = new Mutex(true, MutexName, out created);
+                    createdNew = created;
                 }
             }
             using (mutex)
