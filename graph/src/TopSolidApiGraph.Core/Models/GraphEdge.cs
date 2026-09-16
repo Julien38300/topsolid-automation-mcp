@@ -58,6 +58,42 @@ namespace TopSolidApiGraph.Core.Models
         public string SemanticHint { get; set; }
 
         /// <summary>
+        /// Additional remarks from official documentation, such as usage warnings
+        /// (e.g. "This method must not be called between StartModification and EndModification").
+        /// Null if the documentation provides none.
+        /// </summary>
+        public string Remarks { get; set; }
+
+        /// <summary>
+        /// Gets or sets whether the method is marked as obsolete in the official documentation.
+        /// </summary>
+        public bool Deprecated { get; set; }
+
+        /// <summary>
+        /// Explains why the method is obsolete and what to use instead.
+        /// Null unless <see cref="Deprecated"/> is true.
+        /// </summary>
+        public string ObsoleteMessage { get; set; }
+
+        /// <summary>
+        /// Origin of the documentation used to enrich this edge (e.g. "chm").
+        /// Null if the edge was not enriched.
+        /// </summary>
+        public string DocSource { get; set; }
+
+        /// <summary>
+        /// TopSolid version of the assemblies the enrichment was extracted from
+        /// (e.g. "7.21.164.0"). Null if the edge was not enriched.
+        /// </summary>
+        public string SourceVersion { get; set; }
+
+        /// <summary>
+        /// Date of the last enrichment of this edge, as an ISO 8601 date (e.g. "2026-04-17").
+        /// Null if the edge was not enriched.
+        /// </summary>
+        public string UpdatedAt { get; set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="GraphEdge"/> class.
         /// </summary>
         public GraphEdge() { }

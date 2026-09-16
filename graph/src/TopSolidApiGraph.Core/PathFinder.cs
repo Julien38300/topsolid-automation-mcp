@@ -13,6 +13,19 @@ namespace TopSolidApiGraph.Core
         private readonly TypeGraph _graph;
 
         /// <summary>
+        /// Gets whether the last call to FindAllPaths or FindPathWeighted stopped because it hit its
+        /// time budget. When true, the returned result is partial (or empty) and does not prove that
+        /// no path exists.
+        /// </summary>
+        public bool LastSearchTimedOut { get; private set; }
+
+        /// <summary>
+        /// Gets the wall-clock duration, in milliseconds, of the last call to FindAllPaths or
+        /// FindPathWeighted.
+        /// </summary>
+        public long LastSearchElapsedMs { get; private set; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="PathFinder"/> class with a given graph.
         /// </summary>
         /// <param name="graph">The graph to search in.</param>
@@ -79,15 +92,24 @@ namespace TopSolidApiGraph.Core
         /// <param name="targetType">The full name of the destination type.</param>
         /// <param name="maxDepth">The maximum number of steps allowed.</param>
         /// <param name="maxPaths">The maximum number of paths to find.</param>
+        /// <param name="timeoutMs">The time budget, in milliseconds, for the search.</param>
         /// <returns>A list of paths, where each path is a list of edges.</returns>
+        /// <remarks>
+        /// An empty result does not necessarily mean that no path exists: the search may have run out
+        /// of time. Check <see cref="LastSearchTimedOut"/>, or use the overload taking an out parameter.
+        /// </remarks>
         public List<List<GraphEdge>> FindAllPaths(string sourceType, string targetType, int maxDepth, int maxPaths = 100, int timeoutMs = 5000)
         {
+            LastSearchTimedOut = false;
+            LastSearchElapsedMs = 0;
+
             var results = new List<List<GraphEdge>>();
             if (sourceType == targetType || maxDepth <= 0) return results;
 
             var sw = System.Diagnostics.Stopwatch.StartNew();
             var queue = new Queue<List<GraphEdge>>();
             const int maxQueueSize = 10000;
+            bool queueLimitReported = false;
 
             var initialNeighbors = _graph.GetNeighbors(new TypeNode(sourceType));
             foreach (var edge in initialNeighbors)
@@ -99,12 +121,10 @@ namespace TopSolidApiGraph.Core
             {
                 if (sw.ElapsedMilliseconds > timeoutMs)
                 {
+                    LastSearchTimedOut = true;
                     Console.Error.WriteLine("[PathFinder] BFS timeout after " + sw.ElapsedMilliseconds + "ms, returning " + results.Count + " paths found so far.");
                     break;
                 }
-
-                if (queue.Count >= maxQueueSize)
-                    continue;
 
                 var currentPath = queue.Dequeue();
                 var lastEdge = currentPath[currentPath.Count - 1];
@@ -121,6 +141,18 @@ namespace TopSolidApiGraph.Core
                     var neighbors = _graph.GetNeighbors(new TypeNode(currentNodeName));
                     foreach (var edge in neighbors)
                     {
+                        // Queue is full: stop enqueuing new paths, but keep dequeuing the pending
+                        // ones so the loop still makes progress instead of spinning.
+                        if (queue.Count >= maxQueueSize)
+                        {
+                            if (!queueLimitReported)
+                            {
+                                queueLimitReported = true;
+                                Console.Error.WriteLine("[PathFinder] BFS queue limit of " + maxQueueSize + " reached, new paths are no longer enqueued.");
+                            }
+                            break;
+                        }
+
                         if (currentPath.Any(e => e.Source.TypeName == edge.Target.TypeName))
                             continue;
 
@@ -130,7 +162,41 @@ namespace TopSolidApiGraph.Core
                 }
             }
 
+            LastSearchElapsedMs = sw.ElapsedMilliseconds;
             return results.OrderBy(p => p.Sum(e => e.Weight)).ToList();
+        }
+
+        /// <summary>
+        /// Finds all paths between source and target types and reports whether the search timed out.
+        /// </summary>
+        /// <param name="sourceType">The full name of the starting type.</param>
+        /// <param name="targetType">The full name of the destination type.</param>
+        /// <param name="maxDepth">The maximum number of steps allowed.</param>
+        /// <param name="maxPaths">The maximum number of paths to find.</param>
+        /// <param name="timedOut">True if the search stopped on its time budget, making the result partial.</param>
+        /// <returns>A list of paths, where each path is a list of edges.</returns>
+        public List<List<GraphEdge>> FindAllPaths(string sourceType, string targetType, int maxDepth, int maxPaths, out bool timedOut)
+        {
+            var results = FindAllPaths(sourceType, targetType, maxDepth, maxPaths);
+            timedOut = LastSearchTimedOut;
+            return results;
+        }
+
+        /// <summary>
+        /// Finds all paths between source and target types and reports whether the search timed out.
+        /// </summary>
+        /// <param name="sourceType">The full name of the starting type.</param>
+        /// <param name="targetType">The full name of the destination type.</param>
+        /// <param name="maxDepth">The maximum number of steps allowed.</param>
+        /// <param name="maxPaths">The maximum number of paths to find.</param>
+        /// <param name="timeoutMs">The time budget, in milliseconds, for the search.</param>
+        /// <param name="timedOut">True if the search stopped on its time budget, making the result partial.</param>
+        /// <returns>A list of paths, where each path is a list of edges.</returns>
+        public List<List<GraphEdge>> FindAllPaths(string sourceType, string targetType, int maxDepth, int maxPaths, int timeoutMs, out bool timedOut)
+        {
+            var results = FindAllPaths(sourceType, targetType, maxDepth, maxPaths, timeoutMs);
+            timedOut = LastSearchTimedOut;
+            return results;
         }
 
         /// <summary>
@@ -138,9 +204,17 @@ namespace TopSolidApiGraph.Core
         /// </summary>
         /// <param name="currTypeName">The source type name.</param>
         /// <param name="targetTypeName">The target type name.</param>
+        /// <param name="timeoutMs">The time budget, in milliseconds, for the search.</param>
         /// <returns>The path as a list of edges, or an empty list if no path exists.</returns>
+        /// <remarks>
+        /// An empty result does not necessarily mean that no path exists: the search may have run out
+        /// of time. Check <see cref="LastSearchTimedOut"/>, or use the overload taking an out parameter.
+        /// </remarks>
         public List<GraphEdge> FindPathWeighted(string currTypeName, string targetTypeName, int timeoutMs = 5000)
         {
+            LastSearchTimedOut = false;
+            LastSearchElapsedMs = 0;
+
             if (string.IsNullOrEmpty(currTypeName) || string.IsNullOrEmpty(targetTypeName))
                 return new List<GraphEdge>();
 
@@ -159,6 +233,7 @@ namespace TopSolidApiGraph.Core
             {
                 if (sw.ElapsedMilliseconds > timeoutMs)
                 {
+                    LastSearchTimedOut = true;
                     Console.Error.WriteLine("[PathFinder] Dijkstra timeout after " + sw.ElapsedMilliseconds + "ms, operation aborted.");
                     break;
                 }
@@ -191,6 +266,8 @@ namespace TopSolidApiGraph.Core
                 }
             }
 
+            LastSearchElapsedMs = sw.ElapsedMilliseconds;
+
             var path = new List<GraphEdge>();
             string temp = targetTypeName;
             if (!previous.ContainsKey(temp)) return path;
@@ -202,6 +279,35 @@ namespace TopSolidApiGraph.Core
             }
 
             path.Reverse();
+            return path;
+        }
+
+        /// <summary>
+        /// Finds the cheapest path between two types and reports whether the search timed out.
+        /// </summary>
+        /// <param name="currTypeName">The source type name.</param>
+        /// <param name="targetTypeName">The target type name.</param>
+        /// <param name="timedOut">True if the search stopped on its time budget, making the result partial.</param>
+        /// <returns>The path as a list of edges, or an empty list if none was found.</returns>
+        public List<GraphEdge> FindPathWeighted(string currTypeName, string targetTypeName, out bool timedOut)
+        {
+            var path = FindPathWeighted(currTypeName, targetTypeName);
+            timedOut = LastSearchTimedOut;
+            return path;
+        }
+
+        /// <summary>
+        /// Finds the cheapest path between two types and reports whether the search timed out.
+        /// </summary>
+        /// <param name="currTypeName">The source type name.</param>
+        /// <param name="targetTypeName">The target type name.</param>
+        /// <param name="timeoutMs">The time budget, in milliseconds, for the search.</param>
+        /// <param name="timedOut">True if the search stopped on its time budget, making the result partial.</param>
+        /// <returns>The path as a list of edges, or an empty list if none was found.</returns>
+        public List<GraphEdge> FindPathWeighted(string currTypeName, string targetTypeName, int timeoutMs, out bool timedOut)
+        {
+            var path = FindPathWeighted(currTypeName, targetTypeName, timeoutMs);
+            timedOut = LastSearchTimedOut;
             return path;
         }
 

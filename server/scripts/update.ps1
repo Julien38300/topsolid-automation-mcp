@@ -1,18 +1,29 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Met a jour TopSolid MCP Server depuis GitHub Releases.
+    Updates TopSolid MCP Server from GitHub Releases.
 .DESCRIPTION
-    Verifie la derniere version sur GitHub, telecharge et remplace les fichiers si necessaire.
-    Preserve le dossier data/ (graph.json personnalise).
+    Checks the latest release on GitHub, downloads the zip, verifies it against the
+    SHA256SUMS.txt asset published with the release, then replaces the whole
+    installation: the executable, the DLLs, data/ and runtimes/.
+
+    data/ is NOT preserved. It is overwritten by the data/ shipped in the release.
+    The previous data/ is copied to data_backup/ next to the executable before the
+    install, so a customised graph.json can be restored from there by hand.
+
+    The install is aborted when the downloaded zip does not match the published
+    hash, and also when the release publishes no SHA256SUMS.txt at all (releases
+    made before this check existed). Pass -AllowUnverified to install anyway.
 .EXAMPLE
-    .\update.ps1            # Verifie et met a jour si necessaire
-    .\update.ps1 -Force     # Force la reinstallation meme si a jour
-    .\update.ps1 -Check     # Verifie seulement, sans installer
+    .\update.ps1                   # Check and update if needed
+    .\update.ps1 -Force            # Reinstall even when already up to date
+    .\update.ps1 -Check            # Check only, install nothing
+    .\update.ps1 -AllowUnverified  # Install a release that ships no SHA256SUMS.txt
 #>
 param(
     [switch]$Force,
-    [switch]$Check
+    [switch]$Check,
+    [switch]$AllowUnverified
 )
 
 $ErrorActionPreference = "Stop"
@@ -51,16 +62,43 @@ try {
 $latestVersion = $release.tag_name -replace '^v', ''
 Write-Host " v$latestVersion" -ForegroundColor Green
 
-# Compare versions (major.minor.patch)
-function Compare-SemVer($a, $b) {
-    $va = $a.Split('.') | ForEach-Object { [int]$_ }
-    $vb = $b.Split('.') | ForEach-Object { [int]$_ }
-    for ($i = 0; $i -lt 3; $i++) {
-        $ai = if ($i -lt $va.Count) { $va[$i] } else { 0 }
-        $bi = if ($i -lt $vb.Count) { $vb[$i] } else { 0 }
-        if ($ai -lt $bi) { return -1 }
-        if ($ai -gt $bi) { return 1 }
+# Splits "1.7.0-beta.2+build5" into three numeric core segments and a pre-release
+# label. Non-numeric text is tolerated: [int]"0-beta" used to throw, and under
+# $ErrorActionPreference = "Stop" a pre-release tag killed the updater instead of
+# being reported as a newer version.
+function ConvertTo-SemVerParts([string]$v) {
+    if ([string]::IsNullOrWhiteSpace($v)) { $v = "0.0.0" }
+    $v = $v.Trim() -replace '^[vV]', ''
+    $v = @($v -split '\+', 2)[0]          # drop build metadata
+    $split = @($v -split '-', 2)
+    $core = $split[0]
+    $pre = ''
+    if ($split.Count -gt 1) { $pre = $split[1] }
+    $numbers = @(0, 0, 0)
+    $segments = @($core -split '\.')
+    for ($i = 0; $i -lt 3 -and $i -lt $segments.Count; $i++) {
+        if ($segments[$i] -match '^(\d+)') { $numbers[$i] = [int]$matches[1] }
     }
+    return [PSCustomObject]@{ Numbers = $numbers; PreRelease = $pre }
+}
+
+# Compares two versions. Returns -1, 0 or 1.
+# Pre-release ordering follows semver on the rule that matters here: 1.7.0-beta is
+# older than 1.7.0. Two pre-release labels are compared as plain strings, which is
+# an approximation of the semver identifier rules.
+function Compare-SemVer($a, $b) {
+    $pa = ConvertTo-SemVerParts $a
+    $pb = ConvertTo-SemVerParts $b
+    for ($i = 0; $i -lt 3; $i++) {
+        if ($pa.Numbers[$i] -lt $pb.Numbers[$i]) { return -1 }
+        if ($pa.Numbers[$i] -gt $pb.Numbers[$i]) { return 1 }
+    }
+    if ($pa.PreRelease -eq $pb.PreRelease) { return 0 }
+    if ($pa.PreRelease -eq '') { return 1 }    # a release outranks its pre-releases
+    if ($pb.PreRelease -eq '') { return -1 }
+    $ordinal = [string]::CompareOrdinal($pa.PreRelease, $pb.PreRelease)
+    if ($ordinal -lt 0) { return -1 }
+    if ($ordinal -gt 0) { return 1 }
     return 0
 }
 
@@ -86,14 +124,6 @@ if (-not $zipAsset) {
     exit 1
 }
 
-# --- Stop running instance ---
-$proc = Get-Process TopSolidMcpServer -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID }
-if ($proc) {
-    Write-Host "Arret de l'instance en cours (PID $($proc.Id))..."
-    $proc | Stop-Process -Force
-    Start-Sleep -Seconds 2
-}
-
 # --- Download ---
 $tempDir = Join-Path $env:TEMP "TopSolidMcpServer_update"
 $tempZip = Join-Path $env:TEMP "TopSolidMcpServer_update.zip"
@@ -103,6 +133,75 @@ if (Test-Path $tempZip) { Remove-Item $tempZip -Force }
 
 Write-Host "Telechargement ($([math]::Round($zipAsset.size / 1MB, 1)) Mo)..."
 Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile $tempZip -Headers $headers
+
+# --- Verify the download against the SHA256SUMS.txt asset of the release ---
+# Without this the updater overwrote TopSolidMcpServer.exe with whatever the
+# download happened to return. Any mismatch aborts before a single file is
+# replaced. scripts/build-release.ps1 produces the SHA256SUMS.txt to upload.
+$sumsAsset = $release.assets | Where-Object { $_.name -eq "SHA256SUMS.txt" } | Select-Object -First 1
+if (-not $sumsAsset) {
+    $sumsAsset = $release.assets | Where-Object { $_.name -like "*SHA256SUMS*" } | Select-Object -First 1
+}
+
+if ($sumsAsset) {
+    Write-Host "Verification de l'empreinte SHA-256..." -NoNewline
+    $tempSums = Join-Path $env:TEMP "TopSolidMcpServer_update.sha256"
+    if (Test-Path $tempSums) { Remove-Item $tempSums -Force }
+    Invoke-WebRequest -Uri $sumsAsset.browser_download_url -OutFile $tempSums -Headers $headers
+
+    # sha256sum layout: "<hash>  <file name>", the optional "*" marks a binary read.
+    $expectedHash = $null
+    $firstHash = $null
+    $entryCount = 0
+    foreach ($line in (Get-Content $tempSums)) {
+        if ($line -match '^\s*([0-9a-fA-F]{64})\s+\*?(.+?)\s*$') {
+            $entryCount++
+            $lineHash = $matches[1].ToLowerInvariant()
+            $lineName = Split-Path -Leaf $matches[2]
+            if ($entryCount -eq 1) { $firstHash = $lineHash }
+            if ($lineName -eq $zipAsset.name) { $expectedHash = $lineHash; break }
+        }
+    }
+    if (-not $expectedHash -and $entryCount -eq 1) { $expectedHash = $firstHash }
+    Remove-Item $tempSums -Force -ErrorAction SilentlyContinue
+
+    if (-not $expectedHash) {
+        Write-Host " impossible !" -ForegroundColor Red
+        Write-Host "SHA256SUMS.txt ne contient aucune empreinte pour $($zipAsset.name)."
+        Write-Host "Abandon : aucun fichier n'a ete remplace."
+        Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+
+    $actualHash = (Get-FileHash $tempZip -Algorithm SHA256).Hash.ToLowerInvariant()
+    if ($actualHash -ne $expectedHash) {
+        Write-Host " ECHEC !" -ForegroundColor Red
+        Write-Host "  Attendu : $expectedHash"
+        Write-Host "  Obtenu  : $actualHash"
+        Write-Host "Le fichier telecharge ne correspond pas a la release."
+        Write-Host "Abandon : aucun fichier n'a ete remplace."
+        Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    Write-Host " OK" -ForegroundColor Green
+} elseif ($AllowUnverified) {
+    Write-Host "Aucun SHA256SUMS.txt dans cette release - verification ignoree (-AllowUnverified)." -ForegroundColor Yellow
+} else {
+    Write-Host "Erreur : cette release ne publie pas de SHA256SUMS.txt." -ForegroundColor Red
+    Write-Host "L'integrite du telechargement ne peut pas etre verifiee. Abandon."
+    Write-Host "Relancez avec -AllowUnverified pour installer sans verification,"
+    Write-Host "ou telechargez manuellement : $($release.html_url)"
+    Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
+    exit 1
+}
+
+# --- Stop running instance (only once the archive is known to be genuine) ---
+$proc = Get-Process TopSolidMcpServer -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID }
+if ($proc) {
+    Write-Host "Arret de l'instance en cours (PID $($proc.Id))..."
+    $proc | Stop-Process -Force
+    Start-Sleep -Seconds 2
+}
 
 # --- Extract ---
 Write-Host "Extraction..."
@@ -124,20 +223,32 @@ if (Test-Path $dataDir) {
     Copy-Item $dataDir $backupDir -Recurse
 }
 
-# --- Copy new files (overwrite exe, dlls, scripts) ---
+# --- Copy the extracted tree over the installation, subfolders included ---
+# Only top-level files plus data/ used to be copied. runtimes/ - which carries the
+# native e_sqlite3.dll that Microsoft.Data.Sqlite loads to open help.db - was never
+# refreshed, so a SQLitePCLRaw bump broke help search on every installation that had
+# gone through this updater. Walking the whole tree keeps any future subfolder in sync.
 Write-Host "Installation des nouveaux fichiers..."
-$filesToCopy = Get-ChildItem $extractedContent -File
-foreach ($file in $filesToCopy) {
-    Copy-Item $file.FullName (Join-Path $baseDir $file.Name) -Force
+$srcRoot = (Resolve-Path $extractedContent).Path.TrimEnd('\')
+$failed = @()
+foreach ($file in (Get-ChildItem $srcRoot -Recurse -File)) {
+    $relative = $file.FullName.Substring($srcRoot.Length + 1)
+    $target = Join-Path $baseDir $relative
+    $targetDir = Split-Path -Parent $target
+    if (-not (Test-Path $targetDir)) { New-Item -ItemType Directory -Path $targetDir -Force | Out-Null }
+    try {
+        Copy-Item $file.FullName $target -Force
+    } catch {
+        $failed += ($relative + " : " + $_.Exception.Message)
+    }
 }
 
-# Copy data/ from update (new graph.json etc.)
-$newDataDir = Join-Path $extractedContent "data"
-if (Test-Path $newDataDir) {
-    if (-not (Test-Path $dataDir)) { New-Item -ItemType Directory -Path $dataDir -Force | Out-Null }
-    Get-ChildItem $newDataDir -File | ForEach-Object {
-        Copy-Item $_.FullName (Join-Path $dataDir $_.Name) -Force
-    }
+if ($failed.Count -gt 0) {
+    Write-Host "Erreur : $($failed.Count) fichier(s) n'ont pas pu etre remplaces." -ForegroundColor Red
+    foreach ($entry in $failed) { Write-Host "  - $entry" }
+    Write-Host "Installation incomplete. Fermez les applications qui utilisent ces fichiers,"
+    Write-Host "puis relancez la mise a jour. version.txt n'a pas ete modifie."
+    exit 1
 }
 
 # --- Update version.txt ---

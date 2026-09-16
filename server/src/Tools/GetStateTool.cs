@@ -11,6 +11,9 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class GetStateTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
         private readonly Func<TopSolidConnector> _connectorProvider;
 
         public GetStateTool(Func<TopSolidConnector> connectorProvider)
@@ -26,7 +29,8 @@ namespace TopSolidMcpServer.Tools
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_get_state",
-                Description = "Retourne l'état courant de TopSolid : document actif, type de document, projet associé. Nécessite TopSolid ouvert.",
+                Description = "Return the current TopSolid state: edited document, document type, " +
+                    "associated project. Requires a running TopSolid session.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -39,6 +43,11 @@ namespace TopSolidMcpServer.Tools
         /// Executes the get-state query against TopSolid.
         /// </summary>
         public string Execute(JObject arguments)
+        {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        private string ExecuteCore(JObject arguments)
         {
             try
             {
@@ -54,8 +63,19 @@ namespace TopSolidMcpServer.Tools
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"[GetStateTool] Unexpected error: {ex.Message}");
-                return "Une erreur inattendue est survenue lors de la récupération de l'état.";
+                return "Error: an unexpected error occurred while retrieving the TopSolid state.";
             }
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
     }
 }

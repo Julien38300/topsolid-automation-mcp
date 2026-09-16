@@ -18,6 +18,12 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class SearchHelpTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
+        /// <summary>Columns of the FTS5 table: a "word:" prefix is only FTS syntax when the word is one of these.</summary>
+        private static readonly string[] FtsColumns = { "help", "title", "lang", "domain", "path", "content" };
+
         private static string _dbPath;
         private static bool _dbChecked;
 
@@ -64,6 +70,11 @@ namespace TopSolidMcpServer.Tools
 
         public string Execute(JObject arguments)
         {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        private string ExecuteCore(JObject arguments)
+        {
             try
             {
                 string query = arguments?["query"]?.ToString();
@@ -83,59 +94,25 @@ namespace TopSolidMcpServer.Tools
                         "to build the full-text search index.";
                 }
 
-                var hits = new List<Hit>();
-                long total = 0;
-
-                using (var conn = new SqliteConnection("Data Source=" + dbPath + ";Mode=ReadOnly"))
+                // A natural-language question ("tolerie: depliage") is NOT valid FTS5 syntax:
+                // quote every token unless the caller clearly wrote an FTS5 expression.
+                string ftsQuery = LooksLikeFtsSyntax(query) ? query : QuoteTokens(query);
+                if (string.IsNullOrEmpty(ftsQuery))
                 {
-                    conn.Open();
+                    return "Error: 'query' contains no searchable word.";
+                }
 
-                    // Total pages indexed (metadata-style count)
-                    using (var cntCmd = conn.CreateCommand())
-                    {
-                        cntCmd.CommandText = "SELECT COUNT(*) FROM help;";
-                        total = (long)cntCmd.ExecuteScalar();
-                    }
-
-                    var where = new StringBuilder("help MATCH $q");
-                    if (!string.IsNullOrEmpty(lang))
-                        where.Append(" AND lang = $lang");
-                    if (!string.IsNullOrEmpty(domain))
-                        where.Append(" AND domain = $domain");
-
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        // snippet(tbl, col_idx, start, end, ellipsis, max_tokens)
-                        // col 4 = content (0 title, 1 lang, 2 domain, 3 path, 4 content)
-                        cmd.CommandText =
-                            "SELECT title, lang, domain, path, " +
-                            "       snippet(help, 4, '[', ']', ' ... ', 18) AS excerpt, " +
-                            "       bm25(help) AS score " +
-                            "FROM help WHERE " + where +
-                            " ORDER BY score LIMIT $lim;";
-                        cmd.Parameters.AddWithValue("$q", query);
-                        if (!string.IsNullOrEmpty(lang))
-                            cmd.Parameters.AddWithValue("$lang", lang);
-                        if (!string.IsNullOrEmpty(domain))
-                            cmd.Parameters.AddWithValue("$domain", domain);
-                        cmd.Parameters.AddWithValue("$lim", maxResults);
-
-                        using (var r = cmd.ExecuteReader())
-                        {
-                            while (r.Read())
-                            {
-                                hits.Add(new Hit
-                                {
-                                    Title = r.GetString(0),
-                                    Lang = r.GetString(1),
-                                    Domain = r.GetString(2),
-                                    Path = r.GetString(3),
-                                    Excerpt = r.IsDBNull(4) ? "" : r.GetString(4),
-                                    Score = r.IsDBNull(5) ? 0.0 : r.GetDouble(5),
-                                });
-                            }
-                        }
-                    }
+                long total = 0;
+                List<Hit> hits;
+                try
+                {
+                    hits = RunSearch(dbPath, ftsQuery, lang, domain, maxResults, out total);
+                }
+                catch (SqliteException)
+                {
+                    // FTS5 still rejected the expression: retry once with the whole
+                    // user query as a single quoted phrase, which is always valid.
+                    hits = RunSearch(dbPath, QuoteWhole(query), lang, domain, maxResults, out total);
                 }
 
                 if (hits.Count == 0)
@@ -161,11 +138,151 @@ namespace TopSolidMcpServer.Tools
                 }
                 return sb.ToString();
             }
+            catch (SqliteException ex)
+            {
+                Console.Error.WriteLine("[SearchHelpTool] SQLite error: " + ex.Message);
+                return "Error: the search query could not be run against the help index (" +
+                    ex.Message + "). Try plain keywords, or quote them: \"sheet metal\".";
+            }
             catch (Exception ex)
             {
                 Console.Error.WriteLine("[SearchHelpTool] Error: " + ex.Message);
                 return "Error: " + ex.Message;
             }
+        }
+
+        /// <summary>
+        /// Runs one FTS5 query against help.db and returns the hits.
+        /// </summary>
+        private static List<Hit> RunSearch(string dbPath, string ftsQuery, string lang, string domain,
+            int maxResults, out long total)
+        {
+            var hits = new List<Hit>();
+            total = 0;
+
+            using (var conn = new SqliteConnection("Data Source=" + dbPath + ";Mode=ReadOnly"))
+            {
+                    conn.Open();
+
+                    // Total pages indexed (metadata-style count)
+                    using (var cntCmd = conn.CreateCommand())
+                    {
+                        cntCmd.CommandText = "SELECT COUNT(*) FROM help;";
+                        total = (long)cntCmd.ExecuteScalar();
+                    }
+
+                    var where = new StringBuilder("help MATCH $q");
+                    if (!string.IsNullOrEmpty(lang))
+                        where.Append(" AND lang = $lang");
+                    if (!string.IsNullOrEmpty(domain))
+                        where.Append(" AND domain = $domain");
+
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        // snippet(tbl, col_idx, start, end, ellipsis, max_tokens)
+                        // col 4 = content (0 title, 1 lang, 2 domain, 3 path, 4 content)
+                        cmd.CommandText =
+                            "SELECT title, lang, domain, path, " +
+                            "       snippet(help, 4, '[', ']', ' ... ', 18) AS excerpt, " +
+                            "       bm25(help) AS score " +
+                            "FROM help WHERE " + where +
+                            " ORDER BY score LIMIT $lim;";
+                        cmd.Parameters.AddWithValue("$q", ftsQuery);
+                        if (!string.IsNullOrEmpty(lang))
+                            cmd.Parameters.AddWithValue("$lang", lang);
+                        if (!string.IsNullOrEmpty(domain))
+                            cmd.Parameters.AddWithValue("$domain", domain);
+                        cmd.Parameters.AddWithValue("$lim", maxResults);
+
+                        using (var r = cmd.ExecuteReader())
+                        {
+                            while (r.Read())
+                            {
+                                hits.Add(new Hit
+                                {
+                                    Title = r.GetString(0),
+                                    Lang = r.GetString(1),
+                                    Domain = r.GetString(2),
+                                    Path = r.GetString(3),
+                                    Excerpt = r.IsDBNull(4) ? "" : r.GetString(4),
+                                    Score = r.IsDBNull(5) ? 0.0 : r.GetDouble(5),
+                                });
+                            }
+                        }
+                    }
+            }
+
+            return hits;
+        }
+
+        /// <summary>
+        /// True when the caller deliberately used FTS5 syntax (AND/OR/NOT, a phrase in
+        /// double quotes, a trailing prefix star, or a "column:" prefix). Anything else is
+        /// treated as plain natural language and gets quoted before reaching FTS5.
+        /// </summary>
+        private static bool LooksLikeFtsSyntax(string q)
+        {
+            if (string.IsNullOrEmpty(q)) return false;
+            if (q.IndexOf('"') >= 0) return true;
+
+            foreach (var token in q.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                if (token == "AND" || token == "OR" || token == "NOT" || token == "NEAR") return true;
+                if (token.Length > 1 && token[token.Length - 1] == '*') return true;
+
+                int colon = token.IndexOf(':');
+                if (colon > 0)
+                {
+                    string column = token.Substring(0, colon).ToLowerInvariant();
+                    foreach (var known in FtsColumns)
+                    {
+                        if (column == known) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Wraps each whitespace-separated token in an FTS5 phrase (internal double quotes
+        /// doubled). Tokens with no letter or digit are dropped: they carry no index term
+        /// and an empty phrase is itself a syntax error.
+        /// </summary>
+        private static string QuoteTokens(string q)
+        {
+            var sb = new StringBuilder();
+            foreach (var token in q.Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                bool hasWordChar = false;
+                foreach (var c in token)
+                {
+                    if (char.IsLetterOrDigit(c)) { hasWordChar = true; break; }
+                }
+                if (!hasWordChar) continue;
+
+                if (sb.Length > 0) sb.Append(' ');
+                sb.Append('"').Append(token.Replace("\"", "\"\"")).Append('"');
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Last-resort form: the whole user query as one quoted FTS5 phrase.
+        /// </summary>
+        private static string QuoteWhole(string q)
+        {
+            return "\"" + (q ?? string.Empty).Replace("\"", "\"\"") + "\"";
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
 
         /// <summary>

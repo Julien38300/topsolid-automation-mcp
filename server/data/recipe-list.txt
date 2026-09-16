@@ -1,4 +1,6 @@
-Total recipes: 115
+Total recipes: 132
+activate_bom_row|RW|Activates a BOM row by its index (0-based, among root-children). Param: value=row_index
+ajouter_inclusion|RW|Adds an inclusion of a part document into the active assembly document. Param: value=part_document_name
 assembly_mass_report|R|Reads total mass, volume, surface and part count of an assembly
 attr_assign_layer|RW|Assigns an element to a layer. Param: value=element_name:layer_name
 attr_list_layers|R|Lists document layers
@@ -19,8 +21,11 @@ batch_check_family_drivers|R|Checks drivers of all families in the project
 batch_check_virtual|R|Checks the virtual property (IsVirtualDocument) on all project documents
 batch_clear_author|RW|Clears the Author field on all project documents
 batch_enable_virtual|RW|Enables virtual mode on ALL non-virtual project documents
-batch_export_step|R|Exports ALL project parts to STEP in a folder. Param: value=folder_path
+batch_export_step|RD|Exports ALL project parts to STEP in a folder. Param: value=folder_path
 batch_read_property|R|Reads a specific property across all project documents. Param: value=property_name
+batch_set_designation|RW|Sets Designation (Description) on ALL documents of the current project. Param: value=new_designation
+batch_set_manufacturer|RW|Sets Manufacturer on ALL documents of the current project. Param: value=new_manufacturer
+batch_set_reference|RW|Sets Reference (PartNumber) on ALL documents of the current project. Param: value=new_reference
 check_family_drivers|R|Checks that family drivers have a designation. Lists those without.
 check_missing_materials|R|Lists project parts without assigned material
 check_part|R|Quality check: designation, reference, material filled?
@@ -35,6 +40,10 @@ copy_pdm_properties_to|RW|Copies designation/reference/manufacturer from current
 count_assembly_parts|R|Counts parts grouped by type with quantities
 count_bom_rows|R|Counts active BOM rows
 count_documents_by_type|R|Counts project documents grouped by type (.TopPrt, .TopAsm, .TopDft...)
+creer_esquisse_rectangle|RW|Creates a 2D rectangular sketch in the active document. Param: value=width:height (mm)
+creer_parametre_formule|RW|Creates a new formula-driven real parameter in the active document. Param: value=name:unit:formula (e.g. DiagBolt:Length:Longueur * 1.414). The formula uses TopSolid expression syntax (parameter names, operators, SI units). Supported units: Length, Mass, Angle, NoUnit.
+creer_parametre_reel|RW|Creates a new real parameter in the active document. Param: value=name:unit:SIvalue (e.g. Longueur:Length:0.05 for 50mm) or name::SIvalue for NoUnit. Supported units: Length, Mass, Angle, NoUnit.
+deactivate_bom_row|RW|Deactivates a BOM row by its index (0-based, among root-children). Param: value=row_index
 detect_assembly|R|Detects if the document is an assembly and lists parts
 detect_bom|R|Detects if the document is a BOM
 detect_drafting|R|Detects if the document is a drafting and provides info
@@ -43,11 +52,12 @@ detect_unfolding|R|Detects if the document is an unfolding (sheet metal)
 document_type|R|Detects the type of the active document
 enable_virtual_document|RW|Enables virtual mode on the current document
 export_bom_csv|R|Exports the BOM as text (separated columns)
-export_dxf|R|Exports to DXF. Param: value=path
-export_iges|R|Exports to IGES. Param: value=path
-export_pdf|R|Exports to PDF. Param: value=path
-export_step|R|Exporte en STEP. Param: value=chemin (ex: C:\\temp\\piece.stp)
-export_stl|R|Exports to STL (3D printing). Param: value=path
+export_dxf|RD|Exports to DXF. Param: value=path
+export_iges|RD|Exports to IGES. Param: value=path
+export_pdf|RD|Exports to PDF. Param: value=path
+export_step|RD|Exports to STEP. Param: value=path (e.g. C:\temp\part.stp)
+export_stl|RD|Exports to STL (3D printing). Param: value=path
+extruder_esquisse|RW|Extrudes the last 2D sketch of the active document into a 3D solid. Param: value=height_mm
 find_modified_documents|R|Lists unsaved (dirty) documents of the project
 fix_family_drivers|RW|Assigns a designation to family drivers that lack one (inferred from parameter name)
 get_face_cone_length|R|Gets the length of a selected cone face (mm). Requires a cone face selection.
@@ -56,7 +66,7 @@ get_face_cone_semi_angle|R|Gets the half-angle of a selected cone face (degrees)
 get_face_torus_major_radius|R|Gets the major radius of a selected torus face (mm). Requires a torus face selection.
 get_face_torus_minor_radius|R|Gets the minor radius of a selected torus face (mm). Requires a torus face selection.
 get_item_last_operation_name|R|Gets the name of the last operation that produced a selected face.
-invoke_command|R|Executes a TopSolid menu command by name. Param: value=command_name
+invoke_command|RW|Executes a TopSolid menu command by name. Param: value=command_name
 list_documents_without_designation|R|Lists project documents without designation (empty description)
 list_documents_without_reference|R|Lists project documents without reference (empty part number)
 list_drafting_views|R|Lists views of a drafting
@@ -67,6 +77,9 @@ list_project_documents|R|Lists ALL project documents with designation and refere
 list_sketches|R|Lists sketches of the document
 open_document_by_name|R|Searches and opens a document by name. Param: value=name
 open_drafting|R|Finds and opens the drafting associated with the current part/assembly via PDM back-references
+print_drafting|RD|Prints the current drafting (all pages, black & white, 300 DPI, printed to scale)
+read_3d_frames|R|Lists 3D frames of the document
+read_3d_points|R|Lists 3D points of the document
 read_bend_features|R|Lists bends of an unfolding (angles, radii, lengths)
 read_bom_columns|R|Reads BOM columns
 read_bom_contents|R|Reads the full BOM contents (rows and cells)
@@ -99,18 +112,22 @@ read_user_property|R|Reads a text user property. Param: value=property_name
 read_where_used|R|Finds where-used references of the current document in the project
 rebuild_document|RW|Rebuilds the active document
 rename_occurrence|RW|Renames an occurrence. Param: value=old_name:new_name
-save_all_project|R|Saves all documents of the current project
-save_document|R|Saves the active document
+save_all_project|RW|Saves all documents of the current project
+save_document|RW|Saves the active document
 search_document|R|Searches for a document by name (CONTAINS). Param: value
 search_folder|R|Searches for a folder by name (CONTAINS). Param: value
 search_parts_by_material|R|Lists parts with their material (via mass > 0). Param: value=optional filter
+select_3d_point|R|Asks the user to click a 3D point and returns coordinates
 select_face|R|Asks the user to select a face and returns its info
 select_shape|R|Asks the user to select a shape and returns its info
-set_designation|R|Sets the designation. Param: value
-set_manufacturer|R|Sets the manufacturer. Param: value
-set_name|R|Sets the name. Param: value
+set_designation|RW|Sets the designation. Param: value
+set_drafting_format|RW|Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')
+set_drafting_scale|RW|Sets the global scale of a drafting. Param: value=denominator (e.g. '10' for 1:10)
+set_manufacturer|RW|Sets the manufacturer. Param: value
+set_name|RW|Sets the name. Param: value
+set_projection_quality|RW|Sets the drafting projection quality. Param: value='exact' (precise) or 'fast' (quick)
 set_real_parameter|RW|Sets a real parameter. Param: value=name:SIvalue (e.g. Length:0.15)
-set_reference|R|Sets the reference. Param: value
+set_reference|RW|Sets the reference. Param: value
 set_text_parameter|RW|Sets a text parameter. Param: value=name:value
-set_user_property|R|Sets a text user property. Param: value=property_name:value
+set_user_property|RW|Sets a text user property. Param: value=property_name:value
 summarize_project|R|Project summary: document count by type, folders, size

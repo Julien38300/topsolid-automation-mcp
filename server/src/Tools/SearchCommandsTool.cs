@@ -27,6 +27,9 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class SearchCommandsTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
         private static List<CommandEntry> _cache;
         private static readonly object _lock = new object();
 
@@ -66,6 +69,22 @@ namespace TopSolidMcpServer.Tools
         }
 
         public string Execute(JObject arguments)
+        {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
+        }
+
+        private string ExecuteCore(JObject arguments)
         {
             try
             {

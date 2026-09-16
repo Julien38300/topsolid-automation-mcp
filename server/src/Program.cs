@@ -84,19 +84,43 @@ namespace TopSolidMcpServer
         /// </summary>
         private static void RunServer(string[] args)
         {
-            // Register the TopSolid assembly resolver
+            // Register the TopSolid assembly resolver.
+            // The resolved bin directory is cached in a captured local: the handler runs on
+            // every failed assembly resolution, including ones unrelated to TopSolid.
+            string topSolidBin = null;
             AppDomain.CurrentDomain.AssemblyResolve += (sender, resolveArgs) =>
             {
-                string topSolidBin = TopSolidMcpServer.Utils.TopSolidPathResolver.Resolve();
-                string assemblyName = new System.Reflection.AssemblyName(resolveArgs.Name).Name;
-                string path = System.IO.Path.Combine(topSolidBin, assemblyName + ".dll");
-                return System.IO.File.Exists(path) ? System.Reflection.Assembly.LoadFrom(path) : null;
+                try
+                {
+                    if (topSolidBin == null)
+                        topSolidBin = TopSolidMcpServer.Utils.TopSolidPathResolver.Resolve();
+
+                    string assemblyName = new AssemblyName(resolveArgs.Name).Name;
+                    string path = Path.Combine(topSolidBin, assemblyName + ".dll");
+                    if (!File.Exists(path)) return null;
+
+                    return Assembly.LoadFrom(path);
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("[MCP-WARN] Assembly resolve failed for " + resolveArgs.Name + ": " + ex.Message);
+                    return null;
+                }
             };
 
             string version = TrayIcon.GetVersion();
             Console.Error.WriteLine($"[MCP-INFO] TopSolid MCP Server v{version} starting...");
 
+            bool noTray = HasFlag(args, "--no-tray") || IsEnvFlagSet("TOPSOLID_MCP_NO_TRAY");
+            bool readOnly = HasFlag(args, "--read-only") || IsEnvFlagSet("TOPSOLID_MCP_READ_ONLY");
+
+            if (readOnly)
+                Console.Error.WriteLine("[MCP-INFO] Read-only mode enabled: modify_script is not registered and recipes run in read-only mode.");
+            if (noTray)
+                Console.Error.WriteLine("[MCP-INFO] Tray icon disabled (--no-tray / TOPSOLID_MCP_NO_TRAY).");
+
             TrayIcon tray = null;
+            TopSolidConnector connector = null;
 
             try
             {
@@ -112,7 +136,7 @@ namespace TopSolidMcpServer
                 {
                     port = parsedPort;
                 }
-                var connector = new TopSolidConnector(port);
+                connector = new TopSolidConnector(port);
                 Console.Error.WriteLine($"[MCP-INFO] Connector ready (port {port}). Attempting initial connection...");
                 connector.Connect(); // non-blocking, just tries once
 
@@ -171,14 +195,20 @@ namespace TopSolidMcpServer
                 var executeScriptTool = new ExecuteScriptTool(() => connector);
                 executeScriptTool.Register(registry);
 
-                var modifyScriptTool = new ModifyScriptTool(() => connector);
-                modifyScriptTool.Register(registry);
+                if (!readOnly)
+                {
+                    var modifyScriptTool = new ModifyScriptTool(() => connector);
+                    modifyScriptTool.Register(registry);
+                }
 
                 var apiHelpTool = new ApiHelpTool(() => { EnsureGraphLoaded(); return graph; });
                 apiHelpTool.Register(registry);
 
-                var recipeTool = new RecipeTool(() => connector);
+                var recipeTool = new RecipeTool(() => connector, readOnly);
                 recipeTool.Register(registry);
+
+                var listRecipesTool = new ListRecipesTool();
+                listRecipesTool.Register(registry);
 
                 var getRecipeTool = new GetRecipeTool();
                 getRecipeTool.Register(registry);
@@ -189,9 +219,6 @@ namespace TopSolidMcpServer
                 var searchExamplesTool = new SearchExamplesTool();
                 searchExamplesTool.Register(registry);
 
-                var whatsNewTool = new WhatsNewTool();
-                whatsNewTool.Register(registry);
-
                 var searchHelpTool = new SearchHelpTool();
                 searchHelpTool.Register(registry);
 
@@ -201,42 +228,78 @@ namespace TopSolidMcpServer
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
-                // Start tray icon (background STA thread)
-                tray = new TrayIcon(() =>
+                // Start tray icon (background STA thread).
+                // A headless or session-0 environment must never take the server down.
+                if (!noTray)
                 {
-                    Console.Error.WriteLine("[MCP-INFO] Shutdown requested from tray.");
-                    try { Console.In.Close(); } catch { }
-                    Environment.Exit(0);
-                });
-                tray.Start();
+                    try
+                    {
+                        tray = new TrayIcon(() =>
+                        {
+                            Console.Error.WriteLine("[MCP-INFO] Shutdown requested from tray.");
+                            try { connector.Disconnect(); } catch { }
+                            // Remove the icon from the notification area before killing the
+                            // process, otherwise a ghost icon stays until the user hovers it.
+                            try { if (tray != null) tray.Dispose(); } catch { }
+                            try { Console.In.Close(); } catch { }
+                            Environment.Exit(0);
+                        });
+                        tray.Start();
 
-                // Wire tray icon to connector (AFTER tray.Start())
-                tray.SetPort(port);
-                tray.SetConnected(connector.IsConnected);
+                        // Wire tray icon to connector (AFTER tray.Start())
+                        var startedTray = tray;
+                        startedTray.SetPort(port);
+                        startedTray.SetConnected(connector.IsConnected);
 
-                connector.ConnectionChanged += (connected) =>
+                        connector.ConnectionChanged += (connected) =>
+                        {
+                            startedTray.SetConnected(connected);
+                            Console.Error.WriteLine(connected
+                                ? "[MCP-INFO] TopSolid connection established."
+                                : "[MCP-INFO] TopSolid connection lost.");
+                        };
+
+                        startedTray.SetReconnectAction(() =>
+                        {
+                            bool ok = connector.Connect();
+                            Console.Error.WriteLine(ok
+                                ? "[MCP-INFO] Manual reconnect succeeded."
+                                : "[MCP-INFO] Manual reconnect failed - TopSolid not available on port " + port + ".");
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine("[MCP-WARN] Tray icon unavailable, continuing without it: " + ex.Message);
+                        try { if (tray != null) tray.Dispose(); } catch { }
+                        tray = null;
+                    }
+                }
+
+                if (tray == null)
                 {
-                    tray.SetConnected(connected);
-                    Console.Error.WriteLine(connected
-                        ? "[MCP-INFO] TopSolid connection established."
-                        : "[MCP-INFO] TopSolid connection lost.");
-                };
-
-                tray.SetReconnectAction(() =>
-                {
-                    bool ok = connector.Connect();
-                    Console.Error.WriteLine(ok
-                        ? "[MCP-INFO] Manual reconnect succeeded."
-                        : "[MCP-INFO] Manual reconnect failed — TopSolid not available on port " + port + ".");
-                });
+                    connector.ConnectionChanged += (connected) =>
+                    {
+                        Console.Error.WriteLine(connected
+                            ? "[MCP-INFO] TopSolid connection established."
+                            : "[MCP-INFO] TopSolid connection lost.");
+                    };
+                }
 
                 Console.Error.WriteLine("[MCP-INFO] Server ready. Listening on stdin.");
                 server.Start();
+
+                // stdin closed — the client is gone, release the TopSolid connection.
+                Console.Error.WriteLine("[MCP-INFO] stdin closed. Shutting down.");
+                connector.Disconnect();
             }
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"[MCP-FATAL] Server crashed: {ex.Message}");
                 Console.Error.WriteLine(ex.StackTrace);
+
+                // Environment.Exit skips the finally block: release everything here.
+                try { if (connector != null) connector.Disconnect(); } catch { }
+                try { if (tray != null) tray.Dispose(); } catch { }
                 Environment.Exit(1);
             }
             finally
@@ -256,6 +319,35 @@ namespace TopSolidMcpServer
                     return args[i + 1];
             }
             return null;
+        }
+
+        /// <summary>
+        /// True when the CLI args contain the given switch (e.g. --no-tray).
+        /// </summary>
+        private static bool HasFlag(string[] args, string name)
+        {
+            if (args == null) return false;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (args[i] != null && args[i].Equals(name, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// True when the environment variable is set to an affirmative value (1, true, yes, on).
+        /// </summary>
+        private static bool IsEnvFlagSet(string variable)
+        {
+            string value = Environment.GetEnvironmentVariable(variable);
+            if (string.IsNullOrWhiteSpace(value)) return false;
+
+            value = value.Trim();
+            return value.Equals("1", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("true", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("yes", StringComparison.OrdinalIgnoreCase)
+                || value.Equals("on", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

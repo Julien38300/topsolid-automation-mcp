@@ -56,7 +56,12 @@ Write-Host "Build OK" -ForegroundColor Green
 # --- Prepare release-staging ---
 Write-Host "Preparation de release-staging/..."
 
-if (-not (Test-Path $releaseDir)) { New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null }
+# Wipe the staging folder first. Everything below is regenerated from the build
+# output and from server/data/, so a leftover from a previous build is pure
+# noise: a file dropped from $dataFiles (api-index.json) or renamed in the
+# build output would otherwise survive here and be zipped again.
+if (Test-Path $releaseDir) { Remove-Item $releaseDir -Recurse -Force }
+New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 
 # Core files from build output
 $coreFiles = @(
@@ -98,10 +103,10 @@ if (-not (Test-Path $relDataDir)) { New-Item -ItemType Directory -Path $relDataD
 
 $dataFiles = @(
     "graph.json",
-    "api-index.json",
     "help.db",                  # v1.6.0+ — SQLite FTS5 help index (5809 pages)
     "help-index-meta.json",     # v1.6.0+ — meta
     "commands-catalog.json",    # v1.6.3+ — UI commands catalog (2428 cmds)
+    "commands-api-links.json",  # v1.6.5+ - UI command -> API links, read by SearchCommandsTool
     "recipe-list.txt"           # recipe manifest (reference)
 )
 foreach ($file in $dataFiles) {
@@ -152,7 +157,10 @@ Write-Host "  + version.txt ($Version)" -ForegroundColor Gray
 Write-Host ""
 $recipeFile = Join-Path $srcDir "Tools\RecipeTool.cs"
 if (Test-Path $recipeFile) {
-    $mcpRecipes = [regex]::Matches((Get-Content $recipeFile -Raw), '\{ "([a-z_]+)"') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
+    # Recipe keys may contain digits (read_3d_points, select_3d_point), so the
+    # character class must include 0-9. Anchoring on the R/RW/RD factory call
+    # also keeps unrelated dictionary literals out of the count.
+    $mcpRecipes = [regex]::Matches((Get-Content $recipeFile -Raw), '\{ "([a-z0-9_]+)", R') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
     Write-Host "Packaged recipes: $($mcpRecipes.Count)" -ForegroundColor Gray
 }
 
@@ -167,10 +175,25 @@ Write-Host "Creation du zip..."
 Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipPath -Force
 
 $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
+
+# --- SHA256SUMS.txt, published next to the zip as a release asset ---
+# Format is the one sha256sum(1) writes and reads back: "<lowercase hash>  <file name>".
+# scripts/update.ps1 downloads this asset and refuses to install a zip whose hash
+# does not match, so the file must ship with every release.
+$zipHash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$sumsName = "SHA256SUMS.txt"
+$sumsPath = Join-Path $projectRoot $sumsName
+# Written with a single LF, not CRLF: "sha256sum -c SHA256SUMS.txt" on Linux takes
+# everything up to the line terminator as the file name, so a CR would make it look
+# for a name ending in a carriage return and report the file as missing. Get-Content in update.ps1 splits on
+# LF as well as CRLF, so the Windows side is unaffected.
+[System.IO.File]::WriteAllText($sumsPath, $zipHash + "  " + $zipName + "`n", [System.Text.Encoding]::ASCII)
 Write-Host ""
 Write-Host "=== Release prete ===" -ForegroundColor Green
 Write-Host "  Zip    : $zipPath ($zipSize Mo)"
+Write-Host "  SHA256 : $zipHash"
+Write-Host "  Sums   : $sumsPath"
 Write-Host "  Staging: $releaseDir\"
 Write-Host ""
 Write-Host "Pour publier sur GitHub :" -ForegroundColor Cyan
-Write-Host "  gh release create v$Version `"$zipPath`" --title `"v$Version`" --notes `"Release v$Version`""
+Write-Host "  gh release create v$Version `"$zipPath`" `"$sumsPath`" --title `"v$Version`" --notes `"Release v$Version`""

@@ -1,26 +1,30 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
 
 namespace TopSolidMcpServer.Utils
 {
     /// <summary>
-    /// Resolves the TopSolid bin directory at runtime, supporting multiple installed versions.
+    /// Resolves the TopSolid bin directory at runtime, supporting multiple installed
+    /// versions and both known install layouts:
+    ///   - modern: &lt;ProgramFiles&gt;\TOPSOLID\TopSolid 7.xx\bin
+    ///   - historical Missler: &lt;drive&gt;:\Missler\V&lt;nnn&gt;\bin (TopSolid 2026 = V627)
     /// Resolution order:
     ///   1. TOPSOLID_BIN_PATH environment variable (explicit override)
-    ///   2. Windows registry (HKLM\SOFTWARE\Missler Software\TopSolid 7.*\InstallDir)
-    ///   3. Filesystem scan of C:\Program Files\TOPSOLID\TopSolid 7.*\bin (highest version wins)
-    ///   4. Hardcoded fallback (backward-compat; logs a warning)
+    ///   2. Windows registry (HKLM\SOFTWARE\[WOW6432Node\]Missler Software\*, InstallDir or Path)
+    ///   3. Filesystem scan of %ProgramFiles% / %ProgramFiles(x86)% \TOPSOLID\TopSolid 7.*\bin
+    ///   4. Scan of fixed drives for \Missler\V*\bin and \TOPSOLID\TopSolid 7.*\bin
+    ///   5. Hardcoded fallback (backward-compat; logs a warning and leaves <see cref="Found"/> false)
     /// </summary>
-    internal static class TopSolidPathResolver
+    public static class TopSolidPathResolver
     {
         private const string FallbackPath = @"C:\Program Files\TOPSOLID\TopSolid 7.21\bin\";
-        private const string ProgramFilesBase = @"C:\Program Files\TOPSOLID";
         private const string KernelDll = "TopSolid.Kernel.Automating.dll";
 
         private static string _cached;
+        private static bool _found;
         private static readonly object _lock = new object();
 
         /// <summary>
@@ -33,18 +37,36 @@ namespace TopSolidMcpServer.Utils
             lock (_lock)
             {
                 if (_cached != null) return _cached;
-                _cached = ResolveInternal();
+                bool found;
+                string path = ResolveInternal(out found);
+                _found = found;
+                _cached = path;
                 return _cached;
             }
         }
 
-        private static string ResolveInternal()
+        /// <summary>
+        /// False when <see cref="Resolve"/> could not locate a real TopSolid install and
+        /// returned the hardcoded fallback path. Triggers resolution if needed.
+        /// </summary>
+        public static bool Found
         {
+            get
+            {
+                Resolve();
+                return _found;
+            }
+        }
+
+        private static string ResolveInternal(out bool found)
+        {
+            found = true;
+
             // 1. Explicit env-var override
             string envPath = Environment.GetEnvironmentVariable("TOPSOLID_BIN_PATH");
             if (!string.IsNullOrWhiteSpace(envPath))
             {
-                string normalized = EnsureTrailingSlash(envPath);
+                string normalized = EnsureTrailingSlash(envPath.Trim());
                 Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from TOPSOLID_BIN_PATH: " + normalized);
                 return normalized;
             }
@@ -57,32 +79,48 @@ namespace TopSolidMcpServer.Utils
                 return fromRegistry;
             }
 
-            // 3. Filesystem scan
+            // 3. Program Files scan (paths taken from the environment, never hardcoded)
             string fromScan = ScanProgramFiles();
             if (fromScan != null)
             {
-                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from filesystem scan: " + fromScan);
+                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from Program Files scan: " + fromScan);
                 return fromScan;
             }
 
-            // 4. Fallback
-            Console.Error.WriteLine("[MCP-WARN] TopSolid install not found via registry or filesystem. " +
-                "Falling back to " + FallbackPath + ". " +
-                "Set TOPSOLID_BIN_PATH to override.");
+            // 4. Last resort: fixed drives only
+            string fromDrives = ScanFixedDrives();
+            if (fromDrives != null)
+            {
+                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from drive scan: " + fromDrives);
+                return fromDrives;
+            }
+
+            // 5. Fallback
+            found = false;
+            Console.Error.WriteLine("[MCP-WARN] TopSolid install not found (registry, Program Files and fixed drives " +
+                "were all searched for TopSolid 7.* and Missler V* layouts). " +
+                "Falling back to " + FallbackPath + " which does not exist on this machine. " +
+                "Set TOPSOLID_BIN_PATH to the folder containing " + KernelDll + " to fix this.");
             return FallbackPath;
         }
 
+        // ─────────────────────────────────────────────────────────────────────────
+        // Registry
+        // ─────────────────────────────────────────────────────────────────────────
+
         private static string ReadFromRegistry()
         {
-            // TopSolid registers under "Missler Software\TopSolid 7.XX" with an InstallDir value.
-            // We check both the native 64-bit hive and the WOW6432Node (32-bit) hive.
+            // TopSolid registers under "Missler Software" with either a "TopSolid 7.XX"
+            // subkey (modern layout) or a "V<nnn>" subkey (historical Missler layout).
+            // The install folder is exposed as "InstallDir" or as "Path", and may point
+            // either at the install root or directly at its bin directory.
             string[] hives = {
                 @"SOFTWARE\Missler Software",
                 @"SOFTWARE\WOW6432Node\Missler Software"
             };
 
             string bestBin = null;
-            Version bestVersion = null;
+            int bestScore = int.MinValue;
 
             foreach (string hive in hives)
             {
@@ -93,26 +131,28 @@ namespace TopSolidMcpServer.Utils
                         if (key == null) continue;
                         foreach (string subName in key.GetSubKeyNames())
                         {
-                            // Match "TopSolid 7.XX" keys
-                            var m = Regex.Match(subName, @"^TopSolid\s+(7\.\d+)$", RegexOptions.IgnoreCase);
-                            if (!m.Success) continue;
-
-                            if (!Version.TryParse(m.Groups[1].Value, out Version v)) continue;
+                            int score;
+                            if (!TryScoreVersionName(subName, out score)) continue;
 
                             using (RegistryKey sub = key.OpenSubKey(subName))
                             {
                                 if (sub == null) continue;
-                                string installDir = sub.GetValue("InstallDir") as string;
-                                if (string.IsNullOrWhiteSpace(installDir)) continue;
 
-                                string binDir = Path.Combine(installDir, "bin");
-                                string dll = Path.Combine(binDir, KernelDll);
-                                if (!File.Exists(dll)) continue;
-
-                                if (bestVersion == null || v > bestVersion)
+                                string[] valueNames = { "InstallDir", "Path" };
+                                foreach (string valueName in valueNames)
                                 {
-                                    bestVersion = v;
-                                    bestBin = EnsureTrailingSlash(binDir);
+                                    string installDir = sub.GetValue(valueName) as string;
+                                    if (string.IsNullOrWhiteSpace(installDir)) continue;
+
+                                    string binDir = ToBinDirectory(installDir);
+                                    if (binDir == null) continue;
+
+                                    if (score > bestScore)
+                                    {
+                                        bestScore = score;
+                                        bestBin = binDir;
+                                    }
+                                    break;
                                 }
                             }
                         }
@@ -127,40 +167,205 @@ namespace TopSolidMcpServer.Utils
             return bestBin;
         }
 
+        // ─────────────────────────────────────────────────────────────────────────
+        // Filesystem scans
+        // ─────────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Scans the TOPSOLID folder under every Program Files directory reported by the
+        /// environment (both 64-bit and 32-bit views).
+        /// </summary>
         private static string ScanProgramFiles()
         {
-            if (!Directory.Exists(ProgramFilesBase)) return null;
-
             string bestBin = null;
-            Version bestVersion = null;
+            int bestScore = int.MinValue;
 
+            foreach (string programFiles in GetProgramFilesDirectories())
+            {
+                ScanVersionedContainer(Path.Combine(programFiles, "TOPSOLID"), ref bestBin, ref bestScore);
+            }
+
+            return bestBin;
+        }
+
+        /// <summary>
+        /// Enumerates the Program Files directories from the environment, de-duplicated.
+        /// </summary>
+        private static IEnumerable<string> GetProgramFilesDirectories()
+        {
+            var seen = new List<string>();
+            string[] variables = { "ProgramFiles", "ProgramFiles(x86)", "ProgramW6432" };
+
+            foreach (string variable in variables)
+            {
+                string value = Environment.GetEnvironmentVariable(variable);
+                if (string.IsNullOrWhiteSpace(value)) continue;
+
+                string normalized = value.TrimEnd('\\', '/');
+                bool duplicate = false;
+                foreach (string existing in seen)
+                {
+                    if (string.Equals(existing, normalized, StringComparison.OrdinalIgnoreCase))
+                    {
+                        duplicate = true;
+                        break;
+                    }
+                }
+                if (duplicate) continue;
+
+                seen.Add(normalized);
+            }
+
+            return seen;
+        }
+
+        /// <summary>
+        /// Last-resort scan: fixed drives only (never network or removable drives), looking
+        /// for the two known layouts at the root of each drive.
+        /// </summary>
+        private static string ScanFixedDrives()
+        {
+            string bestBin = null;
+            int bestScore = int.MinValue;
+
+            DriveInfo[] drives;
             try
             {
-                foreach (string dir in Directory.GetDirectories(ProgramFilesBase, "TopSolid 7.*"))
+                drives = DriveInfo.GetDrives();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("[MCP-WARN] Drive enumeration failed: " + ex.Message);
+                return null;
+            }
+
+            foreach (DriveInfo drive in drives)
+            {
+                try
+                {
+                    if (drive.DriveType != DriveType.Fixed) continue;
+                    if (!drive.IsReady) continue;
+                }
+                catch (Exception)
+                {
+                    continue;
+                }
+
+                string root = drive.RootDirectory.FullName;
+
+                // Historical Missler layout: <drive>:\Missler\V<nnn>\bin
+                ScanVersionedContainer(Path.Combine(root, "Missler"), ref bestBin, ref bestScore);
+
+                // Modern layout dropped at a drive root: <drive>:\TOPSOLID\TopSolid 7.*\bin
+                ScanVersionedContainer(Path.Combine(root, "TOPSOLID"), ref bestBin, ref bestScore);
+            }
+
+            return bestBin;
+        }
+
+        /// <summary>
+        /// Inspects every direct subfolder of <paramref name="container"/> whose name looks
+        /// like a TopSolid version ("TopSolid 7.21" or "V627") and keeps the highest one
+        /// that actually contains the kernel Automation assembly.
+        /// </summary>
+        private static void ScanVersionedContainer(string container, ref string bestBin, ref int bestScore)
+        {
+            try
+            {
+                if (!Directory.Exists(container)) return;
+
+                foreach (string dir in Directory.GetDirectories(container))
                 {
                     string dirName = Path.GetFileName(dir);
-                    var m = Regex.Match(dirName, @"^TopSolid\s+(7[\d.]+)$", RegexOptions.IgnoreCase);
-                    if (!m.Success) continue;
 
-                    if (!Version.TryParse(m.Groups[1].Value, out Version v)) continue;
+                    int score;
+                    if (!TryScoreVersionName(dirName, out score)) continue;
 
-                    string binDir = Path.Combine(dir, "bin");
-                    string dll = Path.Combine(binDir, KernelDll);
-                    if (!File.Exists(dll)) continue;
+                    string binDir = ToBinDirectory(dir);
+                    if (binDir == null) continue;
 
-                    if (bestVersion == null || v > bestVersion)
+                    if (score > bestScore)
                     {
-                        bestVersion = v;
-                        bestBin = EnsureTrailingSlash(binDir);
+                        bestScore = score;
+                        bestBin = binDir;
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("[MCP-WARN] Filesystem scan failed: " + ex.Message);
+                Console.Error.WriteLine("[MCP-WARN] Scan of " + container + " failed: " + ex.Message);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────────
+        // Helpers
+        // ─────────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Turns an install folder into a usable bin directory: the folder itself when it
+        /// already holds the kernel assembly, otherwise its "bin" subfolder.
+        /// Returns null when the kernel assembly is nowhere to be found.
+        /// </summary>
+        private static string ToBinDirectory(string installDir)
+        {
+            try
+            {
+                string trimmed = installDir.Trim().TrimEnd('\\', '/');
+                if (trimmed.Length == 0) return null;
+
+                if (File.Exists(Path.Combine(trimmed, KernelDll)))
+                    return EnsureTrailingSlash(trimmed);
+
+                string binDir = Path.Combine(trimmed, "bin");
+                if (File.Exists(Path.Combine(binDir, KernelDll)))
+                    return EnsureTrailingSlash(binDir);
+            }
+            catch (Exception)
+            {
+                // Malformed path (invalid characters, too long, ...) — just ignore it.
             }
 
-            return bestBin;
+            return null;
+        }
+
+        /// <summary>
+        /// Scores a version folder or registry key name so installs can be compared.
+        /// "TopSolid 7.21" scores 721, the Missler form "V627" scores 627. Higher wins.
+        /// </summary>
+        private static bool TryScoreVersionName(string name, out int score)
+        {
+            score = int.MinValue;
+            if (string.IsNullOrWhiteSpace(name)) return false;
+
+            string trimmed = name.Trim();
+
+            // Modern: "TopSolid 7.21" (also tolerates "TopSolid 7.21.195")
+            var modern = Regex.Match(trimmed, @"^TopSolid\s+(\d+)\.(\d+)", RegexOptions.IgnoreCase);
+            if (modern.Success)
+            {
+                int major, minor;
+                if (int.TryParse(modern.Groups[1].Value, out major) &&
+                    int.TryParse(modern.Groups[2].Value, out minor))
+                {
+                    score = major * 100 + minor;
+                    return true;
+                }
+                return false;
+            }
+
+            // Historical Missler: "V627"
+            var missler = Regex.Match(trimmed, @"^V(\d+)$", RegexOptions.IgnoreCase);
+            if (missler.Success)
+            {
+                int build;
+                if (int.TryParse(missler.Groups[1].Value, out build))
+                {
+                    score = build;
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string EnsureTrailingSlash(string path)

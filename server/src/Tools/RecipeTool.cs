@@ -15,35 +15,38 @@ namespace TopSolidMcpServer.Tools
     {
         private readonly Func<TopSolidConnector> _connectorProvider;
 
+        /// <summary>When true, only read-only recipes may be executed.</summary>
+        private readonly bool _readOnly;
+
         private static readonly Dictionary<string, RecipeEntry> Recipes = new Dictionary<string, RecipeEntry>(StringComparer.OrdinalIgnoreCase)
         {
             // =====================================================================
             // PDM PROPERTIES — Read
             // =====================================================================
-            { "read_designation", R("Reads the designation of the active document",
+            { "read_designation", R("PDM PROPERTIES", "Reads the designation of the active document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
                 "string val = TopSolidHost.Pdm.GetDescription(pdmId);\n" +
                 "return string.IsNullOrEmpty(val) ? \"Designation: (empty)\" : \"Designation: \" + val;") },
-            { "read_name", R("Reads the name of the active document",
+            { "read_name", R("PDM PROPERTIES", "Reads the name of the active document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
                 "return \"Name: \" + TopSolidHost.Pdm.GetName(pdmId);") },
-            { "read_reference", R("Reads the reference (part number) of the active document",
+            { "read_reference", R("PDM PROPERTIES", "Reads the reference (part number) of the active document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
                 "string val = TopSolidHost.Pdm.GetPartNumber(pdmId);\n" +
                 "return string.IsNullOrEmpty(val) ? \"Reference: (empty)\" : \"Reference: \" + val;") },
-            { "read_manufacturer", R("Reads the manufacturer of the active document",
+            { "read_manufacturer", R("PDM PROPERTIES", "Reads the manufacturer of the active document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
                 "string val = TopSolidHost.Pdm.GetManufacturer(pdmId);\n" +
                 "return string.IsNullOrEmpty(val) ? \"Manufacturer: (empty)\" : \"Manufacturer: \" + val;") },
-            { "read_pdm_properties", R("Reads all PDM properties (name, designation, reference, manufacturer)",
+            { "read_pdm_properties", R("PDM PROPERTIES", "Reads all PDM properties (name, designation, reference, manufacturer)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
@@ -60,42 +63,35 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // PDM PROPERTIES — Write
             // =====================================================================
-            { "set_designation", R("Sets the designation. Param: value",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+            { "set_designation", RW("PDM PROPERTIES", "Sets the designation. Param: value",
+                // docId, pdmId and __message are declared by the modification wrapper.
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "TopSolidHost.Pdm.SetDescription(pdmId, \"{value}\");\n" +
-                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
-                "return \"OK: Designation → {value}\";") },
-            { "set_name", R("Sets the name. Param: value",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "__message = \"OK: Designation → {value}\";") },
+            { "set_name", RW("PDM PROPERTIES", "Sets the name. Param: value",
+                // docId, pdmId and __message are declared by the modification wrapper.
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "TopSolidHost.Pdm.SetName(pdmId, \"{value}\");\n" +
-                "return \"OK: Name → {value}\";") },
-            { "set_reference", R("Sets the reference. Param: value",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "__message = \"OK: Name → {value}\";") },
+            { "set_reference", RW("PDM PROPERTIES", "Sets the reference. Param: value",
+                // docId, pdmId and __message are declared by the modification wrapper.
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "TopSolidHost.Pdm.SetPartNumber(pdmId, \"{value}\");\n" +
-                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
-                "return \"OK: Reference → {value}\";") },
-            { "set_manufacturer", R("Sets the manufacturer. Param: value",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
+                "__message = \"OK: Reference → {value}\";") },
+            { "set_manufacturer", RW("PDM PROPERTIES", "Sets the manufacturer. Param: value",
+                // docId, pdmId and __message are declared by the modification wrapper.
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "TopSolidHost.Pdm.SetManufacturer(pdmId, \"{value}\");\n" +
-                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
-                "return \"OK: Manufacturer → {value}\";") },
+                "__message = \"OK: Manufacturer → {value}\";") },
 
             // =====================================================================
             // PROJECTS & PDM NAVIGATION
             // =====================================================================
-            { "read_current_project", R("Returns the current project",
+            { "read_current_project", R("PROJECTS", "Returns the current project",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "return \"Project: \" + TopSolidHost.Pdm.GetName(projId);") },
-            { "read_project_contents", R("Lists folders, subfolders and documents of the current project (full tree)",
+            { "read_project_contents", R("PROJECTS", "Lists folders, subfolders and documents of the current project (full tree)",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
@@ -118,7 +114,7 @@ namespace TopSolidMcpServer.Tools
                 "listRecursive(projId, \"  \");\n" +
                 "sb.Insert(sb.ToString().IndexOf('\\n') + 1, \"(\" + totalFolders + \" folders, \" + totalDocs + \" documents)\\n\");\n" +
                 "return sb.ToString();") },
-            { "search_document", R("Searches for a document by name (CONTAINS). Param: value",
+            { "search_document", R("PROJECTS", "Searches for a document by name (CONTAINS). Param: value",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "var results = TopSolidHost.Pdm.SearchDocumentByName(projId, \"{value}\");\n" +
@@ -130,7 +126,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + name);\n" +
                 "}\n" +
                 "return sb.ToString();") },
-            { "search_folder", R("Searches for a folder by name (CONTAINS). Param: value",
+            { "search_folder", R("PROJECTS", "Searches for a folder by name (CONTAINS). Param: value",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "var results = TopSolidHost.Pdm.SearchFolderByName(projId, \"{value}\");\n" +
@@ -143,7 +139,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // DOCUMENT — State & Operations
             // =====================================================================
-            { "document_type", R("Detects the type of the active document",
+            { "document_type", R("DOCUMENT", "Detects the type of the active document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
@@ -162,20 +158,19 @@ namespace TopSolidMcpServer.Tools
                 "else if (isAssembly) sb.AppendLine(\"→ Assembly\");\n" +
                 "else sb.AppendLine(\"→ Part\");\n" +
                 "return sb.ToString();") },
-            { "save_document", R("Saves the active document",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
-                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
-                "return \"OK: Document saved.\";") },
-            { "rebuild_document", RW("Rebuilds the active document",
+            { "save_document", RW("DOCUMENT", "Saves the active document",
+                // docId, pdmId and __message are declared by the modification wrapper,
+                // which also saves pdmId once the transaction is committed.
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "__message = \"OK: Document saved.\";") },
+            { "rebuild_document", RW("DOCUMENT", "Rebuilds the active document",
                 "TopSolidHost.Documents.Rebuild(docId);\n" +
                 "__message = \"OK: Document rebuilt.\";") },
 
             // =====================================================================
             // PARAMETERS — Read
             // =====================================================================
-            { "read_parameters", R("Lists all parameters of the active document",
+            { "read_parameters", R("PARAMETERS", "Lists all parameters of the active document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -193,7 +188,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + name + \" = \" + val + \" (type=\" + pType + \")\");\n" +
                 "}\n" +
                 "return sb.ToString();") },
-            { "read_real_parameter", R("Reads a real parameter by name. Param: value=name",
+            { "read_real_parameter", R("PARAMETERS", "Reads a real parameter by name. Param: value=name",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -207,7 +202,7 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "return \"Parameter '{value}' not found.\";") },
-            { "read_text_parameter", R("Reads a text parameter by name. Param: value=name",
+            { "read_text_parameter", R("PARAMETERS", "Reads a text parameter by name. Param: value=name",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -222,13 +217,13 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // PARAMETERS — Write
             // =====================================================================
-            { "set_real_parameter", RW("Sets a real parameter. Param: value=name:SIvalue (e.g. Length:0.15)",
+            { "set_real_parameter", RW("PARAMETERS", "Sets a real parameter. Param: value=name:SIvalue (e.g. Length:0.15)",
                 "string[] parts = \"{value}\".Split(':');\n" +
-                "if (parts.Length != 2) return \"Format: name:SIvalue (e.g. Length:0.15)\";\n" +
+                "if (parts.Length != 2) { __message = \"Format: name:SIvalue (e.g. Length:0.15)\"; return; }\n" +
                 "string pName = parts[0].Trim();\n" +
                 "double newVal;\n" +
                 "if (!double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out newVal))\n" +
-                "    return \"Invalid value: \" + parts[1];\n" +
+                "    { __message = \"Invalid value: \" + parts[1]; return; }\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
                 "foreach (var p in pList)\n" +
                 "{\n" +
@@ -241,7 +236,7 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "__message = \"Parameter '\" + pName + \"' not found.\";") },
-            { "set_text_parameter", RW("Sets a text parameter. Param: value=name:value",
+            { "set_text_parameter", RW("PARAMETERS", "Sets a text parameter. Param: value=name:value",
                 "int idx = \"{value}\".IndexOf(':');\n" +
                 "if (idx < 0) { __message = \"Format: name:value\"; return; }\n" +
                 "string pName = \"{value}\".Substring(0, idx).Trim();\n" +
@@ -259,7 +254,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"Parameter '\" + pName + \"' not found.\";") },
 
-            { "creer_parametre_reel", RW("Creates a new real parameter in the active document. " +
+            { "creer_parametre_reel", RW("PARAMETERS", "Creates a new real parameter in the active document. " +
                 "Param: value=name:unit:SIvalue (e.g. Longueur:Length:0.05 for 50mm) or name::SIvalue for NoUnit. " +
                 "Supported units: Length, Mass, Angle, NoUnit.",
                 "string[] parts = \"{value}\".Split(':');\n" +
@@ -282,7 +277,7 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidHost.Elements.SetName(paramId, paramName);\n" +
                 "__message = \"OK: parameter '\" + paramName + \"' created (\" + unit + \", value=\" + siVal.ToString(\"F6\") + \")\";") },
 
-            { "creer_parametre_formule", RW("Creates a new formula-driven real parameter in the active document. " +
+            { "creer_parametre_formule", RW("PARAMETERS", "Creates a new formula-driven real parameter in the active document. " +
                 "Param: value=name:unit:formula (e.g. DiagBolt:Length:Longueur * 1.414). " +
                 "The formula uses TopSolid expression syntax (parameter names, operators, SI units). " +
                 "Supported units: Length, Mass, Angle, NoUnit.",
@@ -306,16 +301,16 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidHost.Elements.SetName(paramId, paramName);\n" +
                 "__message = \"OK: formula parameter '\" + paramName + \"' created (\" + unit + \", formula='\" + formula + \"')\";") },
 
-            { "creer_esquisse_rectangle", RW("Cree une esquisse 2D rectangulaire dans le document actif. Param: value=largeur:hauteur (mm)",
+            { "creer_esquisse_rectangle", RW("GEOMETRY", "Creates a 2D rectangular sketch in the active document. Param: value=width:height (mm)",
                 "string[] parts = \"{value}\".Split(':');\n" +
-                "if (parts.Length < 2) { __message = \"ERROR: format attendu largeur:hauteur (mm)\"; return; }\n" +
+                "if (parts.Length < 2) { __message = \"ERROR: expected format width:height (mm)\"; return; }\n" +
                 "double widthMm, heightMm;\n" +
                 "if (!double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out widthMm) ||\n" +
                 "    !double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out heightMm))\n" +
-                "    { __message = \"ERROR: valeurs numeriques invalides\"; return; }\n" +
+                "    { __message = \"ERROR: invalid numeric values\"; return; }\n" +
                 "double w = widthMm * 0.001;\n" +
                 "double h = heightMm * 0.001;\n" +
-                "// On utilise docId mis a jour par le wrapper (EnsureIsDirty)\n" +
+                "// docId is refreshed by the wrapper (EnsureIsDirty)\n" +
                 "ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn2D(docId, new SmartPoint2D(Point2D.O), new SmartDirection2D(Direction2D.DX), false);\n" +
                 "TopSolidHost.Elements.SetName(sketchId, \"Esquisse_Rectangle\");\n" +
                 "TopSolidHost.Sketches2D.StartModification(sketchId);\n" +
@@ -330,23 +325,23 @@ namespace TopSolidMcpServer.Tools
                 "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1));\n" +
                 "TopSolidHost.Sketches2D.CreateProfile(segs);\n" +
                 "TopSolidHost.Sketches2D.EndModification();\n" +
-                "__message = \"OK: esquisse Esquisse_Rectangle creee (\" + widthMm + \"x\" + heightMm + \" mm)\";") },
+                "__message = \"OK: sketch Esquisse_Rectangle created (\" + widthMm + \"x\" + heightMm + \" mm)\";") },
 
-            { "extruder_esquisse", RW("Extrude la derniere esquisse 2D du document actif en solide 3D. Param: value=hauteur_mm",
+            { "extruder_esquisse", RW("GEOMETRY", "Extrudes the last 2D sketch of the active document into a 3D solid. Param: value=height_mm",
                 "double heightMm;\n" +
                 "if (!double.TryParse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out heightMm))\n" +
-                "    { __message = \"ERROR: hauteur numerique invalide\"; return; }\n" +
+                "    { __message = \"ERROR: invalid numeric height\"; return; }\n" +
                 "double heightM = heightMm * 0.001;\n" +
                 "var sketches = TopSolidHost.Sketches2D.GetSketches(docId);\n" +
                 "if (sketches == null || sketches.Count == 0)\n" +
-                "    { __message = \"ERROR: aucune esquisse dans ce document\"; return; }\n" +
+                "    { __message = \"ERROR: no sketch in this document\"; return; }\n" +
                 "ElementId lastSketch = sketches[sketches.Count - 1];\n" +
                 "TopSolidHost.Shapes.CreateExtrudedShape(docId, new SmartSection3D(lastSketch), SmartDirection3D.DZ, new SmartReal(UnitType.Length, heightM), new SmartReal(UnitType.Angle, 0), false, false);\n" +
-                "__message = \"OK: extrusion de \" + heightMm + \"mm creee\";") },
+                "__message = \"OK: extrusion of \" + heightMm + \"mm created\";") },
 
-            { "ajouter_inclusion", RW("Ajoute une inclusion d'un document piece dans le document assemblage actif. Param: value=nom_document_piece",
+            { "ajouter_inclusion", RW("ASSEMBLIES", "Adds an inclusion of a part document into the active assembly document. Param: value=part_document_name",
                 "if (!TopSolidDesignHost.Assemblies.IsAssembly(docId))\n" +
-                "    { __message = \"ERROR: le document actif n'est pas un assemblage\"; return; }\n" +
+                "    { __message = \"ERROR: the active document is not an assembly\"; return; }\n" +
                 "DocumentId partDoc = DocumentId.Empty;\n" +
                 "string targetName = \"{value}\".Trim();\n" +
                 "var allDocs = TopSolidHost.Documents.GetOpenDocuments();\n" +
@@ -359,15 +354,15 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "if (partDoc.IsEmpty)\n" +
-                "    { __message = \"ERROR: document '\" + targetName + \"' introuvable (ouvrir le document d'abord)\"; return; }\n" +
+                "    { __message = \"ERROR: document '\" + targetName + \"' not found (open the document first)\"; return; }\n" +
                 "ElementId positioningId = TopSolidDesignHost.Assemblies.CreatePositioning(docId);\n" +
                 "TopSolidDesignHost.Assemblies.CreateInclusion(docId, positioningId, null, partDoc, null, null, null, true, ElementId.Empty, ElementId.Empty, false, false, false, false, Transform3D.Identity, false);\n" +
-                "__message = \"OK: document '\" + targetName + \"' inclus dans l'assemblage\";") },
+                "__message = \"OK: document '\" + targetName + \"' included in the assembly\";") },
 
             // =====================================================================
             // GEOMETRY — Read
             // =====================================================================
-            { "read_3d_points", R("Lists 3D points of the document",
+            { "read_3d_points", R("GEOMETRY", "Lists 3D points of the document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var points = TopSolidHost.Geometries3D.GetPoints(docId);\n" +
@@ -380,7 +375,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + name + \" (\" + (geom.X*1000).ToString(\"F1\") + \", \" + (geom.Y*1000).ToString(\"F1\") + \", \" + (geom.Z*1000).ToString(\"F1\") + \") mm\");\n" +
                 "}\n" +
                 "return sb.ToString();") },
-            { "read_3d_frames", R("Lists 3D frames of the document",
+            { "read_3d_frames", R("GEOMETRY", "Lists 3D frames of the document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var frames = TopSolidHost.Geometries3D.GetFrames(docId);\n" +
@@ -393,7 +388,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // SKETCHES — Read
             // =====================================================================
-            { "list_sketches", R("Lists sketches of the document",
+            { "list_sketches", R("GEOMETRY", "Lists sketches of the document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var sketches = TopSolidHost.Sketches2D.GetSketches(docId);\n" +
@@ -406,7 +401,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // SHAPES — Read
             // =====================================================================
-            { "read_shapes", R("Lists shapes of the document",
+            { "read_shapes", R("GEOMETRY", "Lists shapes of the document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
@@ -419,7 +414,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + name + \" (\" + faceCount + \" faces)\");\n" +
                 "}\n" +
                 "return sb.ToString();") },
-            { "read_operations", R("Lists operations (feature tree)",
+            { "read_operations", R("GEOMETRY", "Lists operations (feature tree)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
@@ -437,7 +432,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // ASSEMBLIES — Read
             // =====================================================================
-            { "detect_assembly", R("Detects if the document is an assembly and lists parts",
+            { "detect_assembly", R("ASSEMBLIES", "Detects if the document is an assembly and lists parts",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isAsm = false;\n" +
@@ -445,11 +440,11 @@ namespace TopSolidMcpServer.Tools
                 "if (!isAsm) return \"This document is NOT an assembly.\";\n" +
                 "var parts = TopSolidDesignHost.Assemblies.GetParts(docId);\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
-                "sb.AppendLine(\"Assembly: \" + parts.Count + \" pieces\");\n" +
+                "sb.AppendLine(\"Assembly: \" + parts.Count + \" parts\");\n" +
                 "foreach (var p in parts)\n" +
                 "    sb.AppendLine(\"  \" + TopSolidHost.Elements.GetFriendlyName(p));\n" +
                 "return sb.ToString();") },
-            { "list_inclusions", R("Lists inclusions of an assembly",
+            { "list_inclusions", R("ASSEMBLIES", "Lists inclusions of an assembly",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
@@ -475,14 +470,14 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // FAMILIES — Read
             // =====================================================================
-            { "detect_family", R("Detects if the document is a family",
+            { "detect_family", R("FAMILIES", "Detects if the document is a family",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isFamily = TopSolidHost.Families.IsFamily(docId);\n" +
                 "if (!isFamily) return \"This document is NOT a family.\";\n" +
                 "bool isExplicit = TopSolidHost.Families.IsExplicit(docId);\n" +
                 "return \"Family detected (\" + (isExplicit ? \"explicit\" : \"implicit\") + \").\";") },
-            { "read_family_codes", R("Reads family codes",
+            { "read_family_codes", R("FAMILIES", "Reads family codes",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "if (!TopSolidHost.Families.IsFamily(docId)) return \"Not a family.\";\n" +
@@ -496,7 +491,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // DRAFTING — Read
             // =====================================================================
-            { "open_drafting", R("Finds and opens the drafting associated with the current part/assembly via PDM back-references",
+            { "open_drafting", R("DRAFTING", "Finds and opens the drafting associated with the current part/assembly via PDM back-references",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
@@ -519,7 +514,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return \"No drafting found for this document.\";") },
 
-            { "detect_drafting", R("Detects if the document is a drafting and provides info",
+            { "detect_drafting", R("DRAFTING", "Detects if the document is a drafting and provides info",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isDrafting = false;\n" +
@@ -532,7 +527,7 @@ namespace TopSolidMcpServer.Tools
                 "string format = TopSolidDraftingHost.Draftings.GetDraftingFormatName(docId);\n" +
                 "sb.AppendLine(\"Format: \" + format);\n" +
                 "return sb.ToString();") },
-            { "list_drafting_views", R("Lists views of a drafting",
+            { "list_drafting_views", R("DRAFTING", "Lists views of a drafting",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isDrafting = false;\n" +
@@ -552,7 +547,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // BOM — Read
             // =====================================================================
-            { "detect_bom", R("Detects if the document is a BOM",
+            { "detect_bom", R("BOM", "Detects if the document is a BOM",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isBom = false;\n" +
@@ -560,7 +555,7 @@ namespace TopSolidMcpServer.Tools
                 "if (!isBom) return \"This document is NOT a BOM.\";\n" +
                 "int cols = TopSolidDesignHost.Boms.GetColumnCount(docId);\n" +
                 "return \"BOM detected (\" + cols + \" columns).\";") },
-            { "read_bom_columns", R("Reads BOM columns",
+            { "read_bom_columns", R("BOM", "Reads BOM columns",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isBom = false;\n" +
@@ -580,7 +575,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // DRAFTING — Advanced Recipes (M-58)
             // =====================================================================
-            { "read_drafting_scale", R("Reads global and per-view scale of a drafting",
+            { "read_drafting_scale", R("DRAFTING", "Reads global and per-view scale of a drafting",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isDrafting = false;\n" +
@@ -599,7 +594,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "read_drafting_format", R("Reads the format (size, margins) of a drafting",
+            { "read_drafting_format", R("DRAFTING", "Reads the format (size, margins) of a drafting",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isDrafting = false;\n" +
@@ -617,7 +612,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.AppendLine(\"Projection mode: \" + mode);\n" +
                 "return sb.ToString();") },
 
-            { "read_main_projection", R("Reads the main projection of a drafting",
+            { "read_main_projection", R("DRAFTING", "Reads the main projection of a drafting",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isDrafting = false;\n" +
@@ -647,7 +642,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // BOM — Advanced Recipes (M-58)
             // =====================================================================
-            { "read_bom_contents", R("Reads the full BOM contents (rows and cells)",
+            { "read_bom_contents", R("BOM", "Reads the full BOM contents (rows and cells)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isBom = false;\n" +
@@ -670,7 +665,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "count_bom_rows", R("Counts active BOM rows",
+            { "count_bom_rows", R("BOM", "Counts active BOM rows",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isBom = false;\n" +
@@ -689,7 +684,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // UNFOLDING — Sheet Metal (M-58)
             // =====================================================================
-            { "detect_unfolding", R("Detects if the document is an unfolding (sheet metal)",
+            { "detect_unfolding", R("UNFOLDING", "Detects if the document is an unfolding (sheet metal)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isUnfolding = false;\n" +
@@ -706,7 +701,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "read_bend_features", R("Lists bends of an unfolding (angles, radii, lengths)",
+            { "read_bend_features", R("UNFOLDING", "Lists bends of an unfolding (angles, radii, lengths)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isUnfolding = false;\n" +
@@ -720,7 +715,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  Pli: angle=\" + (b.Angle*180/3.14159).ToString(\"F1\") + \"deg, radius=\" + (b.Radius*1000).ToString(\"F2\") + \"mm, length=\" + (b.Length*1000).ToString(\"F2\") + \"mm\");\n" +
                 "return sb.ToString();") },
 
-            { "read_unfolding_dimensions", R("Reads unfolding dimensions from system properties (sheet metal)",
+            { "read_unfolding_dimensions", R("UNFOLDING", "Reads unfolding dimensions from system properties (sheet metal)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -753,7 +748,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // DRAFTING / BOM / UNFOLDING — Write Recipes (M-58)
             // =====================================================================
-            { "set_drafting_scale", RW("Sets the global scale of a drafting. Param: value=denominator (e.g. '10' for 1:10)",
+            { "set_drafting_scale", RW("DRAFTING", "Sets the global scale of a drafting. Param: value=denominator (e.g. '10' for 1:10)",
                 "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "bool isDrafting = false;\n" +
                 "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = \"Not a drafting.\"; return; }\n" +
@@ -765,7 +760,7 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);\n" +
                 "__message = \"OK: drafting scale set to 1:\" + denom;") },
 
-            { "set_drafting_format", RW("Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')",
+            { "set_drafting_format", RW("DRAFTING", "Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')",
                 "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "bool isDrafting = false;\n" +
                 "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = \"Not a drafting.\"; return; }\n" +
@@ -775,7 +770,7 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidDraftingHost.Draftings.SetDraftingFormatName(docId, fmt);\n" +
                 "__message = \"OK: drafting format set to \" + fmt;") },
 
-            { "set_projection_quality", RW("Sets the drafting projection quality. Param: value='exact' (precise) or 'fast' (quick)",
+            { "set_projection_quality", RW("DRAFTING", "Sets the drafting projection quality. Param: value='exact' (precise) or 'fast' (quick)",
                 "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "bool isDrafting = false;\n" +
                 "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = \"Not a drafting.\"; return; }\n" +
@@ -788,7 +783,7 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidDraftingHost.Draftings.SetProjectionMode(docId, pm);\n" +
                 "__message = \"OK: projection quality set to \" + pm;") },
 
-            { "print_drafting", R("Prints the current drafting (all pages, black & white, 300 DPI, printed to scale)",
+            { "print_drafting", RD("DRAFTING", "Prints the current drafting (all pages, black & white, 300 DPI, printed to scale)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isDrafting = false;\n" +
@@ -805,7 +800,7 @@ namespace TopSolidMcpServer.Tools
                 "    return \"ERROR: \" + ex.Message;\n" +
                 "}") },
 
-            { "activate_bom_row", RW("Activates a BOM row by its index (0-based, among root-children). Param: value=row_index",
+            { "activate_bom_row", RW("BOM", "Activates a BOM row by its index (0-based, among root-children). Param: value=row_index",
                 "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "bool isBom = false;\n" +
                 "try { isBom = TopSolidDesignHost.Boms.IsBom(docId); } catch { __message = \"Not a BOM.\"; return; }\n" +
@@ -819,7 +814,7 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidDesignHost.Boms.ActivateRow(docId, rowId);\n" +
                 "__message = \"OK: BOM row \" + idx + \" activated.\";") },
 
-            { "deactivate_bom_row", RW("Deactivates a BOM row by its index (0-based, among root-children). Param: value=row_index",
+            { "deactivate_bom_row", RW("BOM", "Deactivates a BOM row by its index (0-based, among root-children). Param: value=row_index",
                 "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "bool isBom = false;\n" +
                 "try { isBom = TopSolidDesignHost.Boms.IsBom(docId); } catch { __message = \"Not a BOM.\"; return; }\n" +
@@ -836,7 +831,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // EXPORT
             // =====================================================================
-            { "list_exporters", R("Lists all available exporters",
+            { "list_exporters", R("EXPORT", "Lists all available exporters",
                 "var sb = new System.Text.StringBuilder();\n" +
                 "int count = TopSolidHost.Application.ExporterCount;\n" +
                 "sb.AppendLine(\"Exporters: \" + count);\n" +
@@ -848,7 +843,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(i + \": \" + typeName + \" [\" + string.Join(\", \", extensions) + \"]\");\n" +
                 "}\n" +
                 "return sb.ToString();") },
-            { "export_step", R("Exporte en STEP. Param: value=chemin (ex: C:\\temp\\piece.stp)",
+            { "export_step", RD("EXPORT", "Exports to STEP. Param: value=path (e.g. C:\\temp\\part.stp)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "int count = TopSolidHost.Application.ExporterCount;\n" +
@@ -866,7 +861,7 @@ namespace TopSolidMcpServer.Tools
                 "if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), \"export.stp\");\n" +
                 "TopSolidHost.Documents.Export(idx, docId, path);\n" +
                 "return \"OK: Exported to STEP → \" + path;") },
-            { "export_dxf", R("Exports to DXF. Param: value=path",
+            { "export_dxf", RD("EXPORT", "Exports to DXF. Param: value=path",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "int count = TopSolidHost.Application.ExporterCount;\n" +
@@ -884,7 +879,7 @@ namespace TopSolidMcpServer.Tools
                 "if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), \"export.dxf\");\n" +
                 "TopSolidHost.Documents.Export(idx, docId, path);\n" +
                 "return \"OK: Exported to DXF → \" + path;") },
-            { "export_pdf", R("Exports to PDF. Param: value=path",
+            { "export_pdf", RD("EXPORT", "Exports to PDF. Param: value=path",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "int count = TopSolidHost.Application.ExporterCount;\n" +
@@ -906,7 +901,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // USER PROPERTIES
             // =====================================================================
-            { "read_user_property", R("Reads a text user property. Param: value=property_name",
+            { "read_user_property", R("USER PROPERTIES", "Reads a text user property. Param: value=property_name",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
@@ -916,7 +911,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // PART AUDIT — High-value composite scenarios
             // =====================================================================
-            { "audit_part", R("Full part audit: properties, parameters, shapes, mass, volume",
+            { "audit_part", R("AUDIT", "Full part audit: properties, parameters, shapes, mass, volume",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
@@ -954,7 +949,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "audit_assembly", R("Full assembly audit: parts, inclusions, mass",
+            { "audit_assembly", R("AUDIT", "Full assembly audit: parts, inclusions, mass",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isAsm = false;\n" +
@@ -989,7 +984,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(sb.ToString().IndexOf(\"\\nPieces\"), \"Inclusions: \" + inclCount + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "check_part", R("Quality check: designation, reference, material filled?",
+            { "check_part", R("AUDIT", "Quality check: designation, reference, material filled?",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
@@ -1015,7 +1010,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // PERFORMANCE — Mass, volume, surface
             // =====================================================================
-            { "read_mass_volume", R("Reads mass, volume, surface from document system properties",
+            { "read_mass_volume", R("MEASUREMENTS", "Reads mass, volume, surface from document system properties",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -1034,7 +1029,7 @@ namespace TopSolidMcpServer.Tools
                 "if (sb.Length == 0) return \"No physical properties found.\";\n" +
                 "return sb.ToString();") },
 
-            { "read_material_density", R("Calculates density from document mass/volume",
+            { "read_material_density", R("MATERIALS", "Calculates density from document mass/volume",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -1051,14 +1046,15 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // INVOKE COMMAND — TopSolid menu commands
             // =====================================================================
-            { "invoke_command", R("Executes a TopSolid menu command by name. Param: value=command_name",
+            { "invoke_command", RW("DOCUMENT", "Executes a TopSolid menu command by name. Param: value=command_name",
+                // __message is declared by the modification wrapper.
                 "bool result = TopSolidHost.Application.InvokeCommand(\"{value}\");\n" +
-                "return result ? \"OK: Command '{value}' executee.\" : \"ERREUR: Commande '{value}' non trouvee ou echec.\";") },
+                "__message = result ? \"OK: Command '{value}' executed.\" : \"ERROR: Command '{value}' not found or failed.\";") },
 
             // =====================================================================
             // OCCURRENCES — Occurrence properties in assemblies
             // =====================================================================
-            { "read_occurrences", R("Lists occurrences of an assembly with their definition",
+            { "read_occurrences", R("ASSEMBLIES", "Lists occurrences of an assembly with their definition",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isAsm = false;\n" +
@@ -1077,11 +1073,11 @@ namespace TopSolidMcpServer.Tools
                 "    try { defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(p); } catch {}\n" +
                 "    string defName = \"\";\n" +
                 "    if (!defDoc.IsEmpty) { PdmObjectId defPdm = TopSolidHost.Documents.GetPdmObject(defDoc); defName = TopSolidHost.Pdm.GetName(defPdm); }\n" +
-                "    sb.AppendLine(\"  \" + name + (isOcc ? \" [occ]\" : \"\") + (!string.IsNullOrEmpty(occName) ? \" nom=\" + occName : \"\") + (!string.IsNullOrEmpty(defName) ? \" -> \" + defName : \"\"));\n" +
+                "    sb.AppendLine(\"  \" + name + (isOcc ? \" [occ]\" : \"\") + (!string.IsNullOrEmpty(occName) ? \" name=\" + occName : \"\") + (!string.IsNullOrEmpty(defName) ? \" -> \" + defName : \"\"));\n" +
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "rename_occurrence", RW("Renames an occurrence. Param: value=old_name:new_name",
+            { "rename_occurrence", RW("ASSEMBLIES", "Renames an occurrence. Param: value=old_name:new_name",
                 "int idx = \"{value}\".IndexOf(':');\n" +
                 "if (idx < 0) { __message = \"Format: old_name:new_name\"; return; }\n" +
                 "string oldName = \"{value}\".Substring(0, idx).Trim();\n" +
@@ -1100,24 +1096,22 @@ namespace TopSolidMcpServer.Tools
                 "__message = \"Occurrence '\" + oldName + \"' not found.\";") },
 
             // =====================================================================
-            // USER PROPERTIES — Ecriture
+            // USER PROPERTIES — Write
             // =====================================================================
-            { "set_user_property", R("Sets a text user property. Param: value=property_name:value",
-                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
-                "if (docId.IsEmpty) return \"No document open.\";\n" +
+            { "set_user_property", RW("USER PROPERTIES", "Sets a text user property. Param: value=property_name:value",
+                // docId, pdmId and __message are declared by the modification wrapper.
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "int idx = \"{value}\".IndexOf(':');\n" +
-                "if (idx < 0) return \"Format: property_name:value\";\n" +
+                "if (idx < 0) { __message = \"Format: property_name:value\"; return; }\n" +
                 "string propName = \"{value}\".Substring(0, idx).Trim();\n" +
                 "string propVal = \"{value}\".Substring(idx + 1).Trim();\n" +
-                "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
                 "TopSolidHost.Pdm.SetTextUserProperty(pdmId, propName, propVal);\n" +
-                "TopSolidHost.Pdm.Save(pdmId, true);\n" +
-                "return \"OK: Property '\" + propName + \"' = '\" + propVal + \"'\";") },
+                "__message = \"OK: Property '\" + propName + \"' = '\" + propVal + \"'\";") },
 
             // =====================================================================
             // BOUNDING BOX / STOCK
             // =====================================================================
-            { "read_bounding_box", R("Reads bounding box dimensions from system properties",
+            { "read_bounding_box", R("MEASUREMENTS", "Reads bounding box dimensions from system properties",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -1147,7 +1141,7 @@ namespace TopSolidMcpServer.Tools
                 "if (sb.Length <= 22) return \"No bounding box dimensions found.\";\n" +
                 "return sb.ToString();") },
 
-            { "read_part_dimensions", R("Reads dimensions (Height, Width, Length, Box Size) from system properties",
+            { "read_part_dimensions", R("MEASUREMENTS", "Reads dimensions (Height, Width, Length, Box Size) from system properties",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -1168,7 +1162,7 @@ namespace TopSolidMcpServer.Tools
                 "if (sb.Length <= 22) return \"No dimensions found (not a part?)\";\n" +
                 "return sb.ToString();") },
 
-            { "read_inertia_moments", R("Reads principal inertia moments from system properties",
+            { "read_inertia_moments", R("MEASUREMENTS", "Reads principal inertia moments from system properties",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -1189,7 +1183,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // BATCH — Project operations
             // =====================================================================
-            { "list_project_documents", R("Lists ALL project documents with designation and reference",
+            { "list_project_documents", R("PROJECTS", "Lists ALL project documents with designation and reference",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\nvar items = docs;\n" +
@@ -1207,7 +1201,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(0, \"Documents: \" + docCount + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "check_project", R("Full project quality check: parts without designation/reference",
+            { "check_project", R("AUDIT", "Full project quality check: parts without designation/reference",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\nvar items = docs;\n" +
@@ -1234,7 +1228,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // MATERIALS
             // =====================================================================
-            { "compare_parameters", R("Compares parameters of the active document with another. Param: value=other_document_name",
+            { "compare_parameters", R("AUDIT", "Compares parameters of the active document with another. Param: value=other_document_name",
                 "DocumentId curDoc = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (curDoc.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
@@ -1282,7 +1276,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.AppendLine(\"\\n\" + diffs + \" difference(s)\");\n" +
                 "return sb.ToString();") },
 
-            { "compare_document_operations", R("Compares operations (feature tree) between the current and another document. Param: value=other_doc_name",
+            { "compare_document_operations", R("AUDIT", "Compares operations (feature tree) between the current and another document. Param: value=other_doc_name",
                 "DocumentId docIdA = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docIdA.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
@@ -1306,7 +1300,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "compare_document_entities", R("Compares entities (shapes, sketches, points, frames) between the current and another document. Param: value=other_doc_name",
+            { "compare_document_entities", R("AUDIT", "Compares entities (shapes, sketches, points, frames) between the current and another document. Param: value=other_doc_name",
                 "DocumentId docIdA = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docIdA.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
@@ -1322,10 +1316,10 @@ namespace TopSolidMcpServer.Tools
                 "int shA = TopSolidHost.Shapes.GetShapes(docIdA).Count;\n" +
                 "int shB = TopSolidHost.Shapes.GetShapes(docIdB).Count;\n" +
                 "sb.AppendLine((shA==shB?\"  =\":\"  *\") + \" Shapes: \" + shA + \" vs \" + shB);\n" +
-                "// Esquisses\n" +
+                "// Sketches\n" +
                 "int skA = TopSolidHost.Sketches2D.GetSketches(docIdA).Count;\n" +
                 "int skB = TopSolidHost.Sketches2D.GetSketches(docIdB).Count;\n" +
-                "sb.AppendLine((skA==skB?\"  =\":\"  *\") + \" Esquisses: \" + skA + \" vs \" + skB);\n" +
+                "sb.AppendLine((skA==skB?\"  =\":\"  *\") + \" Sketches: \" + skA + \" vs \" + skB);\n" +
                 "// Points 3D\n" +
                 "int ptA = TopSolidHost.Geometries3D.GetPoints(docIdA).Count;\n" +
                 "int ptB = TopSolidHost.Geometries3D.GetPoints(docIdB).Count;\n" +
@@ -1344,13 +1338,13 @@ namespace TopSolidMcpServer.Tools
                 "sb.AppendLine((paA==paB?\"  =\":\"  *\") + \" Parameters: \" + paA + \" vs \" + paB);\n" +
                 "return sb.ToString();") },
 
-            { "copy_parameters_to", RW("Copies parameter values from the current document to another. Param: value=target_doc_name",
+            { "copy_parameters_to", RW("BATCH", "Copies parameter values from the current document to another. Param: value=target_doc_name",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "DocumentId srcDocId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (srcDocId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "var results = TopSolidHost.Pdm.SearchDocumentByName(projId, \"{value}\");\n" +
                 "if (results.Count == 0) { __message = \"Document '{value}' not found.\"; return; }\n" +
-                "// Lire les params source\n" +
+                "// Read the source parameters\n" +
                 "var srcParams = TopSolidHost.Parameters.GetParameters(srcDocId);\n" +
                 "var srcDict = new System.Collections.Generic.Dictionary<string, object[]>();\n" +
                 "foreach (var p in srcParams)\n" +
@@ -1367,7 +1361,7 @@ namespace TopSolidMcpServer.Tools
                 "    else if (t == ParameterType.Boolean)\n" +
                 "        srcDict[name] = new object[] { t, TopSolidHost.Parameters.GetBooleanValue(p) };\n" +
                 "}\n" +
-                "// Appliquer sur le doc cible\n" +
+                "// Apply to the target document\n" +
                 "DocumentId tgtDocId = TopSolidHost.Documents.GetDocument(results[0]);\n" +
                 "TopSolidHost.Documents.EnsureIsDirty(ref tgtDocId);\n" +
                 "var tgtParams = TopSolidHost.Parameters.GetParameters(tgtDocId);\n" +
@@ -1391,7 +1385,7 @@ namespace TopSolidMcpServer.Tools
                 "string tgtName = TopSolidHost.Pdm.GetName(results[0]);\n" +
                 "__message = \"OK: \" + applied + \" parameters copied to '\" + tgtName + \"' (\" + skipped + \" skipped).\";") },
 
-            { "copy_pdm_properties_to", RW("Copies designation/reference/manufacturer from current to another document. Param: value=target_doc_name",
+            { "copy_pdm_properties_to", RW("BATCH", "Copies designation/reference/manufacturer from current to another document. Param: value=target_doc_name",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "DocumentId srcDocId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (srcDocId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
@@ -1399,12 +1393,12 @@ namespace TopSolidMcpServer.Tools
                 "var results = TopSolidHost.Pdm.SearchDocumentByName(projId, \"{value}\");\n" +
                 "if (results.Count == 0) { __message = \"Document '{value}' not found.\"; return; }\n" +
                 "PdmObjectId tgtPdmId = results[0];\n" +
-                "// Lire source\n" +
+                "// Read source\n" +
                 "string desc = TopSolidHost.Pdm.GetDescription(srcPdmId);\n" +
                 "string pn = TopSolidHost.Pdm.GetPartNumber(srcPdmId);\n" +
                 "string mfr = TopSolidHost.Pdm.GetManufacturer(srcPdmId);\n" +
                 "string mfrPn = TopSolidHost.Pdm.GetManufacturerPartNumber(srcPdmId);\n" +
-                "// Ecrire cible\n" +
+                "// Write target\n" +
                 "TopSolidHost.Pdm.SetDescription(tgtPdmId, desc);\n" +
                 "TopSolidHost.Pdm.SetPartNumber(tgtPdmId, pn);\n" +
                 "TopSolidHost.Pdm.SetManufacturer(tgtPdmId, mfr);\n" +
@@ -1412,7 +1406,7 @@ namespace TopSolidMcpServer.Tools
                 "string tgtName = TopSolidHost.Pdm.GetName(tgtPdmId);\n" +
                 "__message = \"OK: PDM properties copied to '\" + tgtName + \"' (designation=\" + desc + \", ref=\" + pn + \", manufacturer=\" + mfr + \").\";") },
 
-            { "batch_export_step", R("Exports ALL project parts to STEP in a folder. Param: value=folder_path",
+            { "batch_export_step", RD("EXPORT", "Exports ALL project parts to STEP in a folder. Param: value=folder_path",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "string outputDir = \"{value}\";\n" +
@@ -1449,7 +1443,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return \"Batch STEP export: \" + exported + \" exported, \" + skipped + \" skipped. Folder: \" + outputDir;") },
 
-            { "batch_read_property", R("Reads a specific property across all project documents. Param: value=property_name",
+            { "batch_read_property", R("BATCH", "Reads a specific property across all project documents. Param: value=property_name",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1483,7 +1477,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "find_modified_documents", R("Lists unsaved (dirty) documents of the project",
+            { "find_modified_documents", R("PROJECTS", "Lists unsaved (dirty) documents of the project",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1505,7 +1499,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(0, \"Modified documents (unsaved): \" + dirty + \"/\" + docs.Count + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "batch_clear_author", RW("Clears the Author field on all project documents",
+            { "batch_clear_author", RW("BATCH", "Clears the Author field on all project documents",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1522,7 +1516,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: Author cleared on \" + cleared + \"/\" + docs.Count + \" documents.\";") },
 
-            { "batch_set_designation", RW("Sets Designation (Description) on ALL documents of the current project. Param: value=new_designation",
+            { "batch_set_designation", RW("BATCH", "Sets Designation (Description) on ALL documents of the current project. Param: value=new_designation",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1536,7 +1530,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: Designation set to '{value}' on \" + updated + \" document(s).\";") },
 
-            { "batch_set_reference", RW("Sets Reference (PartNumber) on ALL documents of the current project. Param: value=new_reference",
+            { "batch_set_reference", RW("BATCH", "Sets Reference (PartNumber) on ALL documents of the current project. Param: value=new_reference",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1550,7 +1544,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: Reference set to '{value}' on \" + updated + \" document(s).\";") },
 
-            { "batch_set_manufacturer", RW("Sets Manufacturer on ALL documents of the current project. Param: value=new_manufacturer",
+            { "batch_set_manufacturer", RW("BATCH", "Sets Manufacturer on ALL documents of the current project. Param: value=new_manufacturer",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1564,11 +1558,11 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: Manufacturer set to '{value}' on \" + updated + \" document(s).\";") },
 
-            { "clear_document_author", RW("Clears the Author field on the current document",
+            { "clear_document_author", RW("DOCUMENT", "Clears the Author field on the current document",
                 "TopSolidHost.Pdm.SetAuthor(pdmId, \"\");\n" +
                 "__message = \"OK: Author cleared on current document.\";") },
 
-            { "batch_check_virtual", R("Checks the virtual property (IsVirtualDocument) on all project documents",
+            { "batch_check_virtual", R("BATCH", "Checks the virtual property (IsVirtualDocument) on all project documents",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1590,7 +1584,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(0, \"Virtual: \" + virtuel + \", Non-virtual: \" + nonVirtuel + \"/\" + docs.Count + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "batch_enable_virtual", RW("Enables virtual mode on ALL non-virtual project documents",
+            { "batch_enable_virtual", RW("BATCH", "Enables virtual mode on ALL non-virtual project documents",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1611,11 +1605,11 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: Virtual mode enabled on \" + activated + \" document(s).\";") },
 
-            { "enable_virtual_document", RW("Enables virtual mode on the current document",
+            { "enable_virtual_document", RW("DOCUMENT", "Enables virtual mode on the current document",
                 "TopSolidHost.Documents.SetVirtualDocumentMode(docId, true);\n" +
                 "__message = \"OK: Virtual mode enabled on current document.\";") },
 
-            { "check_family_drivers", R("Checks that family drivers have a designation. Lists those without.",
+            { "check_family_drivers", R("FAMILIES", "Checks that family drivers have a designation. Lists those without.",
                 "DocumentId famDocId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (famDocId.IsEmpty) return \"No document open.\";\n" +
                 "bool isFam = false;\n" +
@@ -1645,7 +1639,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.AppendLine(\"\\n\" + withDesc + \" with designation, \" + withoutDesc + \" without.\");\n" +
                 "return sb.ToString();") },
 
-            { "fix_family_drivers", RW("Assigns a designation to family drivers that lack one (inferred from parameter name)",
+            { "fix_family_drivers", RW("FAMILIES", "Assigns a designation to family drivers that lack one (inferred from parameter name)",
                 "DocumentId famDocId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (famDocId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "bool isFam = false;\n" +
@@ -1661,7 +1655,7 @@ namespace TopSolidMcpServer.Tools
                 "    if (string.IsNullOrEmpty(desc))\n" +
                 "    {\n" +
                 "        string name = TopSolidHost.Elements.GetFriendlyName(d);\n" +
-                "        // Deduire designation du nom: CamelCase split + espaces\n" +
+                "        // Derive the designation from the name: CamelCase split + spaces\n" +
                 "        var result = new System.Text.StringBuilder();\n" +
                 "        for (int i = 0; i < name.Length; i++)\n" +
                 "        {\n" +
@@ -1681,7 +1675,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: \" + fixed_ + \" drivers fixed with designation inferred from name.\";") },
 
-            { "batch_check_family_drivers", R("Checks drivers of all families in the project",
+            { "batch_check_family_drivers", R("FAMILIES", "Checks drivers of all families in the project",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1717,7 +1711,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(0, \"Families: \" + famCount + \", Drivers without designation: \" + totalMissing + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "audit_parameter_names", R("Audits parameter name syntax: detects convention inconsistencies and near-duplicates",
+            { "audit_parameter_names", R("AUDIT", "Audits parameter name syntax: detects convention inconsistencies and near-duplicates",
                 "DocumentId curDocId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (curDocId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(curDocId);\n" +
@@ -1761,12 +1755,12 @@ namespace TopSolidMcpServer.Tools
                 "        if (names[i].ToLower() == names[j].ToLower())\n" +
                 "        { sb.AppendLine(\"  '\" + names[i] + \"' vs '\" + names[j] + \"'\"); dupes++; }\n" +
                 "if (dupes == 0) sb.AppendLine(\"  No duplicates.\");\n" +
-                "// Liste tous les noms pour inspection visuelle par le LLM\n" +
+                "// List every name for visual inspection by the LLM\n" +
                 "sb.AppendLine(\"\\nListe complete:\");\n" +
                 "foreach (var n in names) sb.AppendLine(\"  \" + n);\n" +
                 "return sb.ToString();") },
 
-            { "batch_audit_parameter_names", R("Audits parameter name syntax across all project documents",
+            { "batch_audit_parameter_names", R("AUDIT", "Audits parameter name syntax across all project documents",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1792,7 +1786,7 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "    catch { continue; }\n" +
                 "}\n" +
-                "// Trouver les variantes (meme nom, casse differente)\n" +
+                "// Find the variants (same name, different casing)\n" +
                 "sb.AppendLine(\"Unique names (excl. system): \" + allNames.Count);\n" +
                 "sb.AppendLine(\"\\nVariantes de casse detectees:\");\n" +
                 "int variants = 0;\n" +
@@ -1805,13 +1799,13 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "if (variants == 0) sb.AppendLine(\"  No variants.\");\n" +
-                "// Lister tous les noms pour inspection par le LLM (fautes de frappe)\n" +
-                "sb.AppendLine(\"\\nTous les noms de parametres du projet:\");\n" +
+                "// List every name for LLM inspection (typos)\n" +
+                "sb.AppendLine(\"\\nAll parameter names in the project:\");\n" +
                 "foreach (var kvp in allNames)\n" +
                 "    sb.AppendLine(\"  \" + kvp.Value[0]);\n" +
                 "return sb.ToString();") },
 
-            { "batch_audit_driver_designations", R("Lists driver designations of all project families for inspection (typos, inconsistencies)",
+            { "batch_audit_driver_designations", R("AUDIT", "Lists driver designations of all project families for inspection (typos, inconsistencies)",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -1839,7 +1833,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "read_revision_history", R("Lists all major/minor revisions of the current document",
+            { "read_revision_history", R("DOCUMENT", "Lists all major/minor revisions of the current document",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
@@ -1862,11 +1856,11 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "compare_revisions", R("Compares parameters of the current revision with the previous one",
+            { "compare_revisions", R("AUDIT", "Compares parameters of the current revision with the previous one",
                 "DocumentId curDocId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (curDocId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId curPdmId = TopSolidHost.Documents.GetPdmObject(curDocId);\n" +
-                "// Lire les parametres du document courant\n" +
+                "// Read the parameters of the current document\n" +
                 "var paramsNow = TopSolidHost.Parameters.GetParameters(curDocId);\n" +
                 "var dictNow = new System.Collections.Generic.Dictionary<string, string>();\n" +
                 "foreach (var p in paramsNow)\n" +
@@ -1880,14 +1874,14 @@ namespace TopSolidMcpServer.Tools
                 "    else if (t == ParameterType.Boolean) v = TopSolidHost.Parameters.GetBooleanValue(p).ToString();\n" +
                 "    dictNow[n] = v;\n" +
                 "}\n" +
-                "// Trouver la revision precedente\n" +
+                "// Find the previous revision\n" +
                 "var majors = TopSolidHost.Pdm.GetMajorRevisions(curPdmId);\n" +
                 "if (majors.Count == 0) return \"No revision found.\";\n" +
                 "var lastMajor = majors[majors.Count - 1];\n" +
                 "var minors = TopSolidHost.Pdm.GetMinorRevisions(lastMajor);\n" +
                 "if (minors.Count < 2) return \"Only one revision, nothing to compare.\";\n" +
                 "var prevMinor = minors[minors.Count - 2];\n" +
-                "// Ouvrir la revision precedente en lecture seule\n" +
+                "// Open the previous revision read-only\n" +
                 "DocumentId prevDocId = TopSolidHost.Documents.GetMinorRevisionDocument(prevMinor);\n" +
                 "var paramsPrev = TopSolidHost.Parameters.GetParameters(prevDocId);\n" +
                 "var dictPrev = new System.Collections.Generic.Dictionary<string, string>();\n" +
@@ -1925,7 +1919,7 @@ namespace TopSolidMcpServer.Tools
                 "else sb.AppendLine(\"\\n\" + diffs + \" difference(s)\");\n" +
                 "return sb.ToString();") },
 
-            { "export_bom_csv", R("Exports the BOM as text (separated columns)",
+            { "export_bom_csv", R("BOM", "Exports the BOM as text (separated columns)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isBom = false;\n" +
@@ -1934,12 +1928,12 @@ namespace TopSolidMcpServer.Tools
                 "int colCount = TopSolidDesignHost.Boms.GetColumnCount(docId);\n" +
                 "int rootRow = TopSolidDesignHost.Boms.GetRootRow(docId);\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
-                "// En-tetes\n" +
+                "// Headers\n" +
                 "var headers = new System.Collections.Generic.List<string>();\n" +
                 "for (int i = 0; i < colCount; i++)\n" +
                 "    headers.Add(TopSolidDesignHost.Boms.GetColumnTitle(docId, i));\n" +
                 "sb.AppendLine(string.Join(\";\", headers));\n" +
-                "// Lignes\n" +
+                "// Rows\n" +
                 "var children = TopSolidDesignHost.Boms.GetRowChildrenRows(docId, rootRow);\n" +
                 "foreach (int rowId in children)\n" +
                 "{\n" +
@@ -1951,7 +1945,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "check_missing_materials", R("Lists project parts without assigned material",
+            { "check_missing_materials", R("MATERIALS", "Lists project parts without assigned material",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\nvar items = docs;\n" +
@@ -1980,7 +1974,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.AppendLine(\"\\n\" + missing + \"/\" + total + \" part(s) without material.\");\n" +
                 "return sb.ToString();") },
 
-            { "assembly_mass_report", R("Reads total mass, volume, surface and part count of an assembly",
+            { "assembly_mass_report", R("MEASUREMENTS", "Reads total mass, volume, surface and part count of an assembly",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isAsm = false;\n" +
@@ -2007,7 +2001,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "read_material", R("Reads part material (mass and calculated density)",
+            { "read_material", R("MATERIALS", "Reads part material (mass and calculated density)",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var pList = TopSolidHost.Parameters.GetParameters(docId);\n" +
@@ -2031,7 +2025,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // EXPORT — Additional formats
             // =====================================================================
-            { "export_stl", R("Exports to STL (3D printing). Param: value=path",
+            { "export_stl", RD("EXPORT", "Exports to STL (3D printing). Param: value=path",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "int count = TopSolidHost.Application.ExporterCount;\n" +
@@ -2049,7 +2043,7 @@ namespace TopSolidMcpServer.Tools
                 "if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), \"export.stl\");\n" +
                 "TopSolidHost.Documents.Export(idx, docId, path);\n" +
                 "return \"OK: Exported to STL → \" + path;") },
-            { "export_iges", R("Exports to IGES. Param: value=path",
+            { "export_iges", RD("EXPORT", "Exports to IGES. Param: value=path",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "int count = TopSolidHost.Application.ExporterCount;\n" +
@@ -2071,7 +2065,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // ASSEMBLY — Count & Diagnostics
             // =====================================================================
-            { "count_assembly_parts", R("Counts parts grouped by type with quantities",
+            { "count_assembly_parts", R("ASSEMBLIES", "Counts parts grouped by type with quantities",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "bool isAsm = false;\n" +
@@ -2103,17 +2097,18 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // PROJECT — Batch operations
             // =====================================================================
-            { "save_all_project", R("Saves all documents of the current project",
+            { "save_all_project", RW("PROJECTS", "Saves all documents of the current project",
+                // __message is declared by the modification wrapper.
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
-                "if (projId.IsEmpty) return \"No current project.\";\n" +
+                "if (projId.IsEmpty) { __message = \"No current project.\"; return; }\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\nvar items = docs;\n" +
                 "int saved = 0;\n" +
                 "foreach (var item in items)\n" +
                 "{\n" +
                 "    try { TopSolidHost.Pdm.Save(item, true); saved++; } catch { continue; }\n" +
                 "}\n" +
-                "return \"OK: \" + saved + \"/\" + items.Count + \" documents saved.\";") },
-            { "open_document_by_name", R("Searches and opens a document by name. Param: value=name",
+                "__message = \"OK: \" + saved + \"/\" + items.Count + \" documents saved.\";") },
+            { "open_document_by_name", R("DOCUMENT", "Searches and opens a document by name. Param: value=name",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "var results = TopSolidHost.Pdm.SearchDocumentByName(projId, \"{value}\");\n" +
@@ -2125,7 +2120,7 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // BATCH — Recipes for library designers
             // =====================================================================
-            { "list_folder_documents", R("Lists documents of a specific project folder. Param: value=folder_name",
+            { "list_folder_documents", R("PROJECTS", "Lists documents of a specific project folder. Param: value=folder_name",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -2152,7 +2147,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "summarize_project", R("Project summary: document count by type, folders, size",
+            { "summarize_project", R("PROJECTS", "Project summary: document count by type, folders, size",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -2173,7 +2168,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + kv.Key + \": \" + kv.Value);\n" +
                 "return sb.ToString();") },
 
-            { "list_documents_without_reference", R("Lists project documents without reference (empty part number)",
+            { "list_documents_without_reference", R("AUDIT", "Lists project documents without reference (empty part number)",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -2192,7 +2187,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(0, \"Documents sans reference: \" + missing + \"/\" + docs.Count + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "list_documents_without_designation", R("Lists project documents without designation (empty description)",
+            { "list_documents_without_designation", R("AUDIT", "Lists project documents without designation (empty description)",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -2211,7 +2206,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(0, \"Documents sans designation: \" + missing + \"/\" + docs.Count + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "count_documents_by_type", R("Counts project documents grouped by type (.TopPrt, .TopAsm, .TopDft...)",
+            { "count_documents_by_type", R("PROJECTS", "Counts project documents grouped by type (.TopPrt, .TopAsm, .TopDft...)",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -2230,7 +2225,7 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + kv.Key + \": \" + kv.Value);\n" +
                 "return sb.ToString();") },
 
-            { "search_parts_by_material", R("Lists parts with their material (via mass > 0). Param: value=optional filter",
+            { "search_parts_by_material", R("MATERIALS", "Lists parts with their material (via mass > 0). Param: value=optional filter",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
@@ -2262,7 +2257,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.Insert(0, \"Parts found: \" + count + \"\\n\");\n" +
                 "return sb.ToString();") },
 
-            { "read_where_used", R("Finds where-used references of the current document in the project",
+            { "read_where_used", R("PROJECTS", "Finds where-used references of the current document in the project",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);\n" +
@@ -2285,9 +2280,9 @@ namespace TopSolidMcpServer.Tools
             // =====================================================================
             // COLORS — Reading faces
             // =====================================================================
-            // --- ATTRIBUTS (couleur, transparence, calque, visibilite) ---
+            // --- ATTRIBUTES (colour, transparency, layer, visibility) ---
             // TopSolid: clic droit → Attributs → Color / Transparency / Layer
-            { "attr_read_all", R("Reads color, transparency, layer and visibility of all elements",
+            { "attr_read_all", R("ATTRIBUTES", "Reads color, transparency, layer and visibility of all elements",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
@@ -2314,7 +2309,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "attr_set_color", RW("Sets color. If 1 shape: direct. If multiple: asks selection. Param: value=R,G,B (e.g. 0,0,255)",
+            { "attr_set_color", RW("ATTRIBUTES", "Sets color. If 1 shape: direct. If multiple: asks selection. Param: value=R,G,B (e.g. 0,0,255)",
                 "string[] rgb = \"{value}\".Split(',');\n" +
                 "if (rgb.Length != 3) { __message = \"Format: R,G,B (e.g. 255,0,0 for red)\"; return; }\n" +
                 "int r, g, b;\n" +
@@ -2333,7 +2328,7 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidHost.Elements.SetColor(target, new Color((byte)r, (byte)g, (byte)b));\n" +
                 "__message = \"OK: \" + TopSolidHost.Elements.GetFriendlyName(target) + \" → RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
 
-            { "attr_set_color_all", RW("Sets color on ALL elements. Param: value=R,G,B",
+            { "attr_set_color_all", RW("ATTRIBUTES", "Sets color on ALL elements. Param: value=R,G,B",
                 "string[] rgb = \"{value}\".Split(',');\n" +
                 "if (rgb.Length != 3) { __message = \"Format: R,G,B\"; return; }\n" +
                 "int r, g, b;\n" +
@@ -2348,7 +2343,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "__message = \"OK: \" + count + \" element(s) → RGB(\" + r + \",\" + g + \",\" + b + \")\";") },
 
-            { "attr_read_color", R("Reads element colors",
+            { "attr_read_color", R("ATTRIBUTES", "Reads element colors",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
@@ -2361,11 +2356,11 @@ namespace TopSolidMcpServer.Tools
                 "        Color c = TopSolidHost.Elements.GetColor(s);\n" +
                 "        sb.AppendLine(name + \": RGB(\" + c.R + \",\" + c.G + \",\" + c.B + \")\");\n" +
                 "    }\n" +
-                "    else sb.AppendLine(name + \": (pas de couleur)\");\n" +
+                "    else sb.AppendLine(name + \": (no colour)\");\n" +
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "attr_set_transparency", RW("Sets transparency. If 1 shape: direct. If multiple: asks. Param: value=0.0 to 1.0",
+            { "attr_set_transparency", RW("ATTRIBUTES", "Sets transparency. If 1 shape: direct. If multiple: asks. Param: value=0.0 to 1.0",
                 "double transp;\n" +
                 "if (!double.TryParse(\"{value}\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out transp))\n" +
                 "{ __message = \"Format: number between 0.0 and 1.0\"; return; }\n" +
@@ -2380,9 +2375,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "else { __message = \"No shape.\"; return; }\n" +
                 "TopSolidHost.Elements.SetTransparency(target, transp);\n" +
-                "__message = \"OK: transparence \" + transp.ToString(\"F1\") + \" sur \" + TopSolidHost.Elements.GetFriendlyName(target);") },
+                "__message = \"OK: transparency \" + transp.ToString(\"F1\") + \" on \" + TopSolidHost.Elements.GetFriendlyName(target);") },
 
-            { "attr_read_transparency", R("Reads element transparency",
+            { "attr_read_transparency", R("ATTRIBUTES", "Reads element transparency",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
@@ -2392,11 +2387,11 @@ namespace TopSolidMcpServer.Tools
                 "    string name = TopSolidHost.Elements.GetFriendlyName(s);\n" +
                 "    if (TopSolidHost.Elements.HasTransparency(s))\n" +
                 "        sb.AppendLine(name + \": \" + TopSolidHost.Elements.GetTransparency(s).ToString(\"F2\"));\n" +
-                "    else sb.AppendLine(name + \": (pas de transparence)\");\n" +
+                "    else sb.AppendLine(name + \": (no transparency)\");\n" +
                 "}\n" +
                 "return sb.ToString();") },
 
-            { "attr_list_layers", R("Lists document layers",
+            { "attr_list_layers", R("ATTRIBUTES", "Lists document layers",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var layers = TopSolidHost.Layers.GetLayers(docId);\n" +
@@ -2406,12 +2401,12 @@ namespace TopSolidMcpServer.Tools
                 "    sb.AppendLine(\"  \" + TopSolidHost.Elements.GetFriendlyName(l));\n" +
                 "return sb.ToString();") },
 
-            { "attr_assign_layer", RW("Assigns an element to a layer. Param: value=element_name:layer_name",
+            { "attr_assign_layer", RW("ATTRIBUTES", "Assigns an element to a layer. Param: value=element_name:layer_name",
                 "int idx = \"{value}\".IndexOf(':');\n" +
                 "if (idx < 0) { __message = \"Format: element_name:layer_name\"; return; }\n" +
                 "string elemName = \"{value}\".Substring(0, idx).Trim();\n" +
                 "string layerName = \"{value}\".Substring(idx + 1).Trim();\n" +
-                "// Trouver le calque\n" +
+                "// Find the layer\n" +
                 "var layers = TopSolidHost.Layers.GetLayers(docId);\n" +
                 "ElementId layerId = ElementId.Empty;\n" +
                 "foreach (var l in layers)\n" +
@@ -2420,20 +2415,20 @@ namespace TopSolidMcpServer.Tools
                 "    { layerId = l; break; }\n" +
                 "}\n" +
                 "if (layerId.IsEmpty) { __message = \"Layer '\" + layerName + \"' not found.\"; return; }\n" +
-                "// Trouver l'element\n" +
+                "// Find the element\n" +
                 "var elems = TopSolidHost.Elements.GetElements(docId);\n" +
                 "foreach (var e in elems)\n" +
                 "{\n" +
                 "    if (TopSolidHost.Elements.GetFriendlyName(e).IndexOf(elemName, StringComparison.OrdinalIgnoreCase) >= 0)\n" +
                 "    {\n" +
                 "        TopSolidHost.Layers.SetLayer(e, layerId);\n" +
-                "        __message = \"OK: \" + TopSolidHost.Elements.GetFriendlyName(e) + \" -> calque \" + layerName;\n" +
+                "        __message = \"OK: \" + TopSolidHost.Elements.GetFriendlyName(e) + \" -> layer \" + layerName;\n" +
                 "        return;\n" +
                 "    }\n" +
                 "}\n" +
                 "__message = \"Element '\" + elemName + \"' not found.\";") },
 
-            { "attr_replace_color", RW("Replaces a color with another on elements. Param: value=R1,G1,B1:R2,G2,B2 (e.g. 0,128,0:255,0,0 = green->red)",
+            { "attr_replace_color", RW("ATTRIBUTES", "Replaces a color with another on elements. Param: value=R1,G1,B1:R2,G2,B2 (e.g. 0,128,0:255,0,0 = green->red)",
                 "string[] parts = \"{value}\".Split(':');\n" +
                 "if (parts.Length != 2) { __message = \"Format: R1,G1,B1:R2,G2,B2 (e.g. 0,128,0:255,0,0)\"; return; }\n" +
                 "string[] src = parts[0].Split(',');\n" +
@@ -2443,7 +2438,7 @@ namespace TopSolidMcpServer.Tools
                 "if (!int.TryParse(src[0].Trim(), out sr) || !int.TryParse(src[1].Trim(), out sg) || !int.TryParse(src[2].Trim(), out sb2) ||\n" +
                 "    !int.TryParse(dst[0].Trim(), out dr) || !int.TryParse(dst[1].Trim(), out dg) || !int.TryParse(dst[2].Trim(), out db))\n" +
                 "{ __message = \"Invalid RGB values.\"; return; }\n" +
-                "// Chercher dans les shapes du document\n" +
+                "// Search in the document shapes\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
                 "int changed = 0;\n" +
                 "int tolerance = 50; // tolerance RGB\n" +
@@ -2460,7 +2455,7 @@ namespace TopSolidMcpServer.Tools
                 "        }\n" +
                 "    }\n" +
                 "}\n" +
-                "// Chercher aussi dans les operations (inclusions dans un assemblage)\n" +
+                "// Search the operations too (inclusions inside an assembly)\n" +
                 "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
                 "foreach (var op in ops)\n" +
                 "{\n" +
@@ -2478,7 +2473,7 @@ namespace TopSolidMcpServer.Tools
                 "__message = changed + \" element(s) changed from RGB(\" + sr + \",\" + sg + \",\" + sb2 + \") to RGB(\" + dr + \",\" + dg + \",\" + db + \")\";") },
 
             // --- Selection interactive (IUser.Ask*) ---
-            { "select_shape", R("Asks the user to select a shape and returns its info",
+            { "select_shape", R("GEOMETRY", "Asks the user to select a shape and returns its info",
                 "ElementId selected = ElementId.Empty;\n" +
                 "UserQuestion q = new UserQuestion(\"Select a shape\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskShape(q, ElementId.Empty, out selected);\n" +
@@ -2497,7 +2492,7 @@ namespace TopSolidMcpServer.Tools
                 "sb.AppendLine(\"Type: \" + TopSolidHost.Elements.GetTypeFullName(selected));\n" +
                 "return sb.ToString();") },
 
-            { "select_face", R("Asks the user to select a face and returns its info",
+            { "select_face", R("GEOMETRY", "Asks the user to select a face and returns its info",
                 "ElementItemId selected = default(ElementItemId);\n" +
                 "UserQuestion q = new UserQuestion(\"Select a face\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
@@ -2517,7 +2512,7 @@ namespace TopSolidMcpServer.Tools
             // Each recipe prompts the user to pick a face, then returns the
             // geometric property. Raw API returns SI (meters/radians); we
             // convert to user-friendly units (mm, degrees).
-            { "get_face_cone_length", R("Gets the length of a selected cone face (mm). Requires a cone face selection.",
+            { "get_face_cone_length", R("GEOMETRY", "Gets the length of a selected cone face (mm). Requires a cone face selection.",
                 "ElementItemId selected = default(ElementItemId);\n" +
                 "UserQuestion q = new UserQuestion(\"Select a cone face\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
@@ -2529,7 +2524,7 @@ namespace TopSolidMcpServer.Tools
                 "    return \"Error (is the selection a cone face?): \" + ex.Message;\n" +
                 "}") },
 
-            { "get_face_cone_radius", R("Gets the base radius of a selected cone face (mm). Requires a cone face selection.",
+            { "get_face_cone_radius", R("GEOMETRY", "Gets the base radius of a selected cone face (mm). Requires a cone face selection.",
                 "ElementItemId selected = default(ElementItemId);\n" +
                 "UserQuestion q = new UserQuestion(\"Select a cone face\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
@@ -2541,7 +2536,7 @@ namespace TopSolidMcpServer.Tools
                 "    return \"Error (is the selection a cone face?): \" + ex.Message;\n" +
                 "}") },
 
-            { "get_face_cone_semi_angle", R("Gets the half-angle of a selected cone face (degrees). Requires a cone face selection.",
+            { "get_face_cone_semi_angle", R("GEOMETRY", "Gets the half-angle of a selected cone face (degrees). Requires a cone face selection.",
                 "ElementItemId selected = default(ElementItemId);\n" +
                 "UserQuestion q = new UserQuestion(\"Select a cone face\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
@@ -2554,7 +2549,7 @@ namespace TopSolidMcpServer.Tools
                 "    return \"Error (is the selection a cone face?): \" + ex.Message;\n" +
                 "}") },
 
-            { "get_face_torus_major_radius", R("Gets the major radius of a selected torus face (mm). Requires a torus face selection.",
+            { "get_face_torus_major_radius", R("GEOMETRY", "Gets the major radius of a selected torus face (mm). Requires a torus face selection.",
                 "ElementItemId selected = default(ElementItemId);\n" +
                 "UserQuestion q = new UserQuestion(\"Select a torus face\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
@@ -2566,7 +2561,7 @@ namespace TopSolidMcpServer.Tools
                 "    return \"Error (is the selection a torus face?): \" + ex.Message;\n" +
                 "}") },
 
-            { "get_face_torus_minor_radius", R("Gets the minor radius of a selected torus face (mm). Requires a torus face selection.",
+            { "get_face_torus_minor_radius", R("GEOMETRY", "Gets the minor radius of a selected torus face (mm). Requires a torus face selection.",
                 "ElementItemId selected = default(ElementItemId);\n" +
                 "UserQuestion q = new UserQuestion(\"Select a torus face\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
@@ -2578,7 +2573,7 @@ namespace TopSolidMcpServer.Tools
                 "    return \"Error (is the selection a torus face?): \" + ex.Message;\n" +
                 "}") },
 
-            { "get_item_last_operation_name", R("Gets the name of the last operation that produced a selected face.",
+            { "get_item_last_operation_name", R("GEOMETRY", "Gets the name of the last operation that produced a selected face.",
                 "ElementItemId selected = default(ElementItemId);\n" +
                 "UserQuestion q = new UserQuestion(\"Select a face\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskFace(q, default(ElementItemId), out selected);\n" +
@@ -2590,14 +2585,14 @@ namespace TopSolidMcpServer.Tools
                 "    return \"Error: \" + ex.Message;\n" +
                 "}") },
 
-            { "select_3d_point", R("Asks the user to click a 3D point and returns coordinates",
+            { "select_3d_point", R("GEOMETRY", "Asks the user to click a 3D point and returns coordinates",
                 "SmartPoint3D selected;\n" +
                 "UserQuestion q = new UserQuestion(\"Click a 3D point\", \"\");\n" +
                 "UserAnswerType answer = TopSolidHost.User.AskPoint3D(q, default(SmartPoint3D), out selected);\n" +
                 "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
                 "return \"Point: (\" + (selected.X * 1000).ToString(\"F2\") + \", \" + (selected.Y * 1000).ToString(\"F2\") + \", \" + (selected.Z * 1000).ToString(\"F2\") + \") mm\";") },
 
-            { "attr_read_face_colors", R("Reads individual face colors",
+            { "attr_read_face_colors", R("ATTRIBUTES", "Reads individual face colors",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
                 "var shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
@@ -2617,26 +2612,48 @@ namespace TopSolidMcpServer.Tools
                 "return sb.ToString();") },
         };
 
-        // Shortcut factory methods for readability
-        private static RecipeEntry R(string desc, string code) { return new RecipeEntry(desc, code, false); }
-        private static RecipeEntry RW(string desc, string code) { return new RecipeEntry(desc, code, true); }
+        // Shortcut factory methods for readability.
+        // R  = read-only, RW = writes to the PDM (transactional), RD = writes to disk only.
+        private static RecipeEntry R(string category, string description, string code)
+        {
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.Read);
+        }
 
-        public RecipeTool(Func<TopSolidConnector> connectorProvider)
+        private static RecipeEntry RW(string category, string description, string code)
+        {
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WritePdm);
+        }
+
+        private static RecipeEntry RD(string category, string description, string code)
+        {
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WriteDisk);
+        }
+
+        /// <summary>
+        /// Creates the tool.
+        /// </summary>
+        /// <param name="connectorProvider">Supplies the current TopSolid connector.</param>
+        /// <param name="readOnly">When true, only Read recipes are allowed.</param>
+        public RecipeTool(Func<TopSolidConnector> connectorProvider, bool readOnly = false)
         {
             _connectorProvider = connectorProvider;
+            _readOnly = readOnly;
         }
 
         public void Register(McpToolRegistry registry)
         {
-            var recipeNames = new List<string>(Recipes.Keys);
+            // The recipe catalogue is deliberately NOT inlined here: it used to be
+            // duplicated in both descriptions (~1300 tokens on every session start).
+            // topsolid_list_recipes serves the catalogue on demand instead.
+            string categories = string.Join(", ", GetAllCategories());
 
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_run_recipe",
-                Description = "Executes a pre-built TopSolid recipe. " +
-                    "Do NOT write code — pick a recipe name. " +
-                    "Recipes: " + string.Join(", ", recipeNames) + ". " +
-                    "Parameter 'value' for parameterized recipes.",
+                Description = "Executes one of the " + Recipes.Count + " pre-built TopSolid recipes. " +
+                    "Do NOT write code - pick a recipe name. " +
+                    "Categories: " + categories + ". " +
+                    "Use topsolid_list_recipes to find the exact name of a recipe.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -2645,7 +2662,8 @@ namespace TopSolidMcpServer.Tools
                         ["recipe"] = new JObject
                         {
                             ["type"] = "string",
-                            ["description"] = "Recipe name: " + string.Join(", ", recipeNames)
+                            ["description"] = "Exact recipe name (e.g. 'read_designation'). " +
+                                "Call topsolid_list_recipes to search the catalogue by category or keyword."
                         },
                         ["value"] = new JObject
                         {
@@ -2660,18 +2678,24 @@ namespace TopSolidMcpServer.Tools
 
         public string Execute(JObject arguments)
         {
-            string recipeName = arguments["recipe"]?.ToString()?.Trim();
+            string recipeName = arguments?["recipe"]?.ToString()?.Trim();
             if (string.IsNullOrEmpty(recipeName))
-                return "Error: 'recipe' required. Available: " + string.Join(", ", Recipes.Keys);
+                return "Error: 'recipe' is required. Use topsolid_list_recipes to browse the " +
+                    Recipes.Count + " available recipes.";
 
-            if (!Recipes.TryGetValue(recipeName, out var recipe))
-                return "Unknown recipe: '" + recipeName + "'. Available: " + string.Join(", ", Recipes.Keys);
+            RecipeEntry recipe;
+            if (!Recipes.TryGetValue(recipeName, out recipe))
+                return "Unknown recipe: '" + recipeName + "'. " +
+                    "Use topsolid_list_recipes to search the available recipes.";
 
-            string code = recipe.Code;
+            if (_readOnly && recipe.Mode != RecipeEntry.RecipeMode.Read)
+                return "Refused: recipe '" + recipeName + "' is " + GetModeLabel(recipe.Mode) +
+                    " and this server runs in read-only mode. " +
+                    "Only " + GetModeLabel(RecipeEntry.RecipeMode.Read) + " recipes are allowed.";
 
-            // Substitute {value} placeholder — escape for C# string literal
+            // Substitute the {value} placeholder, escaped for a C# string literal.
             string value = arguments["value"]?.ToString() ?? "";
-            code = code.Replace("{value}", value.Replace("\\", "\\\\").Replace("\"", "\\\""));
+            string code = recipe.Code.Replace("{value}", EscapeForLiteral(value));
 
             // Ensure connector is initialized and connected (auto-reconnect if needed)
             var connector = _connectorProvider();
@@ -2680,10 +2704,48 @@ namespace TopSolidMcpServer.Tools
             if (!connector.EnsureConnected())
                 return "Error: TopSolid not connected. Please check that TopSolid is running with Automation enabled (port 8090). Use the tray icon to reconnect.";
 
-            if (recipe.IsModification)
-                return ScriptExecutor.ExecuteModification(code);
-            else
-                return ScriptExecutor.Execute(code);
+            // The declared mode wins: auto-detection must never promote a recipe.
+            // forceModification: true  -> transactional wrapper (Pattern D).
+            // blockReturn:       false -> recipe bodies legitimately use a bare 'return;' as an
+            //                             early exit; the wrapper rewrites it into 'goto __commit'.
+            //                             ScriptExecutor.ExecuteModification() cannot be used here
+            //                             because it sets blockReturn = true, which is the guard
+            //                             meant for topsolid_modify_script, not for recipes.
+            // autoDetect:        false -> the declared mode is final.
+            if (recipe.Mode == RecipeEntry.RecipeMode.WritePdm)
+                return ScriptExecutor.Execute(code, true, false, false);
+
+            // Read and WriteDisk: no PDM transaction, and auto-detection disabled.
+            return ScriptExecutor.Execute(code, false, false, false);
+        }
+
+        /// <summary>
+        /// Escapes a user-supplied value so it can be embedded in a C# string literal.
+        /// Backslash first, then the double quote, then the control characters that would
+        /// otherwise terminate the literal (CS1010: newline in constant).
+        /// </summary>
+        private static string EscapeForLiteral(string value)
+        {
+            if (string.IsNullOrEmpty(value)) return "";
+            return value
+                .Replace("\\", "\\\\")
+                .Replace("\"", "\\\"")
+                .Replace("\r", "\\r")
+                .Replace("\n", "\\n")
+                .Replace("\t", "\\t");
+        }
+
+        /// <summary>
+        /// Returns the human-readable label of an execution mode.
+        /// </summary>
+        public static string GetModeLabel(RecipeEntry.RecipeMode mode)
+        {
+            switch (mode)
+            {
+                case RecipeEntry.RecipeMode.WritePdm: return "[WRITE-PDM]";
+                case RecipeEntry.RecipeMode.WriteDisk: return "[WRITE-DISK]";
+                default: return "[READ]";
+            }
         }
 
         /// <summary>
@@ -2694,7 +2756,8 @@ namespace TopSolidMcpServer.Tools
         public static RecipeEntry GetRecipe(string name)
         {
             if (string.IsNullOrWhiteSpace(name)) return null;
-            Recipes.TryGetValue(name.Trim(), out var entry);
+            RecipeEntry entry;
+            Recipes.TryGetValue(name.Trim(), out entry);
             return entry;
         }
 
@@ -2709,19 +2772,60 @@ namespace TopSolidMcpServer.Tools
         }
 
         /// <summary>
-        /// A recipe definition: human description + C# body + transactional mode flag.
+        /// Returns the distinct recipe categories (sorted).
+        /// </summary>
+        public static List<string> GetAllCategories()
+        {
+            var categories = new List<string>();
+            foreach (var entry in Recipes.Values)
+            {
+                if (string.IsNullOrEmpty(entry.Category)) continue;
+                if (!categories.Contains(entry.Category)) categories.Add(entry.Category);
+            }
+            categories.Sort(StringComparer.OrdinalIgnoreCase);
+            return categories;
+        }
+
+        /// <summary>
+        /// A recipe definition: category, human description, C# body and execution mode.
         /// </summary>
         public class RecipeEntry
         {
+            /// <summary>
+            /// How a recipe affects the system.
+            /// </summary>
+            public enum RecipeMode
+            {
+                /// <summary>Reads only. Nothing is written.</summary>
+                Read,
+
+                /// <summary>Modifies the document or the PDM. Needs a modification transaction.</summary>
+                WritePdm,
+
+                /// <summary>Writes outside TopSolid (file on disk, print job). No PDM transaction.</summary>
+                WriteDisk
+            }
+
+            public string Category { get; }
             public string Description { get; }
             public string Code { get; }
-            public bool IsModification { get; }
+            public RecipeMode Mode { get; }
 
-            public RecipeEntry(string description, string code, bool isModification)
+            /// <summary>
+            /// True when the recipe modifies the document or the PDM and therefore needs a
+            /// modification transaction. Kept so existing callers keep working.
+            /// </summary>
+            public bool IsModification
             {
+                get { return Mode == RecipeMode.WritePdm; }
+            }
+
+            public RecipeEntry(string category, string description, string code, RecipeMode mode)
+            {
+                Category = category;
                 Description = description;
                 Code = code;
-                IsModification = isModification;
+                Mode = mode;
             }
         }
     }

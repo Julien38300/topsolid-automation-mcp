@@ -17,12 +17,20 @@ namespace TopSolidMcpServer.Tools
     /// the user has on their own disk — these corpora are NEVER shipped with
     /// the public server and the paths/labels are user-local.
     ///
-    /// Override paths via env var TOPSOLID_EXAMPLES_ROOT (not implemented yet)
-    /// or by editing DefaultCorpora locally before build.
+    /// Corpus roots come from the environment variables TOPSOLID_CORPUS_A,
+    /// TOPSOLID_CORPUS_B and TOPSOLID_CORPUS_C (all optional). When none is
+    /// set the index stays empty and the tool simply reports no match.
     /// No TopSolid connection required.
     /// </summary>
     public class SearchExamplesTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
+        /// <summary>Hard cap on max_results: without it a single call could dump the whole private corpus.</summary>
+        private const int MaxResultsCap = 25;
+
+
         // Corpus paths are read from environment variables so the published
         // source code never pins anyone's local directory layout. If the
         // env vars are unset, the tool returns an empty index — by design:
@@ -81,7 +89,7 @@ namespace TopSolidMcpServer.Tools
                         ["max_results"] = new JObject
                         {
                             ["type"] = "integer",
-                            ["description"] = "Maximum number of matching snippets to return (default 5)."
+                            ["description"] = "Maximum number of matching snippets to return (default 5, max 25)."
                         },
                         ["corpus"] = new JObject
                         {
@@ -99,6 +107,11 @@ namespace TopSolidMcpServer.Tools
         /// </summary>
         public string Execute(JObject arguments)
         {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        private string ExecuteCore(JObject arguments)
+        {
             try
             {
                 string query = arguments?["query"]?.ToString();
@@ -106,6 +119,8 @@ namespace TopSolidMcpServer.Tools
                     return "Error: 'query' argument is required.";
 
                 int maxResults = arguments?["max_results"]?.Value<int>() ?? 5;
+                if (maxResults < 1) maxResults = 1;
+                if (maxResults > MaxResultsCap) maxResults = MaxResultsCap;
                 string corpusFilter = arguments?["corpus"]?.ToString();
 
                 var index = GetOrBuildIndex();
@@ -197,11 +212,16 @@ namespace TopSolidMcpServer.Tools
             return full;
         }
 
-        // Method signature regex (brace-matching is done manually below)
+        // Method signature regex (brace-matching is done manually below).
+        // Deliberately flat: one bounded repetition over a modifier list, no nested
+        // quantifier over overlapping character classes, so an adversarial source file
+        // cannot trigger catastrophic backtracking. A match timeout guards the rest.
         private static readonly Regex MethodSigRe = new Regex(
-            @"(?:public|private|protected|internal|static|\s)+\s+\w[\w\.<>,\[\]]*\s+" +
-            @"(?<name>[A-Z][a-zA-Z0-9_]+)\s*\([^)]*\)\s*(?:where[^{]+)?\{",
-            RegexOptions.Multiline);
+            @"^[ \t]*(?:(?:public|private|protected|internal|static|virtual|override|sealed|async|new|partial)[ \t]+){1,4}" +
+            @"[\w\.<>,\[\]\?]+[ \t]+(?<name>[A-Z][A-Za-z0-9_]*)[ \t]*\([^)]*\)" +
+            @"\s*(?:where[^{\r\n]*\s*)?\{",
+            RegexOptions.Multiline,
+            TimeSpan.FromSeconds(2));
 
         private static IEnumerable<MethodChunk> ExtractMethods(string text, string corpus, string relPath)
         {
@@ -234,6 +254,17 @@ namespace TopSolidMcpServer.Tools
                     i++;
                 }
             }
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
 
         private class MethodChunk

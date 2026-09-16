@@ -11,9 +11,14 @@ $ErrorActionPreference = "Stop"
 $scriptDir  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $runnerExe  = Join-Path $scriptDir "bin\Debug\net48\McpTestRunner.exe"
 
-# Default MCP server path (Debug build next to src)
+# Default MCP server path: $env:TOPSOLID_MCP_EXE, else the repo-local Debug
+# build. Since the restructuring the server lives under server/src/, not src/.
 if ($McpServer -eq "") {
-    $McpServer = Join-Path $scriptDir "..\src\bin\Debug\net48\TopSolidMcpServer.exe"
+    if ($env:TOPSOLID_MCP_EXE) {
+        $McpServer = $env:TOPSOLID_MCP_EXE
+    } else {
+        $McpServer = Join-Path $scriptDir "..\server\src\bin\Debug\net48\TopSolidMcpServer.exe"
+    }
 }
 
 # Build test runner if not present or if source is newer
@@ -38,7 +43,7 @@ if ($needBuild) {
 }
 
 if (-not (Test-Path $McpServer)) {
-    Write-Error "TopSolidMcpServer.exe not found at: $McpServer`nBuild it first with: dotnet build src\TopSolidMcpServer.csproj"
+    Write-Error "TopSolidMcpServer.exe not found at: $McpServer`nBuild it first with: dotnet build server\src\TopSolidMcpServer.csproj`nOr point -McpServer / `$env:TOPSOLID_MCP_EXE at an existing build."
     exit 1
 }
 

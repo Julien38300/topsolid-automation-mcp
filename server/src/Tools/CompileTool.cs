@@ -13,15 +13,21 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class CompileTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
         public void Register(McpToolRegistry registry)
         {
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_compile",
-                Description = "Dry-run compile a C# script against the TopSolid Automation API. " +
+                Description = "Compile-check a C# script against the TopSolid Automation API without running it. " +
+                    "Compilation uses CSharpCodeProvider (the csc compiler shipped with the .NET Framework), " +
+                    "so the script is compiled as C# 5: string interpolation ($\"\") is NOT supported, " +
+                    "use concatenation or string.Format instead. " +
                     "Returns 'OK' or the list of compile errors with line numbers. " +
                     "Does NOT execute the code; no TopSolid connection required. " +
-                    "Use this to validate LLM-generated C# before running it with topsolid_execute_script.",
+                    "Use this to validate generated C# before running it with topsolid_execute_script.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -48,6 +54,11 @@ namespace TopSolidMcpServer.Tools
         /// </summary>
         public string Execute(JObject arguments)
         {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        private string ExecuteCore(JObject arguments)
+        {
             try
             {
                 string code = arguments?["code"]?.ToString();
@@ -64,6 +75,17 @@ namespace TopSolidMcpServer.Tools
                 Console.Error.WriteLine("[CompileTool] Unexpected error: " + ex.Message);
                 return "Error: " + ex.Message;
             }
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
     }
 }

@@ -12,6 +12,9 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class ModifyScriptTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
         private readonly Func<TopSolidConnector> _connectorProvider;
 
         public ModifyScriptTool(Func<TopSolidConnector> connectorProvider)
@@ -27,16 +30,11 @@ namespace TopSolidMcpServer.Tools
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_modify_script",
-                Description = "IMPORTANT: Appeler d'abord topsolid_api_help pour trouver les signatures correctes. " +
-                    "Compile et execute un script C# 5 en mode MODIFICATION contre TopSolid. " +
-                    "Le code est automatiquement wrappe dans StartModification/EndModification. " +
-                    "Variables pre-declarees : docId (DocumentId du document edite), pdmId (PdmObjectId associe), " +
-                    "__message (string, message de retour par defaut). " +
-                    "TopSolidHost.Documents.EnsureIsDirty(ref docId) est appele AUTOMATIQUEMENT avant votre code. " +
-                    "TopSolidHost.Pdm.Save(pdmId, true) est appele AUTOMATIQUEMENT apres votre code. " +
-                    "IMPORTANT : NE PAS UTILISER 'return'. Pour personnaliser le message de succes, assignez __message. " +
-                    "Exemple : __message = \"Operation OK\"; " +
-                    "INTERDIT : $\"\", TopSolidHost.Instance, Documents.ActiveDocument, reflexion.",
+                Description = "Compile and run a C# script against TopSolid in MODIFICATION mode. The code is " +
+                    "wrapped automatically: EnsureIsDirty, StartModification/EndModification, then Pdm.Save. " +
+                    "Do NOT use return - assign __message to customise the success text. Pre-declared variables: " +
+                    "docId, pdmId, __message. C# 5, no string interpolation ($\"\"). " +
+                    "Call topsolid_api_help first for signatures.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -45,14 +43,10 @@ namespace TopSolidMcpServer.Tools
                         ["code"] = new JObject
                         {
                             ["type"] = "string",
-                            ["description"] = "Corps du script C# 5. " +
-                                "PAS de using/namespace/class/accolades. " +
-                                "NE PAS utiliser 'return'. " +
-                                "Variables dispos : docId, pdmId, __message. " +
-                                "Exemple renommer param : " +
-                                "var paramId = TopSolidHost.Parameters.GetParameter(docId, \"MonParam\"); " +
-                                "TopSolidHost.Elements.SetName(paramId, \"NouveauNom\"); " +
-                                "__message = \"Parametre renomme avec succes.\";"
+                            ["description"] = "C# 5 method body: no using/namespace/class, no 'return'. " +
+                                "Available variables: docId, pdmId, __message. Example: " +
+                                "var p = TopSolidHost.Parameters.GetParameter(docId, \"MyParam\"); " +
+                                "TopSolidHost.Elements.SetName(p, \"NewName\"); __message = \"Parameter renamed.\";"
                         }
                     },
                     ["required"] = new JArray { "code" }
@@ -61,16 +55,21 @@ namespace TopSolidMcpServer.Tools
         }
 
         /// <summary>
-        /// Executes a dynamic C# script in modification mode against TopSolid Automation API.
+        /// Executes a dynamic C# script in modification mode against the TopSolid Automation API.
         /// </summary>
         public string Execute(JObject arguments)
         {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        private string ExecuteCore(JObject arguments)
+        {
             try
             {
-                string code = arguments["code"]?.ToString();
+                string code = arguments?["code"]?.ToString();
 
                 if (string.IsNullOrWhiteSpace(code))
-                    return "Erreur : le paramètre 'code' est requis.";
+                    return "Error: the 'code' argument is required.";
 
                 var connector = _connectorProvider();
 
@@ -82,8 +81,19 @@ namespace TopSolidMcpServer.Tools
             catch (Exception ex)
             {
                 Console.Error.WriteLine("[ModifyScriptTool] Unexpected error: " + ex.Message);
-                return "Erreur lors de l'exécution du script de modification : " + ex.Message;
+                return "Error while executing the modification script: " + ex.Message;
             }
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
     }
 }

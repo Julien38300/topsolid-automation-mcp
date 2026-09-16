@@ -15,6 +15,9 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class FindPathTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
         private readonly Func<TypeGraph> _graphProvider;
         private readonly Func<TypeNameResolver> _resolverProvider;
 
@@ -32,14 +35,14 @@ namespace TopSolidMcpServer.Tools
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_find_path",
-                Description = "Trouve le chemin de méthodes le plus court entre deux types TopSolid.",
+                Description = "Find the shortest chain of API methods between two TopSolid types.",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
                     ["properties"] = new JObject
                     {
-                        ["sourceType"] = new JObject { ["type"] = "string", ["description"] = "Type source (ex: 'IPdm', 'PdmObjectId', 'void')" },
-                        ["targetType"] = new JObject { ["type"] = "string", ["description"] = "Type cible (ex: 'String', 'ElementId')" }
+                        ["sourceType"] = new JObject { ["type"] = "string", ["description"] = "Source type (e.g. 'IPdm', 'PdmObjectId', 'void')" },
+                        ["targetType"] = new JObject { ["type"] = "string", ["description"] = "Target type (e.g. 'String', 'ElementId')" }
                     },
                     ["required"] = new JArray { "sourceType", "targetType" }
                 }
@@ -51,11 +54,16 @@ namespace TopSolidMcpServer.Tools
         /// </summary>
         public string Execute(JObject arguments)
         {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        private string ExecuteCore(JObject arguments)
+        {
             var sourceArg = arguments["sourceType"]?.ToString();
             var targetArg = arguments["targetType"]?.ToString();
 
             if (string.IsNullOrEmpty(sourceArg) || string.IsNullOrEmpty(targetArg))
-                return "Erreur : 'sourceType' et 'targetType' sont requis.";
+                return "Error: 'sourceType' and 'targetType' are required.";
 
             var resolver = _resolverProvider();
             var graph = _graphProvider();
@@ -65,7 +73,7 @@ namespace TopSolidMcpServer.Tools
             var target = resolver.Resolve(targetArg);
 
             if (!source.Found) return FormatError(resolver, "Source", sourceArg, source.Alternatives);
-            if (!target.Found) return FormatError(resolver, "Cible", targetArg, target.Alternatives);
+            if (!target.Found) return FormatError(resolver, "Target", targetArg, target.Alternatives);
 
             // Use weighted Dijkstra
             var path = pathFinder.FindPathWeighted(source.FullName, target.FullName);
@@ -73,14 +81,14 @@ namespace TopSolidMcpServer.Tools
             if (path == null || path.Count == 0)
             {
                 if (source.FullName == target.FullName)
-                    return $"Les types source et cible sont identiques ({source.FullName}). Aucun chemin nécessaire.";
-                
-                return $"Aucun chemin trouvé entre '{source.FullName}' et '{target.FullName}'.";
+                    return $"Source and target types are identical ({source.FullName}). No path needed.";
+
+                return $"No path found between '{source.FullName}' and '{target.FullName}'.";
             }
 
             var sb = new StringBuilder();
-            sb.AppendLine($"Pour aller de {sourceArg} à {targetArg} (via {source.FullName} -> {target.FullName}), appelez dans l'ordre :");
-            
+            sb.AppendLine($"To go from {sourceArg} to {targetArg} (via {source.FullName} -> {target.FullName}), call in order:");
+
             int totalWeight = 0;
             for (int i = 0; i < path.Count; i++)
             {
@@ -88,14 +96,14 @@ namespace TopSolidMcpServer.Tools
                 totalWeight += edge.Weight;
                 var sourceShort = edge.Source.TypeName.Split('.').Last();
                 var targetShort = edge.Target.TypeName.Split('.').Last();
-                sb.AppendLine($"{i + 1}. {sourceShort}.{edge.MethodName} -> {targetShort} (coût : {edge.Weight})");
+                sb.AppendLine($"{i + 1}. {sourceShort}.{edge.MethodName} -> {targetShort} (cost: {edge.Weight})");
                 sb.AppendLine($"   Signature: {edge.MethodSignature}");
                 if (!string.IsNullOrEmpty(edge.SemanticHint))
                 {
                     sb.AppendLine($"   Note: {edge.SemanticHint}");
                 }
             }
-            sb.AppendLine($"Coût total : {totalWeight}");
+            sb.AppendLine($"Total cost: {totalWeight}");
 
             return sb.ToString();
         }
@@ -104,16 +112,27 @@ namespace TopSolidMcpServer.Tools
         {
             if (alternatives != null && alternatives.Count > 0)
             {
-                return $"{label} '{original}' est ambigu. Plusieurs types trouvés :\n- " + string.Join("\n- ", alternatives);
+                return $"{label} '{original}' is ambiguous. Several types found:\n- " + string.Join("\n- ", alternatives);
             }
-            
+
             var suggestions = resolver.GetSuggestions(original);
             if (suggestions.Count > 0)
             {
-                return $"{label} '{original}' non trouvé. Suggestions :\n- " + string.Join("\n- ", suggestions);
+                return $"{label} '{original}' not found. Suggestions:\n- " + string.Join("\n- ", suggestions);
             }
 
-            return $"{label} '{original}' non trouvé dans le graphe API.";
+            return $"{label} '{original}' not found in the API graph.";
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
     }
 }

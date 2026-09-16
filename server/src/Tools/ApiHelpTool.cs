@@ -12,11 +12,14 @@ namespace TopSolidMcpServer.Tools
 {
     public class ApiHelpTool
     {
+        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
+        private const int MaxOutputChars = 8000;
+
         private readonly Func<TypeGraph> _graphProvider;
 
         private static readonly Dictionary<string, string[]> Synonyms = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
-            // --- Proprietes PDM (colonnes TopSolid) ---
+            // --- PDM properties (TopSolid columns) ---
             { "designation", new[] { "Description" } },
             { "reference", new[] { "Part", "Number" } },
             { "fabricant", new[] { "Manufacturer" } },
@@ -25,7 +28,7 @@ namespace TopSolidMcpServer.Tools
             { "renommer", new[] { "Set", "Name" } },
             { "rename", new[] { "Set", "Name" } },
             { "nom", new[] { "Name" } },
-            // --- PDM operations (termes TopSolid) ---
+            // --- PDM operations (TopSolid terminology) ---
             { "coffre", new[] { "Check" } },
             { "archiver", new[] { "Check", "In" } },
             // --- Interfaces ---
@@ -47,16 +50,16 @@ namespace TopSolidMcpServer.Tools
             { "texture", new[] { "ITextures" } },
             { "calque", new[] { "ILayers" } },
             { "entite", new[] { "IEntities" } },
-            // --- Formats export ---
+            // --- Export formats ---
             { "step", new[] { "Export" } },
             { "iges", new[] { "Export" } },
-            // --- Operations courantes ---
+            // --- Common operations ---
             { "brut", new[] { "Stock" } },
             { "supprimer", new[] { "Delete" } },
             { "effacer", new[] { "Delete" } },
             { "creer", new[] { "Create" } },
             { "lister", new[] { "Get" } },
-            // --- Geometrie metier (termes TopSolid francais) ---
+            // --- Domain geometry (French TopSolid terms) ---
             { "esquisse", new[] { "Sketch" } },
             { "piece", new[] { "Part" } },
             { "assemblage", new[] { "Assembly" } },
@@ -83,10 +86,10 @@ namespace TopSolidMcpServer.Tools
             { "filetage", new[] { "Thread" } },
             { "cote", new[] { "IDimensions" } },
             { "cotation", new[] { "IAnnotations" } },
-            // --- Mise a plat / depliage ---
+            // --- Flat pattern / unfolding ---
             { "depliage", new[] { "Unfolding" } },
             { "mise a plat", new[] { "IUnfoldings" } },
-            // --- Mise en plan / Nomenclature ---
+            // --- Drafting / BOM ---
             { "mise en plan", new[] { "IDraftings" } },
             { "liasse", new[] { "IDraftings" } },
             { "rafale", new[] { "IBoms" } },
@@ -108,35 +111,36 @@ namespace TopSolidMcpServer.Tools
 
         private static readonly Dictionary<string, string> UsageTips = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
-            { "parameter", "Pour lister les parametres : GetParameters(docId), puis GetParameterType(p) pour choisir le bon GetXxxValue." },
-            { "sketch", "Pour lister les esquisses : GetSketches(docId) ou GetFunctions(docId) filtre par type Sketch." },
-            { "export", "Pour exporter : trouver l'index avec GetExporterFileType(), verifier CanExport(), puis Export()." },
-            { "assembly", "Pour les assemblages, utiliser TopSolidDesignHost.Assemblies (pas TopSolidHost)." },
-            { "project", "SearchProjectByName fait un CONTAINS. Toujours verifier le nom exact avec GetName() apres la recherche." },
-            { "folder", "GetConstituents() separe dossiers et documents. SearchFolderByName fait un CONTAINS." },
-            { "document", "SearchDocumentByName fait un CONTAINS (pas exact). GetType() retourne l'extension (.TopPrt, .TopAsm)." },
-            { "name", "Trois methodes GetName : Pdm.GetName(PdmObjectId), Documents.GetName(DocumentId), Elements.GetName(ElementId)." },
-            { "revision", "CheckIn = mise au coffre. CheckOut = sorti de coffre. CheckIn obligatoire avant changement de cycle de vie." },
-            { "family", "IsFamily() pour verifier, GetCodes() pour les codes, GetGenericDocument() pour le generique." },
-            { "inclusion", "CreatePositioning() AVANT CreateInclusion(). Utiliser GetInclusionChildOccurrence pour naviguer." },
-            { "modification", "TOUJOURS utiliser topsolid_modify_script au lieu de topsolid_execute_script pour les modifications." },
-            { "designation", "Designation = IPdm.SetDescription (pas SetName). Reference = IPdm.SetPartNumber. Nom = IPdm.SetName." },
-            { "description", "Description dans l'API = Designation dans TopSolid. IPdm.SetDescription pour modifier." },
-            { "drafting", "Mise en plan : creer .TopDrf, ajouter vues (principale + auxiliaires) via ensembles de projection. Rafale = generation par lot depuis nomenclature." },
-            { "bom", "Nomenclature = vue technique d'un assemblage. Filtrable (toles, profiles, achetes...). Rafale = generer un plan par ligne." },
-            { "unfolding", "Mise a plat / depliage : pour la tolerie. Piece pliee → deplie → export DXF pour decoupe laser." }
+            { "parameter", "To list parameters: GetParameters(docId), then GetParameterType(p) to pick the right GetXxxValue." },
+            { "sketch", "To list sketches: GetSketches(docId), or GetFunctions(docId) filtered on the Sketch type." },
+            { "export", "To export: find the index with GetExporterFileType(), check CanExport(), then call Export()." },
+            { "assembly", "For assemblies, use TopSolidDesignHost.Assemblies (not TopSolidHost)." },
+            { "project", "SearchProjectByName does a CONTAINS match. Always confirm the exact name with GetName() afterwards." },
+            { "folder", "GetConstituents() splits folders and documents. SearchFolderByName does a CONTAINS match." },
+            { "document", "SearchDocumentByName does a CONTAINS match (not exact). GetType() returns the extension (.TopPrt, .TopAsm)." },
+            { "name", "Three GetName methods: Pdm.GetName(PdmObjectId), Documents.GetName(DocumentId), Elements.GetName(ElementId)." },
+            { "revision", "CheckIn = put back in the vault. CheckOut = take out of the vault. CheckIn is required before a life-cycle change." },
+            { "family", "IsFamily() to test, GetCodes() for the codes, GetGenericDocument() for the generic document." },
+            { "inclusion", "Call CreatePositioning() BEFORE CreateInclusion(). Use GetInclusionChildOccurrence to navigate." },
+            { "modification", "ALWAYS use topsolid_modify_script instead of topsolid_execute_script for modifications." },
+            { "designation", "Designation = IPdm.SetDescription (not SetName). Reference = IPdm.SetPartNumber. Name = IPdm.SetName." },
+            { "description", "Description in the API = Designation in TopSolid. Use IPdm.SetDescription to change it." },
+            { "drafting", "Drafting: create a .TopDrf, add views (main + auxiliary) through projection sets. Batch drafting generates one drawing per BOM line." },
+            { "bom", "A BOM is a technical view of an assembly. It can be filtered (sheet metal, profiles, purchased parts...). Batch drafting generates one drawing per line." },
+            { "unfolding", "Unfolding / flat pattern: for sheet metal. Folded part -> unfolded -> DXF export for laser cutting." }
         };
 
         private static readonly string[] Tier1Interfaces = { "ITopSolidHost", "IDocuments", "IPdm", "IParameters", "IElements", "ISketches2D", "IShapes", "IOperations" };
 
         private static readonly string[] OrderedCategories = {
-            "Navigation / Interrogation",
-            "Lecture de valeurs",
-            "Recherche",
+            "Navigation / Queries",
+            "Value reads",
+            "Search",
             "Creation",
-            "Ecriture de valeurs",
-            "Suppression",
-            "Autres"
+            "Value writes",
+            "Export",
+            "Deletion",
+            "Other"
         };
 
         public ApiHelpTool(Func<TypeGraph> graphProvider)
@@ -149,9 +153,9 @@ namespace TopSolidMcpServer.Tools
             registry.RegisterTool(new McpToolDescriptor
             {
                 Name = "topsolid_api_help",
-                Description = "Recherche dans la reference API TopSolid Automation. " +
-                    "Utiliser AVANT topsolid_execute_script pour trouver les signatures. " +
-                    "Supporte : nom d'interface (IPdm), mot-cle (sketch), ou filtrage (IDocuments.Export).",
+                Description = "Search the TopSolid Automation API reference. " +
+                    "Use it BEFORE topsolid_execute_script to get the exact signatures. " +
+                    "Accepts an interface name (IPdm), a keyword (sketch), or a filter (IDocuments.Export).",
                 InputSchema = new JObject
                 {
                     ["type"] = "object",
@@ -160,7 +164,7 @@ namespace TopSolidMcpServer.Tools
                         ["query"] = new JObject
                         {
                             ["type"] = "string",
-                            ["description"] = "Interface (ex: IParameters), mot-cle (ex: sketch), ou Interface.Prefixe (ex: IDocuments.Get)"
+                            ["description"] = "Interface (e.g. IParameters), keyword (e.g. sketch), or Interface.Prefix (e.g. IDocuments.Get)"
                         }
                     },
                     ["required"] = new JArray { "query" }
@@ -170,15 +174,20 @@ namespace TopSolidMcpServer.Tools
 
         public string Execute(JObject arguments)
         {
+            return Truncate(ExecuteCore(arguments));
+        }
+
+        private string ExecuteCore(JObject arguments)
+        {
             string query = arguments["query"]?.ToString()?.Trim();
             if (string.IsNullOrEmpty(query))
-                return "Erreur : le parametre 'query' est requis.";
+                return "Error: the 'query' argument is required.";
 
             var graph = _graphProvider();
             if (graph == null)
-                return "Erreur : graphe API non charge.";
+                return "Error: API graph not loaded.";
 
-            // --- 0. Support Interface.Prefixe ---
+            // --- 0. Interface.Prefix support ---
             if (query.Contains(".") && !query.StartsWith("."))
             {
                 var parts = query.Split('.');
@@ -194,7 +203,7 @@ namespace TopSolidMcpServer.Tools
                     return FormatInterface(interfaceName, filteredEdges, true);
             }
 
-            // --- 1. Mode Interface exact ---
+            // --- 1. Exact interface mode ---
             var interfaceEdges = graph.GetEdges()
                 .Where(e => string.Equals(e.Interface, query, StringComparison.OrdinalIgnoreCase))
                 .ToList();
@@ -204,7 +213,7 @@ namespace TopSolidMcpServer.Tools
                 return FormatInterface(query, interfaceEdges);
             }
 
-            // --- 2. Mode Recherche par mots-cles ---
+            // --- 2. Keyword search mode ---
             var expandedKeywords = new List<string>();
             var rawTokens = query.Split(new[] { ' ', ',', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
 
@@ -253,13 +262,13 @@ namespace TopSolidMcpServer.Tools
 
             if (searchResults.Count == 0)
             {
-                return "Aucun resultat pour '" + query + "'. Suggestions :\n" +
-                    "- Essayer un nom d'interface exact : IParameters, IPdm, IDocuments, IShapes\n" +
-                    "- Essayer un mot-cle en anglais : sketch, export, family, assembly\n" +
-                    "- Essayer Interface.Prefixe : IDocuments.Export, IPdm.Search";
+                return "No result for '" + query + "'. Suggestions:\n" +
+                    "- Try an exact interface name: IParameters, IPdm, IDocuments, IShapes\n" +
+                    "- Try an English keyword: sketch, export, family, assembly\n" +
+                    "- Try Interface.Prefix: IDocuments.Export, IPdm.Search";
             }
 
-            // Tri par pertinence
+            // Sort by relevance
             var sortedResults = searchResults
                 .Select(e => new { Edge = e, Score = CalculateScore(e, query, keywords) })
                 .OrderByDescending(x => x.Score)
@@ -274,11 +283,11 @@ namespace TopSolidMcpServer.Tools
         private int CalculateScore(GraphEdge edge, string query, string[] keywords)
         {
             int score = 0;
-            // Match exact du nom
+            // Exact method-name match
             if (string.Equals(edge.MethodName, query, StringComparison.OrdinalIgnoreCase)) score += 10;
-            // Match interface
+            // Interface match
             if (edge.Interface != null && edge.Interface.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) score += 5;
-            // Match description
+            // Description match
             if (edge.Description != null && edge.Description.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0) score += 2;
             // Match SemanticHint
             if (edge.SemanticHint != null && keywords.Any(k => edge.SemanticHint.IndexOf(k, StringComparison.OrdinalIgnoreCase) >= 0)) score += 2;
@@ -312,12 +321,12 @@ namespace TopSolidMcpServer.Tools
                                      .OrderBy(g => Array.IndexOf(OrderedCategories, g.Key));
 
             var lines = new List<string>();
-            string header = isFiltered ? $"=== {name} (Filtre) — {total} methode(s) ===" : $"=== {name} — {total} methode(s) ===";
+            string header = isFiltered ? $"=== {name} (filtered) - {total} method(s) ===" : $"=== {name} - {total} method(s) ===";
             lines.Add(header + "\n");
 
             foreach (var group in groups)
             {
-                lines.Add($"--- {group.Key} ({group.Count()} methodes) ---");
+                lines.Add($"--- {group.Key} ({group.Count()} methods) ---");
                 foreach (var edge in group)
                 {
                     lines.Add(FormatEdge(edge));
@@ -327,7 +336,7 @@ namespace TopSolidMcpServer.Tools
 
             if (total > limit)
             {
-                lines.Add($"... et {total - limit} autres methodes. Utiliser api_help(\"{name}.Prefix\") pour filtrer.");
+                lines.Add($"... and {total - limit} more method(s). Use api_help(\"{name}.Prefix\") to filter.");
             }
 
             return string.Join("\n", lines);
@@ -336,13 +345,13 @@ namespace TopSolidMcpServer.Tools
         private string FormatKeywordResults(string query, List<GraphEdge> edges)
         {
             var lines = new List<string>();
-            lines.Add($"{edges.Count} resultat(s) pour \"{query}\" :\n");
+            lines.Add($"{edges.Count} result(s) for \"{query}\":\n");
 
-            var groups = edges.GroupBy(e => e.Interface ?? "Autres").OrderBy(g => g.Key);
+            var groups = edges.GroupBy(e => e.Interface ?? "Other").OrderBy(g => g.Key);
 
             foreach (var group in groups)
             {
-                lines.Add($"{group.Key} ({group.Count()} methodes) :");
+                lines.Add($"{group.Key} ({group.Count()} method(s)):");
                 foreach (var edge in group)
                 {
                     lines.Add("  " + FormatEdge(edge));
@@ -350,11 +359,11 @@ namespace TopSolidMcpServer.Tools
                 lines.Add("");
             }
 
-            // Ajout du conseil
+            // Append the contextual usage tip, when one matches the query.
             string tip = GetUsageTip(query);
             if (!string.IsNullOrEmpty(tip))
             {
-                lines.Add("Conseil : " + tip);
+                lines.Add("Tip: " + tip);
             }
 
             return string.Join("\n", lines);
@@ -372,14 +381,14 @@ namespace TopSolidMcpServer.Tools
 
         private string GetCategory(string methodName)
         {
-            if (methodName.EndsWith("Value") && methodName.StartsWith("Get")) return "Lecture de valeurs";
-            if (methodName.EndsWith("Value") && methodName.StartsWith("Set")) return "Ecriture de valeurs";
-            if (methodName.StartsWith("Get")) return "Navigation / Interrogation";
+            if (methodName.EndsWith("Value") && methodName.StartsWith("Get")) return "Value reads";
+            if (methodName.EndsWith("Value") && methodName.StartsWith("Set")) return "Value writes";
+            if (methodName.StartsWith("Get")) return "Navigation / Queries";
             if (methodName.StartsWith("Create")) return "Creation";
-            if (methodName.StartsWith("Search")) return "Recherche";
-            if (methodName.StartsWith("Delete") || methodName.StartsWith("Remove")) return "Suppression";
+            if (methodName.StartsWith("Search")) return "Search";
+            if (methodName.StartsWith("Delete") || methodName.StartsWith("Remove")) return "Deletion";
             if (methodName.StartsWith("Export")) return "Export";
-            return "Autres";
+            return "Other";
         }
 
         private string FormatEdge(GraphEdge edge)
@@ -390,8 +399,19 @@ namespace TopSolidMcpServer.Tools
 
             if (!string.IsNullOrEmpty(edge.Description))
                 return string.Format("{0} — {1}", signature, edge.Description);
-            
+
             return signature;
+        }
+
+        /// <summary>
+        /// Caps the output length and appends an explicit marker when text was cut.
+        /// </summary>
+        private static string Truncate(string output)
+        {
+            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
+                return output;
+
+            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
     }
 }

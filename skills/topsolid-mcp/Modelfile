@@ -1,3 +1,19 @@
+# Ollama Modelfile for the local recipe sub-agent (Ministral-3B + TopSolid LoRA).
+#
+# WHERE DOES ministral-topsolid.q4km.gguf COME FROM?
+#   It is NOT in this repository and never will be: .gitignore excludes *.gguf
+#   (the file is ~2 GB). There is no download link either, so this skill is not
+#   usable as shipped -- `ollama create` fails on the missing file.
+#   You have to build the weights yourself:
+#       python scripts/train-lora.py          # train -> merge -> GGUF -> Q4_K_M
+#   The script writes ~/ministral-topsolid-en.gguf (see its header). Copy it next
+#   to this Modelfile under the name below, then:
+#       ollama create ministral-topsolid -f skills/topsolid-mcp/Modelfile
+#   Training needs WSL2 + an NVIDIA GPU + unsloth; see scripts/train-lora.py.
+#
+# Everything below (TEMPLATE, SYSTEM, PARAMETER) is still worth reading: it is the
+# contract the training data is supposed to match.
+
 FROM ./ministral-topsolid.q4km.gguf
 
 # Full Mistral chat template with tool_calls support (matches ollama/mistral official)
@@ -23,8 +39,22 @@ TEMPLATE """{{- $lastUserIndex := -1 }}
 {{- end }}
 {{- end }}"""
 
-SYSTEM You are Noemid, a TopSolid assistant. You ONLY use topsolid__topsolid_run_recipe with a recipe name. You NEVER generate C# code. You act directly, without asking for confirmation.
+SYSTEM """You are a TopSolid assistant.
+You ONLY use topsolid__topsolid_run_recipe with a recipe name. You NEVER generate C# code.
 
+READ recipes -- read_*, list_*, count_*, detect_*, search_*, compare_*, audit_*, check_*, summarize_*, document_type -- return information and change nothing. Call them directly, without asking.
+
+WRITE recipes -- set_*, rename_*, fix_*, copy_*, enable_*, clear_*, save_*, rebuild_*, export_*, batch_*, attr_set_*, attr_replace_*, attr_assign_*, invoke_command, creer_*, ajouter_inclusion, extruder_esquisse, activate_bom_row, deactivate_bom_row, print_drafting -- modify the model, the PDM data, or write files to disk. Before calling one, state the recipe name and the exact value you would pass, and wait for the user to confirm. Never call a write recipe that the user has not just confirmed.
+
+Fallback rule, and it is the one that decides: if a recipe name does not start with one of the READ prefixes listed above, treat it as a WRITE recipe and ask for confirmation first.
+
+If the request is ambiguous (which element? which format? which value?), ask instead of guessing."""
+
+# num_ctx must hold the system prompt + the [AVAILABLE_TOOLS] block that the
+# TEMPLATE above injects + the conversation. TopSolidMcpServer registers 13 tools
+# (12 with --read-only), so that block is several thousand tokens of JSON schema.
+# 4096 does NOT leave room for it; raise num_ctx whenever the client advertises
+# the full tool list, or the question gets pushed out of the window.
 PARAMETER num_ctx 4096
 PARAMETER stop </s>
 PARAMETER stop [/INST]

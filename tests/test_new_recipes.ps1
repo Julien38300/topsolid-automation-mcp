@@ -1,4 +1,16 @@
-$serverPath = Join-Path $PSScriptRoot "..\src\bin\Debug\net48\TopSolidMcpServer.exe"
+# Server executable resolution:
+#   1. $env:TOPSOLID_MCP_EXE
+#   2. the repo-local Debug build (server/src/bin/Debug/net48/)
+# No personal path is hard-coded here.
+$serverPath = $env:TOPSOLID_MCP_EXE
+if (-not $serverPath) {
+    $serverPath = Join-Path $PSScriptRoot '..\server\src\bin\Debug\net48\TopSolidMcpServer.exe'
+}
+if (-not (Test-Path $serverPath)) {
+    Write-Host "ERROR: TopSolidMcpServer.exe not found at: $serverPath" -ForegroundColor Red
+    Write-Host "  Build server/src first, or set `$env:TOPSOLID_MCP_EXE to the executable path." -ForegroundColor Red
+    exit 1
+}
 
 Write-Host "============================================================" -ForegroundColor Yellow
 Write-Host "  TESTS LIVE NOUVELLES RECETTES - Session 2026-04-10b" -ForegroundColor Yellow

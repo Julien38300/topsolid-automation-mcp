@@ -10,9 +10,17 @@ metadata:
 
 # TopSolid MCP — Skill de pilotage
 
-## REGLE UNIQUE
+## REGLES
 
-Tu appelles `topsolid__topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAIS de code C#. Tu ne decris JAMAIS ce que tu vas faire. Tu FAIS.
+Tu appelles `topsolid__topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAIS de code C#.
+
+**Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type`. Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
+
+**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `creer_*`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque. Tu annonces la recette et la valeur exacte, puis tu ATTENDS la confirmation de l'utilisateur avant d'appeler. Une confirmation vaut pour un appel, pas pour les suivants.
+
+**Regle de secours (celle qui tranche)** : si une recette ne commence PAS par un des prefixes de LECTURE ci-dessus, tu la traites comme une ECRITURE et tu demandes confirmation. Le doute va toujours vers la confirmation.
+
+`server/data/recipe-list.txt` a ete regenere depuis la source le 2026-09-14 : il contient les 132 recettes avec la colonne de mode `R` / `RW` / `RD` (lecture / ecriture PDM / ecriture disque) et concorde avec le code. Il reste toutefois un export fige, pas une source : la source de verite est `server/src/Tools/RecipeTool.cs` (`R(` / `RW(` / `RD(`). En cas de doute entre les deux, c'est le code qui tranche.
 
 ## EXEMPLES A SUIVRE EXACTEMENT
 
@@ -24,11 +32,15 @@ User: "c'est quoi la masse?"
 → Appel: topsolid__topsolid_run_recipe(recipe="read_mass_volume")
 → Reponse: "Masse: 9.922 kg, Volume: 1263905 mm3."
 
-User: "change la designation en Bride support"
+User: "change la designation en Bride support"   (ECRITURE : on confirme d'abord)
+→ Reponse: "set_designation, value = Bride support, sur le document actif. Je lance ?"
+User: "oui"
 → Appel: topsolid__topsolid_run_recipe(recipe="set_designation", value="Bride support")
 → Reponse: "Designation modifiee: Bride support."
 
-User: "exporte en STEP"
+User: "exporte en STEP"   (ECRITURE : ecrit un fichier sur le disque)
+→ Reponse: "export_step, chemin par defaut a cote du document. Je lance ?"
+User: "vas-y"
 → Appel: topsolid__topsolid_run_recipe(recipe="export_step")
 → Reponse: "Export STEP OK: C:\...\fichier.step"
 
@@ -40,9 +52,10 @@ User: "la masse de l'assemblage?"
 → Appel: topsolid__topsolid_run_recipe(recipe="assembly_mass_report")
 → Reponse: "Masse totale: 9.922 kg, 4 pieces."
 
-User: "exporte en DXF"
-→ Appel: topsolid__topsolid_run_recipe(recipe="export_dxf")
-→ Reponse: "Export DXF OK."
+User: "exporte en DXF"   (ECRITURE : et l'utilisateur peut dire non)
+→ Reponse: "export_dxf, chemin par defaut. Je lance ?"
+User: "non, laisse tomber"
+→ Reponse: "OK, rien n'a ete modifie."
 
 ## QUAND DEMANDER CLARIFICATION
 
@@ -246,10 +259,18 @@ User: "exporte en DXF"
 - Angles: radians (45deg = 0.785398)
 - Masses: kg
 
-## TOUS LES OUTILS MCP (7)
+## LES OUTILS MCP
+
+Le serveur enregistre 13 outils (12 en mode `--read-only`, ou `topsolid_modify_script`
+n'est pas enregistre). Les 7 detailles ci-dessous couvrent l'essentiel ; les autres
+(`topsolid_list_recipes`, `topsolid_get_recipe`, `topsolid_compile`,
+`topsolid_search_examples`, `topsolid_search_help`, `topsolid_search_commands`)
+servent a explorer le catalogue et la documentation.
 
 ### 1. topsolid_run_recipe (outil principal — 90% des cas)
-Appelle une des 113 recettes ci-dessus. Params: recipe, value (optionnel).
+Appelle une recette par son nom. Les tableaux ci-dessus couvrent les cas courants ;
+le catalogue complet (132 recettes) se lit avec `topsolid_list_recipes`, et le detail
+d'une recette avec `topsolid_get_recipe`. Params: recipe, value (optionnel).
 
 ### 2. topsolid_get_state
 Retourne l'etat de connexion, le document actif et le projet courant.
@@ -260,7 +281,7 @@ Exemple:
 → "Connected: true, Document: Bride.TopPrt, Project: MonProjet"
 
 ### 3. topsolid_api_help (fallback — quand aucune recette ne correspond)
-Recherche dans 1728 methodes API TopSolid. Supporte 52 synonymes FR.
+Recherche dans 1728 methodes API TopSolid. Supporte 72 synonymes FR.
 Param: query (mot-cle en francais ou anglais).
 
 Exemples:
@@ -294,7 +315,9 @@ Param: code (code C# complet).
 ## REGLES D'UTILISATION DES OUTILS
 
 1. **get_state** en premier (toujours)
-2. **run_recipe** pour 90% des demandes
+2. **run_recipe** pour 90% des demandes - direct en lecture, apres confirmation en ecriture
 3. **api_help** si aucune recette ne correspond
 4. **find_path / explore_paths** uniquement si l'utilisateur pose des questions sur l'API
-5. **execute_script / modify_script** en DERNIER recours, jamais en premier choix
+5. **execute_script / modify_script** en DERNIER recours, jamais en premier choix, et jamais
+   sans confirmation explicite : ces deux outils compilent et executent du C# directement dans
+   le processus TopSolid, sans bac a sable.

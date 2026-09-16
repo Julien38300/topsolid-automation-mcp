@@ -35,6 +35,18 @@ namespace TopSolidMcpServer.Protocol
         }
 
         /// <summary>
+        /// Tells whether a tool is registered under the given name.
+        /// Lets the router answer an unknown tool name with a protocol error, while a
+        /// failure thrown by a registered handler is reported as a tool error instead.
+        /// </summary>
+        /// <param name="name">Tool name.</param>
+        /// <returns>True when the tool exists.</returns>
+        public bool HasTool(string name)
+        {
+            return name != null && _handlers.ContainsKey(name);
+        }
+
+        /// <summary>
         /// Invokes a tool by name.
         /// </summary>
         /// <param name="name">Tool name.</param>

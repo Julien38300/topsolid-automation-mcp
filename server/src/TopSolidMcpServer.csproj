@@ -19,24 +19,56 @@
     <PackageReference Include="Microsoft.Data.Sqlite" Version="6.0.27" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.6" />
   </ItemGroup>
+  <!-- Built from source so a fresh clone can compile: the prebuilt DLL was never
+       committed (.gitignore excludes *.dll) and server/lib/ does not exist. -->
   <ItemGroup>
-    <Reference Include="TopSolidApiGraph.Core">
-      <HintPath>..\lib\TopSolidApiGraph.Core.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="TopSolid.Kernel.Automating">
-      <HintPath>C:\Program Files\TOPSOLID\TopSolid 7.21\bin\TopSolid.Kernel.Automating.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="TopSolid.Cad.Design.Automating">
-      <HintPath>C:\Program Files\TOPSOLID\TopSolid 7.21\bin\TopSolid.Cad.Design.Automating.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
-    <Reference Include="TopSolid.Cad.Drafting.Automating">
-      <HintPath>C:\Program Files\TOPSOLID\TopSolid 7.21\bin\TopSolid.Cad.Drafting.Automating.dll</HintPath>
-      <Private>false</Private>
-    </Reference>
+    <ProjectReference Include="..\..\graph\src\TopSolidApiGraph.Core\TopSolidApiGraph.Core.csproj" />
   </ItemGroup>
+
+  <!-- TopSolid Automation assemblies are resolved at build time instead of being
+       pinned to one version. Order: /p:TopSolidBinPath=... , then the
+       TOPSOLID_BIN_PATH environment variable, then the known install layouts
+       (Program Files\TOPSOLID\TopSolid 7.x, and the Missler C:\Missler\V### layout).
+
+       BUILDING requires an install that has Kernel + Design + Drafting: TopSolidConnector
+       references TopSolidDesignHost / TopSolidDraftingHost directly, so both assemblies must
+       resolve at compile time. RUNNING does not: those calls sit in NoInlining wrappers reached
+       only after probing for the DLL, so a partial licence starts normally with the matching
+       tools degraded (issue #11). Do NOT make these references conditional: the build would
+       fail with CS0246 instead of degrading. -->
+  <Target Name="ResolveTopSolidAutomationReferences" BeforeTargets="ResolveAssemblyReferences">
+    <PropertyGroup Condition="'$(TopSolidBinPath)' == '' And '$(TOPSOLID_BIN_PATH)' != ''">
+      <TopSolidBinPath>$([MSBuild]::EnsureTrailingSlash('$(TOPSOLID_BIN_PATH)'))</TopSolidBinPath>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(TopSolidBinPath)' == ''">
+      <_TsKernelDll Include="$(ProgramFiles)\TOPSOLID\TopSolid 7.*\bin\TopSolid.Kernel.Automating.dll" />
+      <_TsKernelDll Include="$(ProgramW6432)\TOPSOLID\TopSolid 7.*\bin\TopSolid.Kernel.Automating.dll" />
+      <_TsKernelDll Include="C:\Missler\V*\bin\TopSolid.Kernel.Automating.dll" />
+    </ItemGroup>
+    <PropertyGroup Condition="'$(TopSolidBinPath)' == ''">
+      <TopSolidBinPath>%(_TsKernelDll.RootDir)%(_TsKernelDll.Directory)</TopSolidBinPath>
+    </PropertyGroup>
+
+    <Error Condition="!Exists('$(TopSolidBinPath)TopSolid.Kernel.Automating.dll')"
+           Text="TopSolid Automation assemblies not found. Install TopSolid, or set TOPSOLID_BIN_PATH, or pass /p:TopSolidBinPath=C:\path\to\TopSolid\bin\ ." />
+    <Message Importance="high" Text="TopSolid bin path: $(TopSolidBinPath)" />
+
+    <ItemGroup>
+      <Reference Include="TopSolid.Kernel.Automating">
+        <HintPath>$(TopSolidBinPath)TopSolid.Kernel.Automating.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="TopSolid.Cad.Design.Automating">
+        <HintPath>$(TopSolidBinPath)TopSolid.Cad.Design.Automating.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+      <Reference Include="TopSolid.Cad.Drafting.Automating">
+        <HintPath>$(TopSolidBinPath)TopSolid.Cad.Drafting.Automating.dll</HintPath>
+        <Private>false</Private>
+      </Reference>
+    </ItemGroup>
+  </Target>
   <ItemGroup>
     <Content Include="..\data\graph.json">
       <Link>data\graph.json</Link>
