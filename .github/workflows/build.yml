@@ -1,0 +1,71 @@
+name: Build
+
+# Why this workflow does NOT build server/src/TopSolidMcpServer.csproj
+# --------------------------------------------------------------------
+# The server references TopSolid.Kernel.Automating.dll and, when the licence
+# provides them, TopSolid.Cad.Design.Automating.dll and
+# TopSolid.Cad.Drafting.Automating.dll. Those assemblies ship only inside a
+# TopSolid installation and are not redistributable, so there is no way to put
+# them on a GitHub-hosted runner. Its ResolveTopSolidAutomationReferences target
+# would fail on every run with "TopSolid Automation assemblies not found", which
+# is the correct behaviour, not something to work around with a fake DLL.
+#
+# The server is therefore built on a machine that has TopSolid installed, with
+# server/scripts/build-release.ps1.
+#
+# What CI can check without TopSolid:
+#   - the recipe catalogue passes scripts/check-recipes.py;
+#   - nothing private leaked, via scripts/privacy-scan.py;
+#   - graph/ compiles (it only needs Newtonsoft.Json; it loads the TopSolid
+#     assemblies by reflection at run time, never at compile time).
+#
+# Step order is deliberate: CLAUDE.md makes check-recipes / privacy-scan the
+# mandatory gate before RecipeTool.cs is committed, so they run first and always
+# produce a verdict, even while a build step below them is broken.
+#
+# KNOWN FAILURE, not caused by this workflow: graph/src/TopSolidApiGraph.csproj
+# declares <None Include="..\data\semantic-rules.json"> with CopyToOutputDirectory,
+# and graph/data/semantic-rules.json is not in the repository. MSBuild fails the
+# copy (MSB3030) so "Build graph/" is red until that item is made conditional on
+# Exists() or the file is committed.
+#
+# privacy-scan.py also runs in privacy-scan.yml on Linux. Running it here too is
+# cheap and keeps this workflow a single self-contained gate.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # Both graph projects target .NET Framework 4.8, which builds on Windows only.
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check recipe catalogue
+        run: python scripts/check-recipes.py
+
+      - name: Privacy scan
+        run: python scripts/privacy-scan.py
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore graph/
+        run: dotnet restore graph/TopSolidApiGraph.sln
+
+      - name: Build graph/
+        run: dotnet build graph/TopSolidApiGraph.sln -c Release --no-restore

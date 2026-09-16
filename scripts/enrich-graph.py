@@ -274,18 +274,6 @@ def enrich_graph():
         print("  TOPSOLID_EXAMPLES_DIRS not set - skipping example extraction.")
         EXAMPLES_DIRS = []
 
-    _unused_stub = [
-        r"%EXAMPLES_ROOT%\corp-a",
-        r"%EXAMPLES_ROOT%\corp-b",
-        r"%EXAMPLES_ROOT%\public-sample-1",
-        r"%EXAMPLES_ROOT%\public-sample-2",
-        r"%EXAMPLES_ROOT%\public-sample-3",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\DraftSwitch",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Extraction CSV Liste de documents TopSolid",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\TopSolid Material Creator",
-        r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\Traitement par lot",
-    ]
-
     # Mapping from TopSolidHost.Property to Interface name
     HOST_MAPPING = {
         "Pdm": "IPdm",

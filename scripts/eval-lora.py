@@ -1,11 +1,37 @@
 #!/usr/bin/env python3
 """
-Evaluation script for TopSolid LoRA fine-tuning.
-Benchmarks model ability to select recipes and avoid hallucinations.
+Recipe-name selection benchmark for the TopSolid LoRA model.
 
 Usage:
   python eval-lora.py --model ministral:3b --output data/eval-baseline.json
   python eval-lora.py --model ministral-topsolid --output data/eval-lora.json --compare
+
+SCOPE -- read this before quoting an accuracy number.
+
+What it measures: for each prompt in EVAL_SUITE it sends one turn to Ollama,
+pulls a recipe name out of the raw text with parse_tool_call(), and compares that
+string to a hard-coded expected string. That is all. It is a string-match
+benchmark, useful for comparing two models on the same prompts.
+
+What it does NOT measure:
+  * Whether the recipe exists. Names are never checked against RecipeTool.cs or
+    server/data/recipe-list.txt. A model that invents a plausible name is only
+    ever marked wrong for differing from the expected string -- never flagged as
+    non-existent -- so hallucination is not actually detected here.
+  * The `value` argument. set_real_parameter with no value, or with millimetres
+    where the API wants SI metres, scores as a success.
+  * Anything downstream. This script never talks to the MCP server, never starts
+    TopSolid, and never observes a document. Nothing here shows that a recipe ran,
+    succeeded, or produced the right result.
+  * The production prompt shape. No tools are advertised to Ollama, so the
+    [AVAILABLE_TOOLS] block that the Modelfile TEMPLATE injects in real use --
+    several thousand tokens of JSON schema for the 13 registered MCP tools -- is
+    absent here (same skew as the TODO in scripts/train-lora.py).
+  * Refusals, beyond substring matching. The tier-5 checks look for a handful of
+    FR/EN phrases; a correct refusal worded differently counts as a failure.
+
+So: a regression signal on recipe-name selection, not an end-to-end validation.
+An end-to-end check has to go through the MCP server itself (see tests/).
 """
 
 import json
@@ -28,10 +54,17 @@ try:
         _cfg = yaml.safe_load(f)
     SYSTEM_PROMPT = _cfg["system_prompt"]
 except Exception:
+    # Fallback only -- lora-pipeline.yaml (system_prompt) is the source of truth.
     SYSTEM_PROMPT = (
         "You are a TopSolid MCP Assistant. "
         "You ONLY use topsolid__topsolid_run_recipe with a recipe name. "
-        "You NEVER generate C# code. You act directly, without asking for confirmation."
+        "You NEVER generate C# code. "
+        "Read-only recipes (read_, list_, count_, detect_, search_, compare_, audit_, "
+        "check_, summarize_) change nothing: call them directly. "
+        "Write recipes (set_, rename_, fix_, copy_, enable_, clear_, save_, rebuild_, "
+        "export_, batch_, attr_set_, attr_replace_, attr_assign_, invoke_command) modify "
+        "the model, the PDM data or files on disk: state the recipe and the value, then "
+        "wait for the user to confirm before calling."
     )
 
 EVAL_SUITE = [

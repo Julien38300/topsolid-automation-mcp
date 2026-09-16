@@ -3,7 +3,9 @@
 Generate LoRA fine-tuning dataset (EN recipe names) for the 3B TopSolid sub-agent.
 Target: ministral-3:3b learns to select EN recipes via <tool_call> from FR/EN user questions.
 
-Output: data/lora-dataset-en.jsonl (ShareGPT format, with <tool_call>)
+Output: data/lora-dataset.jsonl (ShareGPT format, with <tool_call>)
+        This is the ONE dataset file name. scripts/lora-pipeline.yaml
+        (paths.dataset) and scripts/train-lora.py read exactly this path.
 
 Strategy:
   1. Migrate the working v5 FR dataset (641 entries) -> replace FR recipe names with EN
@@ -21,11 +23,13 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).parent
 DATA_DIR = SCRIPT_DIR.parent / "data"
+SERVER_DATA_DIR = SCRIPT_DIR.parent / "server" / "data"
 V5_DATASET = DATA_DIR / "lora-dataset-v5.jsonl"
-OUTPUT_FILE = DATA_DIR / "lora-dataset-en.jsonl"
-STATS_FILE = DATA_DIR / "lora-dataset-stats-en.json"
-MAIN_DATASET = DATA_DIR / "lora-dataset.jsonl"
-RECIPE_LIST = DATA_DIR / "recipe-list.txt"
+OUTPUT_FILE = DATA_DIR / "lora-dataset.jsonl"
+STATS_FILE = DATA_DIR / "lora-dataset-stats.json"
+# recipe-list.txt is shipped next to the server executable, not in the
+# top-level data/ folder (see server/scripts/lib/paths.py).
+RECIPE_LIST = SERVER_DATA_DIR / "recipe-list.txt"
 
 # Load system prompt from config
 CONFIG_FILE = SCRIPT_DIR / "lora-pipeline.yaml"
@@ -35,10 +39,17 @@ try:
         cfg = yaml.safe_load(f)
     SYSTEM_PROMPT = cfg["system_prompt"]
 except Exception:
+    # Fallback only -- lora-pipeline.yaml (system_prompt) is the source of truth.
     SYSTEM_PROMPT = (
         "You are a TopSolid MCP Assistant. "
         "You ONLY use topsolid__topsolid_run_recipe with a recipe name. "
-        "You NEVER generate C# code. You act directly, without asking for confirmation."
+        "You NEVER generate C# code. "
+        "Read-only recipes (read_, list_, count_, detect_, search_, compare_, audit_, "
+        "check_, summarize_) change nothing: call them directly. "
+        "Write recipes (set_, rename_, fix_, copy_, enable_, clear_, save_, rebuild_, "
+        "export_, batch_, attr_set_, attr_replace_, attr_assign_, invoke_command) modify "
+        "the model, the PDM data or files on disk: state the recipe and the value, then "
+        "wait for the user to confirm before calling."
     )
 
 
@@ -2236,6 +2247,22 @@ def validate_dataset(entries, all_en_recipes):
             except ValueError:
                 warnings.append(f"Malformed tool_call: {gpt_msg[:80]}...")
 
+    # Names the catalogue does not know. RecipeTool answers "Unknown recipe" for
+    # these at runtime, so every sample teaching one is training a hallucination.
+    # Kept as a WARNING, not a hard failure: server/data/recipe-list.txt is itself
+    # an out-of-date export (115 entries vs 132 recipes in RecipeTool.cs), so some
+    # of these names may be real recipes missing from the catalogue file. Resync
+    # recipe-list.txt from RecipeTool.cs before promoting this to a critical issue.
+    if all_en_recipes:
+        unknown = sorted(r for r in recipe_variant_counts if r not in all_en_recipes)
+        if unknown:
+            n_samples = sum(recipe_variant_counts[r] for r in unknown)
+            warnings.append(
+                f"Recipe names absent from recipe-list.txt ({len(unknown)} names, "
+                f"{n_samples} samples): " + ", ".join(unknown[:20])
+                + (" ..." if len(unknown) > 20 else "")
+            )
+
     # Check min 5 variants per recipe
     low_coverage = []
     for recipe_name in all_en_recipes:
@@ -2346,13 +2373,8 @@ def main():
     random.seed(42)
     random.shuffle(all_entries)
 
-    # Write EN dataset
+    # Write the dataset (single canonical file)
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        for entry in all_entries:
-            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
-
-    # Copy to main dataset
-    with open(MAIN_DATASET, "w", encoding="utf-8") as f:
         for entry in all_entries:
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
@@ -2402,7 +2424,6 @@ def main():
 
     print(f"\nTotal: {len(all_entries)} entries ({tc_count} tool_call, {len(all_entries) - tc_count} other)")
     print(f"Output: {OUTPUT_FILE}")
-    print(f"Main:   {MAIN_DATASET}")
     print(f"Stats:  {STATS_FILE}")
 
     if not valid:

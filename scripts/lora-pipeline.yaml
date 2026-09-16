@@ -36,14 +36,26 @@ training:
   seed: 42
   output_dir: "outputs"
 
-# === Paths (relative to TopSolidMcpServer/) ===
+# === Paths (relative to the repository root) ===
+# No FR -> EN recipe mapping here on purpose: nothing translates recipe names at
+# runtime. RecipeTool answers "Unknown recipe" for any name it does not hold, so the
+# dataset must only contain names that exist in server/src/Tools/RecipeTool.cs.
+# WARNING -- that is NOT currently enforced. validate_dataset() in
+# generate-lora-dataset.py only rejects the known FR aliases (keys of FR_TO_EN); it
+# does not check a name against the catalogue. As of this writing the generated
+# dataset teaches 43 recipe names that RecipeTool.cs does not define (~126 samples,
+# e.g. read_sketches, read_total_surface, set_material, export_image), and the
+# generator's own catalogue file (server/data/recipe-list.txt) is itself stale --
+# 115 entries against 132 real recipes. Fix the catalogue before trusting the
+# "unknown recipe" warning the generator now prints.
 paths:
   dataset: "data/lora-dataset.jsonl"
   dataset_stats: "data/lora-dataset-stats.json"
-  recipe_mapping: "data/recipe-name-mapping-fr-en.json"
   adapter_output: "models/topsolid_lora"
   gguf_output: "models/model-topsolid-gguf"
-  modelfile: "models/Modelfile"
+  # The only recipe-agent Modelfile in the repo. It references a .gguf that is
+  # gitignored and must be built first -- read its header.
+  modelfile: "skills/topsolid-mcp/Modelfile"
   eval_baseline: "data/eval-baseline.json"
   eval_lora: "data/eval-lora.json"
   eval_report: "data/eval-comparison.md"
@@ -55,11 +67,25 @@ eval:
   min_tier2_accuracy: 70.0
   min_improvement_over_baseline: 30.0
 
-# === System Prompt (shared across training, eval, and deployment) ===
+# === System Prompt (used by generate-lora-dataset.py and eval-lora.py) ===
+# Deployment uses the SYSTEM block of skills/topsolid-mcp/Modelfile; keep the two in
+# step. KNOWN GAP: every assistant turn in the generated dataset answers with a direct
+# tool call, including for write recipes, so a model retrained as-is will NOT honour the
+# confirmation rule below -- the rule is stated but never demonstrated. Fixing it means
+# emitting confirm-then-call turns for RW recipes in generate-lora-dataset.py.
 system_prompt: >-
   You are a TopSolid MCP Assistant.
   You ONLY use topsolid__topsolid_run_recipe with a recipe name.
-  You NEVER generate C# code. You act directly, without asking for confirmation.
+  You NEVER generate C# code.
+  Read-only recipes (read_, list_, count_, detect_, search_, compare_, audit_, check_,
+  summarize_) change nothing: call them directly.
+  Write recipes (set_, rename_, fix_, copy_, enable_, clear_, save_, rebuild_, export_,
+  batch_, attr_set_, attr_replace_, attr_assign_, invoke_command, creer_,
+  ajouter_inclusion, extruder_esquisse, activate_bom_row, deactivate_bom_row,
+  print_drafting) modify the model, the PDM data or files on disk: state the recipe and
+  the value, then wait for the user to confirm before calling.
+  If a recipe name does not start with one of the read-only prefixes above, treat it as a
+  write recipe and ask for confirmation first.
 
 # === Export ===
 export:

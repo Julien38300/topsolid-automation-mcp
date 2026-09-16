@@ -7,7 +7,7 @@ Handles the known Unsloth save_pretrained_merged bug by using PEFT merge + llama
 
 Usage (from WSL2):
   source ~/lora-env/bin/activate
-  cd /mnt/c/Users/jup/OneDrive/Cortana/TopSolidMcpServer
+  cd /mnt/c/path/to/topsolid-automation-mcp
   python scripts/train-lora.py
 
 Output:
@@ -27,7 +27,11 @@ from pathlib import Path
 # ============================================================================
 
 MODEL_NAME = "unsloth/Ministral-3-3B-Instruct-2512-bnb-4bit"
-MAX_SEQ_LENGTH = 2048
+
+# Training sequence length. Override with LORA_MAX_SEQ_LENGTH.
+# 2048 only covers the short samples this script currently builds; see the
+# train/serve skew TODO in formatting_prompts_func before trusting it.
+MAX_SEQ_LENGTH = int(os.environ.get("LORA_MAX_SEQ_LENGTH", "2048"))
 LORA_R = 32
 LORA_ALPHA = 64
 EPOCHS = 3
@@ -83,6 +87,22 @@ def step_train():
     # Mistral [INST] chat template — must match Ollama Modelfile TEMPLATE
     # Handles multi-turn conversations (system/human/gpt/tool roles).
     def formatting_prompts_func(examples):
+        # TODO(train/serve skew) -- the samples built here look like:
+        #   [SYSTEM_PROMPT]...[/SYSTEM_PROMPT][INST]question[/INST][TOOL_CALLS]name[ARGS]{...}</s>
+        # and NEVER contain an [AVAILABLE_TOOLS] block. In production the Ollama
+        # TEMPLATE (skills/topsolid-mcp/Modelfile) injects one right before the last
+        # [INST] as soon as the client advertises tools: several thousand tokens of
+        # JSON schema for the 13 tools TopSolidMcpServer registers (12 with
+        # --read-only). So the model is fine-tuned on a prompt
+        # distribution that never occurs at serving time -- the question it must
+        # answer sits after a long tool block it has never seen, at a sequence
+        # length it was never trained at.
+        # To fix: render the exact same [AVAILABLE_TOOLS]{...}[/AVAILABLE_TOOLS]
+        # payload the server sends (dump tools/list from TopSolidMcpServer and
+        # serialize it the way the TEMPLATE does) into every training sample, and
+        # raise LORA_MAX_SEQ_LENGTH to cover tool block + question + answer.
+        # Until then, eval numbers measured without tools do not predict behaviour
+        # with tools.
         convs = examples["conversations"]
         texts = []
         for conv in convs:
@@ -324,7 +344,11 @@ def main():
     if args.step == "all":
         print(f"\n[DONE] Pipeline complete!")
         print(f"  GGUF: {Q4_GGUF}")
-        print(f"  Next: copy to models/ and run 'ollama create ministral-topsolid -f models/Modelfile'")
+        # The only Modelfile in the repo is skills/topsolid-mcp/Modelfile
+        # (lora-pipeline.yaml -> paths.modelfile). Its FROM line expects the GGUF
+        # next to it, under the name ministral-topsolid.q4km.gguf.
+        print(f"  Next: cp {Q4_GGUF} skills/topsolid-mcp/ministral-topsolid.q4km.gguf")
+        print(f"        ollama create ministral-topsolid -f skills/topsolid-mcp/Modelfile")
 
 
 if __name__ == "__main__":

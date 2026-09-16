@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 """
 Parse TopSolid Automation MD documentation into a compact JSON API index.
-Input:  Directory of *_Method.md files from TopSolid'Design Automation doc
-Output: api-index.json with all interfaces, methods, signatures, descriptions
+
+Input:  Directory of *_Method.md files from the TopSolid'Design Automation doc.
+        Resolved in this order:
+          1. the first command-line argument,
+          2. the TOPSOLID_HELP_MD_DIR environment variable,
+          3. <repo>/data/automation-md/ if it exists.
+        The corpus is not redistributed with this repository; extract your own
+        copy and point TOPSOLID_HELP_MD_DIR at it.
+Output: data/api-index.json with all interfaces, methods, signatures,
+        descriptions.
 """
 
 import os
@@ -122,13 +130,37 @@ def parse_method_file(filepath):
     }
 
 
-def main():
-    if len(sys.argv) < 2:
-        md_dir = r"C:\Users\jup\OneDrive\11_TopSolid_Expert\TrainingFiles\6 - Exemples Automation\TopSolid'Design Automation md"
-    else:
-        md_dir = sys.argv[1]
+HELP_MD_DIR_ENV = "TOPSOLID_HELP_MD_DIR"
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Repo-relative fallback, used only when neither argv[1] nor the env var is set.
+DEFAULT_MD_DIR = os.path.join(REPO_ROOT, "data", "automation-md")
 
-    output_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "api-index.json")
+
+def resolve_md_dir():
+    """CLI argument, then TOPSOLID_HELP_MD_DIR, then the repo-relative copy."""
+    if len(sys.argv) >= 2 and sys.argv[1].strip():
+        return sys.argv[1]
+    env_value = os.environ.get(HELP_MD_DIR_ENV, "").strip().strip('"')
+    if env_value:
+        return env_value
+    if os.path.isdir(DEFAULT_MD_DIR):
+        return DEFAULT_MD_DIR
+    return None
+
+
+def main():
+    md_dir = resolve_md_dir()
+    if not md_dir:
+        print("ERROR: no Automation MD directory to parse.", file=sys.stderr)
+        print("  Pass it as the first argument, set " + HELP_MD_DIR_ENV + ", or",
+              file=sys.stderr)
+        print("  place the corpus under " + DEFAULT_MD_DIR, file=sys.stderr)
+        return 1
+    if not os.path.isdir(md_dir):
+        print("ERROR: not a directory: " + md_dir, file=sys.stderr)
+        return 1
+
+    output_path = os.path.join(REPO_ROOT, "data", "api-index.json")
 
     print(f"Parsing MD files from: {md_dir}")
     print(f"Output: {output_path}")
@@ -183,7 +215,8 @@ def main():
 
     size_kb = os.path.getsize(output_path) / 1024
     print(f"\nOutput: {output_path} ({size_kb:.0f} KB)")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

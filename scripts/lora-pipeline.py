@@ -2,7 +2,7 @@
 """
 LoRA Pipeline Orchestrator — end-to-end automation.
 
-Chains: validate -> generate dataset -> train -> export GGUF -> import Ollama -> eval -> compare
+Chains: generate dataset -> validate -> train -> export GGUF -> import Ollama -> eval
 
 Usage:
   python lora-pipeline.py                    # Full pipeline
@@ -16,6 +16,7 @@ Usage:
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -61,30 +62,18 @@ def step_validate(config):
     log("Validating dataset...", "STEP")
 
     dataset_path = PROJECT_DIR / config["paths"]["dataset"]
-    mapping_path = PROJECT_DIR / config["paths"]["recipe_mapping"]
 
     if not dataset_path.exists():
         log(f"Dataset not found: {dataset_path}", "ERR")
-        return False
-
-    if not mapping_path.exists():
-        log(f"Recipe mapping not found: {mapping_path}", "ERR")
         return False
 
     # Load and validate entries
     with open(dataset_path, "r", encoding="utf-8") as f:
         lines = [l.strip() for l in f if l.strip()]
 
-    with open(mapping_path, "r", encoding="utf-8") as f:
-        mapping = json.load(f)
-
-    en_names = set(mapping.values())
-    fr_names = set(mapping.keys())
-
     errors = 0
     warnings = 0
     tool_calls = 0
-    fr_recipes_found = []
 
     for i, line in enumerate(lines, 1):
         try:
@@ -106,21 +95,15 @@ def step_validate(config):
             log(f"  Line {i}: Unexpected role sequence: {roles}", "WARN")
             warnings += 1
 
-        # Check for FR recipe names in tool calls
+        # Count tool calls. Both encodings appear in the dataset: Mistral native
+        # [TOOL_CALLS]name[ARGS]{...} and the legacy Hermes <tool_call>{...}.
+        # Recipe names themselves are checked against the real catalogue by
+        # generate-lora-dataset.py (validate_dataset), which knows the valid names.
         gpt_msg = next((c["value"] for c in convs if c["from"] == "gpt"), "")
-        if "<tool_call>" in gpt_msg:
+        if "<tool_call>" in gpt_msg or "[TOOL_CALLS]" in gpt_msg:
             tool_calls += 1
-            for fr_name in fr_names:
-                if f'"recipe":"{fr_name}"' in gpt_msg or f'"recipe": "{fr_name}"' in gpt_msg:
-                    fr_recipes_found.append((i, fr_name))
 
     log(f"  {len(lines)} entries, {tool_calls} tool_calls, {errors} errors, {warnings} warnings")
-
-    if fr_recipes_found:
-        log(f"  {len(fr_recipes_found)} entries still use FR recipe names!", "ERR")
-        for line_num, name in fr_recipes_found[:5]:
-            log(f"    Line {line_num}: {name}", "ERR")
-        errors += len(fr_recipes_found)
 
     if errors == 0:
         log("Dataset validation passed", "OK")
@@ -143,7 +126,9 @@ def step_dataset(config):
     if stats_path.exists():
         with open(stats_path, "r", encoding="utf-8") as f:
             stats = json.load(f)
-        log(f"  Generated {stats['total_entries']} entries, {stats['recipes_count']} recipes", "OK")
+        # Key names as written by generate-lora-dataset.py.
+        log(f"  Generated {stats.get('total', '?')} entries, "
+            f"{stats.get('recipes_covered', '?')}/{stats.get('recipes_total', '?')} recipes covered", "OK")
     else:
         log("  Stats file not generated", "WARN")
 
@@ -164,7 +149,11 @@ def step_train(config, dry_run=False):
     else:
         # Windows — need to call into WSL2
         log("  Detected Windows — launching training via WSL2")
-        wsl_project = str(PROJECT_DIR).replace("C:\\", "/mnt/c/").replace("\\", "/")
+        # Any drive letter, not just C: -- the repo also lives on network drives.
+        # "N:\Noemid_System\x" -> "/mnt/n/Noemid_System/x"
+        _win = str(PROJECT_DIR).replace("\\", "/")
+        _m = re.match(r"^([A-Za-z]):/(.*)$", _win)
+        wsl_project = f"/mnt/{_m.group(1).lower()}/{_m.group(2)}" if _m else _win
         wsl_cmd = (
             f"cd {wsl_project} && "
             f"source ~/lora-env/bin/activate && "
@@ -256,7 +245,7 @@ def main():
     parser = argparse.ArgumentParser(description="LoRA Pipeline Orchestrator")
     parser.add_argument(
         "--step",
-        choices=["validate", "dataset", "train", "export", "eval", "all"],
+        choices=["dataset", "validate", "train", "export", "eval", "all"],
         default="all",
         help="Which step to run (default: all)",
     )
@@ -292,7 +281,10 @@ def main():
     }
 
     if args.step == "all":
-        order = ["validate", "dataset", "train", "export", "eval"]
+        # Dataset first: validation reads the file the generator writes. The old
+        # [validate, dataset, ...] order aborted on a fresh clone with
+        # "Dataset not found" before anything had a chance to create it.
+        order = ["dataset", "validate", "train", "export", "eval"]
         for step_name in order:
             if step_name == "validate" and args.skip_validate:
                 continue

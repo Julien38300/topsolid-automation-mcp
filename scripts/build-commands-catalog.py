@@ -21,6 +21,7 @@ Output:
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 
@@ -28,14 +29,28 @@ ROOT = Path(__file__).parent.parent
 # Adjust this glob to widen scope later (e.g. "help-md/EN/**")
 # Current POC: Drafting only.
 #
-# The help-md tree exists only in the Cortana workspace for now (~9 MB of MD).
-# Prefer the local copy if present, else look under server/data/help-md/.
-HELP_ROOT_CANDIDATES = [
-    Path(r"C:\Users\jup\OneDrive\Cortana\TopSolidMcpServer\data\help-md"),
+# The help-md tree (~9 MB of MD) is extracted from the TopSolid help shipped
+# with the product; it is NOT redistributed with this repository. Point
+# TOPSOLID_HELP_MD_DIR at your own extracted copy, or place the tree under
+# server/data/help-md/ (or data/help-md/) inside the repo.
+HELP_MD_DIR_ENV = "TOPSOLID_HELP_MD_DIR"
+
+# Repo-relative fallbacks, used only when TOPSOLID_HELP_MD_DIR is unset.
+HELP_ROOT_FALLBACKS = [
     ROOT / "server" / "data" / "help-md",
     ROOT / "data" / "help-md",
 ]
 OUT_PATH = ROOT / "server" / "data" / "commands-catalog.json"
+
+
+def help_root_candidates() -> list[Path]:
+    """Env var first, then the repo-relative fallbacks."""
+    candidates: list[Path] = []
+    env_value = os.environ.get(HELP_MD_DIR_ENV, "").strip().strip('"')
+    if env_value:
+        candidates.append(Path(env_value))
+    candidates.extend(HELP_ROOT_FALLBACKS)
+    return candidates
 
 # Full EN catalog — scaled from the Drafting POC (207 pages) on 2026-04-20
 # after the FullName mapping rule was verified live on Midpoint command.
@@ -102,15 +117,21 @@ def derive_menu_path(rel_path: Path) -> str:
 
 
 def main() -> None:
+    candidates = help_root_candidates()
     help_root = None
-    for cand in HELP_ROOT_CANDIDATES:
-        if cand.exists():
+    for cand in candidates:
+        if cand.is_dir():
             help_root = cand
             break
     if help_root is None:
         print(
             "[ERR] help-md root not found. Checked: "
-            + ", ".join(str(c) for c in HELP_ROOT_CANDIDATES),
+            + ", ".join(str(c) for c in candidates),
+            flush=True,
+        )
+        print(
+            "      Set " + HELP_MD_DIR_ENV + " to your extracted help-md "
+            "directory, or place the tree under server/data/help-md/.",
             flush=True,
         )
         raise SystemExit(1)

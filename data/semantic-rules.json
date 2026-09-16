@@ -1,0 +1,100 @@
+[
+  {
+    "Target": "GetElements",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Chemin structurel pour lister les entites d'un document. Appeler GetElements() puis filtrer par type."
+  },
+  {
+    "Target": "get_ActiveDocument",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Point d'entree pour obtenir le document courant."
+  },
+  {
+    "Target": "GetDocuments",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Liste les documents d'un projet."
+  },
+  {
+    "Target": "^I.+s2D$",
+    "MatchOn": "type_regex",
+    "WeightOverride": 20,
+    "Exclude": false,
+    "Instruction": "Interface de collection 2D. Accessible via TopSolidHost mais pour la recherche d'objets, privilegier GetElements() + GetTypeFullName()."
+  },
+  {
+    "Target": "^I.+s3D$",
+    "MatchOn": "type_regex",
+    "WeightOverride": 20,
+    "Exclude": false,
+    "Instruction": "Interface de collection 3D. Accessible via TopSolidHost mais pour la recherche d'objets, privilegier GetElements() + GetTypeFullName()."
+  },
+  {
+    "Target": "TopSolid.Kernel.Automating.Attributes",
+    "MatchOn": "namespace",
+    "WeightOverride": 50,
+    "Exclude": false,
+    "Instruction": "Namespace d'attributs. Rarement le bon chemin pour la navigation."
+  },
+  {
+    "Target": "GetConstituents",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Liste les sous-elements d'une entite (enfants dans l'arbre). Fonctionne sur ElementId et PdmObjectId."
+  },
+  {
+    "Target": "GetDocument",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Pont critique PDM vers Document. Convertit un PdmObjectId en DocumentId."
+  },
+  {
+    "Target": "GetTypeFullName",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Retourne le type complet d'un element. Indispensable pour filtrer les elements par type (esquisse, piece, etc)."
+  },
+  {
+    "Target": "GetName",
+    "MatchOn": "method",
+    "WeightOverride": 2,
+    "Exclude": false,
+    "Instruction": "Retourne le nom d'un element ou objet PDM."
+  },
+  {
+    "Target": "SearchDocumentByName",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Recherche un document par nom dans un projet. Retourne une liste de PdmObjectId."
+  },
+  {
+    "Target": "GetProjects",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Liste tous les projets disponibles dans le PDM."
+  },
+  {
+    "Target": "get_EditedDocument",
+    "MatchOn": "method",
+    "WeightOverride": 1,
+    "Exclude": false,
+    "Instruction": "Retourne le DocumentId du document en cours d'edition."
+  },
+  {
+    "Target": "^Smart",
+    "MatchOn": "type_regex",
+    "WeightOverride": 15,
+    "Exclude": false,
+    "Instruction": "Type Smart (associativite). Ce n'est pas une destination de navigation mais un type parametre pour les appels de methodes."
+  }
+]
