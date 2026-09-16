@@ -21,7 +21,7 @@ Sans cette option activee, le serveur MCP ne pourra pas se connecter a TopSolid.
 ## Etape 2 — Telecharger le serveur MCP
 
 1. Aller sur la [page Releases](https://github.com/Julien38300/topsolid-automation-mcp/releases)
-2. Telecharger `TopSolidMcpServer.zip` de la derniere version
+2. Telecharger `TopSolidMcpServer-vX.Y.Z.zip` de la derniere version
 3. Dezipper dans un dossier, par exemple `C:\TopSolidMCP\`
 
 C'est tout. L'executable `TopSolidMcpServer.exe` est pret a l'emploi.
@@ -45,17 +45,22 @@ Sans bridge (mode stdio), chaque client IA relance un processus `TopSolidMcpServ
 
 **Prerequis : Node.js 18+** ([nodejs.org](https://nodejs.org/))
 
+::: warning Le dossier `bridge/` n'est pas dans le zip de release
+Le zip ne contient que le serveur, ses DLL et `data/`. Recuperez `bridge/` depuis le depot (clone ou telechargement du code source) et placez-le ou vous voulez — `start-bridge.ps1` trouve l'exe via `C:\TopSolidMCP\TopSolidMcpServer.exe`, le build local du depot, ou la variable `TOPSOLID_MCP_EXE`.
+:::
+
 ```powershell
-cd C:\TopSolidMCP\bridge
+cd <depot>\bridge
 npm install          # premiere fois uniquement
 .\start-bridge.ps1   # demarre le bridge
 ```
 
 Sortie attendue :
 ```
+[bridge] stdio server: C:\TopSolidMCP\TopSolidMcpServer.exe
 [bridge] HTTP endpoint : http://127.0.0.1:8080/mcp   <- copiez cette URL
 [bridge] SSE (legacy)  : http://127.0.0.1:8080/sse
-[bridge] Auth          : NONE -- local only
+[bridge] Auth          : NONE -- 127.0.0.1 bind only.
 ```
 
 Laissez ce terminal ouvert. Le bridge tourne tant que la fenetre est ouverte.
@@ -132,21 +137,57 @@ Le serveur est un singleton — un seul client IA peut l'utiliser a la fois. Le 
 
 ---
 
-### claude.ai (web + app Windows)
+## Options de lancement et variables
 
-claude.ai accepte uniquement des MCP distants via URL. Exposez le bridge avec un tunnel :
+Toutes ces options se passent soit en argument de ligne de commande, soit par variable d'environnement (pratique dans un fichier de configuration MCP, qui accepte un bloc `env`).
 
-```powershell
-# Dans un second terminal (bridge deja lance)
-cloudflared tunnel --url http://127.0.0.1:8080
-# -> https://<random>.trycloudflare.com
+| Option | Variable | Effet |
+|---|---|---|
+| `--read-only` | `TOPSOLID_MCP_READ_ONLY=1` | `topsolid_modify_script` n'est pas enregistre ; les recettes tournent en lecture seule |
+| `--no-tray` | `TOPSOLID_MCP_NO_TRAY=1` | Pas d'icone dans la zone de notification (serveur headless, session 0, CI) |
+| `--port <n>` | — | Port Automation de TopSolid (defaut 8090) |
+| `--compile <fichier>` | — | Compile un fichier sans l'executer, puis sort (code 0 = OK) |
+| `--version` / `-v` | — | Affiche la version et sort |
+| — | `TOPSOLID_BIN_PATH` | Dossier contenant `TopSolid.Kernel.Automating.dll`, quand la detection automatique echoue |
+| — | `TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC` | Delai max d'execution d'un script, en secondes (defaut 60) |
+| — | `TOPSOLID_MCP_ALLOW_UNSAFE=1` | Desactive le controle des APIs interdites — debug uniquement, jamais en usage courant |
+
+Exemple de configuration en lecture seule, sans icone de notification, avec un chemin TopSolid force :
+
+```json
+{
+  "mcpServers": {
+    "topsolid": {
+      "command": "C:\\TopSolidMCP\\TopSolidMcpServer.exe",
+      "args": ["--read-only", "--no-tray"],
+      "env": {
+        "TOPSOLID_BIN_PATH": "C:\\Missler\\V627\\bin",
+        "TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC": "120"
+      }
+    }
+  }
+}
 ```
 
-Dans claude.ai : **Settings → Connecteurs → Ajouter un connecteur personnalise** → `https://<random>.trycloudflare.com/mcp`
+::: danger N'auto-approuvez pas les outils de script
+`topsolid_execute_script` et `topsolid_modify_script` compilent le C# recu et l'executent **en pleine confiance dans le processus du serveur**, sur votre poste, avec `System.IO` disponible. « Lecture seule » veut dire « hors transaction de modification TopSolid » — ce n'est pas un bac a sable.
 
-::: warning Securite
-Ne laissez pas le tunnel ouvert sans surveillance. Voir le [guide complet du bridge](./bridge-http) pour securiser avec Cloudflare Access.
+Ne les mettez pas dans la liste des outils toujours autorises de votre client MCP, et relisez chaque script avant de le laisser tourner. Si vous n'avez besoin que de consulter, `--read-only` supprime purement et simplement `topsolid_modify_script`.
 :::
+
+---
+
+### claude.ai (web + app Windows)
+
+claude.ai accepte uniquement des MCP distants via URL. Il faut donc exposer le bridge — et l'exposer **authentifie**.
+
+::: danger Le pont donne un acces distant a votre machine
+Publier le bridge, c'est publier `topsolid_execute_script` et `topsolid_modify_script`, qui executent du code arbitraire sur votre poste. Un tunnel nu `trycloudflare.com`, sans authentification, suffit a quiconque connait l'URL.
+
+Passez par un **tunnel nomme derriere Cloudflare Access** — procedure detaillee dans le [guide du bridge](./bridge-http#solution-recommandee-cloudflare-access-gratuit). Le tunnel nu n'est pas recommande.
+:::
+
+Une fois l'application Cloudflare Access en place, dans claude.ai : **Settings → Connecteurs → Ajouter un connecteur personnalise** → `https://topsolid-mcp.votredomaine.com/mcp`
 
 ## Etape 5 — Tester
 

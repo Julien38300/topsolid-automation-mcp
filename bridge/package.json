@@ -4,10 +4,15 @@
   "description": "HTTP/SSE bridge exposing the local TopSolid MCP stdio server to remote clients (claude.ai web, etc).",
   "private": true,
   "type": "commonjs",
+  "//": [
+    "SECURITY -- read bridge/README.md before changing these scripts.",
+    "1. The API key is NEVER passed as a command-line argument. Process arguments are readable by any local user (tasklist /v, wmic process get commandline, Get-CimInstance Win32_Process) and are recorded by process-audit logs (Windows 4688, Sysmon event 1). Put the key in the TOPSOLID_MCP_API_KEY environment variable; start-bridge.ps1 forwards it to mcp-proxy through the child environment (MCP_PROXY_API_KEY, which yargs maps to --apiKey).",
+    "2. --host is always explicit: mcp-proxy defaults to '::', i.e. every interface.",
+    "3. There is deliberately no script binding 0.0.0.0. Use start-bridge.ps1 -Open, which refuses to start without a key, and read the threat model in README.md first: this endpoint exposes topsolid_execute_script / topsolid_modify_script, i.e. arbitrary code execution on this workstation."
+  ],
   "scripts": {
     "start": "mcp-proxy --port 8080 --host 127.0.0.1 -- \"%TOPSOLID_MCP_EXE%\"",
-    "start:open": "mcp-proxy --port 8080 --host 0.0.0.0 -- \"%TOPSOLID_MCP_EXE%\"",
-    "start:auth": "mcp-proxy --port 8080 --host 127.0.0.1 --apiKey \"%TOPSOLID_MCP_API_KEY%\" -- \"%TOPSOLID_MCP_EXE%\""
+    "start:auth": "powershell -NoProfile -ExecutionPolicy Bypass -File ./start-bridge.ps1 -RequireApiKey"
   },
   "dependencies": {
     "mcp-proxy": "^6.4.6"

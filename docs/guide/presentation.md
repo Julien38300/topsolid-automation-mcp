@@ -10,7 +10,8 @@ Agent IA (OpenClaw / Claude / tout client MCP)
   v
 TopSolidMcpServer.exe (stdio JSON-RPC)
   |  - run_recipe : execute une des 132 recettes pre-construites
-  |  - api_help : cherche les bonnes methodes API (52 synonymes FR)
+  |  - list_recipes : catalogue des recettes (filtre categorie / mot-cle)
+  |  - api_help : cherche les bonnes methodes API (72 synonymes FR/EN)
   |  - execute_script : compile et execute du C# contre TopSolid
   |  - find_path / explore_paths : navigue dans le graphe de types
   |
@@ -32,8 +33,12 @@ Le coeur du systeme. Un graphe oriente representant toutes les methodes de l'API
 | Interfaces | 46 |
 | Description | 90% |
 | Hints semantiques | 85% |
-| Edges avec exemples reels | 1194 (29%) |
-| Snippets de code | 2174 |
+| Edges portant un champ `Examples` | 1193 (29%) |
+| Snippets de code **dans le graphe redistribue** | 0 |
+
+::: warning Les exemples de code ne sont pas redistribues
+Les 1193 champs `Examples` du `graph.json` livre sont des tableaux **vides**. Les snippets viennent des corpora prives de l'auteur et ne sont pas redistribuables : ils sont retires avant publication. Ne comptez pas dessus, `topsolid_get_recipe` et `topsolid_search_examples` (corpus local, opt-in) sont les sources d'exemples reellement disponibles.
+:::
 
 ### Serveur MCP (`TopSolidMcpServer.exe`)
 Executable .NET Framework 4.8, communique en stdio JSON-RPC. **13 outils** exposes a l'agent.
@@ -41,28 +46,33 @@ Executable .NET Framework 4.8, communique en stdio JSON-RPC. **13 outils** expos
 ### RecipeTool — 132 recettes
 L'outil principal. Le LLM choisit une recette par nom, aucune generation de code necessaire.
 
+Les categories ci-dessous sont celles exposees par `topsolid_list_recipes`. Les **comptes** de ce
+tableau sont recopies a la main depuis `RecipeTool.cs` (etat verifie : 132 recettes) et derivent
+des qu'une recette est ajoutee — la seule source a jour reste `topsolid_list_recipes` :
+
 | Categorie | Recettes | Exemples |
 |-----------|----------|----------|
-| PDM (lecture/ecriture) | 9 | designation, reference, fabricant |
-| Navigation projet | 5 | chercher, ouvrir, lister documents |
-| Parametres | 6 | lire, modifier, comparer |
-| Masse/Volume/Dimensions | 7 | masse, volume, surface, inertie, boite englobante |
-| Geometrie/Visualisation | 8 | shapes, esquisses, operations, couleurs |
-| Assemblages | 6 | inclusions, occurrences, comptage pieces |
-| Export | 8 | STEP, DXF, PDF, STL, IGES, CSV |
-| Mise en plan | 6 | vues, echelle, format, projection, ouvrir plan |
-| Nomenclature (BOM) | 4 | colonnes, contenu, comptage lignes |
-| Mise a plat / Tolerie | 3 | detection, plis, dimensions depliage |
-| Comparaison documents | 4 | parametres, operations, entites, revisions |
-| Report modifications | 2 | copier parametres ou proprietes PDM vers un autre doc |
-| Batch projet | 16 | audit refs/desig, masse batch, export batch, auteur, designation/ref/fabricant batch, virtuel |
-| Audit qualite | 6 | noms parametres, drivers famille, materiaux |
-| Familles | 5 | detection, catalogue, drivers |
-| Historique/Revisions | 2 | timeline revisions, comparaison revisions |
-| Document | 7 | type, sauvegarder, reconstruire, proprietes utilisateur |
-| Interactif | 3 | selection shape/face/point dans TopSolid |
+| `GEOMETRY` | 16 | shapes, esquisses, extrusions, faces, operations |
+| `AUDIT` | 13 | coherence des noms, drivers de famille, materiaux |
+| `PROJECTS` | 11 | chercher, ouvrir, lister les documents du projet |
+| `DRAFTING` | 10 | vues, echelle, format, qualite de projection, impression |
+| `ATTRIBUTES` | 10 | couleur, transparence, calques, visibilite |
+| `PDM PROPERTIES` | 9 | designation, nom, reference, fabricant |
+| `BATCH` | 9 | designation/reference/fabricant en masse, export batch, virtuel |
+| `DOCUMENT` | 8 | type, sauvegarde, reconstruction, revisions |
+| `PARAMETERS` | 7 | lire, creer, modifier, comparer, copier |
+| `BOM` | 7 | colonnes, contenu, lignes actives |
+| `EXPORT` | 7 | STEP, STL, IGES, DXF, PDF |
+| `ASSEMBLIES` | 6 | inclusions, occurrences, comptage de pieces |
+| `FAMILIES` | 5 | detection, catalogue, drivers |
+| `MEASUREMENTS` | 5 | masse, volume, surface, inertie, boite englobante |
+| `MATERIALS` | 4 | lecture et audit des materiaux |
+| `UNFOLDING` | 3 | detection, plis, dimensions de depliage |
+| `USER PROPERTIES` | 2 | lecture et ecriture des proprietes utilisateur |
 
-### Dataset LoRA (`lora-dataset-en.jsonl`)
+**Total : 132 recettes.**
+
+### Dataset LoRA
 2164 entrees d'entrainement au format ShareGPT (v7 conversational) pour fine-tuner le sous-agent 3B. Couvre les 132 recettes + patterns multi-turn + error-handling + acknowledgments. Eval : **96%** (50 questions, 5 tiers). Deploye en PROD comme `ministral-topsolid` via Ollama.
 
 ### Tests
@@ -82,7 +92,7 @@ OpenClaw Main (cloud, leger — routing + conversation)
   └── codestral-topsolid (22B Q4_K_M vanilla, local — PROD)
         → execute_script + modify_script + api_help + find_path
            + explore_paths + compile + search_examples
-        Generation C# via le graphe API + validation Roslyn
+        Generation C# via le graphe API + dry-run compile (CSharpCodeProvider, C# 5)
         Cas hors-recettes, scripts ad-hoc
         Latence : ~20-30 secondes
 ```

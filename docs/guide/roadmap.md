@@ -8,8 +8,8 @@
 | Phase 2 | Serveur MCP (protocole, outils de base) | 100% |
 | Phase 3 | Intelligence semantique (regles, pruning) | 100% |
 | Phase 4 | Connexion TopSolid & execution scripts | 100% |
-| Phase 5 | Connaissance API (graphe enrichi, api_help, 52 synonymes) | 100% |
-| Phase 5b-e | Robustesse, qualite, fixes (66/66 tests) | 100% |
+| Phase 5 | Connaissance API (graphe enrichi, api_help, 72 synonymes) | 100% |
+| Phase 5b-e | Robustesse, qualite, fixes | 100% |
 | Phase 6 | 132 recettes Tier 1/2/3 + tests LIVE + graphe complet | 100% |
 | Phase 7 | Graphe multi-couche — Layer 2 Commands (2428 commandes) | 50% |
 | Phase 8 | Recettes batch PDM (batch_set_designation/reference/manufacturer) | 100% |
@@ -22,11 +22,11 @@
 
 - **4119 edges** dans le graphe API
 - **1728 methodes** uniques couvertes, **242 nodes**, **46 interfaces**
-- **1194 edges** avec exemples reels (2174 snippets, 29%)
+- **1193 edges** portent un champ `Examples`, **vide dans le graphe redistribue** (les snippets viennent de corpora prives, non redistribuables)
 - **85%** d'edges avec hints semantiques FR/EN, **90%** avec description
 - **132 recettes** RecipeTool (Tier 1/2/3 — PDM, parametres, export, assemblages, familles, mise en plan, BOM, creation, proprietes utilisateur, batch PDM)
 - **2428 commandes UI** indexees en Layer 2 (outil `topsolid_search_commands`)
-- **13 outils MCP** : run_recipe, get_state, execute_script, modify_script, api_help, find_path, explore_paths, get_recipe, compile, search_examples, whats_new, search_help, search_commands
+- **13 outils MCP** : run_recipe, list_recipes, get_state, execute_script, modify_script, api_help, find_path, explore_paths, get_recipe, compile, search_examples, search_help, search_commands
 - **2164 paires** dataset LoRA v7 (ShareGPT EN, eval 96%)
 - **5809 pages** d'aide en ligne indexees en SQLite FTS5 (~20 MB embedded)
 - `ministral-topsolid:latest` (3B LoRA v7, 96%) + `codestral:22b` (vanilla, 97.5% Pattern D)

@@ -1,14 +1,14 @@
 # Tests
 
-Le projet inclut une suite de tests automatises qui verifient que le serveur MCP et les 132 recettes fonctionnent correctement contre une instance TopSolid vivante.
+Le projet inclut une suite de tests automatises qui verifie le serveur MCP et une partie des 132 recettes contre une instance TopSolid vivante. Attention : la couverture est partielle — `TestSuite.json` contient 85 tests et `test_recipes_live.ps1` couvre 39 recettes (RA-01 a RA-39), pas les 132.
 
 ## Architecture de test
 
 ```
 tests/
-├── run-tests.ps1           ← Lance la suite complete (72 tests)
-├── test_recipes_live.ps1   ← Teste les 132 recettes en LIVE
-├── TestSuite.json          ← Definition des 72 tests (JSON-RPC)
+├── run-tests.ps1           ← Lance la suite complete (85 tests)
+├── test_recipes_live.ps1   ← Teste 39 recettes en LIVE (RA-01 a RA-39)
+├── TestSuite.json          ← Definition des 85 tests (JSON-RPC)
 ├── TestSuite_Drafting.json ← Tests specifiques mise en plan
 ├── TestDocument.md         ← Reference du document de test attendu
 ├── McpTestRunner.csproj    ← Runner .NET (compile automatiquement)
@@ -46,7 +46,7 @@ Les tests sont calibres sur un document precis decrit dans `tests/TestDocument.m
 
 ## Lancer les tests
 
-### Suite complete (72 tests)
+### Suite complete (85 tests)
 
 ```powershell
 cd tests
@@ -65,16 +65,16 @@ T-03  api_help sketch                         PASS    203ms
 TOTAL: 68/72 PASS (4 FAIL perf = bruit)
 ```
 
-### Tests recettes LIVE (132 recettes)
+### Tests recettes LIVE (39 recettes couvertes)
 
 ```powershell
 cd tests
 .\test_recipes_live.ps1
 ```
 
-Ce script appelle **chaque recette** via `topsolid_run_recipe` et verifie que le resultat ne contient pas d'erreur. C'est le test le plus complet — il valide que toutes les recettes compilent et s'executent sans exception.
+Ce script appelle les 39 recettes listees en tete du script (RA-01 a RA-39) via `topsolid_run_recipe` et verifie que le resultat ne contient pas d'erreur. C'est le test d'execution le plus large du depot, mais il ne couvre pas le catalogue entier : les 93 autres recettes ne sont pas exercees automatiquement.
 
-Resultat attendu : **59/61+ PASS** (certaines recettes contextuelles necessitent un type de document specifique — piece, mise en plan, famille).
+Certaines recettes sont contextuelles et echouent si le document de test n'est pas du bon type (piece, mise en plan, famille) : lisez la sortie du script plutot qu'un ratio fige.
 
 ### Options avancees
 
@@ -174,11 +174,11 @@ Pour tester une nouvelle recette, ajoutez une entree dans `TestSuite.json` :
 | **Geometrie** | T-40 a T-45 | Esquisses, shapes, faces, points, reperes, operations |
 | **Assemblage** | T-46, T-51 | Inclusions, occurrences, faces detaillees |
 | **Write** | T-30 a T-39, T-50 | Modifications avec pattern transactionnel |
-| **Recettes** | RA-01 a RA-61 | 61 recettes en LIVE (test_recipes_live.ps1) |
+| **Recettes** | RA-01 a RA-39 | 39 recettes en LIVE (test_recipes_live.ps1) |
 
 ## Tests sans TopSolid
 
-Les outils **find_path**, **explore_paths** et **api_help** fonctionnent sans TopSolid (ils utilisent uniquement le graphe en memoire). Les tests T-03 a T-06, T-14 a T-17 et T-81 a T-86 peuvent tourner sur n'importe quelle machine avec le graphe `data/graph.json`.
+Les outils **find_path**, **explore_paths** et **api_help** fonctionnent sans TopSolid (ils utilisent uniquement le graphe en memoire). Les tests T-03 a T-06, T-14 a T-17 et T-81 a T-86 peuvent tourner sur n'importe quelle machine avec le graphe `server/data/graph.json`.
 
 ## Performance et regressions
 

@@ -12,9 +12,9 @@ TopSolid MCP supporte deux modes de connexion. Le bridge HTTP/SSE est recommande
 | claude.ai web / app | Oui (via tunnel) | Non |
 | Node.js requis | Oui (18+) | Non |
 
-**Pour demarrer le bridge :**
+**Pour demarrer le bridge :** (le dossier `bridge/` vient du depot, il n'est pas dans le zip de release)
 ```powershell
-cd C:\TopSolidMCP\bridge
+cd <depot>\bridge
 npm install        # premiere fois
 .\start-bridge.ps1
 ```
@@ -350,13 +350,18 @@ Le sous-agent TopSolid est configure dans `~/.openclaw/agents/topsolid/agent/sys
 
 claude.ai accepte uniquement des serveurs MCP distants via URL. Le bridge HTTP/SSE, expose via un tunnel, permet cette connexion.
 
-Voir le **[guide complet Bridge HTTP/SSE](./bridge-http)** pour l'installation pas-a-pas, la securite (Cloudflare Access) et le troubleshooting.
+::: danger Ce que le pont expose
+Le pont publie sur Internet des outils qui **compilent et executent du code arbitraire sur votre poste** (`topsolid_execute_script`, `topsolid_modify_script`) ainsi que les recettes d'ecriture PDM. Une URL de tunnel nu, sans authentification, suffit a quiconque la connait pour piloter votre TopSolid et votre systeme de fichiers.
+
+Mettez **Cloudflare Access** (ou un equivalent) devant le tunnel avant d'y brancher quoi que ce soit. Le tunnel nu `trycloudflare.com` n'est pas recommande, meme temporairement.
+:::
 
 Etapes resumees :
 1. Demarrez le bridge (`.\start-bridge.ps1`)
-2. Dans un second terminal : `cloudflared tunnel --url http://127.0.0.1:8080`
-3. Copiez l'URL `https://<random>.trycloudflare.com`
-4. claude.ai → Settings → Connecteurs → Ajouter → `https://<random>.trycloudflare.com/mcp`
+2. Publiez-le derriere un tunnel **nomme + Cloudflare Access** — procedure detaillee dans le [guide Bridge HTTP/SSE](./bridge-http#solution-recommandee-cloudflare-access-gratuit)
+3. claude.ai → Settings → Connecteurs → Ajouter → `https://topsolid-mcp.votredomaine.com/mcp`
+
+Voir le **[guide complet Bridge HTTP/SSE](./bridge-http)** pour l'installation pas-a-pas, la securite et le troubleshooting.
 
 ---
 
@@ -376,20 +381,26 @@ Une fois connecte, votre assistant IA dispose des outils suivants :
 |-------|-------------|
 | `topsolid_get_state` | Etat de connexion, document actif, projet courant |
 | `topsolid_run_recipe` | Execute une des 132 recettes pre-construites |
+| `topsolid_list_recipes` | Catalogue des recettes, filtrable par categorie ou mot-cle |
 | `topsolid_get_recipe` | Retourne le code source C# d'une recette |
 | `topsolid_api_help` | Recherche dans l'API TopSolid (1728 methodes, synonymes FR) |
-| `topsolid_execute_script` | Compile et execute du C# contre TopSolid (lecture seule) |
+| `topsolid_execute_script` | Compile et execute du C# hors transaction de modification |
 | `topsolid_modify_script` | Compile et execute du C# avec transaction (Pattern D auto) |
-| `topsolid_compile` | Compile-check Roslyn d'un script sans l'executer |
+| `topsolid_compile` | Compile-check d'un script sans l'executer (`CSharpCodeProvider`, C# 5) |
 | `topsolid_find_path` | Chemin Dijkstra entre types dans le graphe API |
 | `topsolid_explore_paths` | Exploration BFS multi-chemins |
 | `topsolid_search_help` | FTS5 sur 5809 pages de l'aide en ligne TopSolid |
 | `topsolid_search_commands` | Recherche dans 2428 commandes UI TopSolid (Layer 2) |
 | `topsolid_search_examples` | Recherche dans les corpora prives locaux (opt-in, env var) |
-| `topsolid_whats_new` | Diff API entre deux versions TopSolid |
 
 ::: tip Pour la plupart des usages
 `topsolid_run_recipe` suffit. Les 132 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
+:::
+
+::: danger N'auto-approuvez pas les outils de script
+`topsolid_execute_script` et `topsolid_modify_script` compilent et executent du C# **en pleine confiance dans le processus du serveur**, sur votre poste. « Lecture seule » signifie seulement « hors transaction de modification TopSolid » — ce n'est pas un bac a sable.
+
+Ne les ajoutez pas a la liste des outils toujours autorises de votre client MCP. Si vous n'avez besoin que de consulter, lancez le serveur avec `--read-only` : `topsolid_modify_script` n'est alors meme pas enregistre. Voir [Options de lancement](./quickstart#options-de-lancement-et-variables).
 :::
 
 ---

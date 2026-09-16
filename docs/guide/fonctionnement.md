@@ -14,7 +14,7 @@
 │                                                         │
 │  Le LLM comprend l'intention en francais.               │
 │  Il selectionne la recette par nom.                     │
-│  Il appelle run_recipe("modifier_designation",          │
+│  Il appelle run_recipe("set_designation",               │
 │                         value="Ma Piece")               │
 │                                                         │
 │  Pas de code genere. Juste un choix de recette.         │
@@ -24,10 +24,11 @@
 ┌─────────────────────────────────────────────────────────┐
 │  MCP SERVER (.NET 4.8)                                  │
 │                                                         │
-│  RecipeTool recoit "modifier_designation" + "Ma Piece"  │
+│  RecipeTool recoit "set_designation" + "Ma Piece"       │
 │  → injecte la valeur dans le code C# pre-ecrit          │
-│  → compile avec CSharpCodeProvider                      │
-│  → execute dans le process TopSolid via WCF             │
+│  → compile en C# 5 (CSharpCodeProvider)                 │
+│  → execute DANS LE PROCESS DU SERVEUR MCP,              │
+│    qui pilote TopSolid via WCF                          │
 │                                                         │
 │  Code execute (le LLM ne voit jamais ca) :              │
 │  ┌───────────────────────────────────────┐              │
@@ -60,7 +61,7 @@
 │  │             │  │              │  │               │  │
 │  │ Etat de     │  │ Cherche dans │  │ 132 recettes  │  │
 │  │ TopSolid    │  │ 1728 methodes│  │ pre-codees    │  │
-│  │ connexion   │  │ 52 synonymes │  │ Le LLM choisit│  │
+│  │ connexion   │  │ 72 synonymes │  │ Le LLM choisit│  │
 │  │ document    │  │ FR/EN        │  │ par nom       │  │
 │  └─────────────┘  └──────┬───────┘  └───────────────┘  │
 │                          │                              │
@@ -68,28 +69,34 @@
 │                   │ GRAPHE API   │                      │
 │                   │ graph.json   │                      │
 │                   │ 4119 edges   │                      │
-│                   │ 84% hints FR │                      │
+│                   │ 85% hints FR │                      │
 │                   └──────────────┘                      │
 │                                                         │
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
 │  │find_path    │  │execute_script│  │ modify_script │  │
 │  │             │  │              │  │               │  │
 │  │ Dijkstra    │  │ Code C# libre│  │ Code C# +    │  │
-│  │ entre types │  │ (lecture)    │  │ auto-save     │  │
+│  │ entre types │  │ (hors trans.)│  │ auto-save     │  │
 │  │ API         │  │              │  │ (ecriture)    │  │
 │  └─────────────┘  └──────────────┘  └───────────────┘  │
 │                                                         │
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
 │  │explore_paths│  │ get_recipe   │  │ compile       │  │
-│  │ BFS multi-  │  │ Code C# d'une│  │ Dry-run Roslyn│  │
+│  │ BFS multi-  │  │ Code C# d'une│  │ Dry-run csc   │  │
 │  │ chemins     │  │ recette      │  │ (sans TopSol.)│  │
 │  └─────────────┘  └──────────────┘  └───────────────┘  │
 │                                                         │
-│  ┌─────────────────┐  ┌───────────┐  ┌───────────────┐ │
-│  │ search_examples │  │ whats_new │  │ search_help   │ │
-│  │ corpora prives  │  │ API diff  │  │ FTS5 sur 5809 │ │
-│  │ (local only)    │  │ par ver.  │  │ pages d'aide  │ │
-│  └─────────────────┘  └───────────┘  └───────────────┘ │
+│  ┌─────────────────┐  ┌──────────────┐  ┌────────────┐ │
+│  │ search_examples │  │ list_recipes │  │ search_help│ │
+│  │ corpora prives  │  │ catalogue    │  │ FTS5, 5809 │ │
+│  │ (local only)    │  │ des recettes │  │ pages aide │ │
+│  └─────────────────┘  └──────────────┘  └────────────┘ │
+│                                                         │
+│  ┌─────────────────┐                                    │
+│  │ search_commands │                                    │
+│  │ 2428 commandes  │                                    │
+│  │ UI (Layer 2)    │                                    │
+│  └─────────────────┘                                    │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -101,7 +108,7 @@ Le sous-agent 3B + LoRA selectionne la bonne recette par nom. Pas de generation 
 
 ```
 User : "Lis la designation"
-  → LLM choisit : run_recipe("lire_designation")
+  → LLM choisit : run_recipe("read_designation")
   → MCP execute le code pre-ecrit
   → Resultat : "Designation: Ma Piece"
 ```
@@ -136,11 +143,12 @@ A mesure qu'on ajoute des recettes, le mode 3B couvre de plus en plus de cas.
 
 | Brique | Ce qu'elle fait | Pourquoi c'est necessaire |
 |--------|----------------|--------------------------|
-| **Graphe** (graph.json) | Stocke les 4119 methodes API avec descriptions, hints FR, exemples | C'est la "memoire" de l'API. Sans lui, impossible de chercher les bonnes methodes. |
+| **Graphe** (graph.json) | Stocke les 4119 edges API (1728 methodes) avec descriptions et hints FR/EN | C'est la "memoire" de l'API. Sans lui, impossible de chercher les bonnes methodes. |
 | **api_help** | Cherche dans le graphe par mot-cle FR ou EN | Permet au LLM de trouver "comment faire X" sans connaitre l'API par coeur. |
 | **find_path** | Trouve le chemin entre 2 types API (Dijkstra) | Pour les cas complexes : "comment passer de DocumentId a une Face ?" |
 | **run_recipe** | Execute une recette pre-codee par nom | La solution pour les petits modeles : zero code a generer. |
-| **execute_script** | Compile et execute du C# libre | La puissance brute : peut tout faire si le code est correct. |
+| **list_recipes** | Sert le catalogue des recettes a la demande (filtre categorie / mot-cle) | Evite d'inliner ~1300 tokens de noms de recettes dans le descripteur de run_recipe a chaque session. |
+| **execute_script** | Compile et execute du C# libre, en pleine confiance dans le process du serveur | La puissance brute : peut tout faire si le code est correct — et tout casser. A ne jamais auto-approuver. |
 | **modify_script** | Comme execute_script + auto-wrap modification/save | Pour les ecritures : gere StartModification/EndModification/Save. |
 | **RecipeTool** | 132 recettes pre-construites en C# | La reference pour les humains et les LLM : comment faire chaque operation. |
 | **Skill** (system.md) | Instructions pour chaque sous-agent : outils autorises et routing | Chaque agent a son propre system.md dans OpenClaw. |
@@ -155,10 +163,10 @@ graph.json
 │   ├── MethodSignature : "string GetDescription(PdmObjectId)"
 │   ├── Interface : "IPdm"
 │   ├── Description : "Gets the description of a PDM object"  (90%)
-│   ├── SemanticHint : "designation, description"              (84%)
+│   ├── SemanticHint : "designation, description"              (85%)
 │   ├── Weight : 2 (priorite)
 │   ├── Since : "v7.6" (version minimum)
-│   └── Examples : ["// snippet.cs ..."]                       (22%)
+│   └── Examples : []  vide dans le graphe redistribue         (29% des edges portent le champ)
 │
 ├── 242 nodes (types CLR)
 │   ├── DocumentId, ElementId, PdmObjectId...

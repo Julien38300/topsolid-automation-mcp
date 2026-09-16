@@ -31,6 +31,7 @@
               │                   │
               │  13 outils MCP :  │
               │  - run_recipe     │
+              │  - list_recipes   │
               │  - get_state      │
               │  - api_help       │
               │  - execute_script │
@@ -40,7 +41,6 @@
               │  - get_recipe     │
               │  - compile        │
               │  - search_examples│
-              │  - whats_new      │
               │  - search_help    │
               │  - search_commands│
               └────────┬──────────┘
@@ -86,7 +86,7 @@ Chaque edge porte :
 - `Description` : documentation officielle
 - `SemanticHint` : mots-cles FR/EN pour la recherche
 - `Weight` : priorite (1 = important, 10 = primitif, 20+ = niche)
-- `Examples` : snippets C# reels (source : corpora prives de l'auteur, non redistribues)
+- `Examples` : snippets C# reels — **champ vide dans le `graph.json` redistribue** (source : corpora prives de l'auteur, non redistribues)
 
 ## Compilation de scripts
 
@@ -108,12 +108,15 @@ Pour les scripts de modification, un wrapper supplementaire gere `StartModificat
 
 ## Donnees
 
+Le serveur lit ses donnees dans **`server/data/`** (dossier embarque a cote de l'exe dans la release). Le `data/` a la racine contient les artefacts produits par les pipelines Python.
+
 | Fichier | Role | Taille |
 |---------|------|--------|
-| `data/graph.json` | Graphe API enrichi | ~2.9 MB |
-| `data/api-index.json` | Index plat des 1728 methodes | ~400 KB |
-| `server/src/Tools/RecipeTool.cs` | 132 recettes C# pre-construites | ~135 KB |
-| `data/lora-dataset-en.jsonl` | 2164 entrees LoRA v7 (ShareGPT EN) | ~1.5 MB |
-| `data/help-md/` | Aide en ligne convertie (FR+EN) | ~9 MB |
-| `data/help.db` | Index SQLite FTS5 de l'aide (5809 pages) | ~20 MB |
-| `tests/TestSuite.json` | 72 tests automatises | ~50 KB |
+| `server/data/graph.json` | Graphe API enrichi, charge au premier appel d'outil | ~2.7 MB |
+| `server/data/help.db` | Index SQLite FTS5 de l'aide (5809 pages) | ~20 MB |
+| `server/data/commands-catalog.json` | Catalogue des 2428 commandes UI (Layer 2) | ~1.3 MB |
+| `server/data/recipe-list.txt` | Liste generee des recettes (nom, mode, description) | ~9 KB |
+| `server/src/Tools/RecipeTool.cs` | 132 recettes C# pre-construites (source de verite) | ~190 KB |
+| `data/api-index.json` | Index plat des 1728 methodes | ~420 KB |
+| `data/help-md/` | Aide en ligne convertie en Markdown (FR+EN), non versionnee | ~9 MB |
+| `tests/TestSuite.json` | 85 tests automatises | ~50 KB |

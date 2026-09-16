@@ -2,11 +2,33 @@
 
 Le serveur expose **13 outils** au protocole MCP. L'agent IA les appelle via JSON-RPC — sur stdin/stdout (mode stdio) ou via HTTP/SSE (mode bridge).
 
+| Outil | TopSolid requis |
+|---|---|
+| `topsolid_run_recipe` | oui |
+| `topsolid_list_recipes` | non |
+| `topsolid_get_state` | oui |
+| `topsolid_execute_script` | oui |
+| `topsolid_modify_script` | oui |
+| `topsolid_api_help` | non |
+| `topsolid_find_path` | non |
+| `topsolid_explore_paths` | non |
+| `topsolid_get_recipe` | non |
+| `topsolid_compile` | non |
+| `topsolid_search_examples` | non |
+| `topsolid_search_help` | non |
+| `topsolid_search_commands` | non |
+
+::: warning `--read-only`
+Lance avec `--read-only` (ou `TOPSOLID_MCP_READ_ONLY=1`) et `topsolid_modify_script` n'est pas enregistre du tout : il n'apparait pas dans `tools/list`, et les recettes tournent en mode lecture seule. Voir [Options de lancement](./quickstart#options-de-lancement-et-variables).
+:::
+
 ## topsolid_run_recipe
 
 **L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.
 
 **132 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles, creation de geometrie (parametres Smart, esquisses, extrusions, inclusions).
+
+Le catalogue complet se consulte avec l'outil `topsolid_list_recipes` (section ci-dessous) — il n'est plus inline dans le descripteur de cet outil.
 
 ```json
 { "name": "topsolid_run_recipe", "arguments": { "recipe": "read_mass_volume" } }
@@ -25,11 +47,33 @@ Surface: 115447.61 mm2
 ```
 
 ::: tip Quand utiliser run_recipe vs execute_script ?
-- `run_recipe` : pour les 129 operations pre-definies (rapide, fiable, pas besoin de C#)
+- `run_recipe` : pour les 132 operations pre-definies (rapide, fiable, pas besoin de C#)
 - `execute_script` : pour du C# custom que le LLM genere a la volee (plus flexible, plus risque)
 
 Un modele 3B (ex: `ministral-topsolid`) peut utiliser `run_recipe`. Seul un modele 24B+ (ex: `codestral:22b`) peut utiliser `execute_script` correctement.
 :::
+
+## topsolid_list_recipes
+
+Catalogue des recettes : retourne une ligne par recette (mode `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]`, categorie, nom, description), filtrable par categorie et/ou mot-cle. C'est l'outil a appeler pour trouver le nom exact a passer a `topsolid_run_recipe`.
+
+La liste n'est plus inlinee dans le descripteur de `topsolid_run_recipe` (elle coutait ~1300 tokens a chaque demarrage de session) : elle est servie a la demande par cet outil.
+
+**Parametres** (tous optionnels) :
+
+| Parametre | Type | Defaut | Role |
+|---|---|---|---|
+| `category` | string | — | Filtre par categorie (`EXPORT`, `DRAFTING`, `PDM PROPERTIES`...) |
+| `search` | string | — | Mot-cle cherche dans le nom **et** la description |
+| `max_results` | integer | 30 | Nombre de lignes retournees, plafonne a 100 |
+
+```json
+{ "name": "topsolid_list_recipes", "arguments": { "category": "EXPORT", "max_results": 20 } }
+```
+
+Le nombre total de correspondances est toujours annonce, meme quand l'affichage est tronque par `max_results` — relancez avec un `search` plus precis ou un `max_results` plus grand pour voir le reste.
+
+**Sans TopSolid connecte.**
 
 ## topsolid_get_state
 
@@ -43,16 +87,22 @@ Retourne l'etat courant : document actif, projet, connexion TopSolid.
 
 **Reponse type** :
 ```
-Connected: True (v7.20.258)
-Project: MonProjet
-Document: MaPiece.TopPrt (DocumentId: 12345)
+TopSolid version : 7.20.258
+Automation port : 8090
+Bin path : C:\Program Files\TOPSOLID\TopSolid 7.20\bin\
+Modules : Design = available, Drafting = not available
+Edited document : MaPiece
+Type : .TopPrt
+Project : MonProjet
 ```
+
+La ligne `Modules :` dit quels modules Automation optionnels ont ete charges — c'est la premiere chose a regarder quand une recette de mise en plan ou de geometrie echoue (voir [Depannage](./troubleshooting)).
 
 ## topsolid_api_help
 
 Recherche dans les 1728 methodes API. Supporte les noms d'interface, mots-cles FR/EN, et filtrage.
 
-**52 synonymes FR** : designation → SetDescription, reference → SetPartNumber, esquisse → Sketch, mise a plat → IUnfoldings...
+**72 synonymes FR/EN** : designation → SetDescription, reference → SetPartNumber, esquisse → Sketch, mise a plat → IUnfoldings...
 
 **Modes** :
 - Interface exacte : `api_help("IParameters")` → liste complete
@@ -69,7 +119,7 @@ Si la recherche par mots-cles ne trouve rien, un fallback cherche dans les descr
 
 ## topsolid_execute_script
 
-Compile et execute du C# 5 contre TopSolid. Pour les operations **en lecture seule**.
+Compile et execute du C# 5 **hors transaction de modification** TopSolid.
 
 ```json
 {
@@ -80,12 +130,28 @@ Compile et execute du C# 5 contre TopSolid. Pour les operations **en lecture seu
 }
 ```
 
+::: danger Ce n'est pas un bac a sable
+« Lecture seule » veut dire ici **hors transaction de modification TopSolid**, rien de plus. Ce n'est pas un niveau de permission.
+
+Le code envoye est compile puis execute **dans le processus du serveur, en pleine confiance**, sur votre poste. `System.IO` reste disponible (les recettes d'export en ont besoin) : un script peut donc lire et ecrire des fichiers partout ou votre compte Windows le peut.
+
+Une liste noire refuse quelques symboles avant compilation (`System.Diagnostics.Process`, `System.Net`, `System.Reflection`, `DllImport`, `File.Delete`, `Directory.Delete`, registre, `Environment.Exit`). C'est un garde-fou contre un modele qui derape, **pas** une frontiere de securite — et `TOPSOLID_MCP_ALLOW_UNSAFE=1` la supprime entierement.
+
+**N'ajoutez pas `topsolid_execute_script` ni `topsolid_modify_script` a la liste des outils auto-approuves de votre client MCP.** Relisez chaque script avant de le laisser tourner. Si vous n'avez besoin que de lire, lancez le serveur avec `--read-only`.
+:::
+
 ## topsolid_modify_script
 
 Identique a `execute_script` mais pour les **modifications**. Gere automatiquement `StartModification` / `EndModification` / `Save`.
 
+Non enregistre quand le serveur tourne avec `--read-only` / `TOPSOLID_MCP_READ_ONLY=1`.
+
 ::: warning
 `EnsureIsDirty(ref docId)` change le docId. Toujours chercher les elements APRES cet appel.
+:::
+
+::: danger
+Meme modele de confiance que `topsolid_execute_script` ci-dessus : execution en pleine confiance dans le processus, pas d'auto-approbation.
 :::
 
 ## topsolid_find_path
@@ -116,11 +182,13 @@ Retourne le code C# d'une recette par nom, sans l'executer. Utile pour apprendre
 { "name": "topsolid_get_recipe", "arguments": { "recipe": "read_mass_volume" } }
 ```
 
-Sans `recipe` : retourne la liste des 132 recettes avec mode READ/WRITE + description.
+Sans `recipe` : retourne la liste des 132 recettes avec leur mode uniquement (nom + `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]`), sans description — pour les descriptions et les filtres, passez par `topsolid_list_recipes`.
 
 ## topsolid_compile (v1.5.1+)
 
-Compile un script C# contre l'API TopSolid SANS l'executer. Detecte les APIs hallucinees, erreurs de syntaxe, types manquants.
+Compile un script C# contre les assemblies TopSolid SANS l'executer. Detecte les APIs hallucinees, erreurs de syntaxe, types manquants.
+
+La compilation passe par `CSharpCodeProvider`, c'est-a-dire le compilateur `csc` livre avec le .NET Framework — **pas Roslyn**. Le script est donc compile en **C# 5** : l'interpolation de chaine (`$"..."`), `?.` et `nameof` sont refuses. Voir le [tableau des syntaxes interdites](./troubleshooting#erreurs-de-compilation-de-scripts).
 
 ```json
 {
@@ -150,17 +218,9 @@ Retourne des snippets method-level avec label corpus + chemin fichier. Cache 10 
 
 **Sans TopSolid connecte.**
 
-## topsolid_whats_new (v1.5.2+)
-
-Retourne le changelog markdown de l'API TopSolid pour une version donnee (ou la plus recente), tel que genere par le pipeline `sync-topsolid-api`.
-
-```json
-{ "name": "topsolid_whats_new", "arguments": { "version": "7.21.164.0" } }
-```
-
-Lists : methodes ajoutees, changements de signature, deprecations, propositions de recettes.
-
-**Sans TopSolid connecte.**
+::: info `topsolid_whats_new` a ete retire
+Cet outil retournait un changelog markdown genere par le pipeline `sync-topsolid-api`. Aucun changelog n'est livre avec les releases, donc l'outil ne repondait rien d'utile sur une installation standard. Il a ete supprime. Le pipeline `make sync-api` reste disponible pour qui veut generer ce diff localement.
+:::
 
 ## topsolid_search_help (v1.6.0+)
 
