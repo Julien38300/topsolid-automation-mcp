@@ -179,6 +179,22 @@ namespace TopSolidMcpServer
             bool noTray = HasFlag(args, "--no-tray") || IsEnvFlagSet("TOPSOLID_MCP_NO_TRAY");
             bool readOnly = HasFlag(args, "--read-only") || IsEnvFlagSet("TOPSOLID_MCP_READ_ONLY");
 
+            // settings.json (written by the tray Settings submenu) fills only what CLI
+            // args and env vars leave unset, so an MCP client configured with
+            // --port/--read-only keeps precedence over a tray tweak.
+            TraySettings.Load();
+            string envPort = GetArg(args, "--port");
+            bool readOnlyFromCliOrEnv = readOnly;
+            if (readOnlyFromCliOrEnv)
+            {
+                Console.Error.WriteLine("[MCP-INFO] Read-only from CLI/env — tray setting ignored.");
+            }
+            else if (TraySettings.ReadOnly)
+            {
+                readOnly = true;
+                Console.Error.WriteLine("[MCP-INFO] Read-only mode from settings.json (tray).");
+            }
+
             if (readOnly)
                 Console.Error.WriteLine("[MCP-INFO] Read-only mode enabled: modify_script is not registered and recipes run in read-only mode.");
             if (noTray)
@@ -196,10 +212,14 @@ namespace TopSolidMcpServer
                 // ── Connector: created IMMEDIATELY (not lazy) ──
                 // so the tray icon and reconnect button work from the start.
                 int port = 8090;
-                string portArg = GetArg(args, "--port");
-                if (portArg != null && int.TryParse(portArg, out int parsedPort))
+                if (envPort != null && int.TryParse(envPort, out int parsedPort))
                 {
                     port = parsedPort;
+                }
+                else if (TraySettings.Port > 0)
+                {
+                    port = TraySettings.Port;
+                    Console.Error.WriteLine($"[MCP-INFO] Port {port} from settings.json (tray).");
                 }
                 connector = new TopSolidConnector(port);
                 Console.Error.WriteLine($"[MCP-INFO] Connector ready (port {port}). Attempting initial connection...");

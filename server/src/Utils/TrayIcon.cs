@@ -40,6 +40,7 @@ namespace TopSolidMcpServer.Utils
         private ToolStripMenuItem _statusItem;
         private ToolStripMenuItem _readOnlyItem;
         private ToolStripMenuItem _reconnectItem;
+        private ToolStripMenuItem _updateAvailableItem;   // "Télécharger la mise à jour…" when an update exists
         private Action _onReconnectRequested;
         private int _port;
         private bool _readOnly;
@@ -265,16 +266,55 @@ namespace TopSolidMcpServer.Utils
             // ── Settings zone ──
             var settingsMenu = new ToolStripMenuItem(L("Paramètres", "Settings"));
 
+            // Port: click to change. Persisted in settings.json, applied on next start.
             var portItem = new ToolStripMenuItem(_port > 0
-                ? string.Format(L("Port TopSolid : {0}", "TopSolid port: {0}"), _port)
-                : L("Port TopSolid : par défaut", "TopSolid port: default"));
-            portItem.Enabled = false;
+                ? string.Format(L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), _port)
+                : L("Port TopSolid : par défaut (cliquer pour changer)", "TopSolid port: default (click to change)"));
+            portItem.Click += (s, e) =>
+            {
+                int currentPort = _port > 0 ? _port : 8090;
+                string input = PromptInput(
+                    L("Port TopSolid", "TopSolid port"),
+                    L("Port TCP de TopSolid (8090 par défaut) :\nAppliqué au prochain démarrage du serveur.",
+                      "TopSolid TCP port (8090 default):\nApplied at next server start."),
+                    currentPort.ToString(CultureInfo.InvariantCulture));
+                if (string.IsNullOrWhiteSpace(input)) return;
+                int newPort;
+                if (!int.TryParse(input.Trim(), out newPort) || newPort < 1 || newPort > 65535)
+                {
+                    ShowBalloon(L("Paramètres", "Settings"),
+                        L("Port invalide (1-65535 attendu), valeur conservée.", "Invalid port (1-65535 expected), value kept."),
+                        ToolTipIcon.Warning, 3000);
+                    return;
+                }
+                int stored = newPort == 8090 ? 0 : newPort;   // 8090 = default, do not store
+                TraySettings.Save(stored, _readOnly);
+                _port = newPort;
+                portItem.Text = string.Format(
+                    L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), newPort);
+                ShowBalloon(L("Paramètres", "Settings"),
+                    string.Format(L("Port {0} enregistré. Il sera appliqué au prochain démarrage du serveur.", "Port {0} saved. It will be applied next time the server starts."), newPort),
+                    ToolTipIcon.Info, 3000);
+            };
             settingsMenu.DropDownItems.Add(portItem);
 
+            // Read-only: click to toggle. Persisted, applied on next start.
             _readOnlyItem = new ToolStripMenuItem(_readOnly
-                ? L("Mode lecture seule : oui", "Read-only mode: yes")
-                : L("Mode lecture seule : non", "Read-only mode: no"));
-            _readOnlyItem.Enabled = false;
+                ? L("Mode lecture seule : oui (cliquer pour désactiver)", "Read-only mode: yes (click to turn off)")
+                : L("Mode lecture seule : non (cliquer pour activer)", "Read-only mode: no (click to turn on)"));
+            _readOnlyItem.Click += (s, ev) =>
+            {
+                _readOnly = !_readOnly;
+                TraySettings.Save(_port > 0 ? _port : 0, _readOnly);
+                _readOnlyItem.Text = _readOnly
+                    ? L("Mode lecture seule : oui (cliquer pour désactiver)", "Read-only mode: yes (click to turn off)")
+                    : L("Mode lecture seule : non (cliquer pour activer)", "Read-only mode: no (click to turn on)");
+                ShowBalloon(L("Paramètres", "Settings"),
+                    _readOnly
+                        ? L("Lecture seule activée. Appliqué au prochain démarrage du serveur.", "Read-only enabled. Applied next time the server starts.")
+                        : L("Lecture seule désactivée. Appliqué au prochain démarrage du serveur.", "Read-only disabled. Applied next time the server starts."),
+                    ToolTipIcon.Info, 3000);
+            };
             settingsMenu.DropDownItems.Add(_readOnlyItem);
 
             settingsMenu.DropDownItems.Add(new ToolStripSeparator());
@@ -316,6 +356,11 @@ namespace TopSolidMcpServer.Utils
                 "TopSolid MCP",
                 L($"Serveur MCP v{version} démarré. Connexion à TopSolid…", $"MCP server v{version} started. Connecting to TopSolid…"),
                 ToolTipIcon.Info, 3000);
+
+            // Automatic update check at startup: GitHub API in background; when a newer
+            // release exists, a balloon notifies the user and a "Download update…"
+            // item appears in the menu (visible until installed).
+            ThreadPool.QueueUserWorkItem(_ => CheckForUpdate(false));
         }
 
         private void OnReconnectClick(object sender, EventArgs e)
@@ -351,6 +396,125 @@ namespace TopSolidMcpServer.Utils
 
         private void OnUpdateClick(object sender, EventArgs e)
         {
+            ShowBalloon(L("Recherche de mise à jour…", "Checking for updates…"),
+                L("Interrogation de GitHub…", "Querying GitHub…"),
+                ToolTipIcon.Info, 2000);
+            ThreadPool.QueueUserWorkItem(_ => CheckForUpdate(true));
+        }
+
+        /// <summary>
+        /// Queries the GitHub API for the latest release and compares it to the running
+        /// version. Manual check (userClicked): balloon reports both outcomes. Startup
+        /// check: balloon + menu item only when a newer version exists — silence means
+        /// up to date. Runs on a thread-pool thread; UI mutations are marshalled.
+        /// </summary>
+        private void CheckForUpdate(bool userClicked)
+        {
+            string latest;
+            try
+            {
+                using (var client = new System.Net.WebClient())
+                {
+                    client.Headers["User-Agent"] = "TopSolidMcpServer-Updater";
+                    client.Headers["Accept"] = "application/vnd.github+json";
+                    var json = client.DownloadString("https://api.github.com/repos/Julien38300/topsolid-automation-mcp/releases/latest");
+                    var release = Newtonsoft.Json.Linq.JObject.Parse(json);
+                    latest = release.Value<string>("tag_name");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("[TrayIcon] Update check failed: " + ex.Message);
+                if (userClicked)
+                {
+                    ShowBalloonSafe(L("Mise à jour", "Update"),
+                        L("Impossible de contacter GitHub (connexion ?).", "Could not reach GitHub (network?)."),
+                        ToolTipIcon.Warning, 3000);
+                }
+                return;
+            }
+
+            string current = GetVersion();
+            if (CompareVersions(latest, current) <= 0)
+            {
+                if (userClicked)
+                    ShowBalloonSafe(L("Mise à jour", "Update"),
+                        string.Format(L("Vous êtes déjà à jour (v{0}).", "You are already up to date (v{0})."), current),
+                        ToolTipIcon.Info, 3000);
+                return;
+            }
+
+            // Newer version available: offer to download it.
+            ShowBalloonSafe("TopSolid MCP",
+                string.Format(L("Mise à jour v{0} disponible ! Clic droit sur l'icône pour l'installer.", "Update v{0} available! Right-click the icon to install it."), latest),
+                ToolTipIcon.Info, 5000);
+
+            var context = _uiContext;
+            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
+                context.Post(_ => ShowUpdateAvailableItem(latest), null);
+            else
+                ShowUpdateAvailableItem(latest);
+        }
+
+        /// <summary>Thread-safe balloon (posts to the tray thread when needed).</summary>
+        private void ShowBalloonSafe(string title, string text, ToolTipIcon icon, int timeoutMs)
+        {
+            var context = _uiContext;
+            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
+                context.Post(_ => ShowBalloon(title, text, icon, timeoutMs), null);
+            else
+                ShowBalloon(title, text, icon, timeoutMs);
+        }
+
+        /// <summary>Shows (or refreshes) the "Download update…" menu item. Tray thread only.</summary>
+        private void ShowUpdateAvailableItem(string latest)
+        {
+            try
+            {
+                string text = string.Format(L("Télécharger la mise à jour v{0}…", "Download update v{0}…"), latest);
+                if (_updateAvailableItem == null)
+                {
+                    _updateAvailableItem = new ToolStripMenuItem(text);
+                    // One click = remove the item + launch update.ps1 directly.
+                    _updateAvailableItem.Click += (s, ev) =>
+                    {
+                        var item = (ToolStripMenuItem)s;
+                        var parent = item.GetCurrentParent();
+                        if (parent != null) parent.Items.Remove(item);
+                        _updateAvailableItem = null;
+                        LaunchUpdater();
+                    };
+                    // Insert right after the "Check for updates…" item's separator zone:
+                    // find the menu and insert before "GitHub" so the update block stays together.
+                    var notifyIcon = _notifyIcon;
+                    var menu = notifyIcon != null ? notifyIcon.ContextMenuStrip : null;
+                    if (menu != null)
+                    {
+                        int idx = 0;
+                        foreach (ToolStripItem it in menu.Items)
+                        {
+                            var tsmi = it as ToolStripMenuItem;
+                            if (tsmi != null && tsmi.Text == "GitHub") break;
+                            idx++;
+                        }
+                        menu.Items.Insert(idx, _updateAvailableItem);
+                    }
+                    else
+                    {
+                        _updateAvailableItem = null;
+                    }
+                }
+                else
+                {
+                    _updateAvailableItem.Text = text;
+                }
+            }
+            catch { /* menu gone */ }
+        }
+
+        /// <summary>Launches update.ps1 next to the executable in a visible console.</summary>
+        private void LaunchUpdater()
+        {
             try
             {
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
@@ -378,6 +542,39 @@ namespace TopSolidMcpServer.Utils
                     string.Format(L("Impossible de lancer la mise à jour : {0}", "Could not start the update: {0}"), ex.Message),
                     ToolTipIcon.Error, 3000);
             }
+        }
+
+        /// <summary>
+        /// Semver comparison: 1.7.2-beta is older than 1.7.2; build metadata ignored.
+        /// Non-numeric segments are tolerated and compared as 0.
+        /// </summary>
+        private static int CompareVersions(string a, string b)
+        {
+            a = (a ?? "0.0.0").TrimStart('v', 'V');
+            b = (b ?? "0.0.0").TrimStart('v', 'V');
+            a = a.Split('+')[0];
+            b = b.Split('+')[0];
+
+            string preA = null, preB = null;
+            int dash = a.IndexOf('-');
+            if (dash >= 0) { preA = a.Substring(dash + 1); a = a.Substring(0, dash); }
+            dash = b.IndexOf('-');
+            if (dash >= 0) { preB = b.Substring(dash + 1); b = b.Substring(0, dash); }
+
+            var sa = a.Split('.');
+            var sb = b.Split('.');
+            for (int i = 0; i < 3; i++)
+            {
+                int na = i < sa.Length && int.TryParse(sa[i], out int xa) ? xa : 0;
+                int nb = i < sb.Length && int.TryParse(sb[i], out int xb) ? xb : 0;
+                if (na < nb) return -1;
+                if (na > nb) return 1;
+            }
+            // Release outranks its pre-releases
+            if (preA == preB) return 0;
+            if (preA == null) return 1;
+            if (preB == null) return -1;
+            return string.CompareOrdinal(preA, preB);
         }
 
         private void OnQuitClick(object sender, EventArgs e)
@@ -423,6 +620,49 @@ namespace TopSolidMcpServer.Utils
                 Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
             }
             catch { /* ignore */ }
+        }
+
+        /// <summary>
+        /// Small modal input dialog (no designer form needed). Returns the typed text,
+        /// or null when the user cancelled.
+        /// </summary>
+        private static string PromptInput(string title, string label, string initialValue)
+        {
+            var form = new Form
+            {
+                Width = 420,
+                Height = 170,
+                Text = title,
+                FormBorderStyle = FormBorderStyle.FixedDialog,
+                StartPosition = FormStartPosition.CenterScreen,
+                MaximizeBox = false,
+                MinimizeBox = false
+            };
+            var lbl = new Label
+            {
+                Left = 12,
+                Top = 12,
+                Width = 380,
+                Height = 44,
+                Text = label
+            };
+            var box = new TextBox
+            {
+                Left = 12,
+                Top = 62,
+                Width = 380,
+                Text = initialValue ?? ""
+            };
+            var ok = new Button { Text = "OK", Left = 220, Width = 80, Top = 100, DialogResult = DialogResult.OK };
+            var cancel = new Button { Text = "Annuler", Left = 310, Width = 80, Top = 100, DialogResult = DialogResult.Cancel };
+            form.Controls.Add(lbl);
+            form.Controls.Add(box);
+            form.Controls.Add(ok);
+            form.Controls.Add(cancel);
+            form.AcceptButton = ok;
+            form.CancelButton = cancel;
+
+            return form.ShowDialog() == DialogResult.OK ? box.Text : null;
         }
 
         private static Icon LoadIcon()
