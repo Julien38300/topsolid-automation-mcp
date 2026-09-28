@@ -274,6 +274,12 @@ Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 # user is running a plain stdio install and there is nothing to restart.
 $bridgeTask = "TopSolidMcpBridge"
 $bridgeRestarted = $false
+# Native commands write errors to stderr. With $ErrorActionPreference = "Stop",
+# PowerShell reinterprets redirected native stderr as a TERMINATING
+# NativeCommandError: on every machine without the scheduled task, the updater
+# died right here — files already replaced, server already killed, never
+# relaunched. Relax the preference for this block and decide on $LASTEXITCODE.
+$ErrorActionPreference = "Continue"
 schtasks /Query /TN $bridgeTask > $null 2>&1
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Redemarrage du bridge HTTP (tache $bridgeTask)..."
