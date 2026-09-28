@@ -22,7 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\data\semantic-rules.json" Link="data\semantic-rules.json">
+    <None Include="..\data\semantic-rules.json" Link="data\semantic-rules.json" Condition="Exists('..\data\semantic-rules.json')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
