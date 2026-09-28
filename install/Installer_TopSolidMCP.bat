@@ -52,9 +52,28 @@ if not exist "node_modules\mcp-proxy" (
 )
 echo.
 
+REM ================= 2bis. Nettoyage ancienne installation =================
+REM Les installations anterieures (setup manuel) utilisaient une tache planifiee
+REM SYSTEM "TopSolidMcpBridge" lancee au boot avec --no-tray. Elle entre en
+REM conflit mutex avec l instance utilisateur : le serveur SYSTEM ou utilisateur
+REM detecte "Another instance running" et exit, le bridge ne s ouvre jamais.
+REM On la supprime si presente, et on tue toute instance residuelle du serveur.
+schtasks /Query /TN "TopSolidMcpBridge" >nul 2>&1
+if not errorlevel 1 (
+    echo Nettoyage de l ancienne tache planifiee TopSolidMcpBridge SYSTEM...
+    schtasks /End /TN "TopSolidMcpBridge" >nul 2>&1
+    schtasks /Delete /TN "TopSolidMcpBridge" /F >nul 2>&1
+    taskkill /IM TopSolidMcpServer.exe /F >nul 2>&1
+    echo Ancienne tache supprimee.
+)
+echo.
+
 REM ================= 3. Cle API =================
 echo [3/4] Configuration de la cle API...
-powershell -NoProfile -Command "if (-not [Environment]::GetEnvironmentVariable('TOPSOLID_MCP_API_KEY','User')) { Add-Type -AssemblyName Microsoft.VisualBasic; $k = [Microsoft.VisualBasic.Interaction]::InputBox('Cle API pour le bridge TopSolid MCP (fournie par Julien ou ton admin) :', 'TopSolid MCP - Cle API'); if ($k) { [Environment]::SetEnvironmentVariable('TOPSOLID_MCP_API_KEY', $k, 'User') } }"
+REM Si aucune cle n existe deja : on en genere une aleatoire (48 hex),
+REM on la copie dans le presse-papiers et on l affiche a l ecran.
+REM L utilisateur n a PLUS besoin d inventer une cle.
+powershell -NoProfile -Command "if (-not [Environment]::GetEnvironmentVariable('TOPSOLID_MCP_API_KEY','User')) { $rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider; $b = New-Object byte[] 24; $rng.GetBytes($b); $k = ($b | ForEach-Object { $_.ToString('x2') }) -join ''; [Environment]::SetEnvironmentVariable('TOPSOLID_MCP_API_KEY', $k, 'User'); Set-Clipboard -Value $k; Write-Host ''; Write-Host 'Cle API generee automatiquement :' -ForegroundColor Green; Write-Host $k -ForegroundColor Green; Write-Host 'Elle est aussi dans le presse-papiers - tu peux la donner a Noemid-H / ton admin.' -ForegroundColor Yellow } else { Write-Host 'Cle API existante conservee.' }"
 echo.
 
 REM ================= 4. Systray + demarrage auto =================

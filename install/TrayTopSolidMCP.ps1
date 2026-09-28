@@ -34,6 +34,10 @@ $T = @{
         Settings='Parametres'; ApiKey='Cle API...'
         ApiKeyTitle='TopSolid MCP - Cle API'
         ApiKeySaved='Cle API enregistree - bridge relance.'
+        ApiKeyGen='Regenerer la cle API'
+        ApiKeyGenTitle='TopSolid MCP - Regenerer la cle API'
+        ApiKeyGenMsg='L ANCIENNE cle sera revoquee immediatement. Continuer ?'
+        ApiKeyGenDone='Nouvelle cle generee et copiee dans le presse-papiers - bridge relance.'
         AutoStart='Demarrage automatique (ouverture de session)'
         AutoOn='Demarrage automatique active.'
         AutoOff='Demarrage automatique desactive.'
@@ -64,6 +68,10 @@ $T = @{
         Settings='Settings'; ApiKey='API key...'
         ApiKeyTitle='TopSolid MCP - API key'
         ApiKeySaved='API key saved - bridge restarted.'
+        ApiKeyGen='Regenerate API key'
+        ApiKeyGenTitle='TopSolid MCP - Regenerate API key'
+        ApiKeyGenMsg='The OLD key will be revoked immediately. Continue?'
+        ApiKeyGenDone='New key generated and copied to clipboard - bridge restarted.'
         AutoStart='Start automatically (logon)'
         AutoOn='Autostart enabled.'; AutoOff='Autostart disabled.'
         OpenDir='Open installation folder'
@@ -80,9 +88,27 @@ $S = $T[$L]
 
 $script:BridgeProc = $null
 $script:ApiKey = [Environment]::GetEnvironmentVariable('TOPSOLID_MCP_API_KEY', 'User')
+
+# Genere une cle API aleatoire de 48 hex chars (24 octets cryptographiques).
+# Utilise RNGCryptoServiceProvider : les numeros aleatoires type Get-Random
+# ou [Random] ne conviennent pas pour un secret.
+function New-ApiKey {
+    $rng = New-Object System.Security.Cryptography.RNGCryptoServiceProvider
+    $bytes = New-Object byte[] 24
+    $rng.GetBytes($bytes)
+    return ($bytes | ForEach-Object { $_.ToString('x2') }) -join ''
+}
+
+function Set-ApiKey([string]$k) {
+    $script:ApiKey = $k
+    [Environment]::SetEnvironmentVariable('TOPSOLID_MCP_API_KEY', $k, 'User')
+    Start-Bridge | Out-Null
+}
 $script:Updating = $false
 $script:BridgeStartedAt = [DateTime]::MinValue
-$script:State = 'red'function Get-PortListening([int]$port) {
+$script:State = 'red'
+
+function Get-PortListening([int]$port) {
     try {
         return [bool](Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue)
     } catch { return $false }
@@ -301,15 +327,30 @@ $menu.Items.Add($mSettings) | Out-Null
 
 $mApiKey = New-Object System.Windows.Forms.ToolStripMenuItem $S.ApiKey
 $mApiKey.Add_Click({
-    $k = [Microsoft.VisualBasic.Interaction]::InputBox('TOPSOLID_MCP_API_KEY :', $S.ApiKeyTitle, $script:ApiKey)
-    if ($k -ne '') {
-        $script:ApiKey = $k
-        [Environment]::SetEnvironmentVariable('TOPSOLID_MCP_API_KEY', $k, 'User')
-        Start-Bridge | Out-Null
+    # Boite pre-remplie avec la cle actuelle ; VIDE = generer une nouvelle cle
+    # (plus besoin de l inventer), Annuler = ne rien changer.
+    $k = [Microsoft.VisualBasic.Interaction]::InputBox('TOPSOLID_MCP_API_KEY (laisser VIDE pour en generer une) :', $S.ApiKeyTitle, $script:ApiKey)
+    if ($k -eq '') {
+        $k = New-ApiKey
+    }
+    if ($k) {
+        Set-ApiKey $k
         $icon.ShowBalloonTip(3000, 'TopSolid MCP', $S.ApiKeySaved, [System.Windows.Forms.ToolTipIcon]::Info)
     }
 })
 $mSettings.DropDownItems.Add($mApiKey) | Out-Null
+
+$mApiKeyGen = New-Object System.Windows.Forms.ToolStripMenuItem $S.ApiKeyGen
+$mApiKeyGen.Add_Click({
+    $r = [System.Windows.Forms.MessageBox]::Show($S.ApiKeyGenMsg, $S.ApiKeyGenTitle, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    if ($r -eq [System.Windows.Forms.DialogResult]::Yes) {
+        $k = New-ApiKey
+        Set-ApiKey $k
+        Set-Clipboard -Value $k
+        $icon.ShowBalloonTip(5000, 'TopSolid MCP', $S.ApiKeyGenDone, [System.Windows.Forms.ToolTipIcon]::Info)
+    }
+})
+$mSettings.DropDownItems.Add($mApiKeyGen) | Out-Null
 
 $lnkPath = Join-Path ([Environment]::GetFolderPath('Startup')) 'TopSolidMCP Tray.lnk'
 $mAutoStart = New-Object System.Windows.Forms.ToolStripMenuItem $S.AutoStart

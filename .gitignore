@@ -62,3 +62,5 @@ unsloth_compiled_cache/
 # Release artifacts (published as GitHub Release assets, not tracked in git)
 /server/TopSolidMcpServer-v*.zip
 /server/release-staging/
+/TopSolidMcpServer-v*.zip
+/server/SHA256SUMS.txt
