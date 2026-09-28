@@ -158,7 +158,7 @@ Write-Host "  + version.txt ($Version)" -ForegroundColor Gray
 # Node.js (winget), runs npm install in bridge/, asks for the API key in a GUI
 # dialog and registers TrayTopSolidMCP.ps1 at login. Without these two folders
 # in the zip a fresh user has no way to get the tray-managed bridge at all.
-$projectRootAll = Split-Path -Parent $PSScriptRoot   # .../server -> repo root
+$projectRootAll = Split-Path -Parent $projectRoot   # repo root (install/ and bridge/ live there)
 foreach ($dir in @("install", "bridge")) {
     $srcDirShip = Join-Path $projectRootAll $dir
     if (Test-Path $srcDirShip) {
