@@ -314,6 +314,7 @@ namespace TopSolidMcpServer
                         // Wire tray icon to connector (AFTER tray.Start())
                         var startedTray = tray;
                         startedTray.SetPort(port);
+                        startedTray.SetReadOnly(readOnly);
                         startedTray.SetConnected(connector.IsConnected);
 
                         connector.ConnectionChanged += (connected) =>

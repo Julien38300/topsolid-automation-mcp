@@ -196,8 +196,15 @@ if ($sumsAsset) {
 }
 
 # --- Stop running instance (only once the archive is known to be genuine) ---
+# Capture how it was started BEFORE killing it, so the new version can be relaunched
+# the same way at the end of the update. Without this, updating from the tray left
+# the user with no server at all until they restarted something by hand.
 $proc = Get-Process TopSolidMcpServer -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $PID }
+$procCmdLine = $null
 if ($proc) {
+    try {
+        $procCmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$($proc.Id)" -ErrorAction Stop).CommandLine
+    } catch { $procCmdLine = $null }
     Write-Host "Arret de l'instance en cours (PID $($proc.Id))..."
     $proc | Stop-Process -Force
     Start-Sleep -Seconds 2
@@ -266,6 +273,7 @@ Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 # exists the bridge comes back with the freshly installed version; if not, the
 # user is running a plain stdio install and there is nothing to restart.
 $bridgeTask = "TopSolidMcpBridge"
+$bridgeRestarted = $false
 schtasks /Query /TN $bridgeTask > $null 2>&1
 if ($LASTEXITCODE -eq 0) {
     Write-Host "Redemarrage du bridge HTTP (tache $bridgeTask)..."
@@ -274,8 +282,26 @@ if ($LASTEXITCODE -eq 0) {
     schtasks /Run /TN $bridgeTask > $null 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Host "Bridge HTTP relance (port 8080) avec la nouvelle version." -ForegroundColor Green
+        $bridgeRestarted = $true
     } else {
         Write-Host "La tache $bridgeTask n'a pas pu etre relancee - demarrez-la a la main." -ForegroundColor Yellow
+    }
+}
+
+# --- Relaunch the server itself when no scheduled task drives it ---
+# A tray-launched server (stdio MCP client, manual start) has no scheduled task:
+# after the update the process was simply dead. Relaunch it detached with its
+# original command line, captured before the kill. The relaunched process must
+# survive this PowerShell exiting: Start-Process creates an independent process
+# and we never wait on it.
+if (-not $bridgeRestarted -and $procCmdLine) {
+    Write-Host "Relancement du serveur..."
+    try {
+        Start-Process -FilePath "$env:ComSpec" -ArgumentList "/c", $procCmdLine -WindowStyle Hidden
+        Write-Host "Serveur relance avec la nouvelle version." -ForegroundColor Green
+    } catch {
+        Write-Host "Le serveur n'a pas pu etre relance automatiquement : $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host "Commande d'origine : $procCmdLine"
     }
 }
 

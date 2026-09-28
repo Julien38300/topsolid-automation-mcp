@@ -1,8 +1,11 @@
 using System;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -16,20 +19,37 @@ namespace TopSolidMcpServer.Utils
     /// it, so calling <see cref="Application.ExitThread"/> from the main thread would be
     /// a no-op and leave the icon in the notification area.
     /// </para>
+    /// <para>
+    /// The icon carries a TeamViewer-style status badge: green when TopSolid is
+    /// connected, orange while connecting/reconnecting, red when disconnected. Menu
+    /// labels follow the OS UI language (French when the OS runs in French, English
+    /// otherwise), and a Settings submenu exposes the connection state and the
+    /// installation folder.
+    /// </para>
     /// </summary>
     public class TrayIcon : IDisposable
     {
         private const string GitHubUrl = "https://github.com/Julien38300/topsolid-automation-mcp";
         private const string DocsUrl = "https://julien38300.github.io/topsolid-automation-mcp/";
 
+        private enum TrayState { Connecting, Connected, Disconnected }
+
         private NotifyIcon _notifyIcon;
         private Thread _thread;
         private readonly Action _onShutdownRequested;
         private ToolStripMenuItem _statusItem;
+        private ToolStripMenuItem _readOnlyItem;
         private ToolStripMenuItem _reconnectItem;
         private Action _onReconnectRequested;
         private int _port;
-        private bool? _lastConnectedState;
+        private bool _readOnly;
+
+        // Current state: written with Interlocked from any thread, read on the tray thread.
+        private int _state = (int)TrayState.Connecting;
+
+        // Base icon loaded once; the badge is composited over it for each state change.
+        private Icon _baseIcon;
+        private IntPtr _iconHandle = IntPtr.Zero;
 
         /// <summary>
         /// Synchronization context owned by the tray STA thread. Created inside
@@ -39,6 +59,18 @@ namespace TopSolidMcpServer.Utils
         private volatile SynchronizationContext _uiContext;
 
         private volatile bool _disposed;
+
+        private static string L(string fr, string en)
+        {
+            try
+            {
+                return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? fr : en;
+            }
+            catch
+            {
+                return en;
+            }
+        }
 
         public TrayIcon(Action onShutdownRequested)
         {
@@ -59,52 +91,102 @@ namespace TopSolidMcpServer.Utils
         public void SetPort(int port)
         {
             _port = port;
-            UpdateStatusText();
+            PostState((TrayState)Volatile.Read(ref _state));
         }
 
         /// <summary>
-        /// Updates the status text in the tray menu. Thread-safe.
+        /// Reflects the read-only startup mode in the Settings submenu. Called once at startup.
         /// </summary>
-        private void UpdateStatusText()
+        public void SetReadOnly(bool readOnly)
         {
-            if (_statusItem == null) return;
+            _readOnly = readOnly;
+            string text = readOnly
+                ? L("Mode lecture seule : oui", "Read-only mode: yes")
+                : L("Mode lecture seule : non", "Read-only mode: no");
+            var context = _uiContext;
+            var item = _readOnlyItem;
+            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
+            {
+                context.Post(_ => { if (item != null) item.Text = text; }, null);
+                return;
+            }
+            if (item != null) item.Text = text;
+        }
 
-            string portSuffix = _port > 0 ? " (port " + _port + ")" : "";
-            string text;
-            if (_lastConnectedState == null)
-                text = "TopSolid: waiting..." + portSuffix;
-            else if (_lastConnectedState == true)
-                text = "TopSolid: connected" + portSuffix;
-            else
-                text = "TopSolid: disconnected" + portSuffix;
+        /// <summary>
+        /// Updates the TopSolid connection status shown in the tray menu and the badge
+        /// color of the icon. Thread-safe.
+        /// </summary>
+        public void SetConnected(bool connected)
+        {
+            PostState(connected ? TrayState.Connected : TrayState.Disconnected);
+        }
 
+        /// <summary>
+        /// Switches the icon to the orange "connecting" state (startup or manual reconnect).
+        /// </summary>
+        public void SetConnecting()
+        {
+            PostState(TrayState.Connecting);
+        }
+
+        private void PostState(TrayState state)
+        {
+            Interlocked.Exchange(ref _state, (int)state);
+
+            var context = _uiContext;
+            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
+            {
+                // Menu items and the icon belong to the tray thread — never touch them
+                // from here. Post() is asynchronous, so a caller holding a lock cannot
+                // deadlock.
+                context.Post(_ => ApplyState((TrayState)Volatile.Read(ref _state)), null);
+                return;
+            }
+
+            ApplyState(state);
+        }
+
+        /// <summary>
+        /// Applies the current state: status text, badge color and tooltip.
+        /// Must run on the tray thread.
+        /// </summary>
+        private void ApplyState(TrayState state)
+        {
             try
             {
-                var context = _uiContext;
-                if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
+                string text = BuildStatusText(state);
+                if (_statusItem != null) _statusItem.Text = text;
+
+                if (_notifyIcon != null)
                 {
-                    // Menu items belong to the tray thread — never touch them from here.
-                    // Post() is asynchronous, so a caller holding a lock cannot deadlock.
-                    context.Post(_ => SetStatusItemText(text), null);
-                    return;
+                    _notifyIcon.Icon = ComposeIcon(state);
+                    string tooltip = string.Format(
+                        L("TopSolid MCP v{0} — TopSolid : {1}", "TopSolid MCP v{0} — TopSolid: {1}"),
+                        GetVersion(),
+                        state == TrayState.Connected
+                            ? L("connecté", "connected")
+                            : state == TrayState.Disconnected
+                                ? L("déconnecté", "disconnected")
+                                : L("connexion…", "connecting…"));
+                    if (tooltip.Length > 63) tooltip = tooltip.Substring(0, 63);
+                    _notifyIcon.Text = tooltip;
                 }
-
-                SetStatusItemText(text);
             }
             catch { /* tray already disposed */ }
         }
 
-        /// <summary>
-        /// Applies the status text. Must run on the tray thread.
-        /// </summary>
-        private void SetStatusItemText(string text)
+        private string BuildStatusText(TrayState state)
         {
-            try
+            string portSuffix = _port > 0 ? " (port " + _port + ")" : "";
+            string label;
+            switch (state)
             {
-                var item = _statusItem;
-                if (item != null) item.Text = text;
+                case TrayState.Connected: label = L("connecté", "connected"); break;
+                case TrayState.Disconnected: label = L("déconnecté", "disconnected"); break;
+                default: label = L("connexion en cours…", "connecting…"); break;
             }
-            catch { /* tray already disposed */ }
+            return "● TopSolid : " + label + portSuffix;
         }
 
         /// <summary>
@@ -117,16 +199,6 @@ namespace TopSolidMcpServer.Utils
             _thread.IsBackground = true;
             _thread.Name = "TrayIcon";
             _thread.Start();
-        }
-
-        /// <summary>
-        /// Updates the TopSolid connection status shown in the tray menu.
-        /// Includes the port number for clarity.
-        /// </summary>
-        public void SetConnected(bool connected)
-        {
-            _lastConnectedState = connected;
-            UpdateStatusText();
         }
 
         /// <summary>
@@ -162,9 +234,11 @@ namespace TopSolidMcpServer.Utils
 
             var version = GetVersion();
 
+            _baseIcon = LoadIcon();
+
             _notifyIcon = new NotifyIcon();
             _notifyIcon.Text = $"TopSolid MCP v{version}";
-            _notifyIcon.Icon = LoadIcon();
+            _notifyIcon.Icon = ComposeIcon((TrayState)Volatile.Read(ref _state));
             _notifyIcon.Visible = true;
 
             var menu = new ContextMenuStrip();
@@ -176,25 +250,45 @@ namespace TopSolidMcpServer.Utils
             menu.Items.Add(versionItem);
 
             // Connection status — show the port if already known
-            string initStatus = _port > 0
-                ? "TopSolid: waiting... (port " + _port + ")"
-                : "TopSolid: waiting...";
-            _statusItem = new ToolStripMenuItem(initStatus);
+            var state = (TrayState)Volatile.Read(ref _state);
+            _statusItem = new ToolStripMenuItem(BuildStatusText(state));
             _statusItem.Enabled = false;
             menu.Items.Add(_statusItem);
 
-            // Apply any state that was set before the menu was created
-            UpdateStatusText();
-
             // Reconnect button
-            _reconnectItem = new ToolStripMenuItem("Reconnect to TopSolid");
+            _reconnectItem = new ToolStripMenuItem(L("Se reconnecter à TopSolid", "Reconnect to TopSolid"));
             _reconnectItem.Click += OnReconnectClick;
             menu.Items.Add(_reconnectItem);
 
             menu.Items.Add(new ToolStripSeparator());
 
+            // ── Settings zone ──
+            var settingsMenu = new ToolStripMenuItem(L("Paramètres", "Settings"));
+
+            var portItem = new ToolStripMenuItem(_port > 0
+                ? string.Format(L("Port TopSolid : {0}", "TopSolid port: {0}"), _port)
+                : L("Port TopSolid : par défaut", "TopSolid port: default"));
+            portItem.Enabled = false;
+            settingsMenu.DropDownItems.Add(portItem);
+
+            _readOnlyItem = new ToolStripMenuItem(_readOnly
+                ? L("Mode lecture seule : oui", "Read-only mode: yes")
+                : L("Mode lecture seule : non", "Read-only mode: no"));
+            _readOnlyItem.Enabled = false;
+            settingsMenu.DropDownItems.Add(_readOnlyItem);
+
+            settingsMenu.DropDownItems.Add(new ToolStripSeparator());
+
+            var folderItem = new ToolStripMenuItem(L("Ouvrir le dossier d'installation", "Open installation folder"));
+            folderItem.Click += (s, e) => OpenUrl(AppDomain.CurrentDomain.BaseDirectory);
+            settingsMenu.DropDownItems.Add(folderItem);
+
+            menu.Items.Add(settingsMenu);
+
+            menu.Items.Add(new ToolStripSeparator());
+
             // Update
-            var updateItem = new ToolStripMenuItem("Check for updates...");
+            var updateItem = new ToolStripMenuItem(L("Vérifier les mises à jour…", "Check for updates…"));
             updateItem.Click += OnUpdateClick;
             menu.Items.Add(updateItem);
 
@@ -204,33 +298,42 @@ namespace TopSolidMcpServer.Utils
             menu.Items.Add(githubItem);
 
             // Documentation
-            var docsItem = new ToolStripMenuItem("Documentation");
+            var docsItem = new ToolStripMenuItem(L("Documentation", "Documentation"));
             docsItem.Click += (s, e) => OpenUrl(DocsUrl);
             menu.Items.Add(docsItem);
 
             menu.Items.Add(new ToolStripSeparator());
 
             // Quit
-            var quitItem = new ToolStripMenuItem("Stop server");
+            var quitItem = new ToolStripMenuItem(L("Arrêter le serveur", "Stop server"));
             quitItem.Click += OnQuitClick;
             menu.Items.Add(quitItem);
 
             _notifyIcon.ContextMenuStrip = menu;
 
             // Show startup balloon
-            ShowBalloon("TopSolid MCP", $"MCP server v{version} started. Listening on stdin.", ToolTipIcon.Info, 3000);
+            ShowBalloon(
+                "TopSolid MCP",
+                L($"Serveur MCP v{version} démarré. Connexion à TopSolid…", $"MCP server v{version} started. Connecting to TopSolid…"),
+                ToolTipIcon.Info, 3000);
         }
 
         private void OnReconnectClick(object sender, EventArgs e)
         {
             if (_onReconnectRequested == null)
             {
-                ShowBalloon("Reconnection", "The server is not initialized yet.", ToolTipIcon.Warning, 2000);
+                ShowBalloon(L("Reconnexion", "Reconnection"),
+                    L("Le serveur n'est pas encore initialisé.", "The server is not initialized yet."),
+                    ToolTipIcon.Warning, 2000);
                 return;
             }
 
-            if (_statusItem != null) _statusItem.Text = "TopSolid: reconnecting...";
-            ShowBalloon("TopSolid MCP", "Attempting to reconnect...", ToolTipIcon.Info, 2000);
+            // Orange state + balloon; the connector fires ConnectionChanged when done,
+            // which flips the badge to green or red.
+            PostState(TrayState.Connecting);
+            ShowBalloon("TopSolid MCP",
+                L("Tentative de reconnexion…", "Attempting to reconnect…"),
+                ToolTipIcon.Info, 2000);
 
             // Run reconnect on a background thread (avoid blocking the UI)
             ThreadPool.QueueUserWorkItem(_ =>
@@ -255,7 +358,9 @@ namespace TopSolidMcpServer.Utils
 
                 if (!File.Exists(updateScript))
                 {
-                    ShowBalloon("Update", "update.ps1 was not found next to the executable.", ToolTipIcon.Warning, 3000);
+                    ShowBalloon(L("Mise à jour", "Update"),
+                        L("update.ps1 est introuvable à côté de l'exécutable.", "update.ps1 was not found next to the executable."),
+                        ToolTipIcon.Warning, 3000);
                     return;
                 }
 
@@ -269,13 +374,17 @@ namespace TopSolidMcpServer.Utils
             }
             catch (Exception ex)
             {
-                ShowBalloon("Error", $"Could not start the update: {ex.Message}", ToolTipIcon.Error, 3000);
+                ShowBalloon(L("Erreur", "Error"),
+                    string.Format(L("Impossible de lancer la mise à jour : {0}", "Could not start the update: {0}"), ex.Message),
+                    ToolTipIcon.Error, 3000);
             }
         }
 
         private void OnQuitClick(object sender, EventArgs e)
         {
-            ShowBalloon("TopSolid MCP", "Stopping the server...", ToolTipIcon.Info, 1000);
+            ShowBalloon("TopSolid MCP",
+                L("Arrêt du serveur…", "Stopping the server…"),
+                ToolTipIcon.Info, 1000);
 
             // Give the balloon time to show, then shut down
             var timer = new System.Windows.Forms.Timer { Interval = 500 };
@@ -332,6 +441,70 @@ namespace TopSolidMcpServer.Utils
             return SystemIcons.Application;
         }
 
+        /// <summary>
+        /// Draws the base icon with a TeamViewer-style status badge: a colored dot in
+        /// the lower-right corner — green connected, orange connecting, red disconnected.
+        /// Must run on the tray thread. The previous composed handle is destroyed so a
+        /// session-long reconnect loop cannot leak icons.
+        /// </summary>
+        private Icon ComposeIcon(TrayState state)
+        {
+            if (_baseIcon == null) return null;
+
+            try
+            {
+                using (var bmp = new Bitmap(32, 32))
+                {
+                    using (var g = Graphics.FromImage(bmp))
+                    {
+                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                        g.SmoothingMode = SmoothingMode.AntiAlias;
+                        g.DrawIcon(_baseIcon, new Rectangle(0, 0, 32, 32));
+
+                        Color dot;
+                        switch (state)
+                        {
+                            case TrayState.Connected: dot = Color.FromArgb(46, 204, 64); break;
+                            case TrayState.Disconnected: dot = Color.FromArgb(232, 65, 66); break;
+                            default: dot = Color.FromArgb(255, 165, 0); break;
+                        }
+
+                        using (var brush = new SolidBrush(dot))
+                        {
+                            g.FillEllipse(brush, 19, 19, 11, 11);
+                        }
+                        using (var pen = new Pen(Color.White, 2f))
+                        {
+                            g.DrawEllipse(pen, 18, 18, 13, 13);
+                        }
+                    }
+
+                    IntPtr handle = bmp.GetHicon();
+                    var composed = Icon.FromHandle(handle);
+
+                    DestroyComposedHandle();
+                    _iconHandle = handle;
+                    return composed;
+                }
+            }
+            catch
+            {
+                return _baseIcon;
+            }
+        }
+
+        private void DestroyComposedHandle()
+        {
+            if (_iconHandle != IntPtr.Zero)
+            {
+                try { DestroyIcon(_iconHandle); } catch { }
+                _iconHandle = IntPtr.Zero;
+            }
+        }
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern bool DestroyIcon(IntPtr hIcon);
+
         public static string GetVersion()
         {
             try
@@ -358,8 +531,10 @@ namespace TopSolidMcpServer.Utils
                 {
                     _notifyIcon = null;
                     notifyIcon.Visible = false;
+                    notifyIcon.Icon = null;
                     notifyIcon.Dispose();
                 }
+                DestroyComposedHandle();
             }
             catch { /* shutting down */ }
         }
