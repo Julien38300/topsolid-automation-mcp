@@ -32,6 +32,16 @@ Plus an optional **HTTP/SSE bridge** for remote clients (claude.ai web, mobile a
 
 ### Install
 
+**The easy way (v1.7.0+) — one double-click, no terminal:**
+
+1. Download the [latest release](https://github.com/Julien38300/topsolid-automation-mcp/releases/latest) and unzip it.
+2. Double-click `install\Installer_TopSolidMCP.bat` — it installs Node.js if missing, sets up the HTTP bridge, asks for the API key in a GUI dialog, and registers auto-start.
+3. A tray icon appears next to the clock: it runs, watches (every 30 s) and restarts the bridge by itself. Right-click for Status / Restart / Stop.
+
+Then point your MCP client at `http://127.0.0.1:8080/mcp`. Details: [`install/README.md`](./install/README.md).
+
+**Manual path (developers / headless machines):**
+
 1. Enable remote access in TopSolid: **Tools > Options > General > Automation** → check "Manage remote access", port 8090, restart TopSolid.
 2. Download the [latest release](https://github.com/Julien38300/topsolid-automation-mcp/releases/latest) (`TopSolidMcpServer-vX.Y.Z.zip`) and unzip to e.g. `C:\TopSolidMCP\`.
 3. Register with your client. For Claude Code CLI:

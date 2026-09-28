@@ -258,6 +258,27 @@ Set-Content -Path $versionFile -Value $latestVersion -NoNewline
 Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
 Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 
+# --- Restart the HTTP bridge if the scheduled task drives it ---
+# This updater kills TopSolidMcpServer.exe to replace the files. The HTTP bridge
+# (start-bridge.ps1 / mcp-proxy) wraps that process, so after every update the
+# 8080 endpoint stayed dead until someone remembered to re-run the
+# TopSolidMcpBridge task by hand. Restart the task automatically instead: if it
+# exists the bridge comes back with the freshly installed version; if not, the
+# user is running a plain stdio install and there is nothing to restart.
+$bridgeTask = "TopSolidMcpBridge"
+schtasks /Query /TN $bridgeTask > $null 2>&1
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Redemarrage du bridge HTTP (tache $bridgeTask)..."
+    schtasks /End /TN $bridgeTask > $null 2>&1
+    Start-Sleep -Seconds 1
+    schtasks /Run /TN $bridgeTask > $null 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Bridge HTTP relance (port 8080) avec la nouvelle version." -ForegroundColor Green
+    } else {
+        Write-Host "La tache $bridgeTask n'a pas pu etre relancee - demarrez-la a la main." -ForegroundColor Yellow
+    }
+}
+
 # --- Show changelog ---
 Write-Host ""
 Write-Host "=== Mise a jour terminee ! ===" -ForegroundColor Green

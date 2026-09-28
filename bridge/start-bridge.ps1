@@ -43,6 +43,8 @@ Set-Location -Path $PSScriptRoot
 # 1. Locate TopSolidMcpServer.exe
 if (-not $ExePath) {
     $candidates = @(
+        # Release layout: the zip extracts TopSolidMcpServer.exe next to bridge/
+        (Join-Path $PSScriptRoot "..\TopSolidMcpServer.exe"),
         (Join-Path $PSScriptRoot "..\server\src\bin\Release\net48\TopSolidMcpServer.exe"),
         (Join-Path $PSScriptRoot "..\server\src\bin\Debug\net48\TopSolidMcpServer.exe"),
         "C:\TopSolidMCP\TopSolidMcpServer.exe",

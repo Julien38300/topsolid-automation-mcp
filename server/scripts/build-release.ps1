@@ -153,6 +153,28 @@ if (Test-Path $runtimesSrc) {
 Set-Content -Path (Join-Path $releaseDir "version.txt") -Value $Version -NoNewline
 Write-Host "  + version.txt ($Version)" -ForegroundColor Gray
 
+# --- Noob install: ship install/ (one-click installer + systray app) ---
+# The one-click experience lives in install/: Installer_TopSolidMCP.bat sets up
+# Node.js (winget), runs npm install in bridge/, asks for the API key in a GUI
+# dialog and registers TrayTopSolidMCP.ps1 at login. Without these two folders
+# in the zip a fresh user has no way to get the tray-managed bridge at all.
+$projectRootAll = Split-Path -Parent $PSScriptRoot   # .../server -> repo root
+foreach ($dir in @("install", "bridge")) {
+    $srcDirShip = Join-Path $projectRootAll $dir
+    if (Test-Path $srcDirShip) {
+        Copy-Item $srcDirShip (Join-Path $releaseDir $dir) -Recurse -Force
+        # node_modules must NOT ship (user runs npm install on their machine; keeps zip small)
+        $nm = Join-Path $releaseDir "$dir\node_modules"
+        if (Test-Path $nm) { Remove-Item $nm -Recurse -Force }
+        Write-Host "  + $dir/ (noob install)" -ForegroundColor Gray
+    }
+}
+# README for the install folder, first thing a user sees
+$installReadme = Join-Path $projectRootAll "install\README.md"
+if (-not (Test-Path $installReadme)) {
+    Write-Host "  ! install/README.md manquant - a rediger avant release" -ForegroundColor Yellow
+}
+
 # --- Recipe count summary (informational) ---
 Write-Host ""
 $recipeFile = Join-Path $srcDir "Tools\RecipeTool.cs"

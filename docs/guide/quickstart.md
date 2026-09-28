@@ -5,6 +5,22 @@
 - **TopSolid 7.15+** installe et lance
 - **Windows 10+** (.NET Framework 4.8 inclus)
 
+## La voie noob — tout en double-clic (v1.7.0+)
+
+Depuis la v1.7.0, le zip de release contient un dossier `install/` qui rend le bridge HTTP/SSE accessible sans aucune ligne de commande :
+
+1. **Dezipper** la release, par exemple dans `C:\TopSolidMCP\`
+2. **Double-clic** sur `install\Installer_TopSolidMCP.bat`
+3. **Suivre la fenetre** : Node.js installe tout seul si absent, la cle API se saisit dans une boite de dialogue graphique, le demarrage automatique s'enregistre tout seul
+
+Une icone apparait pres de l'horloge (systray) : elle demarre le bridge, le surveille toutes les 30 s et le relance si le port 8080 meurt. Clic droit pour Statut / Redemarrer / Arreter. Details dans [`install/README.md`](https://github.com/Julien38300/topsolid-automation-mcp/blob/main/install/README.md).
+
+L'URL a donner a votre assistant IA reste la meme : `http://127.0.0.1:8080/mcp`.
+
+::: details La voie manuelle (developpeurs / serveurs sans session graphique)
+Suivre les etapes 1 a 4 ci-dessous pour piloter le bridge a la main.
+:::
+
 ## Etape 1 — Activer l'acces distant dans TopSolid
 
 Dans TopSolid, aller dans **Outils > Options > General** puis descendre jusqu'a la section **Automation** (tout en bas) :
@@ -45,8 +61,8 @@ Sans bridge (mode stdio), chaque client IA relance un processus `TopSolidMcpServ
 
 **Prerequis : Node.js 18+** ([nodejs.org](https://nodejs.org/))
 
-::: warning Le dossier `bridge/` n'est pas dans le zip de release
-Le zip ne contient que le serveur, ses DLL et `data/`. Recuperez `bridge/` depuis le depot (clone ou telechargement du code source) et placez-le ou vous voulez — `start-bridge.ps1` trouve l'exe via `C:\TopSolidMCP\TopSolidMcpServer.exe`, le build local du depot, ou la variable `TOPSOLID_MCP_EXE`.
+::: tip Le bridge est dans le zip depuis la v1.7.0
+Les etapes ci-dessous restent utiles pour les developpeurs et les serveurs sans session graphique. Pour l'experience complete sans terminal, utilise le dossier `install/` du zip (voir la voie noob en haut de cette page).
 :::
 
 ```powershell
