@@ -396,10 +396,37 @@ namespace TopSolidMcpServer.Utils
 
         private void OnUpdateClick(object sender, EventArgs e)
         {
+            // Feedback directly in the menu: balloons can be disabled per-app in Windows
+            // notification settings, which made the button look dead ("ne fait rien").
+            var item = sender as ToolStripMenuItem;
+            string originalText = item != null ? item.Text : null;
+            if (item != null)
+            {
+                item.Enabled = false;
+                item.Text = L("Recherche de mise à jour…", "Checking for updates…");
+            }
             ShowBalloon(L("Recherche de mise à jour…", "Checking for updates…"),
                 L("Interrogation de GitHub…", "Querying GitHub…"),
                 ToolTipIcon.Info, 2000);
-            ThreadPool.QueueUserWorkItem(_ => CheckForUpdate(true));
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try { CheckForUpdate(true); }
+                finally
+                {
+                    var context = _uiContext;
+                    if (item != null && context != null)
+                        context.Post(s =>
+                        {
+                            try
+                            {
+                                var it = (ToolStripMenuItem)s;
+                                it.Enabled = true;
+                                if (originalText != null) it.Text = originalText;
+                            }
+                            catch { /* menu gone */ }
+                        }, item);
+                }
+            });
         }
 
         /// <summary>
@@ -417,7 +444,12 @@ namespace TopSolidMcpServer.Utils
                 {
                     client.Headers["User-Agent"] = "TopSolidMcpServer-Updater";
                     client.Headers["Accept"] = "application/vnd.github+json";
-                    var json = client.DownloadString("https://api.github.com/repos/Julien38300/topsolid-automation-mcp/releases/latest");
+                    // 10s hard timeout: WebClient's default (100s) made a stalled DNS or
+                    // network lookup freeze the check silently for minutes.
+                    client.Proxy = null; // bypass IE proxy auto-detection, another silent stall
+                    var json = DownloadStringWithTimeout(client,
+                        "https://api.github.com/repos/Julien38300/topsolid-automation-mcp/releases/latest",
+                        TimeSpan.FromSeconds(10));
                     var release = Newtonsoft.Json.Linq.JObject.Parse(json);
                     latest = release.Value<string>("tag_name");
                 }
@@ -427,9 +459,14 @@ namespace TopSolidMcpServer.Utils
                 Console.Error.WriteLine("[TrayIcon] Update check failed: " + ex.Message);
                 if (userClicked)
                 {
-                    ShowBalloonSafe(L("Mise à jour", "Update"),
-                        L("Impossible de contacter GitHub (connexion ?).", "Could not reach GitHub (network?)."),
-                        ToolTipIcon.Warning, 3000);
+                    // MessageBox, not a balloon: balloons are suppressed when the user
+                    // has disabled notifications for this app, which made the result
+                    // invisible ("the button does nothing"). A modal box always shows.
+                    ShowResultBox(L("Mise à jour", "Update"),
+                        L("Impossible de contacter GitHub (connexion ?).", "Could not reach GitHub (network?).") +
+                        Environment.NewLine + Environment.NewLine +
+                        string.Format(L("Détail : {0}", "Detail: {0}"), ex.Message),
+                        MessageBoxIcon.Warning);
                 }
                 return;
             }
@@ -438,9 +475,9 @@ namespace TopSolidMcpServer.Utils
             if (CompareVersions(latest, current) <= 0)
             {
                 if (userClicked)
-                    ShowBalloonSafe(L("Mise à jour", "Update"),
+                    ShowResultBox(L("Mise à jour", "Update"),
                         string.Format(L("Vous êtes déjà à jour (v{0}).", "You are already up to date (v{0})."), current),
-                        ToolTipIcon.Info, 3000);
+                        MessageBoxIcon.Information);
                 return;
             }
 
@@ -448,6 +485,10 @@ namespace TopSolidMcpServer.Utils
             ShowBalloonSafe("TopSolid MCP",
                 string.Format(L("Mise à jour v{0} disponible ! Clic droit sur l'icône pour l'installer.", "Update v{0} available! Right-click the icon to install it."), latest),
                 ToolTipIcon.Info, 5000);
+            if (userClicked)
+                ShowResultBox("TopSolid MCP",
+                    string.Format(L("Mise à jour v{0} disponible ! Un bouton « Télécharger la mise à jour » a été ajouté au menu.", "Update v{0} available! A 'Download update' button was added to the menu."), latest),
+                    MessageBoxIcon.Information);
 
             var context = _uiContext;
             if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
@@ -464,6 +505,20 @@ namespace TopSolidMcpServer.Utils
                 context.Post(_ => ShowBalloon(title, text, icon, timeoutMs), null);
             else
                 ShowBalloon(title, text, icon, timeoutMs);
+        }
+
+        /// <summary>
+        /// Thread-safe modal result box. Always visible — unlike balloons, a MessageBox
+        /// cannot be suppressed by Windows notification settings, so a manual update
+        /// check can never look like the button did nothing.
+        /// </summary>
+        private void ShowResultBox(string title, string text, MessageBoxIcon icon)
+        {
+            var context = _uiContext;
+            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
+                context.Post(_ => MessageBox.Show(text, title, MessageBoxButtons.OK, icon), null);
+            else
+                MessageBox.Show(text, title, MessageBoxButtons.OK, icon);
         }
 
         /// <summary>Shows (or refreshes) the "Download update…" menu item. Tray thread only.</summary>
@@ -542,6 +597,20 @@ namespace TopSolidMcpServer.Utils
                     string.Format(L("Impossible de lancer la mise à jour : {0}", "Could not start the update: {0}"), ex.Message),
                     ToolTipIcon.Error, 3000);
             }
+        }
+
+        /// <summary>
+        /// WebClient has no usable per-call timeout (the 100s default made a stalled
+        /// DNS lookup freeze the check silently). Run the download on the thread pool
+        /// and abort after the given timeout.
+        /// </summary>
+        private static string DownloadStringWithTimeout(System.Net.WebClient client, string url, TimeSpan timeout)
+        {
+            var task = System.Threading.Tasks.Task.Factory.StartNew(
+                () => client.DownloadString(url));
+            if (!task.Wait(timeout))
+                throw new TimeoutException("GitHub request timed out after " + (int)timeout.TotalSeconds + "s");
+            return task.Result;
         }
 
         /// <summary>
