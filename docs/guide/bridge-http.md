@@ -36,6 +36,14 @@ Consequence directe : **un pont accessible depuis Internet sans authentification
 
 Le pont traduit du **Streamable HTTP** (spec MCP 2025-03-26) vers **stdio** et inversement. Il utilise [`mcp-proxy`](https://github.com/punkpeye/mcp-proxy), maintenu par l'écosystème, pas de code custom de notre côté.
 
+::: tip v1.8.0+ — serveur HTTP natif et clé API (recommandé)
+Depuis la **v1.8.0**, le serveur embarque son propre endpoint HTTP natif (`/mcp` sur le port 8080, redéfinissable par `TOPSOLID_MCP_HTTP_PORT`) **avec authentification `X-API-Key`** : plus besoin du proxy Node pour un usage local ou tunnelisé. Le proxy `mcp-proxy` reste documenté ci-dessous pour les installations existantes et la compatibilité SSE legacy.
+
+- La clé est **générée, copiée, régénérée et révoquée depuis l'icône tray** (menu *Clé API*). Elle est stockée **chiffrée (DPAPI)** dans `settings.json` — jamais en clair sur le disque.
+- Sans clé définie, l'endpoint HTTP accepte les requêtes locales sans authentification (mode historique) ; dès qu'une clé existe, elle est **exigée sur chaque requête** (`X-API-Key` header). Le menu tray affiche la clé masquée (4 derniers caractères seulement).
+- Les clients distants doivent envoyer l'en-tête `X-API-Key: tsmcp_...` à chaque appel.
+:::
+
 ## Prérequis
 
 - **Node.js 18+** (pour `npx` et `mcp-proxy`)

@@ -38,7 +38,14 @@ Plus an optional **HTTP/SSE bridge** for remote clients (claude.ai web, mobile a
 2. Double-click `install\Installer_TopSolidMCP.bat` — it installs Node.js if missing, sets up the HTTP bridge, asks for the API key in a GUI dialog, and registers auto-start.
 3. A tray icon appears next to the clock: it runs, watches (every 30 s) and restarts the bridge by itself. Right-click for Status / Restart / Stop.
 
-Then point your MCP client at `http://127.0.0.1:8080/mcp`. Details: [`install/README.md`](./install/README.md).
+Since **v1.8.0** the tray also handles:
+
+- **API key management** — generate / copy / regenerate / revoke the `X-API-Key` of the native HTTP endpoint (stored DPAPI-encrypted in `settings.json`, never in clear).
+- **Auto-connect** — reconnects to TopSolid by itself (backoff 15/30/60 s capped) if TopSolid was started after the server or gets restarted.
+- **What's new** — opens the GitHub release notes of the installed version; the update flow now opens them automatically.
+- **Report a bug / Suggest a feature** — prefilled GitHub issue (template, version, OS and connection state auto-injected; API key scrubbed).
+
+Then point your MCP client at `http://127.0.0.1:8080/mcp` (v1.8.0+: the native endpoint, `X-API-Key` required as soon as a key is defined). Details: [`install/README.md`](./install/README.md).
 
 **Manual path (developers / headless machines):**
 

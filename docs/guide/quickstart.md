@@ -15,6 +15,15 @@ Depuis la v1.7.0, le zip de release contient un dossier `install/` qui rend le b
 
 Une icone apparait pres de l'horloge (systray) : elle demarre le bridge, le surveille toutes les 30 s et le relance si le port 8080 meurt. Clic droit pour Statut / Redemarrer / Arreter. Details dans [`install/README.md`](https://github.com/Julien38300/topsolid-automation-mcp/blob/main/install/README.md).
 
+::: tip v1.8.0+ — tray enrichi
+Depuis la **v1.8.0**, l'icône tray gère aussi :
+
+- **Clé API** — générer / copier / régénérer / révoquer la clé `X-API-Key` de l'endpoint HTTP natif (stockée chiffrée DPAPI dans `settings.json`, jamais en clair).
+- **Connexion automatique** — le serveur se reconnecte seul à TopSolid s'il a été lancé avant TopSolid ou si TopSolid est relancé (backoff 15 s → 30 s → 60 s plafonné). Activable/désactivable depuis le menu, état mémorisé.
+- **Nouveautés** — ouvre directement la page GitHub de la **release installée** (corrections, évolutions). Le bouton *Vérifier les mises à jour* ouvre maintenant automatiquement cette page au lancement de la mise à jour.
+- **Signaler un bug / Suggérer une évolution** — ouvre le formulaire GitHub pré-rempli (template bug/feature, version serveur, OS et état de connexion injectés automatiquement ; la clé API est **scrubbée** de tous les champs).
+:::
+
 L'URL a donner a votre assistant IA reste la meme : `http://127.0.0.1:8080/mcp`.
 
 ::: details La voie manuelle (developpeurs / serveurs sans session graphique)
