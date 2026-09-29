@@ -10,6 +10,7 @@
     <Version>1.7.4</Version>
     <ApplicationIcon>topsolid-mcp.ico</ApplicationIcon>
   </PropertyGroup>
+
   <ItemGroup>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
@@ -20,7 +21,14 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.6" />
   </ItemGroup>
   <!-- Built from source so a fresh clone can compile: the prebuilt DLL was never
-       committed (.gitignore excludes *.dll) and server/lib/ does not exist. -->
+       committed (.gitignore excludes *.dll) and server/lib/ does not exist.
+       UpdateCheckLogic is linked as source rather than a ProjectReference:
+       Smart App Control on dev machines blocks freshly compiled unsigned DLLs
+       by hash (FileLoadException 0x800711C7). -->
+  <ItemGroup>
+    <Compile Include="..\update-check\UpdateCheckLogic.cs" Link="Utils\UpdateCheckLogic.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\graph\src\TopSolidApiGraph.Core\TopSolidApiGraph.Core.csproj" />
   </ItemGroup>

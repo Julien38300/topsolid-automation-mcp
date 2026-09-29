@@ -601,49 +601,23 @@ namespace TopSolidMcpServer.Utils
 
         /// <summary>
         /// WebClient has no usable per-call timeout (the 100s default made a stalled
-        /// DNS lookup freeze the check silently). Run the download on the thread pool
-        /// and abort after the given timeout.
+        /// DNS lookup freeze the check silently). Delegates to
+        /// TopSolidMcp.UpdateCheck.UpdateCheckLogic so the exact same code is
+        /// unit-tested on CI (see server/tests/TopSolidMcpServer.Tests).
         /// </summary>
-        private static string DownloadStringWithTimeout(System.Net.WebClient client, string url, TimeSpan timeout)
+        internal static string DownloadStringWithTimeout(System.Net.WebClient client, string url, TimeSpan timeout)
         {
-            var task = System.Threading.Tasks.Task.Factory.StartNew(
-                () => client.DownloadString(url));
-            if (!task.Wait(timeout))
-                throw new TimeoutException("GitHub request timed out after " + (int)timeout.TotalSeconds + "s");
-            return task.Result;
+            return TopSolidMcp.UpdateCheck.UpdateCheckLogic.DownloadStringWithTimeout(client, url, timeout);
         }
 
         /// <summary>
         /// Semver comparison: 1.7.2-beta is older than 1.7.2; build metadata ignored.
         /// Non-numeric segments are tolerated and compared as 0.
+        /// Delegates to TopSolidMcp.UpdateCheck.UpdateCheckLogic (unit-tested on CI).
         /// </summary>
-        private static int CompareVersions(string a, string b)
+        internal static int CompareVersions(string a, string b)
         {
-            a = (a ?? "0.0.0").TrimStart('v', 'V');
-            b = (b ?? "0.0.0").TrimStart('v', 'V');
-            a = a.Split('+')[0];
-            b = b.Split('+')[0];
-
-            string preA = null, preB = null;
-            int dash = a.IndexOf('-');
-            if (dash >= 0) { preA = a.Substring(dash + 1); a = a.Substring(0, dash); }
-            dash = b.IndexOf('-');
-            if (dash >= 0) { preB = b.Substring(dash + 1); b = b.Substring(0, dash); }
-
-            var sa = a.Split('.');
-            var sb = b.Split('.');
-            for (int i = 0; i < 3; i++)
-            {
-                int na = i < sa.Length && int.TryParse(sa[i], out int xa) ? xa : 0;
-                int nb = i < sb.Length && int.TryParse(sb[i], out int xb) ? xb : 0;
-                if (na < nb) return -1;
-                if (na > nb) return 1;
-            }
-            // Release outranks its pre-releases
-            if (preA == preB) return 0;
-            if (preA == null) return 1;
-            if (preB == null) return -1;
-            return string.CompareOrdinal(preA, preB);
+            return TopSolidMcp.UpdateCheck.UpdateCheckLogic.CompareVersions(a, b);
         }
 
         private void OnQuitClick(object sender, EventArgs e)

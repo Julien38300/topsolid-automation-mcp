@@ -64,6 +64,13 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
+      - name: Unit tests (update-check logic)
+        # The server itself cannot build on CI (TopSolid Automation assemblies
+        # are not redistributable), but the pure update-check logic extracted
+        # into TopSolidMcp.UpdateCheck has no such dependency. These tests pin
+        # the contract behind the "dead update button" regression (v1.7.2 era).
+        run: dotnet test server/tests/TopSolidMcp.UpdateCheck.Tests/TopSolidMcp.UpdateCheck.Tests.csproj -c Release
+
       - name: Restore graph/
         run: dotnet restore graph/TopSolidApiGraph.sln
 

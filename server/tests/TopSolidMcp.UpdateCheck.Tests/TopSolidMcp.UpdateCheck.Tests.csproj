@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>TopSolidMcp.UpdateCheck.Tests</RootNamespace>
+    <AssemblyName>TopSolidMcp.UpdateCheck.Tests</AssemblyName>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Link the source directly instead of a ProjectReference: Smart App Control
+         on dev machines can block freshly compiled unsigned DLLs by hash
+         (FileLoadException 0x800711C7), and no DLL means nothing to block.
+         CI gets the exact same code under test. -->
+    <Compile Include="..\..\update-check\UpdateCheckLogic.cs" Link="UpdateCheckLogic.cs" />
+  </ItemGroup>
+
+</Project>
