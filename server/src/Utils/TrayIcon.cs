@@ -27,7 +27,7 @@ namespace TopSolidMcpServer.Utils
     /// installation folder.
     /// </para>
     /// </summary>
-    public class TrayIcon : IDisposable
+    public partial class TrayIcon : IDisposable
     {
         private const string GitHubUrl = "https://github.com/Julien38300/topsolid-automation-mcp";
         private const string DocsUrl = "https://julien38300.github.io/topsolid-automation-mcp/";
@@ -325,6 +325,9 @@ namespace TopSolidMcpServer.Utils
 
             menu.Items.Add(settingsMenu);
 
+            // v1.8.0: API key, auto-connect toggle, What's new, feedback items.
+            BuildV18MenuItems(menu, settingsMenu);
+
             menu.Items.Add(new ToolStripSeparator());
 
             // Update
@@ -590,6 +593,10 @@ namespace TopSolidMcpServer.Utils
                     UseShellExecute = true
                 };
                 Process.Start(psi);
+
+                // v1.8.0: after launching the updater, open the release notes so the
+                // user sees what the update brings (fixes + new features) while it installs.
+                try { OpenUrl(GitHubFeedbackLogic.BuildReleaseUrl(null)); } catch { }
             }
             catch (Exception ex)
             {

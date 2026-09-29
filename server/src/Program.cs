@@ -225,6 +225,15 @@ namespace TopSolidMcpServer
                 Console.Error.WriteLine($"[MCP-INFO] Connector ready (port {port}). Attempting initial connection...");
                 connector.Connect(); // non-blocking, just tries once
 
+                // ── v1.8.0: HTTP port for the native endpoint (default 8080, the old
+                // bridge port, so existing clients keep working unchanged). ──
+                int httpPort = 8080;
+                string envHttpPort = Environment.GetEnvironmentVariable("TOPSOLID_MCP_HTTP_PORT");
+                if (envHttpPort != null && int.TryParse(envHttpPort, out int parsedHttpPort))
+                {
+                    httpPort = parsedHttpPort;
+                }
+
                 // ── Graph: lazy-loaded on first tool call (heavy) ──
                 Action EnsureGraphLoaded = () =>
                 {
@@ -313,6 +322,30 @@ namespace TopSolidMcpServer
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);
 
+                // ── v1.8.0: native HTTP endpoint with X-API-Key auth ──
+                // Replaces the node mcp-proxy: one process, one port. The key resolves
+                // from settings.json (DPAPI) with the env var as migration fallback,
+                // and is re-read on every request so a tray regeneration applies live.
+                string apiKey = ApiKeyStore.ResolveKey(ApiKeyStore.LoadStoredKey(),
+                    Environment.GetEnvironmentVariable(ApiKeyStore.EnvVarName));
+                var httpServer = new McpHttpServer(router, httpPort, () =>
+                {
+                    // Live provider: the tray mutates the same value the server reads.
+                    var t = tray;
+                    if (t != null) return t.ApiKey;
+                    return apiKey;
+                });
+                try
+                {
+                    httpServer.Start();
+                    Console.Error.WriteLine("[MCP-INFO] Native HTTP MCP endpoint started on port " + httpPort + " (replaces mcp-proxy).");
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("[MCP-WARN] Native HTTP endpoint unavailable (" + ex.Message + "). Continuing in stdio-only mode.");
+                    httpServer = null;
+                }
+
                 // Start tray icon (background STA thread).
                 // A headless or session-0 environment must never take the server down.
                 if (!noTray)
@@ -326,6 +359,7 @@ namespace TopSolidMcpServer
                             // Remove the icon from the notification area before killing the
                             // process, otherwise a ghost icon stays until the user hovers it.
                             try { if (tray != null) tray.Dispose(); } catch { }
+                            try { httpServer?.Stop(); } catch { }
                             try { Console.In.Close(); } catch { }
                             Environment.Exit(0);
                         });
@@ -336,10 +370,14 @@ namespace TopSolidMcpServer
                         startedTray.SetPort(port);
                         startedTray.SetReadOnly(readOnly);
                         startedTray.SetConnected(connector.IsConnected);
+                        startedTray.SetApiKey(apiKey);
+                        startedTray.SetAutoConnectors(() => connector.Connect(), () => connector.IsConnected);
+                        startedTray.StartAutoReconnect();   // v1.8.0: automatic reconnection
 
                         connector.ConnectionChanged += (connected) =>
                         {
                             startedTray.SetConnected(connected);
+                            startedTray.NoteConnectionState(connected);
                             Console.Error.WriteLine(connected
                                 ? "[MCP-INFO] TopSolid connection established."
                                 : "[MCP-INFO] TopSolid connection lost.");
