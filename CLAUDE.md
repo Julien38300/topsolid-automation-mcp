@@ -28,7 +28,7 @@ top-level `data/`. The top-level `data/` holds the artefacts produced by the Pyt
 ## Recipe pipeline — mandatory after any recipe change
 
 The recipe catalogue is the single source of truth in `server/src/Tools/RecipeTool.cs`
-(**132 recipes** today). Several generated files repeat it — `server/data/recipe-list.txt`,
+(**151 recipes** today). Several generated files repeat it — `server/data/recipe-list.txt`,
 `server/data/recipes.md`, `data/recipes.md`, the docs pages, the skill package and the LoRA
 dataset — so they drift the moment a recipe is added by hand.
 

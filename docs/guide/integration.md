@@ -380,7 +380,7 @@ Une fois connecte, votre assistant IA dispose des outils suivants :
 | Outil | Description |
 |-------|-------------|
 | `topsolid_get_state` | Etat de connexion, document actif, projet courant |
-| `topsolid_run_recipe` | Execute une des 132 recettes pre-construites |
+| `topsolid_run_recipe` | Execute une des 151 recettes pre-construites |
 | `topsolid_list_recipes` | Catalogue des recettes, filtrable par categorie ou mot-cle |
 | `topsolid_get_recipe` | Retourne le code source C# d'une recette |
 | `topsolid_api_help` | Recherche dans l'API TopSolid (1728 methodes, synonymes FR) |
@@ -394,7 +394,7 @@ Une fois connecte, votre assistant IA dispose des outils suivants :
 | `topsolid_search_examples` | Recherche dans les corpora prives locaux (opt-in, env var) |
 
 ::: tip Pour la plupart des usages
-`topsolid_run_recipe` suffit. Les 132 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
+`topsolid_run_recipe` suffit. Les 151 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
 :::
 
 ::: danger N'auto-approuvez pas les outils de script

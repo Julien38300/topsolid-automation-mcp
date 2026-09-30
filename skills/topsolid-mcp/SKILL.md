@@ -12,6 +12,7 @@ metadata:
 
 ## CHANGELOG
 
+- **v5.2.0 (2026-09-30)** — Catalogue passe a **151 recettes** : lots GREEN de la veille 7.21 implementes (19 nouvelles) — `list_positionings`, `is_positioning_underconstrained` (assemblage), getters durete/etats de surface (`get_material_*` 6 + `get_coating_*` 6), `get_profiles_folder` (esquisse), `get_operation_version`, lectures d'aretes `get_edge_faces`/`get_edge_ellipse_curve` (param `value`=AskEdge), `smooth_sketch_profiles` (RW, AskEdge + smoothing ISketches2D). Methode : membres confirmes via snapshot CHM 7.21 (`methods.json`) + reflection 7.20/7.21 ; corps compile-verifies (csc v4.0.30319 refs Automating) — les 7 recettes utilisant des membres 7.21-only (GetEdgeFaces, GetEdgeEllipseCurve, SmoothSketchProfiles, ICoatings Brinell/Vickers/Bump*) restent compile-verify en signatures seulement.
 - **v5.1.0 (2026-09-30)** — Veille API 7.21 : snapshot `7.21.304.0` (1978 méthodes, 3209 pages CHM) ; diff `7.20.311.0` → `7.21.304.0` = **+190 méthodes, 0 retirées, 1 signature changée** (`IPdmAdmin.GetUserGroups`, OBSOLETE → `GetGroupsOfUsers`). 20 recettes du catalogue désormais documentées dans les tables ci-dessous. Nouvelle section « Surface API 7.21 » (méthodes hors recettes) et « Nouveautés produit 7.21 » (What's New). Constat runtime : le graphe embarqué (`data/graph.json`, 4119 edges, 242 types, 1728 methodes x interface sur 46 interfaces, datant du 09/09) ne contient NI les méthodes 7.20 NI les 7.21 — `topsolid_api_help` peut donc ne pas connaître une méthode très récente (vérifier alors dans la section « Surface API 7.21 »).
 - v5.0.0 — catalogue 132 recettes, mode R/RW/RD, outils MCP détaillés.
 
@@ -323,7 +324,7 @@ servent a explorer le catalogue et la documentation.
 
 ### 1. topsolid_run_recipe (outil principal — 90% des cas)
 Appelle une recette par son nom. Les tableaux ci-dessus couvrent les cas courants ;
-le catalogue complet (132 recettes) se lit avec `topsolid_list_recipes`, et le detail
+le catalogue complet (151 recettes) se lit avec `topsolid_list_recipes`, et le detail
 d'une recette avec `topsolid_get_recipe`. Params: recipe, value (optionnel).
 
 ### 2. topsolid_get_state
