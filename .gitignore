@@ -34,6 +34,8 @@ data/help-md/
 
 # TopSolid API sync pipeline: raw CHM extractions (~25 MB each)
 data/api/*/raw/
+server/data/api/
+data/chm-7.21/
 
 # Python
 __pycache__/

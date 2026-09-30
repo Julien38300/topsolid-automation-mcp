@@ -55,7 +55,8 @@ SCAN_GLOBS = [
 ]
 
 # Directory names that are never published: build output, dependencies,
-# caches, VCS/IDE metadata.
+# caches, VCS/IDE metadata + CHM snapshots (gitignored, never published:
+# emails of CHM template branding files would fire the scanner).
 EXCLUDED_DIRS = {
     ".git",
     ".vs",
@@ -67,7 +68,16 @@ EXCLUDED_DIRS = {
     "node_modules",
     "dist",
     "cache",
+    "chm-7.21",      # local CHM 7.21 copies (gitignored): contains template branding emails
 }
+
+# Repo-relative subtree prefixes that are never published (gitignored):
+# the API-sync snapshots (CHM extraction work area, gitignored since their
+# introduction in the 7.20/7.21 watch) contain template branding emails.
+EXCLUDED_PATHS = (
+    "server/data/api",
+    "data/api",
+)
 
 # Only text files are read. Anything else (help.db, images, assemblies) is
 # skipped - a binary blob would produce noise, not findings.
@@ -211,6 +221,9 @@ def iter_scannable_files():
                 continue
             parts = p.relative_to(ROOT).parts
             if any(part in EXCLUDED_DIRS for part in parts[:-1]):
+                continue
+            dir_joined = "/".join(parts[:-1])
+            if any(dir_joined == ep or dir_joined.startswith(ep + "/") for ep in EXCLUDED_PATHS):
                 continue
             if p.suffix.lower() not in TEXT_SUFFIXES and p.name not in TEXT_FILENAMES:
                 continue
