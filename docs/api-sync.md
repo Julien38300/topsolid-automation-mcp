@@ -82,3 +82,15 @@ Proposals are **never auto-committed** to `RecipeTool.cs`. Human review required
 - Orchestrator: `server/scripts/sync-topsolid-api.py`
 - Library: `server/scripts/lib/` (paths, chm_extractor, html_parser, api_model, differ, graph_merger, recipe_proposer, reporter)
 - Dependencies: `server/scripts/requirements-sync.txt` (beautifulsoup4, lxml, jsonschema)
+
+## 7.21 sync (2026-09-30, mission M001)
+
+The CHM files are now **local** (`data/chm-7.21/`, copied from LY458 via SMB on 2026-09-30, incl. `TopSolid_Design Automation.chm`) — no remote session required for the watch:
+
+```bash
+python server/scripts/sync-topsolid-api.py extract --chm-path "data/chm-7.21/TopSolid_Design Automation.chm"
+python server/scripts/sync-topsolid-api.py parse --version 7.21.304.0
+# ... diff / enrich / propose / report
+```
+
+Result: snapshot `7.21.304.0` (1978 methods, 3209 raw pages) diffed against the 7.20.311.0 snapshot = **+190 methods, 0 removed, 1 signature change** (`IPdmAdmin.GetUserGroups` now obsolete → `GetGroupsOfUsers`). Note: `enrich` only updates *existing* graph edges (stamp + CHM descriptions); the 190 additions surface in the diff/proposals but do **not** appear in the shipped `data/graph.json` until the embedded graph is regenerated from a full bootstrap (no previous snapshot = bootstrap mode vs the legacy `graph.json`). PDF *What's New* / *Automation Guide* are available on LY458 under `Help/en/` (SMB).

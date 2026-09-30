@@ -14,7 +14,7 @@ DocumentId --GetElements()--> List<ElementId>
 ElementId  --GetName()------> String
 ```
 
-## Statistiques (2026-04-19)
+## Statistiques (2026-04-19 ; re-verifiees 2026-09-30)
 
 | Metrique | Valeur |
 |----------|--------|
@@ -25,6 +25,8 @@ ElementId  --GetName()------> String
 | Description | 90% |
 | SemanticHint | 84% |
 | Exemples (.cs reels) | 22% (926 edges) |
+
+> Re-verifie le 2026-09-30 (mission M001, veille API 7.21) : 4119 edges, 242 types, 1728 methodes, 46 interfaces confirmes a l'identique. Le graphe embarque reste une base anterieure a 7.20 : les methodes 7.20/7.21 (190 ajouts au diff 7.20.311.0 -> 7.21.304.0) n'y sont pas encore mergees — l'enrichissement CHM vit dans `server/data/api/7.21.304.0/`.
 
 ## Champs d'une edge
 

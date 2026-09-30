@@ -1,14 +1,19 @@
 ---
 name: topsolid-mcp
-description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection).
-version: 5.0.0
+description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
+version: 5.1.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation]
-    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "transparence", "calque", "attribut", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges", "famille", "driver", "selectionner", "face", "shape"]
+    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "transparence", "calque", "attribut", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges", "famille", "driver", "selectionner", "face", "shape", "usinage", "cam", "cone", "tore", "bi-arc", "tolerance geometrique"]
 ---
 
 # TopSolid MCP — Skill de pilotage
+
+## CHANGELOG
+
+- **v5.1.0 (2026-09-30)** — Veille API 7.21 : snapshot `7.21.304.0` (1978 méthodes, 3209 pages CHM) ; diff `7.20.311.0` → `7.21.304.0` = **+190 méthodes, 0 retirées, 1 signature changée** (`IPdmAdmin.GetUserGroups`, OBSOLETE → `GetGroupsOfUsers`). 20 recettes du catalogue désormais documentées dans les tables ci-dessous. Nouvelle section « Surface API 7.21 » (méthodes hors recettes) et « Nouveautés produit 7.21 » (What's New). Constat runtime : le graphe embarqué (`data/graph.json`, 4119 edges, 242 types, 1728 methodes x interface sur 46 interfaces, datant du 09/09) ne contient NI les méthodes 7.20 NI les 7.21 — `topsolid_api_help` peut donc ne pas connaître une méthode très récente (vérifier alors dans la section « Surface API 7.21 »).
+- v5.0.0 — catalogue 132 recettes, mode R/RW/RD, outils MCP détaillés.
 
 ## REGLES
 
@@ -16,11 +21,13 @@ Tu appelles `topsolid__topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAI
 
 **Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type`. Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
 
-**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `creer_*`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque. Tu annonces la recette et la valeur exacte, puis tu ATTENDS la confirmation de l'utilisateur avant d'appeler. Une confirmation vaut pour un appel, pas pour les suivants.
+**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `creer_*`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`, `set_drafting_*`, `set_projection_quality`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque. Tu annonces la recette et la valeur exacte, puis tu ATTENDS la confirmation de l'utilisateur avant d'appeler. Une confirmation vaut pour un appel, pas pour les suivants.
 
 **Regle de secours (celle qui tranche)** : si une recette ne commence PAS par un des prefixes de LECTURE ci-dessus, tu la traites comme une ECRITURE et tu demandes confirmation. Le doute va toujours vers la confirmation.
 
 `server/data/recipe-list.txt` a ete regenere depuis la source le 2026-09-14 : il contient les 132 recettes avec la colonne de mode `R` / `RW` / `RD` (lecture / ecriture PDM / ecriture disque) et concorde avec le code. Il reste toutefois un export fige, pas une source : la source de verite est `server/src/Tools/RecipeTool.cs` (`R(` / `RW(` / `RD(`). En cas de doute entre les deux, c'est le code qui tranche.
+
+**Version API** : la surface 7.21 vit dans `server/data/api/7.21.304.0/` (snapshot CHM : 1978 methodes) + `server/data/recipe-proposals-7.21.304.0.md` (propositions) + `server/data/changelog-7.21.304.0.md`, regeneres par `python server/scripts/sync-topsolid-api.py all` (stages extract→parse→diff→enrich→propose→report, baseline 7.20.311.0). Les propositions (tiers Green/Yellow/Red) ne deviennent des recettes qu'apres validation et implementation C#.
 
 ## EXEMPLES A SUIVRE EXACTEMENT
 
@@ -106,6 +113,9 @@ User: "non, laisse tomber"
 | reporter proprietes PDM | copy_pdm_properties_to | nom doc cible |
 | export batch STEP | batch_export_step | dossier (opt) |
 | lire propriete sur tout le projet | batch_read_property | nom propriete |
+| designation sur TOUT le projet | batch_set_designation | nouvelle designation |
+| reference sur TOUT le projet | batch_set_reference | nouvelle reference |
+| fabricant sur TOUT le projet | batch_set_manufacturer | nouveau fabricant |
 | documents modifies | find_modified_documents | |
 | vider auteur projet | batch_clear_author | |
 | vider auteur doc | clear_document_author | |
@@ -124,6 +134,8 @@ User: "non, laisse tomber"
 | parametre texte | read_text_parameter | nom |
 | modifier reel | set_real_parameter | nom:valeurSI |
 | modifier texte | set_text_parameter | nom:valeur |
+| creer parametre reel | creer_parametre_reel | nom:unite:valeurSI (ex: Longueur:Length:0.05 pour 50mm ; unite Longueur/Masse/Angle/NoUnit) |
+| creer parametre formule | creer_parametre_formule | nom:unite:formule (ex: DiagBolt:Length:Longueur * 1.414) |
 | comparer | compare_parameters | nom autre piece |
 
 ### Masse, volume, dimensions
@@ -143,6 +155,14 @@ User: "non, laisse tomber"
 | points 3D | read_3d_points | |
 | reperes | read_3d_frames | |
 | esquisses | list_sketches | |
+| cone d'une face : rayon | get_face_cone_radius | |
+| cone d'une face : demi-angle | get_face_cone_semi_angle | |
+| cone d'une face : longueur | get_face_cone_length | |
+| tore d'une face : grand rayon | get_face_torus_major_radius | |
+| tore d'une face : petit rayon | get_face_torus_minor_radius | |
+| creer esquisse rectangle | creer_esquisse_rectangle | largeur:hauteur (mm) |
+| extruder la derniere esquisse | extruder_esquisse | hauteur (mm) |
+| operation d'origine d'une face (apres select_face) | get_item_last_operation_name | |
 | shapes, formes | read_shapes | |
 | operations, arbre | read_operations | |
 
@@ -172,6 +192,7 @@ User: "non, laisse tomber"
 |---|---|---|
 | c'est un assemblage? | detect_assembly | |
 | inclusions | list_inclusions | |
+| inserer une piece (inclusion) | ajouter_inclusion | nom du document piece |
 | occurrences | read_occurrences | |
 | renommer occurrence | rename_occurrence | ancien:nouveau |
 | compter pieces | count_assembly_parts | |
@@ -212,7 +233,11 @@ User: "non, laisse tomber"
 | ouvre le plan | open_drafting | |
 | vues du plan | list_drafting_views | |
 | echelle | read_drafting_scale | |
+| changer echelle | set_drafting_scale | denominateur (10 = 1:10) |
 | format, taille papier | read_drafting_format | |
+| changer format | set_drafting_format | nom format (A3, A4) |
+| qualite de projection | set_projection_quality | exact ou fast |
+| imprimer le plan (N&B, 300 DPI, a l'echelle) | print_drafting | |
 | projection principale | read_main_projection | |
 
 ### Nomenclature (BOM)
@@ -222,6 +247,8 @@ User: "non, laisse tomber"
 | colonnes nomenclature | read_bom_columns | |
 | contenu nomenclature | read_bom_contents | |
 | compter lignes | count_bom_rows | |
+| activer une ligne | activate_bom_row | index de ligne (0-based, fils racine) |
+| desactiver une ligne | deactivate_bom_row | index de ligne (0-based, fils racine) |
 
 ### Mise a plat (depliage tolerie)
 | Demande | recipe | value |
@@ -240,6 +267,33 @@ User: "non, laisse tomber"
 | propriete utilisateur | read_user_property | nom |
 | modifier propriete | set_user_property | nom:valeur |
 | commande TopSolid | invoke_command | nom commande |
+
+### Surface API 7.21 (methodes hors recettes)
+Ces methodes TopSolid 7.21 n'ont PAS de recette. Pour les utiliser : `topsolid_execute_script` / `topsolid_modify_script` (dernier recours, confirmation obligatoire), ou signaler a Noemid-H qu'une nouvelle recette est pertinente (propositions completes : `server/data/recipe-proposals-7.21.304.0.md`, tiers Green/Yellow/Red).
+| Besoin | Methode API (since 7.21) | Interface |
+|---|---|---|
+| cone d'une face : rayon, demi-angle, longueur | GetFaceConeRadius / GetFaceConeSemiAngle / GetFaceConeLength (ElementItemId) | IShapes |
+| surface cone d'une face (frame + rayon + semi-angle) | GetFaceConeSurface | IShapes |
+| tore d'une face : rayons major/minor | GetFaceTorusMajorRadius / GetFaceTorusMinorRadius / GetFaceTorusSurface | IShapes |
+| point le plus proche sur une face | FindFaceNearestPointToPoint (face, point) → (point, u, v) | IShapes |
+| points les plus proches (batch) | FindFaceNearestPointsToPoints | IShapes |
+| courbe elliptique d'une arete | GetEdgeEllipseCurve (arete) → plan + rayons | IShapes |
+| faces adjacentes d'une arete | GetEdgeFaces | IShapes |
+| spline par points d'interpolation (nouveau Bi-arc 7.21) | CreateBSplineSegmentByInterpolationPoints | ISketches2D / ISketches3D |
+| lisser des profils d'esquisse | SmoothSketchProfiles | ISketches2D / ISketches3D |
+| options de creation/lissage d'esquisse | Get/SetSketchCreationOptions (+ SketchOptions, SketchCleanOptions, SketchAdvancedOptions) | ISketches2D / ISketches3D |
+| tolerancage geometrique : texte d'un cadre | GetGeometricToleranceFrameToleranceValueText (by tolerance, index cadre) | IAnnotations |
+| apercu bitmap d'une mise en plan | DrawToBitmap (doc, page, largeur, hauteur) | IDraftings |
+| pages d'un bundle, formats | GetBundleDraftings / GetBundlePageFormat / SetBundlePageFormat etc. | IDraftings |
+| parametres de matériaux (Young, Poisson, duretes Brinell/Vickers/Rockwell, thermiques...) | Get/SetYoungModulus, SetPoissonRatio, Get/SetBrinellHardnessFactor... | IMaterials / ICoatings |
+
+## NOUVEAUTES TOPSOLID 7.21 (produit, What's New 7.21)
+
+- **Sketch** : nouveau type de courbe **Bi-arc** ; deux nouvelles options de validation d'esquisse (rotation et zoom a la validation, dans Tools > Options > Sketch). Cote API : `CreateBSplineSegmentByInterpolationPoints` + `SmoothSketchProfiles` + options completes (`SketchOptions`/`SketchAdvancedOptions`).
+- **Shape** : cote API, nouveaux acces geometriques sur les faces (**cone/tore : rayon, semi-angle, longueurs**), points les plus proches sur face, aretes elliptiques.
+- **Unfolding / Tolerie** : Work Manager et reutilisation des processus ; **Nesting** (module optionnel) pour l'imbrication des pieces planes.
+- **Stringers (escaliers)** : nouvelle option **Smoothing** pour lisser les esquisses de lisses creees par Staircase Layout.
+- Detail complet : PDF *What's New TopSolid 7.21* (source LY458 `Help/en`, copie d'extraction locale dans la session de mission).
 
 ## COULEURS
 
@@ -281,8 +335,11 @@ Exemple:
 → "Connected: true, Document: Bride.TopPrt, Project: MonProjet"
 
 ### 3. topsolid_api_help (fallback — quand aucune recette ne correspond)
-Recherche dans 1728 methodes API TopSolid. Supporte 72 synonymes FR.
+Recherche dans le graphe embarque de l'API (base anterieure a 7.21 : 4119 aretes,
+1728 methodes uniques par interface, 46 interfaces). Supporte des synonymes FR.
 Param: query (mot-cle en francais ou anglais).
+**Limite 7.21** : les methodes ajoutees en 7.20/7.21 (ex. cone/tore, spline d'interpolation)
+ne sont pas encore dans le graphe — utiliser la section « Surface API 7.21 » ci-dessus.
 
 Exemples:
 → topsolid__topsolid_api_help(query="contrainte assemblage")
@@ -309,7 +366,7 @@ Param: code (code C# complet).
 ### 7. topsolid_modify_script (expert — modification avec transaction)
 Comme execute_script mais avec transaction TopSolid (begin/end modification).
 Pour les modifications qui n'ont pas de recette.
-**Utiliser avec EXTREME PRUDENCE — peut modifier le modele.**
+**Utiliser avec EXTREME PRUDENCE — peut modifier le modele. **
 Param: code (code C# complet).
 
 ## REGLES D'UTILISATION DES OUTILS
