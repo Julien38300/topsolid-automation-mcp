@@ -2592,6 +2592,321 @@ namespace TopSolidMcpServer.Tools
                 "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
                 "return \"Point: (\" + (selected.X * 1000).ToString(\"F2\") + \", \" + (selected.Y * 1000).ToString(\"F2\") + \", \" + (selected.Z * 1000).ToString(\"F2\") + \") mm\";") },
 
+            { "list_positionings", R("ASSEMBLIES", "Lists positioning operations of the active assembly with their constraint status",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "int count = 0;\n" +
+                "int underCount = 0;\n" +
+                "foreach (var op in ops)\n" +
+                "{\n" +
+                "    try\n" +
+                "    {\n" +
+                "        bool under = TopSolidDesignHost.Assemblies.IsPositioningUnderconstrained(op);\n" +
+                "        string name = TopSolidHost.Elements.GetFriendlyName(op);\n" +
+                "        if (under) underCount++;\n" +
+                "        sb.AppendLine(\"  \" + name + \" -> \" + (under ? \"UNDERCONSTRAINED\" : \"fully constrained\"));\n" +
+                "        count++;\n" +
+                "    }\n" +
+                "    catch { continue; }\n" +
+                "}\n" +
+                "if (count == 0) return \"No positioning found (is the active document an assembly?).\";\n" +
+                "sb.Insert(0, \"Positionings: \" + count + \" (\" + underCount + \" underconstrained)\" + System.Environment.NewLine);\n" +
+                "return sb.ToString();") },
+            { "is_positioning_underconstrained", R("ASSEMBLIES", "Tells if a positioning is underconstrained. Param: value=positioning_name (exact or substring)",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "string target = \"{value}\".Trim();\n" +
+                "if (target.Length == 0) return \"Param required: value=positioning_name (use list_positionings first).\";\n" +
+                "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
+                "foreach (var op in ops)\n" +
+                "{\n" +
+                "    try\n" +
+                "    {\n" +
+                "        bool under = TopSolidDesignHost.Assemblies.IsPositioningUnderconstrained(op);\n" +
+                "        string name = TopSolidHost.Elements.GetFriendlyName(op);\n" +
+                "        if (name.IndexOf(target, System.StringComparison.OrdinalIgnoreCase) >= 0)\n" +
+                "            return \"Positioning '\" + name + \"' is \" + (under ? \"UNDERCONSTRAINED\" : \"fully constrained\");\n" +
+                "    }\n" +
+                "    catch { continue; }\n" +
+                "}\n" +
+                "return \"Positioning '\" + target + \"' not found (use list_positionings).\";") },
+            { "get_material_brinell_hardness_factor", R("MATERIALS", "Get the Brinell hardness factor of the active material (from its standards file). Reports (also) error when no material is set",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Materials.GetBrinellHardnessFactor(docId);\n" +
+                "    return \"GetBrinellHardnessFactor of the active material: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_material_vickers_hardness_factor", R("MATERIALS", "Get the Vickers hardness factor of the active material (from its standards file). Reports (also) error when no material is set",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Materials.GetVickersHardnessFactor(docId);\n" +
+                "    return \"GetVickersHardnessFactor of the active material: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_material_glossiness_factor", R("MATERIALS", "Get the glossiness factor of the active material. Reports (also) error when no material is set",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Materials.GetGlossinessFactor(docId);\n" +
+                "    return \"GetGlossinessFactor of the active material: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_material_bump_scale", R("MATERIALS", "Get the bump texture scale factor of the active material. Reports (also) error when no material is set",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Materials.GetBumpScale(docId);\n" +
+                "    return \"GetBumpScale of the active material: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_material_bump_rotation", R("MATERIALS", "Get the bump texture rotation of the active material (radians). Reports (also) error when no material is set",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Materials.GetBumpRotation(docId);\n" +
+                "    return \"GetBumpRotation of the active material: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_material_anisotropy_angle_factor", R("MATERIALS", "Get the anisotropy angle factor of the active material. Reports (also) error when no material is set",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Materials.GetAnisotropyAngleFactor(docId);\n" +
+                "    return \"GetAnisotropyAngleFactor of the active material: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_coating_brinell_hardness_factor", R("MATERIALS", "Get the Brinell hardness factor of the active coating",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Coatings.GetBrinellHardnessFactor(docId);\n" +
+                "    return \"GetBrinellHardnessFactor of the active coating: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_coating_vickers_hardness_factor", R("MATERIALS", "Get the Vickers hardness factor of the active coating",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Coatings.GetVickersHardnessFactor(docId);\n" +
+                "    return \"GetVickersHardnessFactor of the active coating: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_coating_glossiness_factor", R("MATERIALS", "Get the glossiness factor of the active coating",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Coatings.GetGlossinessFactor(docId);\n" +
+                "    return \"GetGlossinessFactor of the active coating: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_coating_bump_scale", R("MATERIALS", "Get the bump texture scale factor of the active coating",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Coatings.GetBumpScale(docId);\n" +
+                "    return \"GetBumpScale of the active coating: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_coating_bump_rotation", R("MATERIALS", "Get the bump texture rotation of the active coating (radians)",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Coatings.GetBumpRotation(docId);\n" +
+                "    return \"GetBumpRotation of the active coating: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_coating_anisotropy_angle_factor", R("MATERIALS", "Get the anisotropy angle factor of the active coating",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    double factor = TopSolidDesignHost.Coatings.GetAnisotropyAngleFactor(docId);\n" +
+                "    return \"GetAnisotropyAngleFactor of the active coating: \" + factor.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "get_profiles_folder", R("GEOMETRY", "Gets the profiles folder entity of the active document (name + id)",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    ElementId folder = TopSolidHost.Geometries3D.GetProfilesFolder(docId);\n" +
+                "    if (folder.IsEmpty) return \"No profiles folder (this document type has none).\";\n" +
+                "    string name = \"?\";\n" +
+                "    try { name = TopSolidHost.Elements.GetFriendlyName(folder); } catch {}\n" +
+                "    return \"Profiles folder: \" + name + \" [\" + folder.ToString() + \"]\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "get_operation_version", R("GEOMETRY", "Gets the algorithm version of an operation. Param: value=operation_name (use list_operations to find it)",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "string target = \"{value}\".Trim();\n" +
+                "if (target.Length == 0) return \"Param required: value=operation_name (use list_operations to find operations).\";\n" +
+                "var ops = TopSolidHost.Operations.GetOperations(docId);\n" +
+                "foreach (var op in ops)\n" +
+                "{\n" +
+                "    string name = \"?\";\n" +
+                "    try { name = TopSolidHost.Elements.GetFriendlyName(op); } catch { continue; }\n" +
+                "    if (name.IndexOf(target, System.StringComparison.OrdinalIgnoreCase) >= 0)\n" +
+                "    {\n" +
+                "        try\n" +
+                "        {\n" +
+                "            string version = TopSolidHost.Operations.GetOperationVersion(op);\n" +
+                "            return \"Operation '\" + name + \"' algorithm version: \" + (string.IsNullOrEmpty(version) ? \"(unknown)\" : version);\n" +
+                "        }\n" +
+                "        catch (Exception ex)\n" +
+                "        {\n" +
+                "            return \"Error: \" + ex.Message;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "return \"Operation '\" + target + \"' not found (use list_operations).\";") },
+            { "get_edge_faces", R("GEOMETRY", "Lists the faces bordering a selected edge (count + names)",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select an edge\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskEdge(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    var faces = TopSolidHost.Shapes.GetEdgeFaces(selected);\n" +
+                "    var sb = new System.Text.StringBuilder();\n" +
+                "    sb.AppendLine(\"Faces bordering the edge: \" + faces.Count);\n" +
+                "    int i = 0;\n" +
+                "    foreach (var f in faces)\n" +
+                "    {\n" +
+                "        i++;\n" +
+                "        string fInfo = \"?\";\n" +
+                "        try\n" +
+                "        {\n" +
+                "            double area = TopSolidHost.Shapes.GetFaceArea(f);\n" +
+                "            fInfo = \"area=\" + (area * 1e6).ToString(\"F1\") + \" cm2\";\n" +
+                "        }\n" +
+                "        catch {}\n" +
+                "        sb.AppendLine(\"  face \" + i + \": \" + fInfo);\n" +
+                "    }\n" +
+                "    return sb.ToString();\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "get_edge_ellipse_curve", R("GEOMETRY", "Gets the ellipse (plane + radii, mm) of a selected elliptical edge",
+                "ElementItemId selected = default(ElementItemId);\n" +
+                "UserQuestion q = new UserQuestion(\"Select an elliptical edge\", \"\");\n" +
+                "UserAnswerType answer = TopSolidHost.User.AskEdge(q, default(ElementItemId), out selected);\n" +
+                "if (answer != UserAnswerType.Ok) return \"Selection cancelled.\";\n" +
+                "try\n" +
+                "{\n" +
+                "    CurveType ct = TopSolidHost.Shapes.GetEdgeCurveType(selected);\n" +
+                "    if ((int)ct == 3)\n" +
+                "    {\n" +
+                "        Plane3D plane;\n" +
+                "        double radiusX, radiusY;\n" +
+                "        TopSolidHost.Shapes.GetEdgeEllipseCurve(selected, out plane, out radiusX, out radiusY);\n" +
+                "        Point3D o = plane.Origin;\n" +
+                "        Direction3D n = plane.Normal;\n" +
+                "        var sb = new System.Text.StringBuilder();\n" +
+                "        sb.AppendLine(\"Ellipse edge:\");\n" +
+                "        sb.AppendLine(\"  RadiusX: \" + (radiusX * 1000).ToString(\"F3\") + \" mm\");\n" +
+                "        sb.AppendLine(\"  RadiusY: \" + (radiusY * 1000).ToString(\"F3\") + \" mm\");\n" +
+                "        sb.AppendLine(\"  Center: (\" + (o.X * 1000).ToString(\"F2\") + \", \" + (o.Y * 1000).ToString(\"F2\") + \", \" + (o.Z * 1000).ToString(\"F2\") + \") mm\");\n" +
+                "        sb.AppendLine(\"  Normal: (\" + n.X.ToString(\"F3\") + \", \" + n.Y.ToString(\"F3\") + \", \" + n.Z.ToString(\"F3\") + \")\");\n" +
+                "        return sb.ToString();\n" +
+                "    }\n" +
+                "    return \"The selected edge is not elliptical (curve type: \" + ct + \"). Select an ellipse edge.\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    return \"Error (is the selection an elliptical edge?): \" + ex.Message;\n" +
+                "}") },
+            { "smooth_sketch_profiles", RW("SKETCH", "Smooths the profiles of the last 2D sketch (G1 continuity). WARNING: modifies the sketch. Param: value=empty (defaults) or tolerance_mm",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "var sketches = TopSolidHost.Sketches2D.GetSketches(docId);\n" +
+                "if (sketches.Count == 0) { __message = \"No 2D sketch in this document.\"; return; }\n" +
+                "ElementId sketchId = sketches[sketches.Count - 1];\n" +
+                "string skName = \"?\";\n" +
+                "try { skName = TopSolidHost.Elements.GetFriendlyName(sketchId); } catch {}\n" +
+                "string tolText = \"{value}\".Trim();\n" +
+                "double linearTolerance = 1e-4;\n" +
+                "if (tolText.Length > 0)\n" +
+                "{\n" +
+                "    double parsed;\n" +
+                "    if (double.TryParse(tolText, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out parsed) && parsed > 0)\n" +
+                "        linearTolerance = parsed / 1000.0;\n" +
+                "}\n" +
+                "var profiles = TopSolidHost.Sketches2D.GetProfiles(sketchId);\n" +
+                "if (profiles == null || profiles.Count == 0) { __message = \"No profile found in sketch '\" + skName + \"'.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Sketches2D.StartModification(sketchId);\n" +
+                "    SmartReal zeroInfluence = new SmartReal(UnitType.Length, 0.0);\n" +
+                "    SmartReal linTol = new SmartReal(UnitType.Length, linearTolerance);\n" +
+                "    SmartReal angTol = new SmartReal(UnitType.Angle, 0.05);\n" +
+                "    SmartInteger nbPts = new SmartInteger(0);\n" +
+                "    TopSolidHost.Sketches2D.SmoothSketchProfiles(sketchId, profiles, SmoothingType.LocalWithPunctualInfluence, zeroInfluence, linTol, angTol, nbPts, true);\n" +
+                "    TopSolidHost.Sketches2D.EndModification();\n" +
+                "    __message = \"OK: profiles of sketch '\" + skName + \"' smoothed (linear tolerance=\" + (linearTolerance * 1000).ToString(\"F3\") + \" mm)\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    try { TopSolidHost.Sketches2D.EndModification(); } catch {}\n" +
+                "    __message = \"Error (sketch already modified?): \" + ex.Message;\n" +
+                "}") },
+
             { "attr_read_face_colors", R("ATTRIBUTES", "Reads individual face colors",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +

@@ -1,4 +1,4 @@
-Total recipes: 132
+Total recipes: 151
 activate_bom_row|RW|Activates a BOM row by its index (0-based, among root-children). Param: value=row_index
 ajouter_inclusion|RW|Adds an inclusion of a part document into the active assembly document. Param: value=part_document_name
 assembly_mass_report|R|Reads total mass, volume, surface and part count of an assembly
@@ -60,19 +60,37 @@ export_stl|RD|Exports to STL (3D printing). Param: value=path
 extruder_esquisse|RW|Extrudes the last 2D sketch of the active document into a 3D solid. Param: value=height_mm
 find_modified_documents|R|Lists unsaved (dirty) documents of the project
 fix_family_drivers|RW|Assigns a designation to family drivers that lack one (inferred from parameter name)
+get_coating_anisotropy_angle_factor|R|Get the anisotropy angle factor of the active coating
+get_coating_brinell_hardness_factor|R|Get the Brinell hardness factor of the active coating
+get_coating_bump_rotation|R|Get the bump texture rotation of the active coating (radians)
+get_coating_bump_scale|R|Get the bump texture scale factor of the active coating
+get_coating_glossiness_factor|R|Get the glossiness factor of the active coating
+get_coating_vickers_hardness_factor|R|Get the Vickers hardness factor of the active coating
+get_edge_ellipse_curve|R|Gets the ellipse (plane + radii, mm) of a selected elliptical edge
+get_edge_faces|R|Lists the faces bordering a selected edge (count + names)
 get_face_cone_length|R|Gets the length of a selected cone face (mm). Requires a cone face selection.
 get_face_cone_radius|R|Gets the base radius of a selected cone face (mm). Requires a cone face selection.
 get_face_cone_semi_angle|R|Gets the half-angle of a selected cone face (degrees). Requires a cone face selection.
 get_face_torus_major_radius|R|Gets the major radius of a selected torus face (mm). Requires a torus face selection.
 get_face_torus_minor_radius|R|Gets the minor radius of a selected torus face (mm). Requires a torus face selection.
 get_item_last_operation_name|R|Gets the name of the last operation that produced a selected face.
+get_material_anisotropy_angle_factor|R|Get the anisotropy angle factor of the active material. Reports (also) error when no material is set
+get_material_brinell_hardness_factor|R|Get the Brinell hardness factor of the active material (from its standards file). Reports (also) error when no material is set
+get_material_bump_rotation|R|Get the bump texture rotation of the active material (radians). Reports (also) error when no material is set
+get_material_bump_scale|R|Get the bump texture scale factor of the active material. Reports (also) error when no material is set
+get_material_glossiness_factor|R|Get the glossiness factor of the active material. Reports (also) error when no material is set
+get_material_vickers_hardness_factor|R|Get the Vickers hardness factor of the active material (from its standards file). Reports (also) error when no material is set
+get_operation_version|R|Gets the algorithm version of an operation. Param: value=operation_name (use list_operations to find it)
+get_profiles_folder|R|Gets the profiles folder entity of the active document (name + id)
 invoke_command|RW|Executes a TopSolid menu command by name. Param: value=command_name
+is_positioning_underconstrained|R|Tells if a positioning is underconstrained. Param: value=positioning_name (exact or substring)
 list_documents_without_designation|R|Lists project documents without designation (empty description)
 list_documents_without_reference|R|Lists project documents without reference (empty part number)
 list_drafting_views|R|Lists views of a drafting
 list_exporters|R|Lists all available exporters
 list_folder_documents|R|Lists documents of a specific project folder. Param: value=folder_name
 list_inclusions|R|Lists inclusions of an assembly
+list_positionings|R|Lists positioning operations of the active assembly with their constraint status
 list_project_documents|R|Lists ALL project documents with designation and reference
 list_sketches|R|Lists sketches of the document
 open_document_by_name|R|Searches and opens a document by name. Param: value=name
@@ -130,4 +148,5 @@ set_real_parameter|RW|Sets a real parameter. Param: value=name:SIvalue (e.g. Len
 set_reference|RW|Sets the reference. Param: value
 set_text_parameter|RW|Sets a text parameter. Param: value=name:value
 set_user_property|RW|Sets a text user property. Param: value=property_name:value
+smooth_sketch_profiles|RW|Smooths the profiles of the last 2D sketch (G1 continuity). WARNING: modifies the sketch. Param: value=empty (defaults) or tolerance_mm
 summarize_project|R|Project summary: document count by type, folders, size
