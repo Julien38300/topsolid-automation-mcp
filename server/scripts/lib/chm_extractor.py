@@ -144,7 +144,9 @@ def extract(chm_path: Path, out_dir: Path, *, prefer_7z: bool = True) -> Extract
     # Compute hash BEFORE copying to guard against "did you re-extract?"
     chm_hash = sha256_file(chm_path)
 
-    # Copy CHM to quote-free path for 7z
+    # Copy CHM to quote-free path: BOTH extractors choke silently on the
+    # apostrophe in the TopSolid CHM name (7z CLI parser, and hh.exe
+    # -decompile which returns rc=0 but produces 0 HTML files).
     chm_copy = _copy_chm_to_temp(chm_path)
     try:
         extractor_used = None
@@ -155,7 +157,7 @@ def extract(chm_path: Path, out_dir: Path, *, prefer_7z: bool = True) -> Extract
             except (FileNotFoundError, RuntimeError) as e:
                 print(f"[chm_extractor] 7z failed ({e}); trying hh.exe", file=sys.stderr)
         if extractor_used is None:
-            _extract_with_hh(chm_path, out_dir)  # hh.exe handles the apostrophe fine
+            _extract_with_hh(chm_copy, out_dir)  # apostrophe-free copy is mandatory
             extractor_used = "hh.exe"
     finally:
         # Clean temp copy
