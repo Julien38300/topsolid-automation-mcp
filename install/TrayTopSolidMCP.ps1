@@ -206,13 +206,13 @@ function New-StateIcon([string]$state) {
 }
 
 function Update-TrayState {
-    $s = Get-BridgeState
-    if ($s -ne $script:State) {
-        $script:State = $s
-        $icon.Icon = New-StateIcon $s
+    $bridgeState = Get-BridgeState
+    if ($bridgeState -ne $script:State) {
+        $script:State = $bridgeState
+        $icon.Icon = New-StateIcon $bridgeState
     }
     $v = Get-InstalledVersion
-    switch ($s) {
+    switch ($bridgeState) {
         'green' {
             $mEtatBridge.Text = "$($S.Bridge) : $($S.ConnBridge)"
             $mEtatTop.Text    = "$($S.TopSolid) : $($S.ConnTop)"
