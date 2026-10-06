@@ -265,15 +265,17 @@ Set-Content -Path $versionFile -Value $latestVersion -NoNewline
 Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
 Remove-Item $tempDir -Recurse -Force -ErrorAction SilentlyContinue
 
-# --- Restart the HTTP bridge if the scheduled task drives it ---
-# This updater kills TopSolidMcpServer.exe to replace the files. The HTTP bridge
-# (start-bridge.ps1 / mcp-proxy) wraps that process, so after every update the
-# 8080 endpoint stayed dead until someone remembered to re-run the
-# TopSolidMcpBridge task by hand. Restart the task automatically instead: if it
-# exists the bridge comes back with the freshly installed version; if not, the
-# user is running a plain stdio install and there is nothing to restart.
-$bridgeTask = "TopSolidMcpBridge"
-$bridgeRestarted = $false
+# --- Restart the HTTP listener if a scheduled task drives it ---
+# This updater kills TopSolidMcpServer.exe to replace the files. Since v1.8.0 the
+# HTTP endpoint is native (--http-standalone) and lives in that same process, so
+# after every update the 8080 endpoint stayed dead until someone remembered to
+# re-run the task by hand. Restart the task automatically instead: if it exists
+# the listener comes back with the freshly installed version; if not, the user
+# is running a plain stdio install and there is nothing to restart.
+# Note: the v1.7 task TopSolidMcpBridge (node/mcp-proxy bridge) is superseded by
+# the v1.8 task TopSolidMcpServer created by install\Installer_TopSolidMCP.bat.
+$bridgeTask = "TopSolidMcpServer"
+$taskRestarted = $false
 # Native commands write errors to stderr. With $ErrorActionPreference = "Stop",
 # PowerShell reinterprets redirected native stderr as a TERMINATING
 # NativeCommandError: on every machine without the scheduled task, the updater
@@ -282,13 +284,13 @@ $bridgeRestarted = $false
 $ErrorActionPreference = "Continue"
 schtasks /Query /TN $bridgeTask > $null 2>&1
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "Redemarrage du bridge HTTP (tache $bridgeTask)..."
+    Write-Host "Redemarrage du serveur HTTP (tache $bridgeTask)..."
     schtasks /End /TN $bridgeTask > $null 2>&1
     Start-Sleep -Seconds 1
     schtasks /Run /TN $bridgeTask > $null 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Bridge HTTP relance (port 8080) avec la nouvelle version." -ForegroundColor Green
-        $bridgeRestarted = $true
+        Write-Host "Serveur HTTP relance (port 8080) avec la nouvelle version." -ForegroundColor Green
+        $taskRestarted = $true
     } else {
         Write-Host "La tache $bridgeTask n'a pas pu etre relancee - demarrez-la a la main." -ForegroundColor Yellow
     }
@@ -300,7 +302,7 @@ if ($LASTEXITCODE -eq 0) {
 # original command line, captured before the kill. The relaunched process must
 # survive this PowerShell exiting: Start-Process creates an independent process
 # and we never wait on it.
-if (-not $bridgeRestarted -and $procCmdLine) {
+if (-not $taskRestarted -and $procCmdLine) {
     Write-Host "Relancement du serveur..."
     try {
         Start-Process -FilePath "$env:ComSpec" -ArgumentList "/c", $procCmdLine -WindowStyle Hidden
