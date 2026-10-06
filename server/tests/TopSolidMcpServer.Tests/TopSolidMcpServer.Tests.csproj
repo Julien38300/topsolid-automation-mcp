@@ -25,6 +25,7 @@
          hash (FileLoadException 0x800711C7). These tests exercise the pure
          update-check logic, which needs no TopSolid assemblies. -->
     <Compile Include="..\..\update-check\UpdateCheckLogic.cs" Link="UpdateCheckLogic.cs" />
+    <Compile Include="..\..\src\Protocol\HttpKeepalivePolicy.cs" Link="HttpKeepalivePolicy.cs" />
   </ItemGroup>
 
 </Project>

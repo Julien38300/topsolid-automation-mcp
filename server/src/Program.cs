@@ -179,6 +179,16 @@ namespace TopSolidMcpServer
             bool noTray = HasFlag(args, "--no-tray") || IsEnvFlagSet("TOPSOLID_MCP_NO_TRAY");
             bool readOnly = HasFlag(args, "--read-only") || IsEnvFlagSet("TOPSOLID_MCP_READ_ONLY");
 
+            // ── v1.8.0: http-standalone mode. ──
+            // The process is launched detached (scheduled task, no stdio client) and
+            // serves MCP only over the native HTTP endpoint. stdin is at EOF from the
+            // start: without this flag the process would exit right away and kill the
+            // just-started HTTP server (regression probed on the v1.8.0 staging exe).
+            // A stdio client spawn must NEVER pass this flag.
+            bool httpStandalone = HasFlag(args, "--http-standalone") || IsEnvFlagSet("TOPSOLID_MCP_HTTP_STANDALONE");
+            if (httpStandalone)
+                Console.Error.WriteLine("[MCP-INFO] http-standalone mode: the process persists after stdin EOF while the native HTTP endpoint runs.");
+
             // settings.json (written by the tray Settings submenu) fills only what CLI
             // args and env vars leave unset, so an MCP client configured with
             // --port/--read-only keeps precedence over a tray tweak.
@@ -346,6 +356,20 @@ namespace TopSolidMcpServer
                     httpServer = null;
                 }
 
+                // ── v1.8.0: never let a fresh install run wide open. ──
+                // If neither settings.json (DPAPI) nor the migration env var carries a
+                // key, the HTTP endpoint would answer any caller. Standalone installs
+                // (scheduled task, no interactive user) cannot show the tray prompt,
+                // so generate + persist a key automatically; tray installs keep the
+                // explicit user setup. The key is re-read per request (live provider),
+                // so the tray regeneration and this boot generation coexist.
+                if (httpServer != null && apiKey.Length == 0 && httpStandalone)
+                {
+                    apiKey = Protocol.McpHttpAuthLogic.GenerateKey();
+                    ApiKeyStore.SaveKey(apiKey);
+                    Console.Error.WriteLine("[MCP-INFO] http-standalone with no key configured: generated one automatically (DPAPI-stored in settings.json). Reconfigure via tray or client if needed.");
+                }
+
                 // Start tray icon (background STA thread).
                 // A headless or session-0 environment must never take the server down.
                 if (!noTray)
@@ -411,6 +435,28 @@ namespace TopSolidMcpServer
 
                 Console.Error.WriteLine("[MCP-INFO] Server ready. Listening on stdin.");
                 server.Start();
+
+                // ── v1.8.0: stdin EOF does not always mean "shut down". ──
+                // Two transports share this process: the stdio loop (MCP client on
+                // stdin) and the native HTTP endpoint (started above). Only the
+                // http-standalone mode may survive stdin EOF: that mode is started
+                // detached (scheduled task / manual launch, no stdio client), so EOF
+                // just means "started detached", not "client gone". A stdio client
+                // spawn must exit on EOF as before so the singleton mutex is released
+                // for the next client — even when it also owns a live HTTP endpoint.
+                // Decision is unit-tested: Protocol/HttpKeepalivePolicy.cs (source-
+                // linked into TopSolidMcpServer.Tests, see HttpKeepalivePolicyTests).
+                bool keepalive = HttpKeepalivePolicy.KeepRunningAfterStdinEof(
+                    httpStandalone, httpServer != null && httpServer.IsRunning);
+                if (keepalive)
+                {
+                    Console.Error.WriteLine(
+                        "[MCP-INFO] http-standalone: stdin at EOF, keeping the native HTTP endpoint on port "
+                        + httpPort + " alive (Quit via tray, or stop the task).");
+                    // Park forever: TrayIcon's Quit handler Environment.Exit(0)s the
+                    // process, which unwinds everything correctly.
+                    Thread.Sleep(Timeout.Infinite);
+                }
 
                 // stdin closed — the client is gone, release the TopSolid connection.
                 Console.Error.WriteLine("[MCP-INFO] stdin closed. Shutting down.");
