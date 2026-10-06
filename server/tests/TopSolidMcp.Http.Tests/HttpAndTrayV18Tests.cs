@@ -277,4 +277,64 @@ namespace TopSolidMcpServer.Tests
             Assert.IsTrue(ReconnectBackoff.ShouldRetry(true, false, last.AddSeconds(-70), DateTime.UtcNow, 3), "70s after attempt 3 → due");
         }
     }
+
+    // ─────────────────────────────────────────────────────────────────
+    // Origin validation (MCP HTTP transport spec — DNS rebinding defense).
+    // ValidateOrigin returns null = allowed, or an error message = reject.
+    // ─────────────────────────────────────────────────────────────────
+    [TestFixture]
+    public class OriginValidationTests
+    {
+        [TearDown]
+        public void ClearEnv()
+        {
+            Environment.SetEnvironmentVariable(McpOriginPolicy.AllowedOriginsEnvVar, null);
+        }
+
+        [TestCase(null)]
+        [TestCase("")]
+        public void NullOrEmptyOrigin_Allowed(string origin)
+        {
+            // No Origin header = CLI/MCP clients/Tailscale: the spec says allow.
+            Assert.IsNull(McpOriginPolicy.Validate(origin));
+        }
+
+        [TestCase("http://localhost:3000")]
+        [TestCase("https://localhost")]
+        [TestCase("http://127.0.0.1:8080")]
+        [TestCase("http://[::1]:9999")]
+        [TestCase("http://LOCALHOST:5000")]   // host comparison is case-insensitive
+        public void LocalOrigins_Allowed(string origin)
+        {
+            Assert.IsNull(McpOriginPolicy.Validate(origin));
+        }
+
+        [TestCase("http://intranet.corp.local")]
+        [TestCase("http://evil-attacker.com")]
+        [TestCase("https://192.168.1.50:8080")]
+        [TestCase("ftp://localhost")]
+        [TestCase("not a uri at all !!!")]
+        public void ForeignOrMalformedOrigins_Rejected(string origin)
+        {
+            Assert.IsNotNull(McpOriginPolicy.Validate(origin), "must reject: " + origin);
+        }
+
+        [Test]
+        public void AllowedOriginsEnv_ListsExtraHost()
+        {
+            Environment.SetEnvironmentVariable(McpOriginPolicy.AllowedOriginsEnvVar,
+                "http://mybox.mydomain.lan, https://dashboard.example.org");
+            Assert.IsNull(McpOriginPolicy.Validate("http://mybox.mydomain.lan"));
+            Assert.IsNull(McpOriginPolicy.Validate("https://dashboard.example.org"));
+            // The whitelist does not open everything: still reject foreign hosts.
+            Assert.IsNotNull(McpOriginPolicy.Validate("http://other.box.lan"));
+        }
+
+        [Test]
+        public void ErrorMessage_MentionsRebinding()
+        {
+            string error = McpOriginPolicy.Validate("http://evil.example.org");
+            StringAssert.Contains("DNS-rebinding", error);
+        }
+    }
 }

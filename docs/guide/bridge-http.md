@@ -129,6 +129,8 @@ La spécification MCP exige qu'un serveur HTTP local **valide l'en-tête `Origin
 
 Le pont est un `mcp-proxy` non modifié : **rien dans cette configuration ne garantit cette validation.** Ne compte donc pas dessus. Le bind sur `127.0.0.1` plus l'authentification en amont (Cloudflare Access) sont les protections sur lesquelles tu peux réellement t'appuyer.
 
+> **v1.8.0+ (endpoint HTTP natif)** : la validation d'`Origin` est **implémentée côté serveur** — sans `Origin` (CLI, clients MCP, pairs Tailscale) ou depuis `localhost`/`127.0.0.1`/`[::1]` la requête passe ; toute autre origine est rejetée en HTTP 403 (JSON-RPC `-32002`). Une origine supplémentaire (client web LAN) peut être ajoutée via la variable d'environnement `TOPSOLID_MCP_ALLOWED_ORIGINS` (séparée par des virgules). Le CORS renvoyé devient réfléchi : seul l'`Origin` autorisé est écho, jamais `*`.
+
 ### Clé d'API du pont
 
 `mcp-proxy` accepte une clé (`--apiKey`). `start-bridge.ps1` la transmet **par l'environnement**, jamais sur la ligne de commande — les arguments de processus sont lisibles par n'importe quel utilisateur local et finissent dans les journaux d'audit :

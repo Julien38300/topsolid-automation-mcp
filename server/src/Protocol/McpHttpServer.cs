@@ -80,6 +80,16 @@ namespace TopSolidMcpServer.Protocol
             try { _listener?.Close(); } catch { }
         }
 
+        /// <summary>
+        /// Validates the Origin header per the MCP HTTP transport spec (DNS rebinding).
+        /// The logic lives in <see cref="McpOriginPolicy"/> (pure, unit-tested); kept
+        /// here for the handler's readability.
+        /// </summary>
+        internal static string ValidateOrigin(string origin)
+        {
+            return McpOriginPolicy.Validate(origin);
+        }
+
         private void AcceptLoop()
         {
             while (_running)
@@ -96,8 +106,21 @@ namespace TopSolidMcpServer.Protocol
         {
             try
             {
-                // CORS for local web clients (harmless: auth still required).
-                ctx.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                // MCP spec (HTTP transport): a local server MUST validate the Origin
+                // header — browsers always send it on cross-site POSTs, so a request
+                // carrying a non-local Origin is rejected (DNS rebinding defense).
+                // No Origin at all (curl, MCP clients, Tailscale peers) is allowed.
+                string requestOrigin = ctx.Request.Headers["Origin"];
+                string originError = ValidateOrigin(requestOrigin);
+                if (originError != null)
+                {
+                    WriteJson(ctx, 403, "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32002,\"message\":\"" + originError + "\"}}");
+                    return;
+                }
+
+                // CORS for allowed local web clients only (harmless: auth still required).
+                if (requestOrigin != null)
+                    ctx.Response.Headers["Access-Control-Allow-Origin"] = requestOrigin;
                 if (ctx.Request.HttpMethod == "OPTIONS")
                 {
                     ctx.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, X-API-Key, Mcp-Session-Id, Mcp-Protocol-Version";

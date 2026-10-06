@@ -47,6 +47,8 @@ Since **v1.8.0** the tray also handles:
 
 Then point your MCP client at `http://127.0.0.1:8080/mcp` (v1.8.0+: the native endpoint, `X-API-Key` required as soon as a key is defined). Details: [`install/README.md`](./install/README.md).
 
+The native endpoint validates the `Origin` header per the MCP HTTP transport spec (DNS-rebinding defense): no Origin (CLI/MCP clients) and `localhost`/`127.0.0.1`/`[::1]` origins are allowed, any other host is rejected with HTTP 403; extra origins can be whitelisted with the `TOPSOLID_MCP_ALLOWED_ORIGINS` environment variable.
+
 **Manual path (developers / headless machines):**
 
 1. Enable remote access in TopSolid: **Tools > Options > General > Automation** → check "Manage remote access", port 8090, restart TopSolid.

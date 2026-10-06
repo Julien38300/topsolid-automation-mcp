@@ -22,6 +22,7 @@
          machines blocks freshly built binaries by hash, FileLoadException 0x800711C7).
          Same pattern as the UpdateCheckLogic tests. -->
     <Compile Include="..\..\src\Protocol\McpHttpAuthLogic.cs" Link="McpHttpAuthLogic.cs" />
+    <Compile Include="..\..\src\Protocol\McpOriginPolicy.cs" Link="McpOriginPolicy.cs" />
     <Compile Include="..\..\src\Utils\ApiKeyStore.cs" Link="ApiKeyStore.cs" />
     <Compile Include="..\..\src\Utils\GitHubFeedbackLogic.cs" Link="GitHubFeedbackLogic.cs" />
     <Compile Include="..\..\src\Utils\ReconnectBackoff.cs" Link="ReconnectBackoff.cs" />
