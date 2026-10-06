@@ -20,7 +20,7 @@ An MCP server written in C# (.NET Framework 4.8) that exposes the TopSolid 7 Aut
 - A **dry-run compile check** — the script is compiled against the TopSolid assemblies without being run, so hallucinated APIs and syntax errors surface before execution. It uses `CSharpCodeProvider` (the `csc` compiler bundled with the .NET Framework), **not** Roslyn: generated snippets are therefore compiled as **C# 5**, which is why string interpolation (`$"..."`) is rejected everywhere in generated code.
 - Corpus search over local user-provided C# examples (paths configured locally, never shipped).
 
-Plus an optional **HTTP/SSE bridge** for remote clients (claude.ai web, mobile apps, server-side agents).
+Plus a **native HTTP endpoint** for remote clients (claude.ai web, mobile apps, server-side agents) — Streamable HTTP (MCP spec `2025-03-26`) on port 8080, `X-API-Key` protected, Origin-validated, no Node.js required.
 
 ## Quick start
 
@@ -32,11 +32,11 @@ Plus an optional **HTTP/SSE bridge** for remote clients (claude.ai web, mobile a
 
 ### Install
 
-**The easy way (v1.7.0+) — one double-click, no terminal:**
+**The easy way (v1.8.0+) — one double-click, no terminal, no Node.js:**
 
 1. Download the [latest release](https://github.com/Julien38300/topsolid-automation-mcp/releases/latest) and unzip it.
-2. Double-click `install\Installer_TopSolidMCP.bat` — it installs Node.js if missing, sets up the HTTP bridge, asks for the API key in a GUI dialog, and registers auto-start.
-3. A tray icon appears next to the clock: it runs, watches (every 30 s) and restarts the bridge by itself. Right-click for Status / Restart / Stop.
+2. Double-click `install\Installer_TopSolidMCP.bat` — it generates the API key (DPAPI-encrypted in `settings.json`), creates the scheduled task that auto-starts the native server on port 8080, and cleans up any legacy v1.7 Node bridge.
+3. A tray icon appears next to the clock: one process serves stdio and native HTTP. Right-click for Status / Restart / Stop / API key.
 
 Since **v1.8.0** the tray also handles:
 
@@ -96,7 +96,7 @@ Practical consequences:
 
 - **Do not add `topsolid_execute_script` or `topsolid_modify_script` to the auto-approved / always-allow tool list of your MCP client.** Read each script before you let it run.
 - Run the server with `--read-only` (or `TOPSOLID_MCP_READ_ONLY=1`) when you only need to query: `topsolid_modify_script` is then not registered at all, and recipes run in read-only mode.
-- Do not expose the HTTP bridge publicly without authentication — see the [bridge guide](https://julien38300.github.io/topsolid-automation-mcp/guide/bridge-http).
+- Do not expose the HTTP endpoint publicly without authentication — see the [HTTP guide](https://julien38300.github.io/topsolid-automation-mcp/guide/bridge-http).
 
 ## Data sources & attribution
 
@@ -117,14 +117,14 @@ TopSolid ships a powerful .NET Automation API, but it is hard to discover: 1728 
 
 ```
 topsolid-automation-mcp/
-├── server/        TopSolid MCP Server (.NET 4.8, stdio JSON-RPC)
+├── server/        TopSolid MCP Server (.NET 4.8, stdio + native HTTP, 2 transports, 1 process)
 │   ├── src/       Program.cs, Protocol/, Tools/, Utils/
 │   ├── data/      Data shipped next to the .exe: graph.json, help.db,
 │   │              commands-catalog.json, recipe-list.txt, recipes.md
 │   ├── scripts/   build-release.ps1, update.ps1, sync-topsolid-api.py
 │   └── models/    Ollama Modelfile for the local code sub-agent
 ├── graph/         API graph builder (.NET 4.8, reflection-based)
-├── bridge/        HTTP/SSE bridge for remote clients (Node, mcp-proxy wrapper)
+├── bridge/        Legacy HTTP/SSE bridge (v1.7, superseded by the native endpoint — kept for migration)
 ├── scripts/       Graph enrichment, help index, commands catalog, privacy scan (Python)
 ├── data/          Build-time artefacts: graph.json, api-index.json,
 │                  recipe-name-mapping-fr-en.json, recipes.md

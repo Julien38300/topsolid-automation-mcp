@@ -16,7 +16,7 @@
 | Phase 9a | LoRA 3B v7 (96% eval, PROD) | 100% |
 | Phase 9b | Codestral 22B vanilla + enhanced Modelfile (PROD) | 100% |
 | Phase 10 | Test & validation complete | 85% |
-| Phase 11 | Bridge HTTP/SSE (mcp-proxy, Streamable HTTP + SSE legacy) | 100% |
+| Phase 11 | Bridge HTTP/SSE (v1.7, mcp-proxy) — remplacé par l'endpoint HTTP natif en v1.8.0 | Done |
 
 ## Chiffres cles (2026-05-05, v1.6.7)
 
@@ -30,7 +30,7 @@
 - **2164 paires** dataset LoRA v7 (ShareGPT EN, eval 96%)
 - **5809 pages** d'aide en ligne indexees en SQLite FTS5 (~20 MB embedded)
 - `ministral-topsolid:latest` (3B LoRA v7, 96%) + `codestral:22b` (vanilla, 97.5% Pattern D)
-- **Bridge HTTP/SSE** integre (`bridge/`) — Streamable HTTP + SSE legacy, expose le serveur stdio via `mcp-proxy`
+- **Endpoint HTTP natif v1.8.0** : Streamable HTTP embarque dans `TopSolidMcpServer.exe` (`--http-standalone`), validation d'`Origin` + cle `X-API-Key` natifs, sans Node.js ; le bridge `mcp-proxy` v1.7 reste disponible dans `bridge/` pour migration.
 
 ## Prochaines etapes
 

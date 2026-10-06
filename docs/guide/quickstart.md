@@ -5,15 +5,15 @@
 - **TopSolid 7.15+** installe et lance
 - **Windows 10+** (.NET Framework 4.8 inclus)
 
-## La voie noob — tout en double-clic (v1.7.0+)
+## La voie noob — tout en double-clic (v1.8.0+)
 
-Depuis la v1.7.0, le zip de release contient un dossier `install/` qui rend le bridge HTTP/SSE accessible sans aucune ligne de commande :
+Depuis la v1.8.0, le zip de release contient un dossier `install/` qui rend le serveur natif HTTP accessible sans aucune ligne de commande, sans Node.js :
 
 1. **Dezipper** la release, par exemple dans `C:\TopSolidMCP\`
 2. **Double-clic** sur `install\Installer_TopSolidMCP.bat`
-3. **Suivre la fenetre** : Node.js installe tout seul si absent, la cle API se saisit dans une boite de dialogue graphique, le demarrage automatique s'enregistre tout seul
+3. **Suivre la fenetre** : la cle API se genere toute seule (chiffree DPAPI dans `settings.json`, copiee dans le presse-papiers), la tache planifiee de demarrage automatique s'enregistre toute seule, les restes d'une ancienne installation bridge v1.7 sont nettoyés
 
-Une icone apparait pres de l'horloge (systray) : elle demarre le bridge, le surveille toutes les 30 s et le relance si le port 8080 meurt. Clic droit pour Statut / Redemarrer / Arreter. Details dans [`install/README.md`](https://github.com/Julien38300/topsolid-automation-mcp/blob/main/install/README.md).
+Un processus unique tourne : le serveur natif (stdio + endpoint HTTP sur le port 8080). L'icône près de l'horloge (systray) en est le reflet. Clic droit pour Statut / Redemarrer / Arreter / Clé API. Details dans [`install/README.md`](https://github.com/Julien38300/topsolid-automation-mcp/blob/main/install/README.md).
 
 ::: tip v1.8.0+ — tray enrichi
 Depuis la **v1.8.0**, l'icône tray gère aussi :
@@ -27,7 +27,7 @@ Depuis la **v1.8.0**, l'icône tray gère aussi :
 L'URL a donner a votre assistant IA reste la meme : `http://127.0.0.1:8080/mcp`.
 
 ::: details La voie manuelle (developpeurs / serveurs sans session graphique)
-Suivre les etapes 1 a 4 ci-dessous pour piloter le bridge a la main.
+Suivre les etapes ci-dessous pour demarrer le serveur a la main.
 :::
 
 ## Etape 1 — Activer l'acces distant dans TopSolid
@@ -60,41 +60,39 @@ dotnet build TopSolidMcpServer.sln
 L'executable sera dans `server/src/bin/Debug/net48/TopSolidMcpServer.exe`.
 :::
 
-## Etape 3 — Demarrer le bridge HTTP/SSE (recommande)
+## Etape 3 — Demarrer le serveur (HTTP natif recommande)
 
-::: tip Pourquoi le bridge ?
-Le bridge lance le serveur **une seule fois** et l'expose comme un endpoint HTTP local. Tous vos clients IA s'y connectent via une simple URL — sans chemin vers l'exe, sans redemarrer les clients quand le serveur change, et avec la possibilite d'ouvrir le bridge a claude.ai web ou mobile via un tunnel.
+::: tip Pourquoi le serveur HTTP natif ?
+Depuis la v1.8.0, l'executable embarque lui-meme l'endpoint HTTP : **un seul process** sert a la fois stdio (client configure en `command`) et HTTP natif (clients configures en `url`). Tous vos clients IA HTTP s'y connectent via une simple URL — sans chemin vers l'exe, sans redemarrer les clients quand le serveur change, et avec la possibilite d'ouvrir l'endpoint a claude.ai web ou mobile via un tunnel authentifie.
 
-Sans bridge (mode stdio), chaque client IA relance un processus `TopSolidMcpServer.exe` separement. Ca marche, mais c'est plus lourd a configurer et le serveur singleton bloque le deuxieme client.
+En mode stdio seul, chaque client IA relance un processus `TopSolidMcpServer.exe` separement. Ca marche, mais c'est plus lourd a configurer et le serveur singleton bloque le deuxieme client.
 :::
 
-**Prerequis : Node.js 18+** ([nodejs.org](https://nodejs.org/))
+**Aucun prerequis supplementaire** — pas de Node.js, tout est dans l'executable.
 
-::: tip Le bridge est dans le zip depuis la v1.7.0
+::: tip Le serveur natif est dans le zip depuis la v1.8.0
 Les etapes ci-dessous restent utiles pour les developpeurs et les serveurs sans session graphique. Pour l'experience complete sans terminal, utilise le dossier `install/` du zip (voir la voie noob en haut de cette page).
 :::
 
 ```powershell
-cd <depot>\bridge
-npm install          # premiere fois uniquement
-.\start-bridge.ps1   # demarre le bridge
+cd C:\TopSolidMCP
+.\TopSolidMcpServer.exe --http-standalone
 ```
 
 Sortie attendue :
 ```
-[bridge] stdio server: C:\TopSolidMCP\TopSolidMcpServer.exe
-[bridge] HTTP endpoint : http://127.0.0.1:8080/mcp   <- copiez cette URL
-[bridge] SSE (legacy)  : http://127.0.0.1:8080/sse
-[bridge] Auth          : NONE -- 127.0.0.1 bind only.
+[MCP-INFO] Native HTTP MCP endpoint started on port 8080
+[MCP-INFO] http-standalone mode: the process persists after stdin EOF while the HTTP listener is alive
+[MCP-INFO] API key: read from settings.json (DPAPI) / TOPSOLID_MCP_API_KEY / auto-generated
 ```
 
-Laissez ce terminal ouvert. Le bridge tourne tant que la fenetre est ouverte.
+Laissez ce terminal ouvert. Le serveur tourne tant que la fenetre est ouverte ; l'installer cree la tache planifiee qui fait la meme chose sans console.
 
 ## Etape 4 — Configurer votre assistant IA
 
-### Mode bridge (recommande) — une URL pour tous
+### Mode HTTP natif (recommande) — une URL pour tous
 
-Une fois le bridge demarre, la config est identique pour tous les clients :
+Une fois le serveur demarre (ou via l'installer), la config est identique pour tous les clients :
 
 ::: code-group
 ```json [Claude Desktop]
@@ -142,9 +140,9 @@ claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp
 ```
 :::
 
-### Mode stdio (alternatif) — sans bridge, un client a la fois
+### Mode stdio (alternatif) — un client a la fois
 
-Si vous ne voulez pas utiliser le bridge ou n'avez pas Node.js :
+Si vous preferez piloter le serveur depuis un seul client (sans HTTP) :
 
 ```json
 {
@@ -204,12 +202,12 @@ Ne les mettez pas dans la liste des outils toujours autorises de votre client MC
 
 ### claude.ai (web + app Windows)
 
-claude.ai accepte uniquement des MCP distants via URL. Il faut donc exposer le bridge — et l'exposer **authentifie**.
+claude.ai accepte uniquement des MCP distants via URL. Il faut donc exposer le serveur via un tunnel — et l'exposer **authentifie**.
 
-::: danger Le pont donne un acces distant a votre machine
-Publier le bridge, c'est publier `topsolid_execute_script` et `topsolid_modify_script`, qui executent du code arbitraire sur votre poste. Un tunnel nu `trycloudflare.com`, sans authentification, suffit a quiconque connait l'URL.
+::: danger Le tunnel donne un acces distant a votre machine
+Publier l'endpoint, c'est publier `topsolid_execute_script` et `topsolid_modify_script`, qui executent du code arbitraire sur votre poste. Un tunnel nu `trycloudflare.com`, sans authentification, suffit a quiconque connait l'URL.
 
-Passez par un **tunnel nomme derriere Cloudflare Access** — procedure detaillee dans le [guide du bridge](./bridge-http#solution-recommandee-cloudflare-access-gratuit). Le tunnel nu n'est pas recommande.
+Passez par un **tunnel nomme derriere Cloudflare Access** — procedure detaillee dans le [guide HTTP](./bridge-http#solution-recommandee-cloudflare-access-gratuit). Le tunnel nu n'est pas recommande.
 :::
 
 Une fois l'application Cloudflare Access en place, dans claude.ai : **Settings → Connecteurs → Ajouter un connecteur personnalise** → `https://topsolid-mcp.votredomaine.com/mcp`

@@ -176,19 +176,15 @@ Verifier que :
 3. Aucun pare-feu ne bloque le port 8090 en local
 4. TopSolid est bien en cours d'execution (pas juste le lanceur)
 
-## Le bridge ne demarre pas : `MODULE_NOT_FOUND` / `mcp-proxy` introuvable
+## Le serveur ne demarre pas / version node legacy (v1.7) residuelle
 
-Si `start-bridge.ps1` ou un `.bat` qui lance `npx mcp-proxy` echoue avec une erreur Node du type `Cannot find module '...mcp-proxy\dist\cli.js'` :
+Depuis la **v1.8.0**, il n'y a plus de Node.js ni de bridge : `TopSolidMcpServer.exe` embarque l'endpoint HTTP natif (`--http-standalone`). Si vous venez d'une v1.7.x :
 
-1. **Une installation npm corrompue** — `bridge/node_modules/mcp-proxy/dist` peut ne contenir qu'un fichier vide apres une install interrompue. Reinstalle proprement :
-   ```powershell
-   cd bridge
-   Remove-Item -Recurse -Force node_modules, package-lock.json
-   npm install
-   ```
-2. **Le point d'entree de mcp-proxy a change** — depuis mcp-proxy 6.x, le binaire reel est `dist/bin/mcp-proxy.mjs`, pas `dist/cli.js`. `start-bridge.ps1` passe par `npx`, qui lit `node_modules/.bin/mcp-proxy` et trouve le bon point d'entree tout seul — c'est un `.bat` maison qui code `dist\cli.js` en dur qui casse. **Utilise `start-bridge.ps1`, pas un wrapper `npx`/`node` ecrit a la main.**
-3. **`npx` telecharge une version non pinnee** — si `bridge/node_modules/mcp-proxy` manque, `npx` telecharge la derniere version au lieu du 6.4.6 pinne dans `package-lock.json`. `start-bridge.ps1` refuse alors de demarrer avec une cle d'API (fail-closed, voir [bridge/README.md](https://github.com/Julien38300/topsolid-automation-mcp/blob/main/bridge/README.md)) — lance `npm install` dans `bridge/` d'abord.
+1. Supprimez l'ancien setup : taches planifiees `TopSolidMcpBridge` et `TopSolidMcpTray`, raccourci Startup du tray PS1 (details dans [integration du v1.8](./integration)).
+2. Installez la v1.8 : double-clic `install\Installer_TopSolidMCP.bat` — il fait le nettoyage v1.7 tout seul puis installe l'exe natif.
+3. Si l'exe ne demarre pas, verifiez que le port 8080 n'est pas deja occupe (un node v1.7 qui tourne encore) : `Get-NetTCPConnection -LocalPort 8080 -State Listen`, tuez le process node puis relancez.
 
+Les problemes specifiques Node v1.7 (mcp-proxy) ne s'appliquent plus : la v1.8.0 n'utilise plus Node.
 ## Mise a jour du serveur
 
 Le serveur inclut un script de mise a jour automatique :

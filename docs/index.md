@@ -33,7 +33,7 @@ features:
     details: 2428 commandes TopSolid indexees (tout module confondu). FullName pret a invoke_command. Couvre les actions non exposees par l'API Automation.
     icon: "&#x1F5C3;"
   - title: Bridge HTTP/SSE
-    details: Exposez le serveur stdio local a claude.ai web / ChatGPT / apps mobiles via un simple wrapper Node (mcp-proxy + tunnel Cloudflare).
+    details: Exposez le serveur local a claude.ai web / ChatGPT / apps mobiles : endpoint Streamable HTTP natif dans l'exe (aucun Node.js) + tunnel Cloudflare authentifie.
     icon: "&#x1F310;"
 ---
 

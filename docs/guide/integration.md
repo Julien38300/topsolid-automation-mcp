@@ -1,30 +1,24 @@
 # Integration avec un client MCP
 
-TopSolid MCP supporte deux modes de connexion. Le bridge HTTP/SSE est recommande pour la majorite des cas.
+TopSolid MCP supporte deux modes de connexion. L'endpoint HTTP natif est recommande pour la majorite des cas.
 
 ## Deux modes de connexion
 
-| | **Bridge HTTP/SSE** (recommande) | **Stdio direct** (alternatif) |
+| | **HTTP natif** (recommande) | **Stdio direct** (alternatif) |
 |---|---|---|
-| Demarrage | `.\start-bridge.ps1` une fois | Automatique par le client |
-| Config client | `"url": "http://127.0.0.1:8080/mcp"` | `"command": "C:\\...\\TopSolidMcpServer.exe"` |
+| Demarrage | `install\Installer_TopSolidMCP.bat` une fois (ou `TopSolidMcpServer.exe --http-standalone`) | Automatique par le client |
+| Config client | `"url": "http://127.0.0.1:8080/mcp"` | `"command": "C:\...\TopSolidMcpServer.exe"` |
 | Multi-clients simultanes | Oui | Non (singleton) |
 | claude.ai web / app | Oui (via tunnel) | Non |
-| Node.js requis | Oui (18+) | Non |
+| Node.js requis | **Non** (natif dans l'exe) | Non |
 
-**Pour demarrer le bridge :** (le dossier `bridge/` vient du depot, il n'est pas dans le zip de release)
-```powershell
-cd <depot>\bridge
-npm install        # premiere fois
-.\start-bridge.ps1
-```
-Laissez le terminal ouvert. Le bridge reste actif jusqu'a ce que vous le fermiez.
+**Le serveur vient dans le zip de release** : dezipper, double-clic sur `install\Installer_TopSolidMCP.bat` (voie noob) ou lancer l'exe avec `--http-standalone`. Laissez la console ouverte ; en usage quotidien, l'installer a deja cree la tache planifiee qui fait le travail.
 
 ---
 
 ## Clients compatibles
 
-| Client | Stdio | HTTP/SSE bridge | Notes |
+| Client | Stdio | HTTP natif | Notes |
 |--------|-------|-----------------|-------|
 | **Claude Desktop** | Oui | Oui | |
 | **Claude Code** (terminal) | Oui | Oui | |
@@ -49,7 +43,7 @@ Laissez le terminal ouvert. Le bridge reste actif jusqu'a ce que vous le fermiez
 Acces : Claude Desktop → menu hamburger → Settings → Developer → Edit Config.
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "mcpServers": {
     "topsolid": {
@@ -76,7 +70,7 @@ Quittez completement Claude Desktop (clic droit icone notification > Quit) et re
 ## Claude Code (terminal)
 
 ::: code-group
-```powershell [Via bridge (recommande)]
+```powershell [Via HTTP (recommande)]
 claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp
 claude mcp list   # verification
 ```
@@ -88,7 +82,7 @@ claude mcp add topsolid C:\TopSolidMCP\TopSolidMcpServer.exe
 Ou en fichier `.mcp.json` a la racine du projet :
 
 ::: code-group
-```json [Via bridge]
+```json [Via HTTP]
 {
   "mcpServers": {
     "topsolid": {
@@ -122,7 +116,7 @@ Ou en fichier `.mcp.json` a la racine du projet :
 **Option B — Via fichier** `%USERPROFILE%\.cursor\mcp.json` :
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "mcpServers": {
     "topsolid": {
@@ -149,7 +143,7 @@ Ou en fichier `.mcp.json` a la racine du projet :
 `Ctrl+Shift+P` → `Windsurf: Configure MCP Servers`, ou editez directement `%USERPROFILE%\.codeium\windsurf\mcp_config.json` :
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "mcpServers": {
     "topsolid": {
@@ -180,7 +174,7 @@ GitHub Copilot supporte MCP depuis VS Code 1.99+ (avril 2025), en mode **Agent**
 **Etape 2 :** Creez `.vscode/mcp.json` a la racine du projet :
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "servers": {
     "topsolid": {
@@ -213,7 +207,7 @@ Selectionnez le mode **Agent** en haut du panneau Chat (pas "Edit" ni "Ask").
 **File** > **Settings** > **Tools** > **AI Assistant** > **Model Context Protocol (MCP)** > **+** > **As JSON** :
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "mcpServers": {
     "topsolid": {
@@ -244,7 +238,7 @@ Si vous avez deja configure Claude Desktop, cliquez **Import from Claude Desktop
 Ces extensions VS Code ont leur propre gestion MCP. Ouvrez leur panel → Settings → MCP Servers → Edit Config :
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "mcpServers": {
     "topsolid": {
@@ -275,7 +269,7 @@ Sauvegardez (`Ctrl+S`). L'extension detecte le changement automatiquement. Verif
 Editez `~/.continue/config.json` :
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "experimental": {
     "modelContextProtocolServers": [
@@ -314,7 +308,7 @@ Configuration pour le framework multi-agents OpenClaw.
 Dans `~/.openclaw/openclaw.json`, le serveur MCP TopSolid peut etre configure en HTTP ou stdio :
 
 ::: code-group
-```json [Via bridge (recommande)]
+```json [Via HTTP (recommande)]
 {
   "agents": {
     "topsolid": {
@@ -348,20 +342,20 @@ Le sous-agent TopSolid est configure dans `~/.openclaw/agents/topsolid/agent/sys
 
 ## claude.ai (web + app Windows)
 
-claude.ai accepte uniquement des serveurs MCP distants via URL. Le bridge HTTP/SSE, expose via un tunnel, permet cette connexion.
+claude.ai accepte uniquement des serveurs MCP distants via URL. L'endpoint HTTP natif, expose via un tunnel, permet cette connexion.
 
-::: danger Ce que le pont expose
-Le pont publie sur Internet des outils qui **compilent et executent du code arbitraire sur votre poste** (`topsolid_execute_script`, `topsolid_modify_script`) ainsi que les recettes d'ecriture PDM. Une URL de tunnel nu, sans authentification, suffit a quiconque la connait pour piloter votre TopSolid et votre systeme de fichiers.
+::: danger Ce que le tunnel expose
+L'endpoint publielie sur Internet des outils qui **compilent et executent du code arbitraire sur votre poste** (`topsolid_execute_script`, `topsolid_modify_script`) ainsi que les recettes d'ecriture PDM. Une URL de tunnel nu, sans authentification, suffit a quiconque la connait pour piloter votre TopSolid et votre systeme de fichiers.
 
 Mettez **Cloudflare Access** (ou un equivalent) devant le tunnel avant d'y brancher quoi que ce soit. Le tunnel nu `trycloudflare.com` n'est pas recommande, meme temporairement.
 :::
 
 Etapes resumees :
-1. Demarrez le bridge (`.\start-bridge.ps1`)
-2. Publiez-le derriere un tunnel **nomme + Cloudflare Access** — procedure detaillee dans le [guide Bridge HTTP/SSE](./bridge-http#solution-recommandee-cloudflare-access-gratuit)
+1. Demarrez le serveur (`install\Installer_TopSolidMCP.bat` ou `TopSolidMcpServer.exe --http-standalone`)
+2. Publiez-le derriere un tunnel **nomme + Cloudflare Access** — procedure detaillee dans le [guide HTTP](./bridge-http#solution-recommandee-cloudflare-access-gratuit)
 3. claude.ai → Settings → Connecteurs → Ajouter → `https://topsolid-mcp.votredomaine.com/mcp`
 
-Voir le **[guide complet Bridge HTTP/SSE](./bridge-http)** pour l'installation pas-a-pas, la securite et le troubleshooting.
+Voir le **[guide HTTP complet](./bridge-http)** pour l'installation pas-a-pas, la securite et le troubleshooting.
 
 ---
 
@@ -414,7 +408,7 @@ Le fichier `graph.json` n'est pas au bon endroit. Le serveur cherche dans :
 3. En remontant 3 niveaux (mode developpement)
 
 ### `Another TopSolidMcpServer instance is already running`
-Le serveur est un singleton (un seul processus). Avec le bridge, un seul processus sert tous les clients — ce message ne doit pas apparaitre.
+Le serveur est un singleton (un seul processus). Avec le mode HTTP natif, un seul processus sert tous les clients — ce message ne doit pas apparaitre.
 En mode stdio avec plusieurs clients, forcez l'arret :
 ```powershell
 Get-Process TopSolidMcpServer -ErrorAction SilentlyContinue | Stop-Process
@@ -425,6 +419,6 @@ Normal dans TopSolid v7.20 (bug connu). Le serveur verifie via `TopSolidHost.Ver
 
 ### Les outils n'apparaissent pas
 1. Verifiez que **TopSolid est ouvert** avant de lancer le client IA
-2. En mode bridge : verifiez que `.\start-bridge.ps1` tourne dans un terminal
+2. En mode HTTP : verifiez que le serveur tourne (icone systray, ou `Get-NetTCPConnection -LocalPort 8080 -State Listen`)
 3. En mode stdio : verifiez le **chemin vers l'exe** (doubles backslashs `\\`)
 4. **Quittez completement** le client IA et relancez (pas juste fermer la fenetre)
