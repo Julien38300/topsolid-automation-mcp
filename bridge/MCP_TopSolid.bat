@@ -27,11 +27,11 @@ if not exist "node_modules\mcp-proxy" (
     echo.
 )
 
-REM --- Charger la cle API (env var utilisateur d'abord, puis config Hermes si presente) ---
+REM --- Charger la cle API (env var utilisateur d'abord, puis un fichier de cle si presente) ---
 set "APIKEY="
 for /f "usebackq delims=" %%K in (`powershell -NoProfile -Command "[Environment]::GetEnvironmentVariable('TOPSOLID_MCP_API_KEY','User')"`) do set "APIKEY=%%K"
-if "%APIKEY%"=="" if exist "N:\Noemid_System\hermes\config.yaml" (
-    for /f "usebackq delims=" %%K in (`powershell -NoProfile -Command "(Get-Content 'N:\Noemid_System\hermes\config.yaml' | Select-String 'X-API-Key').Line.Split(':')[1].Trim()"`) do set "APIKEY=%%K"
+if "%APIKEY%"=="" if exist "X:\chemin\ma-cle.txt" (
+    for /f "usebackq delims=" %%K in (`powershell -NoProfile -Command "(Get-Content 'X:\chemin\ma-cle.txt' | Select-String 'X-API-Key').Line.Split(':')[1].Trim()"`) do set "APIKEY=%%K"
 )
 if "%APIKEY%"=="" (
     echo ATTENTION: pas de cle API trouvee - le bridge refusera de demarrer en mode -Open.
