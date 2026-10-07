@@ -24,7 +24,7 @@
 - **1728 methodes** uniques couvertes, **242 nodes**, **46 interfaces**
 - **1193 edges** portent un champ `Examples`, **vide dans le graphe redistribue** (les snippets viennent de corpora prives, non redistribuables)
 - **85%** d'edges avec hints semantiques FR/EN, **90%** avec description
-- **151 recettes** RecipeTool (Tier 1/2/3 — PDM, parametres, export, assemblages, familles, mise en plan, BOM, creation, proprietes utilisateur, batch PDM)
+- **195 recettes** RecipeTool (Tier 1/2/3 — PDM, parametres, export, assemblages, familles, mise en plan, BOM, creation, proprietes utilisateur, batch PDM)
 - **2428 commandes UI** indexees en Layer 2 (outil `topsolid_search_commands`)
 - **13 outils MCP** : run_recipe, list_recipes, get_state, execute_script, modify_script, api_help, find_path, explore_paths, get_recipe, compile, search_examples, search_help, search_commands
 - **2164 paires** dataset LoRA v7 (ShareGPT EN, eval 96%)

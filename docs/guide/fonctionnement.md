@@ -59,7 +59,7 @@
 │  ┌─────────────┐  ┌──────────────┐  ┌───────────────┐  │
 │  │ get_state   │  │ api_help     │  │ run_recipe    │  │
 │  │             │  │              │  │               │  │
-│  │ Etat de     │  │ Cherche dans │  │ 151 recettes  │  │
+│  │ Etat de     │  │ Cherche dans │  │ 195 recettes  │  │
 │  │ TopSolid    │  │ 1728 methodes│  │ pre-codees    │  │
 │  │ connexion   │  │ 72 synonymes │  │ Le LLM choisit│  │
 │  │ document    │  │ FR/EN        │  │ par nom       │  │
@@ -150,7 +150,7 @@ A mesure qu'on ajoute des recettes, le mode 3B couvre de plus en plus de cas.
 | **list_recipes** | Sert le catalogue des recettes a la demande (filtre categorie / mot-cle) | Evite d'inliner ~1300 tokens de noms de recettes dans le descripteur de run_recipe a chaque session. |
 | **execute_script** | Compile et execute du C# libre, en pleine confiance dans le process du serveur | La puissance brute : peut tout faire si le code est correct — et tout casser. A ne jamais auto-approuver. |
 | **modify_script** | Comme execute_script + auto-wrap modification/save | Pour les ecritures : gere StartModification/EndModification/Save. |
-| **RecipeTool** | 151 recettes pre-construites en C# | La reference pour les humains et les LLM : comment faire chaque operation. |
+| **RecipeTool** | 195 recettes pre-construites en C# | La reference pour les humains et les LLM : comment faire chaque operation. |
 | **Skill** (system.md) | Instructions pour chaque sous-agent : outils autorises et routing | Chaque agent a son propre system.md dans OpenClaw. |
 | **Glossaire FR** | Mapping termes TopSolid FR → API EN | "Designation" → SetDescription, "mise au coffre" → CheckIn, etc. |
 

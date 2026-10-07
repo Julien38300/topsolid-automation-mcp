@@ -13,7 +13,7 @@
 
 An MCP server written in C# (.NET Framework 4.8) that exposes the TopSolid 7 Automation API as a set of 13 tools any MCP client can call. On top of the raw API, it ships with:
 
-- **151 pre-built recipes** — curated C# snippets for the most common CAD/PDM operations (read mass/volume, set designation, export STEP/DXF/PDF, activate BOM rows, detect drafting scale, ...), browsable with `topsolid_list_recipes`.
+- **195 pre-built recipes** — curated C# snippets for the most common CAD/PDM operations (read mass/volume, set designation, export STEP/DXF/PDF, activate BOM rows, detect drafting scale, ...), browsable with `topsolid_list_recipes`.
 - A **4119-edge type graph** of the API (1728 methods, 242 types), queryable by Dijkstra / BFS to discover method chains between any two types.
 - A **5809-page help index** (EN + FR) in SQLite FTS5 — ask your agent *"how does the sheet-metal unfolding command work?"* and get the official help excerpt.
 - A **2428-command catalog** — look up any ribbon/menu command by keyword, get its FullName ready to invoke.
@@ -72,7 +72,7 @@ The agent picks `topsolid_run_recipe` with recipe `read_designation` and returns
 
 | Tool | Purpose | Needs TopSolid running |
 |---|---|---|
-| `topsolid_run_recipe` | Run one of 151 pre-built recipes | yes |
+| `topsolid_run_recipe` | Run one of 195 pre-built recipes | yes |
 | `topsolid_list_recipes` | Browse the recipe catalog, filtered by category or keyword | no |
 | `topsolid_api_help` | Search 1728 API methods (72 FR/EN synonyms) | no |
 | `topsolid_find_path` | Shortest method chain between two types (Dijkstra) | no |
@@ -105,7 +105,7 @@ All the knowledge this server exposes comes from **publicly available** TopSolid
 - **API graph** (4119 edges, 1728 methods) — extracted by reflection from the TopSolid Automation `.dll` assemblies shipped with every TopSolid installation, cross-referenced with the official API reference at [help.topsolid.com](https://help.topsolid.com/).
 - **Help index** (5809 pages, EN + FR) — converted to Markdown from the publicly shipped help site at [help.topsolid.com](https://help.topsolid.com/).
 - **UI commands catalog** (2428 commands) — parsed from those same help pages (files ending in `*Command.md`).
-- **Recipes** (151 C# snippets) — hand-written for this project, referring back to the public help and the graph for each API call.
+- **Recipes** (195 C# snippets) — hand-written for this project, referring back to the public help and the graph for each API call.
 
 No proprietary TopSolid SDK sample code, no customer project, and no identified individual's private code is included in anything that ships with this repo. Private corpora support (`topsolid_search_examples`) is opt-in via environment variables on the user's own machine — nothing is ever bundled.
 

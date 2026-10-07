@@ -1,6 +1,6 @@
 # Recettes
 
-151 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
+195 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
 
 ::: warning Source de verite
 La seule source de verite est `server/src/Tools/RecipeTool.cs`. Le tableau detaille « Par categorie » plus bas est maintenu a la main et **derive** : au dernier controle il documentait 6 recettes qui n'existent plus (`count_occurrences`, `find_occurrence`, `list_inclusions_with_reference`, `list_user_properties`, `list_document_properties`, `read_document_property`) et en omettait 11 (`ajouter_inclusion`, `creer_esquisse_rectangle`, `creer_parametre_formule`, `creer_parametre_reel`, `extruder_esquisse`, `get_face_cone_length`, `get_face_cone_radius`, `get_face_cone_semi_angle`, `get_face_torus_major_radius`, `get_face_torus_minor_radius`, `get_item_last_operation_name`).
@@ -15,7 +15,7 @@ Recherche, tri par colonne et filtres par categorie/mode.
 ::: danger Les noms de ce tableau ne sont pas ceux du catalogue
 Le composant `RecipeTable` liste **112 entrees en nommage francais historique** (`lire_designation`, `modifier_reference`...). Aucun de ces noms n'existe dans `RecipeTool.cs`, qui est en anglais (`read_designation`, `set_reference`...) et n'accepte aucun alias : passer un nom francais a `topsolid_run_recipe` retourne `Unknown recipe: '...'`.
 
-Utilisez ce tableau comme inventaire fonctionnel uniquement. Pour le nom reel a appeler, utilisez `topsolid_list_recipes` (151 recettes, lues dans le catalogue compile).
+Utilisez ce tableau comme inventaire fonctionnel uniquement. Pour le nom reel a appeler, utilisez `topsolid_list_recipes` (195 recettes, lues dans le catalogue compile).
 :::
 
 <RecipeTable />
@@ -340,7 +340,7 @@ TopSolidHost.Pdm.Save(pdmId, true);
 
 ## Dataset LoRA
 
-2164 entrees ShareGPT pour fine-tuner le sous-agent 3B (`ministral-topsolid` v7 conversational). Couvre les 151 recettes + patterns multi-turn + error-handling + acknowledgments. Le dataset n'est **pas** versionne dans le depot : il se regenere depuis `RecipeTool.cs` avec `scripts/generate-lora-dataset.py` (ou `make lora-dataset`).
+2164 entrees ShareGPT pour fine-tuner le sous-agent 3B (`ministral-topsolid` v7 conversational). Couvre les 195 recettes + patterns multi-turn + error-handling + acknowledgments. Le dataset n'est **pas** versionne dans le depot : il se regenere depuis `RecipeTool.cs` avec `scripts/generate-lora-dataset.py` (ou `make lora-dataset`).
 
 Eval : **96%** sur 50 questions (5 tiers, trivial → piege), multi-turn verifie manuellement.
 
