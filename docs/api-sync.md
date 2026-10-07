@@ -66,6 +66,16 @@ Proposals are **never auto-committed** to `RecipeTool.cs`. Human review required
 5. Run `make sync-ecosystem` — it prints the derived files you must update by hand — then `make check`, which re-checks the catalogue in `RecipeTool.cs` itself (count, `R()`/`RW()`/`RD()` classification, unique names, no C# 6 interpolation). It does not compare the derived files, so verify those by reading them.
 6. Rebuild the MCP server and re-run the LoRA training if recipes were added.
 
+## Releases must cover and document API additions
+
+**Rule**: a release that follows a TopSolid sync **must ship the new methods it can and document all of it** in its notes. Concretely, the release notes of every version MUST contain a "Nouvelles méthodes API / Recettes" section built from:
+
+- `server/data/api-diff-<version>.json` (`summary.added / removed / changed_signature / deprecated`) — the raw API delta, e.g. 7.21: **+190 methods, 0 removed, 1 signature change**;
+- the recipe lots actually shipped in the release (recipe names + counts, catalogue before → after);
+- the remaining unshipped stock (Yellow/Red pending arbitration), so users know what is exposed and what is not.
+
+A release published after a sync without this section is an **incomplete release** — same severity as missing docs or a red CI. The v1.8.0 notes ("Recettes — 151 au total, +19 depuis v1.7.4") are the reference format.
+
 > **Install layout.** CHM auto-detection only scans `C:\Program Files\TOPSOLID\TopSolid *`.
 > A historical Missler layout (`C:\Missler\V627\...`) is not found by this pipeline, even though
 > the MCP server itself resolves it at runtime. Point the extractor at the CHM by hand in that case.
