@@ -2925,6 +2925,648 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "return sb.ToString();") },
+            { "set_angular_scale", RW("MATERIALS", "Sets the angular scale factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetAngularScale(docId, value);\n" +
+                "    __message = \"OK: angular scale factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_anisotropy_angle_factor", RW("MATERIALS", "Sets the anisotropy angle factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetAnisotropyAngleFactor(docId, value);\n" +
+                "    __message = \"OK: anisotropy angle factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_brinell_hardness_factor", RW("MATERIALS", "Sets the Brinell hardness factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetBrinellHardnessFactor(docId, value);\n" +
+                "    __message = \"OK: Brinell hardness factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_bulk_modulus", RW("MATERIALS", "Sets the bulk modulus of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetBulkModulus(docId, value);\n" +
+                "    __message = \"OK: bulk modulus set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_bump_rotation", RW("MATERIALS", "Sets the bump texture rotation angle of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetBumpRotation(docId, value);\n" +
+                "    __message = \"OK: bump texture rotation angle set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_bump_scale", RW("MATERIALS", "Sets the bump texture scale factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetBumpScale(docId, value);\n" +
+                "    __message = \"OK: bump texture scale factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_cutting_force", RW("MATERIALS", "Sets the cutting force of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetCuttingForce(docId, value);\n" +
+                "    __message = \"OK: cutting force set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_cutting_force_increment", RW("MATERIALS", "Sets the cutting force increment of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetCuttingForceIncrement(docId, value);\n" +
+                "    __message = \"OK: cutting force increment set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_elastic_limit", RW("MATERIALS", "Sets the elastic limit of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetElasticLimit(docId, value);\n" +
+                "    __message = \"OK: elastic limit set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_elongation_at_break", RW("MATERIALS", "Sets the elongation at break of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetElongationAtBreak(docId, value);\n" +
+                "    __message = \"OK: elongation at break set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_glossiness_factor", RW("MATERIALS", "Sets the glossiness factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetGlossinessFactor(docId, value);\n" +
+                "    __message = \"OK: glossiness factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_melting_temperature", RW("MATERIALS", "Sets the melting temperature of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetMeltingTemperature(docId, value);\n" +
+                "    __message = \"OK: melting temperature set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_plastic_strain_ratio", RW("MATERIALS", "Sets the plastic strain ratio of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetPlasticStrainRatio(docId, value);\n" +
+                "    __message = \"OK: plastic strain ratio set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_poisson_ratio", RW("MATERIALS", "Sets the Poisson ratio of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetPoissonRatio(docId, value);\n" +
+                "    __message = \"OK: Poisson ratio set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_section_reduction_at_break", RW("MATERIALS", "Sets the section reduction at break of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetSectionReductionAtBreak(docId, value);\n" +
+                "    __message = \"OK: section reduction at break set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_shear_modulus", RW("MATERIALS", "Sets the shear modulus of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetShearModulus(docId, value);\n" +
+                "    __message = \"OK: shear modulus set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_shrinkage_factor", RW("MATERIALS", "Sets the shrinkage factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetShrinkageFactor(docId, value);\n" +
+                "    __message = \"OK: shrinkage factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_specific_heat_capacity", RW("MATERIALS", "Sets the specific heat capacity of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetSpecificHeatCapacity(docId, value);\n" +
+                "    __message = \"OK: specific heat capacity set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_thermal_conductivity", RW("MATERIALS", "Sets the thermal conductivity of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetThermalConductivity(docId, value);\n" +
+                "    __message = \"OK: thermal conductivity set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_thermal_expansion_coefficient", RW("MATERIALS", "Sets the thermal expansion coefficient of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetThermalExpansionCoefficient(docId, value);\n" +
+                "    __message = \"OK: thermal expansion coefficient set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_ultimate_stress", RW("MATERIALS", "Sets the ultimate stress of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetUltimateStress(docId, value);\n" +
+                "    __message = \"OK: ultimate stress set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_vertical_angular_scale", RW("MATERIALS", "Sets the vertical angular scale factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetVerticalAngularScale(docId, value);\n" +
+                "    __message = \"OK: vertical angular scale factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_vickers_hardness_factor", RW("MATERIALS", "Sets the Vickers hardness factor of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetVickersHardnessFactor(docId, value);\n" +
+                "    __message = \"OK: Vickers hardness factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_young_modulus", RW("MATERIALS", "Sets the Young modulus of the material applied to the edited document. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Materials.SetYoungModulus(docId, value);\n" +
+                "    __message = \"OK: Young modulus set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_homogeneous_parameter_value", RW("MATERIALS", "Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false",
+                "string raw = string.IsNullOrWhiteSpace(\"{value}\") ? null : \"{value}\".Trim().ToLowerInvariant();\n" +
+                "bool parsed = false;\n" +
+                "if (raw != null) { bool.TryParse(raw, out parsed); }\n" +
+                "if (raw != null && !parsed && raw != \"true\" && raw != \"false\")\n" +
+                "{\n" +
+                "    __message = \"Invalid value: use empty (unset) or true/false.\"; return;\n" +
+                "}\n" +
+                "try\n" +
+                "{\n" +
+                "    bool result = TopSolidDesignHost.Materials.SetHomogeneousParameterValue(docId, raw == null ? (bool?)null : (bool?)parsed);\n" +
+                "    __message = \"OK: homogeneous parameter value (bool) of the material set to \" + raw + \" (API result=\" + result + \")\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_isotropic_parameter_value", RW("MATERIALS", "Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false",
+                "string raw = string.IsNullOrWhiteSpace(\"{value}\") ? null : \"{value}\".Trim().ToLowerInvariant();\n" +
+                "bool parsed = false;\n" +
+                "if (raw != null) { bool.TryParse(raw, out parsed); }\n" +
+                "if (raw != null && !parsed && raw != \"true\" && raw != \"false\")\n" +
+                "{\n" +
+                "    __message = \"Invalid value: use empty (unset) or true/false.\"; return;\n" +
+                "}\n" +
+                "try\n" +
+                "{\n" +
+                "    bool result = TopSolidDesignHost.Materials.SetIsotropicParameterValue(docId, raw == null ? (bool?)null : (bool?)parsed);\n" +
+                "    __message = \"OK: isotropic parameter value (bool) of the material set to \" + raw + \" (API result=\" + result + \")\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_rockwell_factors", RW("MATERIALS", "Sets the Rockwell factors (A,B,C) of the material applied to the edited document. Param: value=A,B,C (double or 'null')",
+                "    string raw = \"{value}\".Trim();\n" +
+                "    string[] parts = raw.Split(',');\n" +
+                "    if (parts.Length != 3)\n" +
+                "    {\n" +
+                "        __message = \"Invalid value: use A,B,C (e.g. 0.5,0.2,0.3 - or 'null' to leave a factor unset).\"; return;\n" +
+                "    }\n" +
+                "    double?[] vals = new double?[3];\n" +
+                "    for (int i = 0; i < 3; i++)\n" +
+                "    {\n" +
+                "        string p = parts[i].Trim();\n" +
+                "        if (p.ToLowerInvariant() == \"null\") { vals[i] = null; continue; }\n" +
+                "        double d;\n" +
+                "        if (!double.TryParse(p, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d))\n" +
+                "        {\n" +
+                "            __message = \"Invalid value: use A,B,C (e.g. 0.5,0.2,0.3 - or 'null' to leave a factor unset).\"; return;\n" +
+                "        }\n" +
+                "        vals[i] = d;\n" +
+                "    }\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidDesignHost.Materials.SetRockwellFactors(docId, vals[0], vals[1], vals[2]);\n" +
+                "    __message = \"OK: Rockwell factors set to A=\" + vals[0] + \" B=\" + vals[1] + \" C=\" + vals[2];\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_specular_color", RW("MATERIALS", "Sets the specular color (R,G,B) of the material applied to the edited document. Param: value=R,G,B (0-255)",
+                "    string raw = \"{value}\".Trim();\n" +
+                "    string[] parts = raw.Split(',');\n" +
+                "    if (parts.Length != 3)\n" +
+                "    {\n" +
+                "        __message = \"Invalid value: use R,G,B (0-255).\"; return;\n" +
+                "    }\n" +
+                "    int r, g, b;\n" +
+                "    if (!int.TryParse(parts[0].Trim(), out r) || !int.TryParse(parts[1].Trim(), out g) || !int.TryParse(parts[2].Trim(), out b) || r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255)\n" +
+                "    {\n" +
+                "        __message = \"Invalid value: use R,G,B (0-255).\"; return;\n" +
+                "    }\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidDesignHost.Materials.SetSpecularColor(docId, new Color((byte)r, (byte)g, (byte)b));\n" +
+                "    __message = \"OK: specular color set to R=\" + r + \" G=\" + g + \" B=\" + b;\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_coating_brinell_hardness_factor", RW("MATERIALS", "Sets the Brinell hardness factor of the active coating. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Coatings.SetBrinellHardnessFactor(docId, value);\n" +
+                "    __message = \"OK: Brinell hardness factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_coating_bump_rotation", RW("MATERIALS", "Sets the bump texture rotation angle of the active coating. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Coatings.SetBumpRotation(docId, value);\n" +
+                "    __message = \"OK: bump texture rotation angle set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_coating_bump_scale", RW("MATERIALS", "Sets the bump texture scale factor of the active coating. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Coatings.SetBumpScale(docId, value);\n" +
+                "    __message = \"OK: bump texture scale factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_coating_vickers_hardness_factor", RW("MATERIALS", "Sets the Vickers hardness factor of the active coating. Param: value=<number>",
+                "try\n" +
+                "{\n" +
+                "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    TopSolidDesignHost.Coatings.SetVickersHardnessFactor(docId, value);\n" +
+                "    __message = \"OK: Vickers hardness factor set to \" + value.ToString(\"F4\");\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_coating_homogeneous_parameter_value", RW("MATERIALS", "Sets the homogeneous parameter value (bool) of the active coating. Param: value=empty(unset)/true/false",
+                "string raw = string.IsNullOrWhiteSpace(\"{value}\") ? null : \"{value}\".Trim().ToLowerInvariant();\n" +
+                "bool parsed = false;\n" +
+                "if (raw != null) { bool.TryParse(raw, out parsed); }\n" +
+                "if (raw != null && !parsed && raw != \"true\" && raw != \"false\")\n" +
+                "{\n" +
+                "    __message = \"Invalid value: use empty (unset) or true/false.\"; return;\n" +
+                "}\n" +
+                "try\n" +
+                "{\n" +
+                "    bool result = TopSolidDesignHost.Coatings.SetHomogeneousParameterValue(docId, raw == null ? (bool?)null : (bool?)parsed);\n" +
+                "    __message = \"OK: homogeneous parameter value (bool) set to \" + raw + \" (API result=\" + result + \")\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_coating_isotropic_parameter_value", RW("MATERIALS", "Sets the isotropic parameter value (bool) of the active coating. Param: value=empty(unset)/true/false",
+                "string raw = string.IsNullOrWhiteSpace(\"{value}\") ? null : \"{value}\".Trim().ToLowerInvariant();\n" +
+                "bool parsed = false;\n" +
+                "if (raw != null) { bool.TryParse(raw, out parsed); }\n" +
+                "if (raw != null && !parsed && raw != \"true\" && raw != \"false\")\n" +
+                "{\n" +
+                "    __message = \"Invalid value: use empty (unset) or true/false.\"; return;\n" +
+                "}\n" +
+                "try\n" +
+                "{\n" +
+                "    bool result = TopSolidDesignHost.Coatings.SetIsotropicParameterValue(docId, raw == null ? (bool?)null : (bool?)parsed);\n" +
+                "    __message = \"OK: isotropic parameter value (bool) set to \" + raw + \" (API result=\" + result + \")\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "set_coating_rockwell_factors", RW("MATERIALS", "Sets the Rockwell factors (A,B,C) of the active coating. Param: value=A,B,C (double or 'null')",
+                "    string raw = \"{value}\".Trim();\n" +
+                "    string[] parts = raw.Split(',');\n" +
+                "    if (parts.Length != 3)\n" +
+                "    {\n" +
+                "        __message = \"Invalid value: use A,B,C (e.g. 0.5,0.2,0.3 - or 'null' to leave a factor unset).\"; return;\n" +
+                "    }\n" +
+                "    double?[] vals = new double?[3];\n" +
+                "    for (int i = 0; i < 3; i++)\n" +
+                "    {\n" +
+                "        string p = parts[i].Trim();\n" +
+                "        if (p.ToLowerInvariant() == \"null\") { vals[i] = null; continue; }\n" +
+                "        double d;\n" +
+                "        if (!double.TryParse(p, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out d))\n" +
+                "        {\n" +
+                "            __message = \"Invalid value: use A,B,C (e.g. 0.5,0.2,0.3 - or 'null' to leave a factor unset).\"; return;\n" +
+                "        }\n" +
+                "        vals[i] = d;\n" +
+                "    }\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidDesignHost.Coatings.SetRockwellFactors(docId, vals[0], vals[1], vals[2]);\n" +
+                "    __message = \"OK: Rockwell factors set to A=\" + vals[0] + \" B=\" + vals[1] + \" C=\" + vals[2];\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error (no coating set on this document?): \" + ex.Message;\n" +
+                "}") },
+            { "add_page_to_bundle", RW("DRAFTING", "Adds a new page to the opened drafting bundle. No value expected.",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    TopSolidDraftingHost.Draftings.AddPageToBundle(docId);\n" +
+                "    int pageCount = TopSolidDraftingHost.Draftings.GetPageCount(docId);\n" +
+                "    __message = \"OK: new page added, bundle now has \" + pageCount + \" pages.\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "set_current_bundle_page", RW("DRAFTING", "Sets the current page of the opened drafting bundle. Param: value=page_number (e.g. 1)",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    int page = int.Parse(\"{value}\".Trim(), System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    if (page <= 0 || page > TopSolidDraftingHost.Draftings.GetPageCount(docId))\n" +
+                "    {\n" +
+                "        __message = \"Page number out of range (1 to \" + TopSolidDraftingHost.Draftings.GetPageCount(docId) + \"): \" + page; return;\n" +
+                "    }\n" +
+                "    TopSolidDraftingHost.Draftings.SetCurrentBundlePage(docId, page);\n" +
+                "    __message = \"OK: current bundle page set to \" + page;\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "set_bundle_page_format_name", RW("DRAFTING", "Sets the format name of a bundle page to 'A3'. Param: value=page_number (e.g. 1)",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    int page = int.Parse(\"{value}\".Trim(), System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "    if (page <= 0 || page > TopSolidDraftingHost.Draftings.GetPageCount(docId))\n" +
+                "    {\n" +
+                "        __message = \"Page number out of range (1 to \" + TopSolidDraftingHost.Draftings.GetPageCount(docId) + \"): \" + page; return;\n" +
+                "    }\n" +
+                "    TopSolidDraftingHost.Draftings.SetBundlePageFormatName(docId, page, \"A3\");\n" +
+                "    __message = \"OK: format name A3 set on page \" + page;\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "set_bundle_page_format", RW("DRAFTING", "Sets the format of a bundle page. Param: value=page;format_name (e.g. 1;A3 landscape)",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    string raw = \"{value}\".Trim();\n" +
+                "    int sep = raw.IndexOf(';');\n" +
+                "    int page; string fmt;\n" +
+                "    if (sep <= 0 || sep >= raw.Length - 1 || !int.TryParse(raw.Substring(0, sep).Trim(), out page) || (fmt = raw.Substring(sep + 1).Trim()).Length == 0 || page <= 0 || page > TopSolidDraftingHost.Draftings.GetPageCount(docId))\n" +
+                "    {\n" +
+                "        __message = \"Use value=page;format (e.g. 1;A3 landscape).\"; return;\n" +
+                "    }\n" +
+                "    TopSolidDraftingHost.Draftings.SetBundlePageFormat(docId, page, fmt);\n" +
+                "    __message = \"OK: page \" + page + \" format set to '\" + fmt + \"'.\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "set_bundle_page_dimensions", RW("DRAFTING", "Sets the dimensions of a bundle page. Param: value=page;width;height (mm, e.g. 1;420;297)",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    string raw = \"{value}\".Trim();\n" +
+                "    string[] parts = raw.Split(';');\n" +
+                "    double w, h; int page;\n" +
+                "    if (parts.Length != 3 || !int.TryParse(parts[0].Trim(), out page) || !double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out w) || !double.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out h) || page <= 0 || page > TopSolidDraftingHost.Draftings.GetPageCount(docId))\n" +
+                "    {\n" +
+                "        __message = \"Use value=page;width;height (mm, e.g. 1;420;297).\"; return;\n" +
+                "    }\n" +
+                "    TopSolidDraftingHost.Draftings.SetBundlePageDimensions(docId, page, new Real(UnitType.Length, \"mm\", w), new Real(UnitType.Length, \"mm\", h));\n" +
+                "    __message = \"OK: page \" + page + \" dimensions set to \" + w + \" x \" + h + \" mm.\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "include_draft_in_bundle", RW("DRAFTING", "Includes a draft (all pages on the same bundle page) in the opened bundle. Param: value=draft_doc_name",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "    var results = TopSolidHost.Pdm.SearchDocumentByName(projId, \"{value}\");\n" +
+                "    if (results.Count == 0)\n" +
+                "    {\n" +
+                "        __message = \"Draft document not found: \" + \"{value}\"; return;\n" +
+                "    }\n" +
+                "    DocumentId draftDoc = TopSolidHost.Documents.GetDocument(results[0]);\n" +
+                "    TopSolidDraftingHost.Draftings.IncludeDraftInBundle(docId, draftDoc, true);\n" +
+                "    __message = \"OK: draft '\" + \"{value}\" + \"' included in the bundle (all pages on the same bundle page).\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "include_draft_page_in_bundle_current_page", RW("DRAFTING", "Includes a specific draft page in the current bundle page with offset. Param: value=draft_doc_name;page;offset (e.g. draft;1;0)",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    string raw = \"{value}\".Trim();\n" +
+                "    string[] parts = raw.Split(';');\n" +
+                "    int page; double off;\n" +
+                "    if (parts.Length != 3 || !int.TryParse(parts[1].Trim(), out page) || !double.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out off))\n" +
+                "    {\n" +
+                "        __message = \"Use value=draft_doc_name;page;offset (e.g. draft;1;0).\"; return;\n" +
+                "    }\n" +
+                "    PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "    var results = TopSolidHost.Pdm.SearchDocumentByName(projId, parts[0].Trim());\n" +
+                "    if (results.Count == 0)\n" +
+                "    {\n" +
+                "        __message = \"Draft document not found: \" + parts[0].Trim(); return;\n" +
+                "    }\n" +
+                "    DocumentId draftDoc = TopSolidHost.Documents.GetDocument(results[0]);\n" +
+                "    TopSolidDraftingHost.Draftings.IncludeDraftPageInBundleCurrentPage(docId, draftDoc, page, off, off);\n" +
+                "    __message = \"OK: page \" + page + \" of draft included at offset \" + off + \".\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "add_draft_to_bundle", RW("DRAFTING", "Adds a draft to the opened bundle (its pages become separate bundle pages). Param: value=draft_doc_name",
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle. Open the bundle first.\"; return;\n" +
+                "    }\n" +
+                "    PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "    var results = TopSolidHost.Pdm.SearchDocumentByName(projId, \"{value}\");\n" +
+                "    if (results.Count == 0)\n" +
+                "    {\n" +
+                "        __message = \"Draft document not found: \" + \"{value}\"; return;\n" +
+                "    }\n" +
+                "    DocumentId draftDoc = TopSolidHost.Documents.GetDocument(results[0]);\n" +
+                "    TopSolidDraftingHost.Draftings.AddDraftToBundle(docId, draftDoc);\n" +
+                "    __message = \"OK: draft '\" + \"{value}\" + \"' added (its pages are now bundle pages).\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+            { "get_page_count", R("DRAFTING", "Returns the number of pages of the opened drafting bundle.",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) { __message = \"No document open. Open the bundle in TopSolid first.\"; return; }\n" +
+                "try\n" +
+                "{\n" +
+                "    if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))\n" +
+                "    {\n" +
+                "        __message = \"The edited document is not a drafting bundle.\"; return;\n" +
+                "    }\n" +
+                "    __message = \"OK: \" + TopSolidDraftingHost.Draftings.GetPageCount(docId) + \" page(s).\";\n" +
+                "}\n" +
+                "catch (Exception ex)\n" +
+                "{\n" +
+                "    __message = \"Error: \" + ex.Message;\n" +
+                "}") },
+
         };
 
         // Shortcut factory methods for readability.

@@ -1,5 +1,7 @@
-Total recipes: 151
+Total recipes: 195
 activate_bom_row|RW|Activates a BOM row by its index (0-based, among root-children). Param: value=row_index
+add_draft_to_bundle|RW|Adds a draft to the opened bundle (its pages become separate bundle pages). Param: value=draft_doc_name
+add_page_to_bundle|RW|Adds a new page to the opened drafting bundle. No value expected.
 ajouter_inclusion|RW|Adds an inclusion of a part document into the active assembly document. Param: value=part_document_name
 assembly_mass_report|R|Reads total mass, volume, surface and part count of an assembly
 attr_assign_layer|RW|Assigns an element to a layer. Param: value=element_name:layer_name
@@ -81,7 +83,10 @@ get_material_bump_scale|R|Get the bump texture scale factor of the active materi
 get_material_glossiness_factor|R|Get the glossiness factor of the active material. Reports (also) error when no material is set
 get_material_vickers_hardness_factor|R|Get the Vickers hardness factor of the active material (from its standards file). Reports (also) error when no material is set
 get_operation_version|R|Gets the algorithm version of an operation. Param: value=operation_name (use list_operations to find it)
+get_page_count|R|Returns the number of pages of the opened drafting bundle.
 get_profiles_folder|R|Gets the profiles folder entity of the active document (name + id)
+include_draft_in_bundle|RW|Includes a draft (all pages on the same bundle page) in the opened bundle. Param: value=draft_doc_name
+include_draft_page_in_bundle_current_page|RW|Includes a specific draft page in the current bundle page with offset. Param: value=draft_doc_name;page;offset (e.g. draft;1;0)
 invoke_command|RW|Executes a TopSolid menu command by name. Param: value=command_name
 is_positioning_underconstrained|R|Tells if a positioning is underconstrained. Param: value=positioning_name (exact or substring)
 list_documents_without_designation|R|Lists project documents without designation (empty description)
@@ -138,15 +143,54 @@ search_parts_by_material|R|Lists parts with their material (via mass > 0). Param
 select_3d_point|R|Asks the user to click a 3D point and returns coordinates
 select_face|R|Asks the user to select a face and returns its info
 select_shape|R|Asks the user to select a shape and returns its info
+set_angular_scale|RW|Sets the angular scale factor of the material applied to the edited document. Param: value=<number>
+set_anisotropy_angle_factor|RW|Sets the anisotropy angle factor of the material applied to the edited document. Param: value=<number>
+set_brinell_hardness_factor|RW|Sets the Brinell hardness factor of the material applied to the edited document. Param: value=<number>
+set_bulk_modulus|RW|Sets the bulk modulus of the material applied to the edited document. Param: value=<number>
+set_bump_rotation|RW|Sets the bump texture rotation angle of the material applied to the edited document. Param: value=<number>
+set_bump_scale|RW|Sets the bump texture scale factor of the material applied to the edited document. Param: value=<number>
+set_bundle_page_dimensions|RW|Sets the dimensions of a bundle page. Param: value=page;width;height (mm, e.g. 1;420;297)
+set_bundle_page_format|RW|Sets the format of a bundle page. Param: value=page;format_name (e.g. 1;A3 landscape)
+set_bundle_page_format_name|RW|Sets the format name of a bundle page to 'A3'. Param: value=page_number (e.g. 1)
+set_coating_brinell_hardness_factor|RW|Sets the Brinell hardness factor of the active coating. Param: value=<number>
+set_coating_bump_rotation|RW|Sets the bump texture rotation angle of the active coating. Param: value=<number>
+set_coating_bump_scale|RW|Sets the bump texture scale factor of the active coating. Param: value=<number>
+set_coating_homogeneous_parameter_value|RW|Sets the homogeneous parameter value (bool) of the active coating. Param: value=empty(unset)/true/false
+set_coating_isotropic_parameter_value|RW|Sets the isotropic parameter value (bool) of the active coating. Param: value=empty(unset)/true/false
+set_coating_rockwell_factors|RW|Sets the Rockwell factors (A,B,C) of the active coating. Param: value=A,B,C (double or 'null')
+set_coating_vickers_hardness_factor|RW|Sets the Vickers hardness factor of the active coating. Param: value=<number>
+set_current_bundle_page|RW|Sets the current page of the opened drafting bundle. Param: value=page_number (e.g. 1)
+set_cutting_force|RW|Sets the cutting force of the material applied to the edited document. Param: value=<number>
+set_cutting_force_increment|RW|Sets the cutting force increment of the material applied to the edited document. Param: value=<number>
 set_designation|RW|Sets the designation. Param: value
 set_drafting_format|RW|Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')
 set_drafting_scale|RW|Sets the global scale of a drafting. Param: value=denominator (e.g. '10' for 1:10)
+set_elastic_limit|RW|Sets the elastic limit of the material applied to the edited document. Param: value=<number>
+set_elongation_at_break|RW|Sets the elongation at break of the material applied to the edited document. Param: value=<number>
+set_glossiness_factor|RW|Sets the glossiness factor of the material applied to the edited document. Param: value=<number>
+set_homogeneous_parameter_value|RW|Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false
+set_isotropic_parameter_value|RW|Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false
 set_manufacturer|RW|Sets the manufacturer. Param: value
+set_melting_temperature|RW|Sets the melting temperature of the material applied to the edited document. Param: value=<number>
 set_name|RW|Sets the name. Param: value
+set_plastic_strain_ratio|RW|Sets the plastic strain ratio of the material applied to the edited document. Param: value=<number>
+set_poisson_ratio|RW|Sets the Poisson ratio of the material applied to the edited document. Param: value=<number>
 set_projection_quality|RW|Sets the drafting projection quality. Param: value='exact' (precise) or 'fast' (quick)
 set_real_parameter|RW|Sets a real parameter. Param: value=name:SIvalue (e.g. Length:0.15)
 set_reference|RW|Sets the reference. Param: value
+set_rockwell_factors|RW|Sets the Rockwell factors (A,B,C) of the material applied to the edited document. Param: value=A,B,C (double or 'null')
+set_section_reduction_at_break|RW|Sets the section reduction at break of the material applied to the edited document. Param: value=<number>
+set_shear_modulus|RW|Sets the shear modulus of the material applied to the edited document. Param: value=<number>
+set_shrinkage_factor|RW|Sets the shrinkage factor of the material applied to the edited document. Param: value=<number>
+set_specific_heat_capacity|RW|Sets the specific heat capacity of the material applied to the edited document. Param: value=<number>
+set_specular_color|RW|Sets the specular color (R,G,B) of the material applied to the edited document. Param: value=R,G,B (0-255)
 set_text_parameter|RW|Sets a text parameter. Param: value=name:value
+set_thermal_conductivity|RW|Sets the thermal conductivity of the material applied to the edited document. Param: value=<number>
+set_thermal_expansion_coefficient|RW|Sets the thermal expansion coefficient of the material applied to the edited document. Param: value=<number>
+set_ultimate_stress|RW|Sets the ultimate stress of the material applied to the edited document. Param: value=<number>
 set_user_property|RW|Sets a text user property. Param: value=property_name:value
+set_vertical_angular_scale|RW|Sets the vertical angular scale factor of the material applied to the edited document. Param: value=<number>
+set_vickers_hardness_factor|RW|Sets the Vickers hardness factor of the material applied to the edited document. Param: value=<number>
+set_young_modulus|RW|Sets the Young modulus of the material applied to the edited document. Param: value=<number>
 smooth_sketch_profiles|RW|Smooths the profiles of the last 2D sketch (G1 continuity). WARNING: modifies the sketch. Param: value=empty (defaults) or tolerance_mm
 summarize_project|R|Project summary: document count by type, folders, size
