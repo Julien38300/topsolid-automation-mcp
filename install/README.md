@@ -7,7 +7,7 @@
 1. **Double-clic sur `Installer_TopSolidMCP.bat`**
    - **Génère la clé API automatiquement** (48 caractères aléatoires, affichée et copiée dans le presse-papiers) — rien à inventer ; une clé existante est conservée
    - Nettoie toute ancienne installation héritée (tâche planifiée Node `TopSolidMcpBridge`, tâche tray PS1 `TopSolidMcpTray`, raccourci Startup bridge) qui bloquerait le port 8080
-   - Crée la tâche planifiée `TopSolidMcpServer` : au démarrage du PC, le serveur natif repart tout seul (`--http-standalone`, sans console)
+   - Crée la tâche planifiée `TopSolidMcpServer` : au démarrage du PC, le serveur natif repart tout seul (`--http-standalone`, via `conhost.exe --headless` : aucune fenêtre console, les logs vont dans `%LOCALAPPDATA%\TopSolidMcp\logs\server.log`)
 
 2. **Cherche l'icône près de l'horloge** (systray) : c'est TopSolid MCP.
 

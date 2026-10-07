@@ -17,6 +17,27 @@ namespace TopSolidMcpServer
 
         static void Main(string[] args)
         {
+            // v1.8.1: stderr -> %LOCALAPPDATA%\TopSolidMcp\logs\server.log FIRST, before
+            // anything can fail. The tray's "Report a bug" embeds the log tail into the
+            // GitHub issue (GitHubFeedbackLogic.BuildBody) — in v1.8.0 no redirect existed,
+            // so every bug report shipped without its log. Also survives headless runs
+            // (scheduled task, no console): lines no longer die with the session.
+            ServerLog.Setup();
+            // v1.8.1: crash reports. An unhandled exception on any thread writes
+            // crash-<UTC>.txt next to the log (exception chain + last log lines, key
+            // scrubbed); the next "Report a bug" from the tray attaches it.
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                try
+                {
+                    var ex = e.ExceptionObject as Exception;
+                    string report = CrashReport.BuildCrashReport(ex, TrayIcon.GetVersion(),
+                        ServerLog.ReadLastLines(ServerLog.GetPath(), 30), null);
+                    System.IO.File.WriteAllText(CrashReport.GetCrashPath(DateTime.UtcNow), report);
+                }
+                catch { }
+            };
+
             // --version flag
             if (args.Length > 0 && (args[0] == "--version" || args[0] == "-v"))
             {

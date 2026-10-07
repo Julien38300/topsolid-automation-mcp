@@ -219,7 +219,11 @@ namespace TopSolidMcpServer.Utils
             });
         }
 
-        /// <summary>Builds the issue and posts it (PAT) or opens the prefilled form.</summary>
+        /// <summary>Builds the issue and posts it (PAT) or opens the prefilled form.
+        /// v1.8.1: when a crash report file exists (last 30 days), its content is
+        /// appended so the issue carries the stack trace without the user doing
+        /// anything — crashes reported after the fact used to ship with zero
+        /// technical context.</summary>
         private void SubmitFeedback(string category, string subject, string details)
         {
             string title = GitHubFeedbackLogic.BuildTitle(category, subject);
@@ -228,6 +232,23 @@ namespace TopSolidMcpServer.Utils
                 _isConnected != null && _isConnected(),
                 _port > 0 ? _port : 8090,
                 RecentLogLines(), _apiKey);
+
+            // v1.8.1: attach the newest crash report (scrubbed) to bug reports.
+            if (category == GitHubFeedbackLogic.CategoryBug)
+            {
+                try
+                {
+                    string crashPath = LogTail.GetNewestCrashReport();
+                    if (crashPath != null)
+                    {
+                        string crash = File.ReadAllText(crashPath);
+                        body += "\n## Rapport de crash (auto-attaché)\n\n```\n"
+                              + GitHubFeedbackLogic.ScrubKey(crash, _apiKey)
+                              + "\n```\n";
+                    }
+                }
+                catch { }
+            }
 
             string token = GitHubPatStore.LoadToken();
             if (!string.IsNullOrEmpty(token))
@@ -347,43 +368,47 @@ namespace TopSolidMcpServer.Utils
 
     /// <summary>
     /// Minimal stderr tail used by the feedback feature. Program.cs redirects
-    /// stderr to a file in v1.8.0 (see LogTail.Setup); this reads it back.
+    /// stderr to a file in v1.8.1 (ServerLog.Setup in Utils/ServerLog.cs); this
+    /// reads it back. Kept as a thin wrapper for compatibility with v1.8.0 call
+    /// sites; the canonical implementation lives in ServerLog.
     /// </summary>
     internal static class LogTail
     {
-        private static string _logPath;
-
         public static string GetLogPath()
         {
-            if (_logPath != null) return _logPath;
-            try
-            {
-                string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "TopSolidMcp", "logs");
-                Directory.CreateDirectory(dir);
-                _logPath = Path.Combine(dir, "server.log");
-            }
-            catch
-            {
-                _logPath = null;
-            }
-            return _logPath;
+            return ServerLog.GetPath();
         }
 
         public static IList<string> ReadLastLines(string path, int count)
         {
-            var lines = new List<string>();
-            using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-            using (var reader = new StreamReader(fs))
+            return ServerLog.ReadLastLines(path, count);
+        }
+
+        /// <summary>
+        /// Newest crash-*.txt in the log dir (last 30 days), or null. Attached to
+        /// the next bug report so a crash reported after the fact carries its
+        /// stack trace + log context.
+        /// </summary>
+        public static string GetNewestCrashReport()
+        {
+            try
             {
-                string line;
-                while ((line = reader.ReadLine()) != null)
+                string dir = Path.GetDirectoryName(ServerLog.GetPath());
+                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return null;
+                string newest = null;
+                DateTime newestTime = DateTime.MinValue;
+                foreach (string f in Directory.GetFiles(dir, "crash-*.txt"))
                 {
-                    lines.Add(line);
-                    if (lines.Count > 4000) lines.RemoveAt(0); // bounded memory
+                    DateTime t = File.GetLastWriteTimeUtc(f);
+                    if (t > newestTime && t > DateTime.UtcNow.AddDays(-30))
+                    {
+                        newestTime = t;
+                        newest = f;
+                    }
                 }
+                return newest;
             }
-            return lines.Count <= count ? lines : lines.GetRange(lines.Count - count, count);
+            catch { return null; }
         }
     }
 

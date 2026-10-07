@@ -194,3 +194,21 @@ Le serveur inclut un script de mise a jour automatique :
 ```
 
 Le script compare la version locale avec la derniere release GitHub et propose la mise a jour si une nouvelle version est disponible.
+
+## Logs et rapports de crash (v1.8.1)
+
+Depuis la **v1.8.1**, le serveur journalise son stderr dans un fichier :
+
+```
+%LOCALAPPDATA%\TopSolidMcp\logs\server.log
+```
+
+- Chaque ligne est prefixee d'un horodatage UTC. Le fichier est limite (rotation a 512 Ko vers `server.log.old`), donc il ne grossit pas indefiniment.
+- Ce fichier est la **source du bouton « Signaler un bug » du tray** : les ~30 dernieres lignes sont integrees automatiquement a l'issue GitHub pre-remplie (la cle API est masquee `***` avant tout envoi — defense en profondeur avec le scrub cote serveur).
+- En cas de **crash** (exception non geree sur un thread quelconque), un rapport `crash-AAAAMMJJ-HHMMSS.txt` est ecrit dans le meme dossier : exception complete + pile d'appels + dernieres lignes de log. Le prochain « Signaler un bug » l'attache a l'issue sans action de votre part (rapports de moins de 30 jours uniquement).
+- La tache planifiee `TopSolidMcpServer` lance le serveur via `conhost.exe --headless` : **aucune fenetre console** n'apparait au demarrage, les logs vont dans le fichier (et non plus dans une console perdue).
+
+::: tip Ouvrir les logs rapidement
+Depuis `Win+R` : `%LOCALAPPDATA%\TopSolidMcp\logs`. Pour suivre en direct :
+`Get-Content "$env:LOCALAPPDATA\TopSolidMcp\logs\server.log" -Wait -Tail 20`
+:::

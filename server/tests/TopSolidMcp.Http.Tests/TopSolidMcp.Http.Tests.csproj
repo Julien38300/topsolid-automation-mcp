@@ -26,6 +26,7 @@
     <Compile Include="..\..\src\Utils\ApiKeyStore.cs" Link="ApiKeyStore.cs" />
     <Compile Include="..\..\src\Utils\GitHubFeedbackLogic.cs" Link="GitHubFeedbackLogic.cs" />
     <Compile Include="..\..\src\Utils\ReconnectBackoff.cs" Link="ReconnectBackoff.cs" />
+    <Compile Include="..\..\src\Utils\ServerLog.cs" Link="ServerLog.cs" />
   </ItemGroup>
 
   <ItemGroup>

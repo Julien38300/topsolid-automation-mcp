@@ -63,9 +63,12 @@ REM ================= 3. Tache planifiee serveur =================
 echo [3/4] Creation de la tache planifiee TopSolidMcpServer...
 REM Lance TopSolidMcpServer.exe --http-standalone (HTTP natif + keepalive
 REM apres stdin EOF, pas de serveur stdio) au login, session interactive,
-REM privileges eleves : le process sert tout le monde sur le port 8080
-REM avec authentification X-API-Key, sans console affichee.
-schtasks /Create /F /TN "TopSolidMcpServer" /SC ONLOGON /RL HIGHEST /IT /TR "\"%~dp0..\TopSolidMcpServer.exe\" --http-standalone" >nul 2>&1
+REM privileges eleves. v1.8.1 : l exe est une application CONSOLE — lancé
+REM directement par une tache ONLOGON interactive, il OUVRAIT une fenetre
+REM cmd qui restait ouverte a chaque session. conhost --headless execute le
+REM process avec une console allouee mais INVISIBLE : stderr reste redirige
+REM vers server.log (v1.8.1), aucune fenetre, aucun changement de comportement.
+schtasks /Create /F /TN "TopSolidMcpServer" /SC ONLOGON /RL HIGHEST /IT /TR "conhost.exe --headless \"%~dp0..\TopSolidMcpServer.exe\" --http-standalone" >nul 2>&1
 if errorlevel 1 (
     echo   AVERTISSEMENT: tache planifiee non creee ^(droits admin requis^).
     echo   Le serveur peut etre demarre par double-clic sur TopSolidMcpServer.exe.
@@ -77,11 +80,12 @@ echo [3bis/4] Demarrage du serveur...
 REM v1.8.0 : le tray fait partie de l executable. Une SEULE instance s execute :
 REM tache planifiee si elle a ete creee, sinon demarrage direct double-clic
 REM (le mutex singleton garantit qu un seul serveur ecoute le port 8080).
+REM v1.8.1 : demarrage direct = console MINIMISEE (pas de fenetre plein ecran).
 schtasks /Query /TN "TopSolidMcpServer" >nul 2>&1
 if not errorlevel 1 (
     schtasks /Run /TN "TopSolidMcpServer" >nul 2>&1
 ) else (
-    start "" "%~dp0..\TopSolidMcpServer.exe"
+    start /min "" "%~dp0..\TopSolidMcpServer.exe"
 )
 echo.
 
