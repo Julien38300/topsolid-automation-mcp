@@ -158,7 +158,20 @@ Configuration MCP avec port specifique :
 ```
 
 ::: warning Sans --port
-Sans `--port`, le serveur utilise 8090 par defaut. Si l'instance TopSolid sur le port 8090 n'est pas celle que vous voulez piloter, vous aurez un resultat inattendu (mauvais document, "aucun document en edition").
+Sans `--port`, le serveur detecte automatiquement le premier TopSolid lance et cible son port Automation (v1.8.3). Si aucun port Automation n'est detecte, il retombe sur 8090 par defaut.
+:::
+
+### Selectionner l'instance depuis l'icone tray (v1.8.3)
+
+Plus besoin d'editer la config a la main : clic droit sur l'icone tray → **Parametres > Instance TopSolid**.
+
+- Le sous-menu liste **tous les TopSolid lances sur le PC**, avec leur version et leur port Automation (`TopSolid 7.21 (port 8091)`), ou `(sans port)` quand l'option Automation n'est pas activee dans cette instance — l'entree est alors visible mais grisee.
+- **Automatique (premier TopSolid détecté)** — le mode par defaut : au demarrage et au clic, le serveur detecte le premier TopSolid lance et cible son port. C'est le mode "tout automatique", coche dans le menu.
+- Un clic sur une instance **retargete le serveur immediatement** (deconnexion + reconnexion sur le port choisi) et enregistre le choix comme default pour les demarrages suivants.
+- **Gérer…** ouvre la fenetre modale de declaration : nom + port, **Definir par defaut** (l'etoile), Ajouter / Supprimer. Le defaut est le port cible au demarrage du serveur.
+
+::: tip Ports differents par instance
+Chaque instance TopSolid a son propre port dans **Outils > Options > General > Automation**. Le menu tray le montre pour chaque instance lancee — plus besoin de les connaitre par coeur.
 :::
 
 ## "Aucun document en edition" alors qu'un document est ouvert

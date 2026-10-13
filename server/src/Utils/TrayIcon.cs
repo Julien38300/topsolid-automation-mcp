@@ -325,6 +325,9 @@ namespace TopSolidMcpServer.Utils
 
             menu.Items.Add(settingsMenu);
 
+            // v1.8.3: TopSolid instance picker (running instances + "Manage…").
+            BuildInstancePicker(settingsMenu);
+
             // v1.8.0: API key, auto-connect toggle, What's new, feedback items.
             BuildV18MenuItems(menu, settingsMenu);
 

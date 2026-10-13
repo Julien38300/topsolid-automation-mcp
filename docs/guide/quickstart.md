@@ -168,7 +168,7 @@ Toutes ces options se passent soit en argument de ligne de commande, soit par va
 |---|---|---|
 | `--read-only` | `TOPSOLID_MCP_READ_ONLY=1` | `topsolid_modify_script` n'est pas enregistre ; les recettes tournent en lecture seule |
 | `--no-tray` | `TOPSOLID_MCP_NO_TRAY=1` | Pas d'icone dans la zone de notification (serveur headless, session 0, CI) |
-| `--port <n>` | — | Port Automation de TopSolid (defaut 8090) |
+| `--port <n>` | — | Port Automation de TopSolid (defaut 8090). Sans `--port` ni port enregistre : le serveur **detecte automatiquement le premier TopSolid lance** et cible son port Automation |
 | `--compile <fichier>` | — | Compile un fichier sans l'executer, puis sort (code 0 = OK) |
 | `--version` / `-v` | — | Affiche la version et sort |
 | — | `TOPSOLID_BIN_PATH` | Dossier contenant `TopSolid.Kernel.Automating.dll`, quand la detection automatique echoue |

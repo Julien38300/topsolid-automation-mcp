@@ -33,7 +33,9 @@ namespace TopSolidMcpServer.Utils
         private volatile bool _hasDraftingModule;
         private volatile string _version = "unknown";
 
-        private readonly int _port;
+        // Volatile: the tray instance picker (v1.8.3) retargets from its own
+        // thread while the stdio thread may hold the lock; reads must be fresh.
+        private volatile int _port;
         private DateTime _lastConnectAttempt = DateTime.MinValue;
         private static readonly TimeSpan ReconnectCooldown = TimeSpan.FromSeconds(5);
 
@@ -88,6 +90,26 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>
+        /// v1.8.3: retargets the connector to another TopSolid instance (TCP port),
+        /// from the tray instance picker. Disconnects the current session first so
+        /// the next Connect() resolves against the new target. The static
+        /// TopSolidHost keeps one connection at a time: retargeting mid-call would
+        /// let a tool answer on the wrong instance, so the disconnect+connect runs
+        /// under the same lock as every other transition.
+        /// </summary>
+        public bool Retarget(int port)
+        {
+            if (port < 1 || port > 65535) return false;
+
+            lock (_lock)
+            {
+                if (_isConnected) DisconnectInternal();
+                _port = port;
+                return ConnectInternal();
+            }
+        }
+
+        /// <summary>
         /// Opens the connection to a running TopSolid instance.
         /// Uses DefineConnection to target the specific TCP port, which allows several
         /// TopSolid instances to coexist on the same machine.
@@ -101,61 +123,8 @@ namespace TopSolidMcpServer.Utils
 
             lock (_lock)
             {
-                _lastConnectAttempt = DateTime.UtcNow;
                 wasConnected = _isConnected;
-
-                string binPath = TopSolidPathResolver.Resolve();
-                string version = null;
-                bool ok = false;
-
-                try
-                {
-                    ok = ConnectKernel(_port, out version);
-                }
-                catch (FileNotFoundException ex)
-                {
-                    Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " could not be loaded from " +
-                        binPath + " (" + ex.Message + "). TopSolid tools are unavailable. " +
-                        "Set TOPSOLID_BIN_PATH to the TopSolid bin directory.");
-                }
-                catch (TypeLoadException ex)
-                {
-                    Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " is incompatible (" + ex.Message + ").");
-                }
-                catch (BadImageFormatException ex)
-                {
-                    Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " has a wrong architecture (" + ex.Message + ").");
-                }
-                catch (ReflectionTypeLoadException ex)
-                {
-                    Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " failed to load its types (" + ex.Message + ").");
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine("[TopSolidConnector] Connection error: " + ex.Message);
-                }
-
-                _isConnected = ok;
-                _version = ok && version != null ? version : "unknown";
-
-                if (ok)
-                {
-                    // Optional modules: never fatal.
-                    _hasDesignModule = TryLoadModule("Design", DesignDll, ConnectDesignModule);
-                    _hasDraftingModule = TryLoadModule("Drafting", DraftingDll, ConnectDraftingModule);
-
-                    Console.Error.WriteLine("[TopSolidConnector] Connected to TopSolid v" + _version +
-                        " on port " + _port + " (Design: " + (_hasDesignModule ? "yes" : "no") +
-                        ", Drafting: " + (_hasDraftingModule ? "yes" : "no") + ").");
-                }
-                else
-                {
-                    _hasDesignModule = false;
-                    _hasDraftingModule = false;
-                    Console.Error.WriteLine("[TopSolidConnector] TopSolid not available on port " + _port + ".");
-                }
-
-                nowConnected = _isConnected;
+                nowConnected = ConnectInternal();
             }
 
             // Notify listeners outside the lock so handlers never run while holding it.
@@ -163,6 +132,67 @@ namespace TopSolidMcpServer.Utils
                 RaiseConnectionChanged(nowConnected);
 
             return nowConnected;
+        }
+
+        /// <summary>
+        /// Lock-held body of <see cref="Connect"/>. Callers must hold <see cref="_lock"/>.
+        /// </summary>
+        private bool ConnectInternal()
+        {
+            _lastConnectAttempt = DateTime.UtcNow;
+
+            string binPath = TopSolidPathResolver.Resolve();
+            string version = null;
+            bool ok = false;
+
+            try
+            {
+                ok = ConnectKernel(_port, out version);
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " could not be loaded from " +
+                    binPath + " (" + ex.Message + "). TopSolid tools are unavailable. " +
+                    "Set TOPSOLID_BIN_PATH to the TopSolid bin directory.");
+            }
+            catch (TypeLoadException ex)
+            {
+                Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " is incompatible (" + ex.Message + ").");
+            }
+            catch (BadImageFormatException ex)
+            {
+                Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " has a wrong architecture (" + ex.Message + ").");
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                Console.Error.WriteLine("[MCP-ERROR] Core module " + KernelDll + " failed to load its types (" + ex.Message + ").");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("[TopSolidConnector] Connection error: " + ex.Message);
+            }
+
+            _isConnected = ok;
+            _version = ok && version != null ? version : "unknown";
+
+            if (ok)
+            {
+                // Optional modules: never fatal.
+                _hasDesignModule = TryLoadModule("Design", DesignDll, ConnectDesignModule);
+                _hasDraftingModule = TryLoadModule("Drafting", DraftingDll, ConnectDraftingModule);
+
+                Console.Error.WriteLine("[TopSolidConnector] Connected to TopSolid v" + _version +
+                    " on port " + _port + " (Design: " + (_hasDesignModule ? "yes" : "no") +
+                    ", Drafting: " + (_hasDraftingModule ? "yes" : "no") + ").");
+            }
+            else
+            {
+                _hasDesignModule = false;
+                _hasDraftingModule = false;
+                Console.Error.WriteLine("[TopSolidConnector] TopSolid not available on port " + _port + ".");
+            }
+
+            return ok;
         }
 
         /// <summary>
@@ -213,28 +243,33 @@ namespace TopSolidMcpServer.Utils
             {
                 wasConnected = _isConnected;
                 if (!wasConnected) return;
-
-                if (_hasDraftingModule)
-                    TryLoadModule("Drafting", DraftingDll, DisconnectDraftingModule);
-                if (_hasDesignModule)
-                    TryLoadModule("Design", DesignDll, DisconnectDesignModule);
-
-                try
-                {
-                    DisconnectKernel();
-                    Console.Error.WriteLine("[TopSolidConnector] Disconnected.");
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine("[TopSolidConnector] Disconnection error: " + ex.Message);
-                }
-
-                _isConnected = false;
-                _hasDesignModule = false;
-                _hasDraftingModule = false;
+                DisconnectInternal();
             }
 
             RaiseConnectionChanged(false);
+        }
+
+        /// <summary>Lock-held body of <see cref="Disconnect"/>. Callers must hold <see cref="_lock"/>.</summary>
+        private void DisconnectInternal()
+        {
+            if (_hasDraftingModule)
+                TryLoadModule("Drafting", DraftingDll, DisconnectDraftingModule);
+            if (_hasDesignModule)
+                TryLoadModule("Design", DesignDll, DisconnectDesignModule);
+
+            try
+            {
+                DisconnectKernel();
+                Console.Error.WriteLine("[TopSolidConnector] Disconnected.");
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("[TopSolidConnector] Disconnection error: " + ex.Message);
+            }
+
+            _isConnected = false;
+            _hasDesignModule = false;
+            _hasDraftingModule = false;
         }
 
         /// <summary>

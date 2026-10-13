@@ -12,12 +12,15 @@
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NUnit" Version="3.14.0" />
-    <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-  </ItemGroup>
+    <ItemGroup>
+      <Reference Include="System.Management" />
+    </ItemGroup>
+    <ItemGroup>
+      <PackageReference Include="NUnit" Version="3.14.0" />
+      <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+      <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    </ItemGroup>
 
   <ItemGroup>
     <!-- Source-linked instead of a ProjectReference to the server exe: Smart App
@@ -26,6 +29,8 @@
          update-check logic, which needs no TopSolid assemblies. -->
     <Compile Include="..\..\update-check\UpdateCheckLogic.cs" Link="UpdateCheckLogic.cs" />
     <Compile Include="..\..\src\Protocol\HttpKeepalivePolicy.cs" Link="HttpKeepalivePolicy.cs" />
+    <Compile Include="..\..\src\Utils\TopSolidInstanceList.cs" Link="TopSolidInstanceList.cs" />
+    <Compile Include="..\..\src\Utils\TraySettings.cs" Link="TraySettings.cs" />
   </ItemGroup>
 
 </Project>

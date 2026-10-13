@@ -252,6 +252,36 @@ namespace TopSolidMcpServer
                     port = TraySettings.Port;
                     Console.Error.WriteLine($"[MCP-INFO] Port {port} from settings.json (tray).");
                 }
+                else if (TraySettings.InstanceMode == "manual")
+                {
+                    // v1.8.3 "manual" mode with no legacy port saved: the tray picker
+                    // never wrote a port (clean install). Stay on the default —
+                    // picking an instance in the tray sets the port explicitly.
+                }
+                else
+                {
+                    // v1.8.3 "auto" mode (default): target the first running TopSolid
+                    // found by the instance scan, whatever its automation port. The
+                    // user's FEA-style "everything automatic" case.
+                    try
+                    {
+                        var running = TopSolidInstanceList.Scan();
+                        var first = running.Count > 0 ? running[0] : null;
+                        if (first != null && first.HasAutomationPort)
+                        {
+                            port = first.Port;
+                            Console.Error.WriteLine($"[MCP-INFO] Auto-detected TopSolid {first.Version ?? ""} (pid {first.Pid}) on port {port}.");
+                        }
+                        else if (first != null)
+                        {
+                            Console.Error.WriteLine("[MCP-INFO] Running TopSolid found but no automation port detected; using default port " + port + ".");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.Error.WriteLine("[MCP-INFO] Instance scan failed: " + ex.Message);
+                    }
+                }
                 connector = new TopSolidConnector(port);
                 Console.Error.WriteLine($"[MCP-INFO] Connector ready (port {port}). Attempting initial connection...");
                 connector.Connect(); // non-blocking, just tries once
@@ -434,6 +464,17 @@ namespace TopSolidMcpServer
                             Console.Error.WriteLine(ok
                                 ? "[MCP-INFO] Manual reconnect succeeded."
                                 : "[MCP-INFO] Manual reconnect failed - TopSolid not available on port " + port + ".");
+                        });
+
+                        // v1.8.3: instance picker — one click retargets immediately
+                        // (disconnect + reconnect on the chosen port), like the FEA app.
+                        startedTray.SetRetargetAction(retargetPort =>
+                        {
+                            bool ok = connector.Retarget(retargetPort);
+                            Console.Error.WriteLine(ok
+                                ? "[MCP-INFO] Retargeted to port " + retargetPort + "."
+                                : "[MCP-INFO] Retarget to port " + retargetPort + " failed.");
+                            return ok;
                         });
                     }
                     catch (Exception ex)
