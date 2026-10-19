@@ -190,11 +190,10 @@ Contexte contraignant (vérifié) : l'API Automation n'expose pas d'opérations 
 3. Tests : les 3 suites (`TopSolidMcpServer.Tests` 12, `TopSolidMcp.Http.Tests` 37,
    `TopSolidMcp.UpdateCheck.Tests` 10) à 100 % avant commit. NE JAMAIS committer sans tests verts
    (règle repo). Si la recipe ne touche que le catalogue string, les tests unitaires du serveur
-   doivent rester verts — le runtime TopSolid n'est pas mockable localement (LY458 obligatoire pour
-   le runtime réel). `[SOUL-tests]`
+   doivent rester verts — le runtime TopSolid n'est pas mockable sans instance TopSolid active. `[SOUL-tests]`
 4. Doc : README/docs/guide si visible client (tray/CLI/HTTP) — même commit ou immédiat.
-5. Conventional commit (`feat:`/`fix:`/`docs:`), CI verte avant tout push final ; release : build via
-   scripts/build-release.ps1, publication VALIDATION EXPLICITE de Julien via Noemid-H obligatoire.
+5. Conventional commit (`feat:`/`fix:`/`docs:`), CI verte avant tout push final ; release : build et
+   publication avec validation explicite du mainteneur obligatoire.
    `[SOUL]`
 
 ## 6. Anti-patterns (vérifiés par lecture du code)

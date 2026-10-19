@@ -275,7 +275,7 @@ User: "non, laisse tomber"
 | commande TopSolid | invoke_command | nom commande |
 
 ### Surface API 7.21 (methodes hors recettes)
-Ces methodes TopSolid 7.21 n'ont PAS de recette. Pour les utiliser : `topsolid_execute_script` / `topsolid_modify_script` (dernier recours, confirmation obligatoire), ou signaler a Noemid-H qu'une nouvelle recette est pertinente (propositions completes : `server/data/recipe-proposals-7.21.304.0.md`, tiers Green/Yellow/Red).
+Ces methodes TopSolid 7.21 n'ont PAS de recette. Pour les utiliser : `topsolid_execute_script` / `topsolid_modify_script` (dernier recours, confirmation obligatoire), ou proposer une nouvelle recette (propositions completes : `server/data/recipe-proposals-7.21.304.0.md`, tiers Green/Yellow/Red).
 | Besoin | Methode API (since 7.21) | Interface |
 |---|---|---|
 | cone d'une face : rayon, demi-angle, longueur | GetFaceConeRadius / GetFaceConeSemiAngle / GetFaceConeLength (ElementItemId) | IShapes |
@@ -299,7 +299,7 @@ Ces methodes TopSolid 7.21 n'ont PAS de recette. Pour les utiliser : `topsolid_e
 - **Shape** : cote API, nouveaux acces geometriques sur les faces (**cone/tore : rayon, semi-angle, longueurs**), points les plus proches sur face, aretes elliptiques.
 - **Unfolding / Tolerie** : Work Manager et reutilisation des processus ; **Nesting** (module optionnel) pour l'imbrication des pieces planes.
 - **Stringers (escaliers)** : nouvelle option **Smoothing** pour lisser les esquisses de lisses creees par Staircase Layout.
-- Detail complet : PDF *What's New TopSolid 7.21* (source LY458 `Help/en`, copie d'extraction locale dans la session de mission).
+- Detail complet : PDF *What's New TopSolid 7.21* (`Help/en` du repertoire d'installation TopSolid).
 
 ## COULEURS
 
