@@ -323,6 +323,7 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidHost.Sketches2D.CreateLineSegment(pt2, pt3);\n" +
                 "TopSolidHost.Sketches2D.CreateLineSegment(pt3, pt4);\n" +
                 "TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1);\n" +
+                "TopSolidHost.Sketches2D.CleanSketch();\n" +
                 "TopSolidHost.Sketches2D.EndModification();\n" +
                 "__message = \"OK: sketch Esquisse_Rectangle created (\" + widthMm + \"x\" + heightMm + \" mm)\";") },
 

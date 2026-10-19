@@ -93,13 +93,11 @@ Nom sans source verifiee = interdit. Notion non confirmee = `[A VALIDER]`.
 ## 6. Esquisses, formes, perçages et collisions (ce que l'API sait créer)
 
 - Esquisses 2D dans plan : ISketches2D ; esquisses 3D : ISketches3D. Dans un document pièce 3D (`.TopPrt`),
-  toujours utiliser `Sketches2D.CreateSketchIn3D(docId, SmartPlane3D, SmartPoint3D, bool, SmartDirection3D)`
-  (`CreateSketchIn2D` est réservé aux documents 2D). `[CHM-D] [API-7.21]`
+  toujours utiliser `Sketches2D.CreateSketchIn3D(docId, SmartPlane3D, SmartPoint3D, bool inDefinesXDirection, SmartDirection3D)`
+  en passant **`true` en 4e argument (`inDefinesXDirection = true`)** pour que le 5e argument définisse l'axe `X (U)` de l'esquisse (`false` tourne les axes `(u, v)` de 90°). `[CHM-D] [API-7.21]`
 - Modification d'esquisse locale : `Sketches2D.StartModification(inSketchId)` → `CreateVertex(new Point2D(x, y))`,
-  `CreateLineSegment(v1, v2)` / `CreateCircleSegment(...)` → `Sketches2D.EndModification()`.
-  **Important** : il n'est **pas nécessaire** d'appeler `CreateProfile` ni `CreateSection` pour extruder une esquisse ;
-  TopSolid calcule automatiquement les profils fermés et les contours intérieurs (trous) à la sortie de
-  `EndModification()`, et `new SmartSection3D(sketchId)` suffit directement dans `CreateExtrudedShape`. `[API-7.21] [REC:creer_esquisse_rectangle]`
+  `CreateLineSegment(v1, v2)` / `CreateCircleSegment(...)` → **`Sketches2D.CleanSketch()`** → `Sketches2D.EndModification()`.
+  **Important** : il est inutile d'appeler `CreateProfile` ou `CreateSection`, **MAIS il est obligatoire d'appeler `TopSolidHost.Sketches2D.CleanSketch()` juste avant `Sketches2D.EndModification()`** lorsqu'on extrude l'esquisse dans la même transaction `Application.StartModification` (sinon `GetProfileCount(sketchId) == 0` et TopSolid affiche une boîte de dialogue modale d'erreur d'extrusion). `[API-7.21] [REC:creer_esquisse_rectangle]`
 - Lecture topologique : GetProfiles -> GetProfileSegments -> GetSegmentCurveRange / GetSegmentCurveType
   (CurveType.Line, CurveType.Circle...) -> GetSegmentLineCurve / GetSegmentCircleCurve. `[CHM-D]`
 - Formes : `IShapes.CreateExtrudedShape` (7.7.201.80), `CreateLoftedShape` (7.10), `CreateRevolvedShape` (7.7).

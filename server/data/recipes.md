@@ -470,6 +470,7 @@ TopSolidHost.Sketches2D.CreateLineSegment(pt1, pt2);
 TopSolidHost.Sketches2D.CreateLineSegment(pt2, pt3);
 TopSolidHost.Sketches2D.CreateLineSegment(pt3, pt4);
 TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1);
+TopSolidHost.Sketches2D.CleanSketch();
 TopSolidHost.Sketches2D.EndModification();
 __message = "OK: sketch Esquisse_Rectangle created (" + widthMm + "x" + heightMm + " mm)";
 ```

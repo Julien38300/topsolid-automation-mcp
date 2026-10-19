@@ -437,14 +437,25 @@ namespace TopSolidMcpServer.Utils
 
         /// <summary>
         /// Rejects calls to <c>IDocuments.Update(docId, ...)</c> inside an open
-        /// <c>Application.StartModification</c> transaction, which deadlocks TopSolid's regeneration
-        /// loop. <c>EndModification(true, true)</c> already updates the document upon commit.
+        /// <c>Application.StartModification</c> transaction (which deadlocks TopSolid's regeneration
+        /// loop), and rejects <c>CreateSketchIn3D(..., false, ...)</c> where the 4th argument
+        /// (<c>inDefinesXDirection</c>) is mistakenly passed as <c>false</c>.
         /// </summary>
         private static string CheckForDeadlockingUpdate(string code, bool isModification)
         {
             if (string.IsNullOrEmpty(code)) return null;
 
             string sanitized = StripLiteralsAndComments(code);
+
+            // Guard against CreateSketchIn3D(..., false, dir) which rotates the sketch (u,v) axes by 90 degrees
+            // because the 4th parameter is 'bool inDefinesXDirection' (not 'inInvertsNormal').
+            if (Regex.IsMatch(sanitized, @"\bCreateSketchIn3D\s*\([^;]*?,\s*false\s*,"))
+            {
+                return "Error: CreateSketchIn3D 4th parameter is 'bool inDefinesXDirection' (NOT inInvertsNormal). " +
+                    "Pass 'true' so that the 5th parameter defines the sketch X (U) axis; passing 'false' rotates " +
+                    "the sketch (u, v) axes by 90 degrees and causes extrusions in the wrong plane/direction.";
+            }
+
             MatchCollection updateMatches = Regex.Matches(sanitized, @"\.\s*Update\s*\(");
             if (updateMatches.Count == 0) return null;
 
@@ -476,6 +487,46 @@ namespace TopSolidMcpServer.Utils
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Automatically injects <c>TopSolidHost.Sketches2D.CleanSketch()</c> right before every
+        /// <c>TopSolidHost.Sketches2D.EndModification()</c> when not already preceded by <c>CleanSketch()</c>.
+        /// Without <c>CleanSketch()</c>, closed profiles are not computed (<c>GetProfileCount == 0</c>)
+        /// when the sketch is extruded within the same <c>Application.StartModification</c> transaction,
+        /// causing TopSolid to display a blocking modal extrusion error dialog.
+        /// Kept on the same line so compiler line numbers remain unchanged.
+        /// </summary>
+        private static string EnsureSketchCleanBeforeEndModification(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return code ?? string.Empty;
+            if (code.IndexOf("Sketches2D", StringComparison.Ordinal) < 0) return code;
+
+            string masked = StripLiteralsAndComments(code);
+            MatchCollection matches = Regex.Matches(
+                masked,
+                @"\bTopSolidHost\s*\.\s*Sketches2D\s*\.\s*EndModification\s*\(\s*\)\s*;");
+            if (matches.Count == 0) return code;
+
+            var sb = new StringBuilder(code.Length + matches.Count * 64);
+            int last = 0;
+            foreach (Match match in matches)
+            {
+                int lookbackStart = Math.Max(0, match.Index - 120);
+                string preceding = masked.Substring(lookbackStart, match.Index - lookbackStart);
+                if (Regex.IsMatch(preceding, @"\bCleanSketch\s*\(\s*\)"))
+                {
+                    continue;
+                }
+
+                sb.Append(code, last, match.Index - last);
+                sb.Append("{ try { TopSolidHost.Sketches2D.CleanSketch(); } catch { } TopSolidHost.Sketches2D.EndModification(); }");
+                last = match.Index + match.Length;
+            }
+
+            if (last == 0) return code;
+            sb.Append(code, last, code.Length - last);
+            return sb.ToString();
         }
 
         /// <summary>
@@ -986,6 +1037,8 @@ namespace TopSolidMcpServer.Utils
                     "Assign the __message variable to customize the returned message; a bare 'return;' " +
                     "may be used to exit early.");
             }
+
+            userCode = EnsureSketchCleanBeforeEndModification(userCode);
 
             var header = new List<string>();
             foreach (string ns in BuildUsingNamespaces())
