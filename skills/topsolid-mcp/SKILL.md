@@ -1,7 +1,7 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.1.0
+version: 5.3.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation]
@@ -12,6 +12,7 @@ metadata:
 
 ## CHANGELOG
 
+- **v5.3.0 (2026-10-19)** — Catalogue passe a **155 recettes** (+4 nouvelles : `create_drilling`, `set_material`, `set_coating`, `check_collisions`) + correctifs serveur MCP (`DetectModification` regex multi-variables dans `ScriptExecutor.cs`, auto-detection `7.21` dans `TopSolidPathResolver.cs`, synchronisation de toutes les representations `GetRepresentations` dans `extruder_esquisse`, pas besoin de `CreateProfile` dans les esquisses) + documentation des **Etapes TopSolid** (`GetModelingStage` / `SetWorkingStage` / `ResetInsertionOperation`), de la detection de collisions B-Rep (`SetCollisionsManagement` + `ShapeShapeCollisionEntity`) et du paradigme **One-Shot C# Builder** dans `references/concepts-core.md` et `references/gabarits-recipes.md`.
 - **v5.2.0 (2026-09-30)** — Catalogue passe a **151 recettes** : lots GREEN de la veille 7.21 implementes (19 nouvelles) — `list_positionings`, `is_positioning_underconstrained` (assemblage), getters durete/etats de surface (`get_material_*` 6 + `get_coating_*` 6), `get_profiles_folder` (esquisse), `get_operation_version`, lectures d'aretes `get_edge_faces`/`get_edge_ellipse_curve` (param `value`=AskEdge), `smooth_sketch_profiles` (RW, AskEdge + smoothing ISketches2D). Methode : membres confirmes via snapshot CHM 7.21 (`methods.json`) + reflection 7.20/7.21 ; corps compile-verifies (csc v4.0.30319 refs Automating) — les 7 recettes utilisant des membres 7.21-only (GetEdgeFaces, GetEdgeEllipseCurve, SmoothSketchProfiles, ICoatings Brinell/Vickers/Bump*) restent compile-verify en signatures seulement.
 - **v5.1.0 (2026-09-30)** — Veille API 7.21 : snapshot `7.21.304.0` (1978 méthodes, 3209 pages CHM) ; diff `7.20.311.0` → `7.21.304.0` = **+190 méthodes, 0 retirées, 1 signature changée** (`IPdmAdmin.GetUserGroups`, OBSOLETE → `GetGroupsOfUsers`). 20 recettes du catalogue désormais documentées dans les tables ci-dessous. Nouvelle section « Surface API 7.21 » (méthodes hors recettes) et « Nouveautés produit 7.21 » (What's New). Constat runtime : le graphe embarqué (`data/graph.json`, 4119 edges, 242 types, 1728 methodes x interface sur 46 interfaces, datant du 09/09) ne contient NI les méthodes 7.20 NI les 7.21 — `topsolid_api_help` peut donc ne pas connaître une méthode très récente (vérifier alors dans la section « Surface API 7.21 »).
 - v5.0.0 — catalogue 132 recettes, mode R/RW/RD, outils MCP détaillés.
@@ -20,9 +21,9 @@ metadata:
 
 Tu appelles `topsolid__topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAIS de code C#.
 
-**Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type`. Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
+**Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type` (note : `check_collisions` active l'analyse de collisions dans une transaction mais ne modifie pas la geometrie). Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
 
-**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `creer_*`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`, `set_drafting_*`, `set_projection_quality`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque. Tu annonces la recette et la valeur exacte, puis tu ATTENDS la confirmation de l'utilisateur avant d'appeler. Une confirmation vaut pour un appel, pas pour les suivants.
+**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `creer_*`, `create_drilling`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`, `set_drafting_*`, `set_projection_quality`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque. Tu annonces la recette et la valeur exacte, puis tu ATTENDS la confirmation de l'utilisateur avant d'appeler. Une confirmation vaut pour un appel, pas pour les suivants.
 
 **Regle de secours (celle qui tranche)** : si une recette ne commence PAS par un des prefixes de LECTURE ci-dessus, tu la traites comme une ECRITURE et tu demandes confirmation. Le doute va toujours vers la confirmation.
 
@@ -146,6 +147,8 @@ User: "non, laisse tomber"
 | masse assemblage | assembly_mass_report | |
 | densite, materiau | read_material_density | |
 | materiau | read_material | |
+| affecter materiau (.TopMat) | set_material | filtre nom (ex: S235) |
+| affecter revetement (.TopCot) | set_coating | filtre nom (ex: Galvanisé) |
 | dimensions piece | read_part_dimensions | |
 | boite englobante | read_bounding_box | |
 | moments inertie | read_inertia_moments | |
@@ -163,6 +166,7 @@ User: "non, laisse tomber"
 | tore d'une face : petit rayon | get_face_torus_minor_radius | |
 | creer esquisse rectangle | creer_esquisse_rectangle | largeur:hauteur (mm) |
 | extruder la derniere esquisse | extruder_esquisse | hauteur (mm) |
+| creer percage sur face | create_drilling | diam_mm:prof_mm:X_mm:Y_mm:Z_mm:NX:NY:NZ |
 | operation d'origine d'une face (apres select_face) | get_item_last_operation_name | |
 | shapes, formes | read_shapes | |
 | operations, arbre | read_operations | |
@@ -194,6 +198,7 @@ User: "non, laisse tomber"
 | c'est un assemblage? | detect_assembly | |
 | inclusions | list_inclusions | |
 | inserer une piece (inclusion) | ajouter_inclusion | nom du document piece |
+| detecter collisions B-Rep | check_collisions | |
 | occurrences | read_occurrences | |
 | renommer occurrence | rename_occurrence | ancien:nouveau |
 | compter pieces | count_assembly_parts | |

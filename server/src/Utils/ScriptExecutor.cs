@@ -509,9 +509,11 @@ namespace TopSolidMcpServer.Utils
         {
             string sanitized = StripLiteralsAndComments(code);
 
-            // If the user already handles StartModification themselves, do NOT auto-wrap
+            // If the user already handles Application.StartModification themselves, do NOT auto-wrap
             // (would cause double declaration of docId/pdmId and a nested StartModification).
-            if (Regex.IsMatch(sanitized, @"\bStartModification\s*\("))
+            // Note: Sketches2D.StartModification(sk) is an inner sketch session and still requires
+            // an enclosing Application.StartModification transaction.
+            if (Regex.IsMatch(sanitized, @"\bApplication\s*\.\s*StartModification\s*\("))
                 return false;
 
             // TopSolidHost.Pdm. / TopSolidDesignHost.Assemblies. / TopSolidHost.Documents. ...
@@ -946,9 +948,9 @@ namespace TopSolidMcpServer.Utils
                 header.Add("            try");
                 header.Add("            {");
                 header.Add("                DocumentId docId = TopSolidHost.Documents.EditedDocument;");
-                header.Add("                PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);");
+                header.Add("                PdmObjectId pdmId = docId.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(docId);");
                 header.Add("                string __message = \"Modification completed successfully.\";");
-                header.Add("                TopSolidHost.Documents.EnsureIsDirty(ref docId);");
+                header.Add("                if (!docId.IsEmpty) TopSolidHost.Documents.EnsureIsDirty(ref docId);");
             }
 
             var footer = new List<string>();
@@ -960,7 +962,7 @@ namespace TopSolidMcpServer.Utils
                     footer.Add("                __commit:");
                 footer.Add("                TopSolidHost.Application.EndModification(true, true);");
                 footer.Add("                __committed = true;");
-                footer.Add("                TopSolidHost.Pdm.Save(pdmId, true);");
+                footer.Add("                if (!pdmId.IsEmpty) TopSolidHost.Pdm.Save(pdmId, true);");
                 footer.Add("                return __message;");
                 footer.Add("            }");
                 footer.Add("            catch (Exception __ex)");

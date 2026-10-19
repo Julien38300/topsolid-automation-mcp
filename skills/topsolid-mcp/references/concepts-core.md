@@ -90,32 +90,55 @@ Nom sans source verifiee = interdit. Notion non confirmee = `[A VALIDER]`.
 - Consequence conception : tout champ d'un gabarit alimente par un SmartReal reference a un parametre
   devient pilotable depuis le serveur MCP (set_real_parameter), sans recoder la recipe.
 
-## 6. Esquisses et formes (ce que l'API sait creer)
+## 6. Esquisses, formes, perçages et collisions (ce que l'API sait créer)
 
-- Esquisses 2D dans plan : ISketches2D ; esquisses 3D : ISketches3D. Une esquisse 2D enchassee dans un
-  document 3D est manipulee par ISketches2D et situee par GetPlane (Plan3D) au lieu de GetFrame. `[CHM-D]`
-- Creation : Sketches2D.CreateSketchIn2D(docId, SmartPoint2D, SmartDirection2D, false) ;
-  Sketches2D.CreateSketchIn3D ; Sketches3D.CreateSketch. Modification d'esquisse locale :
-  Sketches2D.StartModification(inSketchId) → CreateVertex/CreatePoint, CreateLineSegment, CreateProfile,
-  EndModification. Verbatim CHM l.822-833 (`CreateVertex(new ...)`, `CreateLineSegment(vertex1Id,
-  vertex2Id)`) + methods.json (CreateVertex/CreatePoint/CreateLineSegment/CreateProfile présents).
-  `[CHM-D] [API-7.21] [REC:creer_esquisse_rectangle]`
+- Esquisses 2D dans plan : ISketches2D ; esquisses 3D : ISketches3D. Dans un document pièce 3D (`.TopPrt`),
+  toujours utiliser `Sketches2D.CreateSketchIn3D(docId, SmartPlane3D, SmartPoint3D, bool, SmartDirection3D)`
+  (`CreateSketchIn2D` est réservé aux documents 2D). `[CHM-D] [API-7.21]`
+- Modification d'esquisse locale : `Sketches2D.StartModification(inSketchId)` → `CreateVertex(new Point2D(x, y))`,
+  `CreateLineSegment(v1, v2)` / `CreateCircleSegment(...)` → `Sketches2D.EndModification()`.
+  **Important** : il n'est **pas nécessaire** d'appeler `CreateProfile` ni `CreateSection` pour extruder une esquisse ;
+  TopSolid calcule automatiquement les profils fermés et les contours intérieurs (trous) à la sortie de
+  `EndModification()`, et `new SmartSection3D(sketchId)` suffit directement dans `CreateExtrudedShape`. `[API-7.21] [REC:creer_esquisse_rectangle]`
 - Lecture topologique : GetProfiles -> GetProfileSegments -> GetSegmentCurveRange / GetSegmentCurveType
   (CurveType.Line, CurveType.Circle...) -> GetSegmentLineCurve / GetSegmentCircleCurve. `[CHM-D]`
-- Formes : IShapes.CreateExtrudedShape (7.7.201.80), CreateLoftedShape (7.10), CreateRevolvedShape
-  (7.7). Exemple verbatim extrusion : CreateExtrudedShape(docId, new SmartSection3D(esquisse),
-  SmartDirection3D.DZ, SmartReal(Longueur, h), SmartReal(Angle, 0), false, false).
-  Recipes : creer_esquisse_rectangle (value=largeur:hauteur mm), extruder_esquisse (value=hauteur_mm). `[API-7.21] [REC]`
-- Limites verifiees : PAS de methodes Fold/Bend/Unfold dans IShapes (7.21) ; drilling en LECTURE
-  seulement (IFeatures.GetDrilling*Primitive, 7.14). La modelisation riche (contraintes d'esquisse,
-  enlevements complexes) reste l'affaire d'un gabarit concu a la main. `[API-7.21] [T-1206]`
-- Geometrie de reference : IGeometries3D.CreatePoint / CreateAxis / CreateAxisByTwoPoints (7.20) /
+- Formes : `IShapes.CreateExtrudedShape` (7.7.201.80), `CreateLoftedShape` (7.10), `CreateRevolvedShape` (7.7).
+  **Règle critique des représentations** : par défaut, seule la toute première forme (`Shape 1`) d'une pièce neuve est
+  ajoutée aux représentations. Toute forme supplémentaire ou recréée doit obligatoirement être ajoutée à **toutes** les
+  représentations du document (`foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId)) AddRepresentationConstituent(rep, shId)`),
+  faute de quoi la pièce apparaît vide une fois incluse dans un assemblage. `[REC:extruder_esquisse]`
+- Perçages (`IParts.CreateDrillingOperation`) : disponible en écriture via `TopSolidDesignHost.Parts.CreateDrillingOperation`
+  sous 3 conditions strictes (sinon popup modale bloquante) :
+  1. Axe `Z` du `Frame3D` = **normale sortante** à la face percée (TopSolid perce dans le sens `-Z`).
+  2. Constructeur à 3 arguments obligatoire : `new DrillingHolePrimitive(SmartReal dia, SmartReal depth, DrillingHolePrimitiveBottomType.Flat)` avec `depth > 0`.
+  3. Passer un `new SmartFrame3D(frame3D, -0.02, 0.02, -0.02, 0.02, -0.02, 0.02)` inline (ne pas créer de `BasicFrameEntity` hors groupe de synchro). `[API-7.21]`
+- **Étapes de l'arbre d'opérations (`IOperations.GetStages` / `GetWorkingStage` / `SetWorkingStage`)** :
+  TopSolid structure tout document en **Étapes (Stages)** séquentielles : **Modélisation** (`TopSolidHost.Operations.GetModelingStage(docId)`), **Mécanisme** (`TopSolidDesignHost.Mechanisms.GetMechanismStage(docId)` pour les assemblages), **Analyse**, et **Annotation / Finale** (`GetFinalStage(docId)`).
+  Quand on lance une analyse de collisions (`SetCollisionsManagement`), TopSolid bascule l'étape de travail courante en **Étape d'Analyse**. Si l'on veut ensuite refaire de la modélisation (ajouter des inclusions, esquisser, extruder), il faut **impérativement revenir en Étape de Modélisation** :
+  ```csharp
+  ElementId modelingStage = TopSolidHost.Operations.GetModelingStage(docId);
+  TopSolidHost.Operations.SetWorkingStage(modelingStage);
+  TopSolidHost.Operations.ResetInsertionOperation(docId);
+  ```
+  `[API-7.21]`
+- Détection de collisions d'assemblage (`IAssemblies.SetCollisionsManagement`) : activer (en étape Analyse) avec `inFindsIntersections = true`,
+  `SetCollisionsManagementCheckingMechanisms(asmId, false)` (pour vérifier toutes les pièces statiques) et
+  `SetCollisionsManagementInvalidWhenColliding(asmId, false)` (pour éviter toute popup bloquante), puis lire les entités
+  `TopSolid.Cad.Design.DB.Collisions.ShapeShapeCollisionEntity` via `IElements.GetElements(asmId)`. `[API-7.21]`
+- Matériaux, revêtements et couleurs (`IParts.SetMaterial`, `IParts.SetCoating`, `IElements.SetColor`) :
+  1. Chercher le document `.TopMat` ou `.TopCot` dans les bibliothèques (`SearchProjectByName` → `SearchDocumentByNameWithWildcards`).
+  2. Référencer la bibliothèque dans le projet courant **hors `StartModification`** : `TopSolidHost.Pdm.AddReferencedProjects(projId, new List<PdmObjectId> { libProjId })`.
+  3. Dans `StartModification` : `TopSolidDesignHost.Parts.SetMaterial(partDocId, matDocId)`, `TopSolidDesignHost.Parts.SetCoating(partDocId, coatDocId)`, `TopSolidDesignHost.Parts.SetPhysicalPropertiesManagementRefreshAuto(partDocId, true)` (pour calculer automatiquement `Mass` et `Volume`), et `TopSolidHost.Elements.SetColor(shapeId, new Color(r, g, b))`. `[API-7.21]`
+- Limites vérifiées : PAS de méthodes `Fold`/`Bend`/`Unfold` ni d'opérations booléennes 3D (`Union`/`Subtract`/`Pocket`/`Trim`)
+  dans `IShapes` (7.21).Tout enlèvement prismatique doit être dessiné comme contour interne dans l'esquisse avant extrusion,
+  ou piloté via un gabarit conçu à la main. `[API-7.21] [T-1206]`
+- Géométrie de référence : IGeometries3D.CreatePoint / CreateAxis / CreateAxisByTwoPoints (7.20) /
   CreateAxisWithExtent / CreateFrame / CreateFrameByPointAndTwoDirections / CreateFrameWithOffset /
   CreateOffsetPoint / CreatePlane / CreatePlaneWithExtent / CreateSmartFrame (7.15). `API-7.21`
-- Formes (topologie) : sommet (point geometrique), arete (courbe), face (surface) ;
-  Shapes.GetFaceEdges(faceId) relie une face a ses aretes. Types geometriques : Vector2D/3D,
+- Formes (topologie) : sommet (point géométrique), arête (courbe), face (surface) ;
+  Shapes.GetFaceEdges(faceId) relie une face à ses arêtes. Types géométriques : Vector2D/3D,
   Direction2D/3D, Point2D/3D, Axis2D/3D, Plane3D, Frame2D/3D, Transform2D/3D + surcharges
-  arithmetiques ((p1+p2)/2, ax.Origine + x*ax.Direction). `[CHM-D]`
+  arithmétiques ((p1+p2)/2, ax.Origine + x*ax.Direction). `[CHM-D]`
 
 ## 7. Familles et pilotes
 

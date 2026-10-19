@@ -137,18 +137,16 @@ sources:
 
 ## 3. Décomposition besoin → gabarit + paramètres (méthodo)
 
-Contexte contraignant (verifié) : l'API Automation ne crée PAS la géométrie A-Z. Seules primitives
-vérifiées disponibles : CreateSketchIn2D/In3D, CreatePoint/CreateLineSegment/CreateProfile,
-CreateExtrudedShape/CreateLoftedShape/CreateRevolvedShape, et les entités de référence
-(point/axe/plan/repère). Tout le reste = gabarits. `[T-1206] [API-7.21] [REC]`
+Contexte contraignant (vérifié) : l'API Automation n'expose pas d'opérations booléennes 3D (`Union`/`Subtract`/`Pocket`/`Trim`) ni de pliage tôle (`Fold`/`Bend`). Primitives disponibles par API : `CreateSketchIn2D`/`CreateSketchIn3D`, `CreateVertex`/`CreateLineSegment`/`CreateCircleSegment` (inutile d'appeler `CreateProfile` ou `CreateSection` pour extruder : `new SmartSection3D(sketchId)` calcule automatiquement la section et les trous intérieurs à la sortie de `EndModification()`), `CreateExtrudedShape`/`CreateLoftedShape`/`CreateRevolvedShape`, `IParts.CreateDrillingOperation` (perçage cylindrique avec repère `Z` normal sortant et constructeur `DrillingHolePrimitive` à 3 arguments), et les entités de référence (point/axe/plan/repère). Toute forme créée au-delà de `Shape 1` doit être ajoutée à toutes les représentations (`GetRepresentations(docId)` -> `AddRepresentationConstituent`). `[T-1206] [API-7.21] [REC]`
 
 ### 3.1 Arbre de décision
 
 1. Le besoin est-il couvert par une recipe existante ? topsolid_list_recipes + lecture des 17
    categories (PDM, PROJECTS, DOCUMENT, PARAMETERS, GEOMETRY, ASSEMBLIES, FAMILIES, DRAFTING, BOM,
    UNFOLDING, EXPORT, USER PROPERTIES, AUDIT, MEASUREMENTS, MATERIALS, BATCH, ATTRIBUTES). `[REC]`
-2. Couvert par une primitive API (esquisse+profil+extrusion) && forme simple ? → chaîne
-   creer_esquisse_rectangle / create + extruder_esquisse puis set_real_parameter. Sinon → gabarit. `[REC]`
+2. Couvert par une primitive API (esquisse+extrusion+perçage+assemblage) ?
+   - Pour 1 opération isolée : chaîne `creer_esquisse_rectangle` + `extruder_esquisse`.
+   - Pour un ouvrage multi-pièces de A à Z : **One-Shot C# Builder** (1 appel `topsolid_compile` + 1 appel `topsolid_execute_script` qui crée toutes les pièces, peuple toutes les représentations, assemble et vérifie les collisions natives `SetCollisionsManagement`). `[REC]`
 3. Gabarit : identifier les DDL (paramètres qui pilotent la forme) et les lire :
    read_parameters, read_operations (arbre), read_shapes, list_sketches. `[REC]`
 4. Écrire la séquence de pilotage : get_state -> read (baseline) -> set (paramètres SI) ->
@@ -158,9 +156,7 @@ CreateExtrudedShape/CreateLoftedShape/CreateRevolvedShape, et les entités de r�
 
 ### 3.2 Exemple canon "équerre à N lumières" (chaîne vérifiée)
 
-- Périmètre vérifié : ce qui suit utilise UNIQUEMENT des recipes existantes. Le perçage des lumières
-  par API (drilling) est en LECTURE seule (IFeatures GetDrilling*Primitive 7.14) — c'est le gabarit
-  qui porte les lumières. `[API-7.21]`
+- Périmètre vérifié : ce qui suit utilise UNIQUEMENT des recipes existantes pour piloter un gabarit existant (si les lumières oblongues sont portées par le gabarit ; pour des perçages cylindriques simples par script, `IParts.CreateDrillingOperation` est disponible). `[API-7.21]`
 - Gabarit : piece TopPrt avec Largeur/Hauteur/Epaisseur (Length) + NbLumieres + cotes positions en
   paramètres nommés. Lumières : esquisses+extrusions ou primitive drilling dans le gabarit (main). `[T-1206]`
 - Séquence serveur (noms réels) :

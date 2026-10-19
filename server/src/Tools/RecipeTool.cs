@@ -311,19 +311,18 @@ namespace TopSolidMcpServer.Tools
                 "double w = widthMm * 0.001;\n" +
                 "double h = heightMm * 0.001;\n" +
                 "// docId is refreshed by the wrapper (EnsureIsDirty)\n" +
-                "ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn2D(docId, new SmartPoint2D(Point2D.O), new SmartDirection2D(Direction2D.DX), false);\n" +
+                "Plane3D xyPlane = new Plane3D(new Point3D(0, 0, 0), Direction3D.DX, Direction3D.DY);\n" +
+                "ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(xyPlane, -0.5, Math.Max(0.5, w + 0.2), -0.5, Math.Max(0.5, h + 0.2)), new SmartPoint3D(new Point3D(0, 0, 0)), true, SmartDirection3D.DX);\n" +
                 "TopSolidHost.Elements.SetName(sketchId, \"Esquisse_Rectangle\");\n" +
                 "TopSolidHost.Sketches2D.StartModification(sketchId);\n" +
-                "ElementItemId pt1 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(0, 0));\n" +
-                "ElementItemId pt2 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(w, 0));\n" +
-                "ElementItemId pt3 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(w, h));\n" +
-                "ElementItemId pt4 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(0, h));\n" +
-                "var segs = new List<ElementItemId>();\n" +
-                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt1, pt2));\n" +
-                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt2, pt3));\n" +
-                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt3, pt4));\n" +
-                "segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1));\n" +
-                "TopSolidHost.Sketches2D.CreateProfile(segs);\n" +
+                "ElementItemId pt1 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(0, 0));\n" +
+                "ElementItemId pt2 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(w, 0));\n" +
+                "ElementItemId pt3 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(w, h));\n" +
+                "ElementItemId pt4 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(0, h));\n" +
+                "TopSolidHost.Sketches2D.CreateLineSegment(pt1, pt2);\n" +
+                "TopSolidHost.Sketches2D.CreateLineSegment(pt2, pt3);\n" +
+                "TopSolidHost.Sketches2D.CreateLineSegment(pt3, pt4);\n" +
+                "TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1);\n" +
                 "TopSolidHost.Sketches2D.EndModification();\n" +
                 "__message = \"OK: sketch Esquisse_Rectangle created (\" + widthMm + \"x\" + heightMm + \" mm)\";") },
 
@@ -336,8 +335,13 @@ namespace TopSolidMcpServer.Tools
                 "if (sketches == null || sketches.Count == 0)\n" +
                 "    { __message = \"ERROR: no sketch in this document\"; return; }\n" +
                 "ElementId lastSketch = sketches[sketches.Count - 1];\n" +
-                "TopSolidHost.Shapes.CreateExtrudedShape(docId, new SmartSection3D(lastSketch), SmartDirection3D.DZ, new SmartReal(UnitType.Length, heightM), new SmartReal(UnitType.Angle, 0), false, false);\n" +
-                "__message = \"OK: extrusion of \" + heightMm + \"mm created\";") },
+                "ElementId shId = TopSolidHost.Shapes.CreateExtrudedShape(docId, new SmartSection3D(lastSketch), SmartDirection3D.DZ, new SmartReal(UnitType.Length, heightM), new SmartReal(UnitType.Angle, 0), false, false);\n" +
+                "foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId))\n" +
+                "{\n" +
+                "    if (!TopSolidDesignHost.Representations.GetRepresentationConstituents(rep).Contains(shId))\n" +
+                "        TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, shId);\n" +
+                "}\n" +
+                "__message = \"OK: extrusion of \" + heightMm + \"mm created (added to all representations)\";") },
 
             { "ajouter_inclusion", RW("ASSEMBLIES", "Adds an inclusion of a part document into the active assembly document. Param: value=part_document_name",
                 "if (!TopSolidDesignHost.Assemblies.IsAssembly(docId))\n" +
@@ -981,7 +985,8 @@ namespace TopSolidMcpServer.Tools
                 "        inclCount++;\n" +
                 "    }\n" +
                 "}\n" +
-                "sb.Insert(sb.ToString().IndexOf(\"\\nPieces\"), \"Inclusions: \" + inclCount + \"\\n\");\n" +
+                "int idxParts = sb.ToString().IndexOf(\"\\nParts:\");\n" +
+                "if (idxParts >= 0) sb.Insert(idxParts, \"Inclusions: \" + inclCount + \"\\n\"); else sb.AppendLine(\"Inclusions: \" + inclCount);\n" +
                 "return sb.ToString();") },
 
             { "check_part", R("AUDIT", "Quality check: designation, reference, material filled?",

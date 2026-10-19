@@ -71,6 +71,30 @@ namespace TopSolidMcpServer.Utils
                 return normalized;
             }
 
+            // 1b. Active running TopSolid.exe instance (avoids 7.20 vs 7.21 mismatch on multi-version hosts)
+            try
+            {
+                var running = System.Diagnostics.Process.GetProcessesByName("TopSolid");
+                foreach (var proc in running)
+                {
+                    try
+                    {
+                        string exePath = proc.MainModule != null ? proc.MainModule.FileName : null;
+                        if (!string.IsNullOrWhiteSpace(exePath))
+                        {
+                            string binDir = ToBinDirectory(Path.GetDirectoryName(exePath));
+                            if (binDir != null)
+                            {
+                                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from running TopSolid.exe: " + binDir);
+                                return binDir;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+
             // 2. Registry — try both 64-bit and WOW6432Node hives
             string fromRegistry = ReadFromRegistry();
             if (fromRegistry != null)

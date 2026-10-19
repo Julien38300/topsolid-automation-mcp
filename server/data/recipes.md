@@ -450,29 +450,28 @@ Description: Cree une esquisse 2D rectangulaire dans le document actif. Param: v
 
 ```csharp
 string[] parts = "{value}".Split(':');
-if (parts.Length < 2) { __message = "ERROR: format attendu largeur:hauteur (mm)"; return; }
+if (parts.Length < 2) { __message = "ERROR: expected format width:height (mm)"; return; }
 double widthMm, heightMm;
 if (!double.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out widthMm) ||
     !double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out heightMm))
-    { __message = "ERROR: valeurs numeriques invalides"; return; }
+    { __message = "ERROR: invalid numeric values"; return; }
 double w = widthMm * 0.001;
 double h = heightMm * 0.001;
-// On utilise docId mis a jour par le wrapper (EnsureIsDirty)
-ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn2D(docId, new SmartPoint2D(Point2D.O), new SmartDirection2D(Direction2D.DX), false);
+// docId is refreshed by the wrapper (EnsureIsDirty)
+Plane3D xyPlane = new Plane3D(new Point3D(0, 0, 0), Direction3D.DX, Direction3D.DY);
+ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(xyPlane, -0.5, Math.Max(0.5, w + 0.2), -0.5, Math.Max(0.5, h + 0.2)), new SmartPoint3D(new Point3D(0, 0, 0)), true, SmartDirection3D.DX);
 TopSolidHost.Elements.SetName(sketchId, "Esquisse_Rectangle");
 TopSolidHost.Sketches2D.StartModification(sketchId);
-ElementItemId pt1 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(0, 0));
-ElementItemId pt2 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(w, 0));
-ElementItemId pt3 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(w, h));
-ElementItemId pt4 = TopSolidHost.Sketches2D.CreatePoint(new Point2D(0, h));
-var segs = new List<ElementItemId>();
-segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt1, pt2));
-segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt2, pt3));
-segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt3, pt4));
-segs.Add(TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1));
-TopSolidHost.Sketches2D.CreateProfile(segs);
+ElementItemId pt1 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(0, 0));
+ElementItemId pt2 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(w, 0));
+ElementItemId pt3 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(w, h));
+ElementItemId pt4 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(0, h));
+TopSolidHost.Sketches2D.CreateLineSegment(pt1, pt2);
+TopSolidHost.Sketches2D.CreateLineSegment(pt2, pt3);
+TopSolidHost.Sketches2D.CreateLineSegment(pt3, pt4);
+TopSolidHost.Sketches2D.CreateLineSegment(pt4, pt1);
 TopSolidHost.Sketches2D.EndModification();
-__message = "OK: esquisse Esquisse_Rectangle creee (" + widthMm + "x" + heightMm + " mm)";
+__message = "OK: sketch Esquisse_Rectangle created (" + widthMm + "x" + heightMm + " mm)";
 ```
 
 ---
@@ -484,14 +483,19 @@ Description: Extrude la derniere esquisse 2D du document actif en solide 3D. Par
 ```csharp
 double heightMm;
 if (!double.TryParse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out heightMm))
-    { __message = "ERROR: hauteur numerique invalide"; return; }
+    { __message = "ERROR: invalid numeric height"; return; }
 double heightM = heightMm * 0.001;
 var sketches = TopSolidHost.Sketches2D.GetSketches(docId);
 if (sketches == null || sketches.Count == 0)
-    { __message = "ERROR: aucune esquisse dans ce document"; return; }
+    { __message = "ERROR: no sketch in this document"; return; }
 ElementId lastSketch = sketches[sketches.Count - 1];
-TopSolidHost.Shapes.CreateExtrudedShape(docId, new SmartSection3D(lastSketch), SmartDirection3D.DZ, new SmartReal(UnitType.Length, heightM), new SmartReal(UnitType.Angle, 0), false, false);
-__message = "OK: extrusion de " + heightMm + "mm creee";
+ElementId shId = TopSolidHost.Shapes.CreateExtrudedShape(docId, new SmartSection3D(lastSketch), SmartDirection3D.DZ, new SmartReal(UnitType.Length, heightM), new SmartReal(UnitType.Angle, 0), false, false);
+foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId))
+{
+    if (!TopSolidDesignHost.Representations.GetRepresentationConstituents(rep).Contains(shId))
+        TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, shId);
+}
+__message = "OK: extrusion of " + heightMm + "mm created (added to all representations)";
 ```
 
 ---
