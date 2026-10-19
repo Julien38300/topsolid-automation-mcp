@@ -162,6 +162,7 @@ Nom sans source verifiee = interdit. Notion non confirmee = `[A VALIDER]`.
 - Toute modification passe par : StartModification("Action", false) -> try { ... EndModification(true, true) }
   catch { EndModification(false, false) } — enfin garantit la sortie du mode modif. Oublier EndModification = TopSolid
   verrouille. `CHM-D`
+- **Interdiction absolue de `Documents.Update` dans `StartModification`** : ne JAMAIS appeler `TopSolidHost.Documents.Update(docId, true)` tant que `StartModification` est ouvert (provoque un deadlock immédiat du noyau TopSolid). `EndModification(true, true)` met automatiquement à jour le document et évalue les solides (`GetShapeVolume`).
 - Document doit etre modifiable : Documents.EnsureIsDirty(ref docId) — ref car une nouvelle revision peut
   etre produite : garder l'identifiant rafraichi, jamais une copie. `CHM-D`
 - Les operations PDM de type check-in sont HORS StartModification/EndModification (non undoables). `CHM-D`

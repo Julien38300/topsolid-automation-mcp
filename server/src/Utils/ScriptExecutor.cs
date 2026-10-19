@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -91,6 +92,9 @@ namespace TopSolidMcpServer.Utils
                     ? (forceModification || DetectModification(preprocessed))
                     : forceModification;
 
+                string deadlockGuard = CheckForDeadlockingUpdate(preprocessed, isModification);
+                if (deadlockGuard != null) return deadlockGuard;
+
                 int headerLineCount;
                 string wrappedCode = WrapCode(preprocessed, isModification, false, out headerLineCount);
 
@@ -174,6 +178,9 @@ namespace TopSolidMcpServer.Utils
                 bool isModification = autoDetect
                     ? (forceModification || DetectModification(preprocessed))
                     : forceModification;
+
+                string deadlockGuard = CheckForDeadlockingUpdate(preprocessed, isModification);
+                if (deadlockGuard != null) return deadlockGuard;
 
                 int headerLineCount;
                 string wrappedCode = WrapCode(preprocessed, isModification, blockReturn, out headerLineCount);
@@ -277,6 +284,10 @@ namespace TopSolidMcpServer.Utils
 
             if (failure != null)
             {
+                // If a script with manual StartModification threw an unhandled exception,
+                // abort any open TopSolid modification so the session is not left locked.
+                try { AbortOpenModification(); } catch { }
+
                 var invocationFailure = failure as TargetInvocationException;
                 Exception inner = (invocationFailure != null && invocationFailure.InnerException != null)
                     ? invocationFailure.InnerException
@@ -285,6 +296,12 @@ namespace TopSolidMcpServer.Utils
             }
 
             return result ?? string.Empty;
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void AbortOpenModification()
+        {
+            TopSolidHost.Application.EndModification(false, false);
         }
 
         /// <summary>
@@ -412,6 +429,49 @@ namespace TopSolidMcpServer.Utils
                     return "Error: the script references a blocked API: '" + symbol + "'. " +
                         "Process launching, networking, reflection, registry access and file/directory " +
                         "deletion are refused. Set TOPSOLID_MCP_ALLOW_UNSAFE=1 to allow them.";
+                }
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Rejects calls to <c>IDocuments.Update(docId, ...)</c> inside an open
+        /// <c>Application.StartModification</c> transaction, which deadlocks TopSolid's regeneration
+        /// loop. <c>EndModification(true, true)</c> already updates the document upon commit.
+        /// </summary>
+        private static string CheckForDeadlockingUpdate(string code, bool isModification)
+        {
+            if (string.IsNullOrEmpty(code)) return null;
+
+            string sanitized = StripLiteralsAndComments(code);
+            MatchCollection updateMatches = Regex.Matches(sanitized, @"\.\s*Update\s*\(");
+            if (updateMatches.Count == 0) return null;
+
+            const string errorMessage =
+                "Error: Documents.Update(docId, ...) must never be called inside an open StartModification " +
+                "transaction (it deadlocks TopSolid). EndModification(true, true) automatically updates the " +
+                "document; read computed geometry (such as GetShapeVolume) only after EndModification(true, true).";
+
+            if (isModification)
+            {
+                return errorMessage;
+            }
+
+            // Manual transaction mode (isModification == false): check whether any .Update( call
+            // sits between a 2-argument Application.StartModification(name, bool) and EndModification(bool, bool).
+            foreach (Match updateMatch in updateMatches)
+            {
+                string prefix = sanitized.Substring(0, updateMatch.Index);
+                MatchCollection starts = Regex.Matches(prefix, @"\.\s*StartModification\s*\([^)]*,");
+                if (starts.Count == 0) continue;
+
+                MatchCollection ends = Regex.Matches(prefix, @"\.\s*EndModification\s*\([^)]*,");
+                int lastStart = starts[starts.Count - 1].Index;
+                int lastEnd = ends.Count > 0 ? ends[ends.Count - 1].Index : -1;
+                if (lastStart > lastEnd)
+                {
+                    return errorMessage;
                 }
             }
 

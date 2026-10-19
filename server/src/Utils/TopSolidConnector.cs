@@ -378,6 +378,7 @@ namespace TopSolidMcpServer.Utils
             catch (Exception ex)
             {
                 Console.Error.WriteLine("[TopSolidConnector] Error getting state: " + ex.Message);
+                RefreshConnectionState();
                 return "Failed to read the TopSolid state: " + ex.Message;
             }
         }
@@ -404,7 +405,9 @@ namespace TopSolidMcpServer.Utils
             if (!alive)
             {
                 bool wasConnected = _isConnected;
-                _isConnected = false;
+                // Tear down any Faulted/Closed WCF ServiceChannel proxies in TopSolidHost,
+                // TopSolidDesignHost and TopSolidDraftingHost so the next Connect() creates fresh channels.
+                DisconnectInternal();
                 if (wasConnected)
                 {
                     Console.Error.WriteLine("[TopSolidConnector] Connection lost to TopSolid.");
@@ -509,6 +512,13 @@ namespace TopSolidMcpServer.Utils
         {
             version = null;
 
+            try
+            {
+                if (TopSolidHost.IsConnected)
+                    TopSolidHost.Disconnect();
+            }
+            catch { }
+
             // Target the specific TopSolid instance by TCP port. Without this,
             // Connect() picks the first available named pipe, which fails when
             // several TopSolid versions are running.
@@ -519,8 +529,11 @@ namespace TopSolidMcpServer.Utils
             TopSolidHost.Connect(false, 10000);
 
             var v = TopSolidHost.Version;
+            if (v <= 0 || !PingKernel())
+                return false;
+
             version = v.ToString();
-            return v > 0;
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -532,8 +545,18 @@ namespace TopSolidMcpServer.Utils
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static bool PingKernel()
         {
-            var app = TopSolidHost.Application;
-            return app != null;
+            if (!TopSolidHost.IsConnected)
+                return false;
+
+            var docs = TopSolidHost.Documents;
+            if (docs == null)
+                return false;
+
+            // Perform a real lightweight WCF round-trip on the ServiceChannel.
+            // (TopSolidHost.Application and TopSolidHost.Version only return cached fields
+            // in memory and never detect a Faulted WCF channel after TopSolid restarts.)
+            var _ = docs.EditedDocument;
+            return true;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -545,6 +568,12 @@ namespace TopSolidMcpServer.Utils
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ConnectDesignModule()
         {
+            try
+            {
+                if (TopSolidDesignHost.IsConnected)
+                    TopSolidDesignHost.Disconnect();
+            }
+            catch { }
             TopSolidDesignHost.Connect();
         }
 
@@ -557,6 +586,12 @@ namespace TopSolidMcpServer.Utils
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ConnectDraftingModule()
         {
+            try
+            {
+                if (TopSolidDraftingHost.IsConnected)
+                    TopSolidDraftingHost.Disconnect();
+            }
+            catch { }
             TopSolidDraftingHost.Connect();
         }
 
