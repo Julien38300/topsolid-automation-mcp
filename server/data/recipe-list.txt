@@ -1,4 +1,4 @@
-Total recipes: 195
+Total recipes: 199
 activate_bom_row|RW|Activates a BOM row by its index (0-based, among root-children). Param: value=row_index
 add_draft_to_bundle|RW|Adds a draft to the opened bundle (its pages become separate bundle pages). Param: value=draft_doc_name
 add_page_to_bundle|RW|Adds a new page to the opened drafting bundle. No value expected.
@@ -28,6 +28,7 @@ batch_read_property|R|Reads a specific property across all project documents. Pa
 batch_set_designation|RW|Sets Designation (Description) on ALL documents of the current project. Param: value=new_designation
 batch_set_manufacturer|RW|Sets Manufacturer on ALL documents of the current project. Param: value=new_manufacturer
 batch_set_reference|RW|Sets Reference (PartNumber) on ALL documents of the current project. Param: value=new_reference
+check_collisions|RW|Enables B-Rep collision detection on the active assembly, lists ShapeShapeCollisionEntity clashes, and restores ModelingStage. No value expected.
 check_family_drivers|R|Checks that family drivers have a designation. Lists those without.
 check_missing_materials|R|Lists project parts without assigned material
 check_part|R|Quality check: designation, reference, material filled?
@@ -42,6 +43,7 @@ copy_pdm_properties_to|RW|Copies designation/reference/manufacturer from current
 count_assembly_parts|R|Counts parts grouped by type with quantities
 count_bom_rows|R|Counts active BOM rows
 count_documents_by_type|R|Counts project documents grouped by type (.TopPrt, .TopAsm, .TopDft...)
+create_drilling|RW|Creates a drilling operation on a face at (X,Y,Z) with normal (NX,NY,NZ). Param: value=diam_mm:depth_mm:X_mm:Y_mm:Z_mm:NX:NY:NZ
 creer_esquisse_rectangle|RW|Creates a 2D rectangular sketch in the active document. Param: value=width:height (mm)
 creer_parametre_formule|RW|Creates a new formula-driven real parameter in the active document. Param: value=name:unit:formula (e.g. DiagBolt:Length:Longueur * 1.414). The formula uses TopSolid expression syntax (parameter names, operators, SI units). Supported units: Length, Mass, Angle, NoUnit.
 creer_parametre_reel|RW|Creates a new real parameter in the active document. Param: value=name:unit:SIvalue (e.g. Longueur:Length:0.05 for 50mm) or name::SIvalue for NoUnit. Supported units: Length, Mass, Angle, NoUnit.
@@ -152,6 +154,7 @@ set_bump_scale|RW|Sets the bump texture scale factor of the material applied to 
 set_bundle_page_dimensions|RW|Sets the dimensions of a bundle page. Param: value=page;width;height (mm, e.g. 1;420;297)
 set_bundle_page_format|RW|Sets the format of a bundle page. Param: value=page;format_name (e.g. 1;A3 landscape)
 set_bundle_page_format_name|RW|Sets the format name of a bundle page to 'A3'. Param: value=page_number (e.g. 1)
+set_coating|RW|Applies a coating (.TopCot) from PDM/libraries to the active part. Param: value=coating_name_filter
 set_coating_brinell_hardness_factor|RW|Sets the Brinell hardness factor of the active coating. Param: value=<number>
 set_coating_bump_rotation|RW|Sets the bump texture rotation angle of the active coating. Param: value=<number>
 set_coating_bump_scale|RW|Sets the bump texture scale factor of the active coating. Param: value=<number>
@@ -171,6 +174,7 @@ set_glossiness_factor|RW|Sets the glossiness factor of the material applied to t
 set_homogeneous_parameter_value|RW|Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false
 set_isotropic_parameter_value|RW|Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false
 set_manufacturer|RW|Sets the manufacturer. Param: value
+set_material|RW|Assigns a material (.TopMat) from PDM/libraries to the active part. Param: value=material_name_filter
 set_melting_temperature|RW|Sets the melting temperature of the material applied to the edited document. Param: value=<number>
 set_name|RW|Sets the name. Param: value
 set_plastic_strain_ratio|RW|Sets the plastic strain ratio of the material applied to the edited document. Param: value=<number>
