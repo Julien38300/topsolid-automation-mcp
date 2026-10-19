@@ -180,36 +180,145 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>
+        /// Converts the raw <c>dwLocalPort</c> field of <c>MIB_TCPROW_OWNER_PID</c>
+        /// (network byte order in the lower 16 bits; upper 16 bits may contain
+        /// uninitialized data per Win32 docs) into a host-order TCP port number.
+        /// </summary>
+        public static int DecodeNetworkPort(int dwLocalPort)
+        {
+            return ((dwLocalPort & 0xFF) << 8) | ((dwLocalPort >> 8) & 0xFF);
+        }
+
+        /// <summary>
+        /// Issue #13: Resolves the effective TopSolid TCP port to target given the
+        /// configured port (from settings.json / default), the instance mode ("auto"
+        /// or "manual"), and the currently running TopSolid instances.
+        /// <list type="bullet">
+        ///   <item>If a running TopSolid instance is listening on <paramref name="configuredPort"/>
+        ///         and either mode is "manual" or <paramref name="configuredPort"/> was explicitly set, keep it.</item>
+        ///   <item>Otherwise, if any running TopSolid instance exposes an open Automation port
+        ///         (e.g. user launched TopSolid on 8090 while settings.json still had a stale 8091),
+        ///         automatically target the first running instance with an open Automation port.</item>
+        ///   <item>If no running TopSolid with Automation port is found, keep <paramref name="configuredPort"/>
+        ///         (or 8090 when unset).</item>
+        /// </list>
+        /// </summary>
+        public static int ResolveActivePort(
+            int configuredPort,
+            string instanceMode,
+            IList<TopSolidInstance> runningInstances)
+        {
+            int fallbackPort = configuredPort > 0 ? configuredPort : 8090;
+            if (runningInstances == null || runningInstances.Count == 0)
+                return fallbackPort;
+
+            // If the configured port is actually alive on a running TopSolid, honour it
+            // when in manual mode or when a non-default port was configured.
+            if (configuredPort > 0 && (instanceMode == "manual" || configuredPort != 8090))
+            {
+                var exact = FindByPort(runningInstances, configuredPort);
+                if (exact != null && exact.HasAutomationPort)
+                    return exact.Port;
+            }
+
+            // Otherwise (auto mode, or configuredPort is stale/unreachable like 8091 when
+            // only 8090 is running — Issue #13), pick the first running TopSolid that has
+            // an open Automation port.
+            foreach (var inst in runningInstances)
+            {
+                if (inst != null && inst.HasAutomationPort)
+                    return inst.Port;
+            }
+
+            return fallbackPort;
+        }
+
+        /// <summary>
         /// Lists listening TCP ports with their owning pid via GetExtendedTcpTable
         /// (what netstat -ano reads; no admin rights needed, no external process).
+        /// Scans both IPv4 (AF_INET) and IPv6 (AF_INET6).
         /// </summary>
-        private static List<PortSnapshot> GetListeningPorts()
+        public static List<PortSnapshot> GetListeningPorts()
+        {
+            var table = new List<PortSnapshot>();
+            ReadTcp4Listeners(table);
+            ReadTcp6Listeners(table);
+            return table;
+        }
+
+        private static void ReadTcp4Listeners(List<PortSnapshot> table)
         {
             const int AF_INET = 2;
-            const int TCP_TABLE_OWNER_PID_LISTENER = 4;
+            // Win32 TCP_TABLE_CLASS enum:
+            //   0 = TCP_TABLE_BASIC_LISTENER
+            //   1 = TCP_TABLE_BASIC_CONNECTIONS
+            //   2 = TCP_TABLE_BASIC_ALL
+            //   3 = TCP_TABLE_OWNER_PID_LISTENER
+            //   4 = TCP_TABLE_OWNER_PID_CONNECTIONS
+            //   5 = TCP_TABLE_OWNER_PID_ALL
+            const int TCP_TABLE_OWNER_PID_LISTENER = 3;
             int bufferSize = 0;
             GetExtendedTcpTable(IntPtr.Zero, ref bufferSize, false, AF_INET, TCP_TABLE_OWNER_PID_LISTENER, 0);
+            if (bufferSize <= 0) return;
 
             IntPtr buffer = Marshal.AllocHGlobal(bufferSize);
             try
             {
                 if (GetExtendedTcpTable(buffer, ref bufferSize, false, AF_INET,
                         TCP_TABLE_OWNER_PID_LISTENER, 0) != 0)
-                    return new List<PortSnapshot>();
+                    return;
 
                 int count = Marshal.ReadInt32(buffer);
-                var table = new List<PortSnapshot>(count);
                 long rowPtr = buffer.ToInt64() + 4;
                 int rowSize = Marshal.SizeOf(typeof(MIB_TCPROW_OWNER_PID));
                 for (int i = 0; i < count; i++)
                 {
                     var row = (MIB_TCPROW_OWNER_PID)Marshal.PtrToStructure(
                         new IntPtr(rowPtr + i * rowSize), typeof(MIB_TCPROW_OWNER_PID));
-                    // dwState 2 = LISTEN
+                    // dwState 2 = MIB_TCP_STATE_LISTEN
                     if (row.dwState == 2)
-                        table.Add(new PortSnapshot(row.dwOwningPid, row.dwLocalPort));
+                    {
+                        int port = DecodeNetworkPort(row.dwLocalPort);
+                        if (port > 0)
+                            table.Add(new PortSnapshot(row.dwOwningPid, port));
+                    }
                 }
-                return table;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+
+        private static void ReadTcp6Listeners(List<PortSnapshot> table)
+        {
+            const int AF_INET6 = 23;
+            const int TCP_TABLE_OWNER_PID_LISTENER = 3;
+            int bufferSize = 0;
+            GetExtendedTcpTable(IntPtr.Zero, ref bufferSize, false, AF_INET6, TCP_TABLE_OWNER_PID_LISTENER, 0);
+            if (bufferSize <= 0) return;
+
+            IntPtr buffer = Marshal.AllocHGlobal(bufferSize);
+            try
+            {
+                if (GetExtendedTcpTable(buffer, ref bufferSize, false, AF_INET6,
+                        TCP_TABLE_OWNER_PID_LISTENER, 0) != 0)
+                    return;
+
+                int count = Marshal.ReadInt32(buffer);
+                long rowPtr = buffer.ToInt64() + 4;
+                int rowSize = Marshal.SizeOf(typeof(MIB_TCP6ROW_OWNER_PID));
+                for (int i = 0; i < count; i++)
+                {
+                    var row = (MIB_TCP6ROW_OWNER_PID)Marshal.PtrToStructure(
+                        new IntPtr(rowPtr + i * rowSize), typeof(MIB_TCP6ROW_OWNER_PID));
+                    if (row.dwState == 2)
+                    {
+                        int port = DecodeNetworkPort(row.dwLocalPort);
+                        if (port > 0)
+                            table.Add(new PortSnapshot(row.dwOwningPid, port));
+                    }
+                }
             }
             finally
             {
@@ -225,6 +334,21 @@ namespace TopSolidMcpServer.Utils
             public int dwLocalPort;
             public int dwRemoteAddr;
             public int dwRemotePort;
+            public int dwOwningPid;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MIB_TCP6ROW_OWNER_PID
+        {
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            public byte[] ucLocalAddr;
+            public int dwLocalScopeId;
+            public int dwLocalPort;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
+            public byte[] ucRemoteAddr;
+            public int dwRemoteScopeId;
+            public int dwRemotePort;
+            public int dwState;
             public int dwOwningPid;
         }
 

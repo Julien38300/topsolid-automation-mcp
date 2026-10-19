@@ -38,6 +38,7 @@ namespace TopSolidMcpServer.Utils
         private Thread _thread;
         private readonly Action _onShutdownRequested;
         private ToolStripMenuItem _statusItem;
+        private ToolStripMenuItem _portItem;
         private ToolStripMenuItem _readOnlyItem;
         private ToolStripMenuItem _reconnectItem;
         private ToolStripMenuItem _updateAvailableItem;   // "Télécharger la mise à jour…" when an update exists
@@ -87,7 +88,7 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>
-        /// Sets the TCP port used for the TopSolid connection. Called once at startup.
+        /// Sets the TCP port used for the TopSolid connection. Safe to call at startup or on retarget.
         /// </summary>
         public void SetPort(int port)
         {
@@ -158,6 +159,12 @@ namespace TopSolidMcpServer.Utils
             {
                 string text = BuildStatusText(state);
                 if (_statusItem != null) _statusItem.Text = text;
+                if (_portItem != null)
+                {
+                    _portItem.Text = _port > 0
+                        ? string.Format(L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), _port)
+                        : L("Port TopSolid : par défaut (cliquer pour changer)", "TopSolid port: default (click to change)");
+                }
 
                 if (_notifyIcon != null)
                 {
@@ -266,17 +273,17 @@ namespace TopSolidMcpServer.Utils
             // ── Settings zone ──
             var settingsMenu = new ToolStripMenuItem(L("Paramètres", "Settings"));
 
-            // Port: click to change. Persisted in settings.json, applied on next start.
-            var portItem = new ToolStripMenuItem(_port > 0
+            // Port: click to change. Persisted in settings.json and applied immediately.
+            _portItem = new ToolStripMenuItem(_port > 0
                 ? string.Format(L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), _port)
                 : L("Port TopSolid : par défaut (cliquer pour changer)", "TopSolid port: default (click to change)"));
-            portItem.Click += (s, e) =>
+            _portItem.Click += (s, e) =>
             {
                 int currentPort = _port > 0 ? _port : 8090;
                 string input = PromptInput(
                     L("Port TopSolid", "TopSolid port"),
-                    L("Port TCP de TopSolid (8090 par défaut) :\nAppliqué au prochain démarrage du serveur.",
-                      "TopSolid TCP port (8090 default):\nApplied at next server start."),
+                    L("Port TCP de TopSolid (8090 par défaut) :\nAppliqué immédiatement.",
+                      "TopSolid TCP port (8090 default):\nApplied immediately."),
                     currentPort.ToString(CultureInfo.InvariantCulture));
                 if (string.IsNullOrWhiteSpace(input)) return;
                 int newPort;
@@ -290,13 +297,37 @@ namespace TopSolidMcpServer.Utils
                 int stored = newPort == 8090 ? 0 : newPort;   // 8090 = default, do not store
                 TraySettings.Save(stored, _readOnly);
                 _port = newPort;
-                portItem.Text = string.Format(
+                _portItem.Text = string.Format(
                     L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), newPort);
-                ShowBalloon(L("Paramètres", "Settings"),
-                    string.Format(L("Port {0} enregistré. Il sera appliqué au prochain démarrage du serveur.", "Port {0} saved. It will be applied next time the server starts."), newPort),
-                    ToolTipIcon.Info, 3000);
+
+                var retarget = _retarget;
+                if (retarget != null)
+                {
+                    PostState(TrayState.Connecting);
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        bool ok = false;
+                        try { ok = retarget(newPort); }
+                        catch { ok = false; }
+                        finally
+                        {
+                            PostState(ok ? TrayState.Connected : TrayState.Disconnected);
+                            ShowBalloonSafe("TopSolid MCP",
+                                ok
+                                    ? string.Format(L("Connecté à TopSolid sur le port {0}.", "Connected to TopSolid on port {0}."), newPort)
+                                    : string.Format(L("Port {0} enregistré, mais TopSolid ne répond pas sur ce port.", "Port {0} saved, but TopSolid is not responding on this port."), newPort),
+                                ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
+                        }
+                    });
+                }
+                else
+                {
+                    ShowBalloon(L("Paramètres", "Settings"),
+                        string.Format(L("Port {0} enregistré.", "Port {0} saved."), newPort),
+                        ToolTipIcon.Info, 3000);
+                }
             };
-            settingsMenu.DropDownItems.Add(portItem);
+            settingsMenu.DropDownItems.Add(_portItem);
 
             // Read-only: click to toggle. Persisted, applied on next start.
             _readOnlyItem = new ToolStripMenuItem(_readOnly
@@ -379,8 +410,10 @@ namespace TopSolidMcpServer.Utils
                 return;
             }
 
-            // Orange state + balloon; the connector fires ConnectionChanged when done,
-            // which flips the badge to green or red.
+            // Issue #13: Switch to orange (Connecting) while probing, and ALWAYS
+            // restore Connected (green) or Disconnected (red) in finally: when
+            // wasConnected == false && nowConnected == false, ConnectionChanged
+            // does not fire, which previously left the tray stuck in orange forever.
             PostState(TrayState.Connecting);
             ShowBalloon("TopSolid MCP",
                 L("Tentative de reconnexion…", "Attempting to reconnect…"),
@@ -396,6 +429,18 @@ namespace TopSolidMcpServer.Utils
                 catch (Exception ex)
                 {
                     Console.Error.WriteLine("[TrayIcon] Reconnect error: " + ex.Message);
+                }
+                finally
+                {
+                    bool ok = false;
+                    try { if (_isConnected != null) ok = _isConnected(); } catch { }
+                    PostState(ok ? TrayState.Connected : TrayState.Disconnected);
+                    int p = _port > 0 ? _port : 8090;
+                    ShowBalloonSafe("TopSolid MCP",
+                        ok
+                            ? string.Format(L("Connecté à TopSolid (port {0}).", "Connected to TopSolid (port {0})."), p)
+                            : string.Format(L("Impossible de se connecter à TopSolid (port {0}). Vérifiez que TopSolid est lancé avec Automation activé.", "Could not connect to TopSolid (port {0}). Check that TopSolid is running with Automation enabled."), p),
+                        ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
                 }
             });
         }

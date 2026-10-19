@@ -243,42 +243,49 @@ namespace TopSolidMcpServer
                 // ── Connector: created IMMEDIATELY (not lazy) ──
                 // so the tray icon and reconnect button work from the start.
                 int port = 8090;
+                bool portLockedByCliOrEnv = false;
                 if (envPort != null && int.TryParse(envPort, out int parsedPort))
                 {
                     port = parsedPort;
-                }
-                else if (TraySettings.Port > 0)
-                {
-                    port = TraySettings.Port;
-                    Console.Error.WriteLine($"[MCP-INFO] Port {port} from settings.json (tray).");
-                }
-                else if (TraySettings.InstanceMode == "manual")
-                {
-                    // v1.8.3 "manual" mode with no legacy port saved: the tray picker
-                    // never wrote a port (clean install). Stay on the default —
-                    // picking an instance in the tray sets the port explicitly.
+                    portLockedByCliOrEnv = true;
                 }
                 else
                 {
-                    // v1.8.3 "auto" mode (default): target the first running TopSolid
-                    // found by the instance scan, whatever its automation port. The
-                    // user's FEA-style "everything automatic" case.
+                    int configuredPort = TraySettings.Port;
+                    if (configuredPort > 0)
+                        Console.Error.WriteLine($"[MCP-INFO] Port {configuredPort} from settings.json (tray).");
+
+                    // Issue #13: Scan running TopSolid instances and resolve the active port.
+                    // If configuredPort (e.g. 8091 in settings.json) is not running while
+                    // another TopSolid instance is open on 8090, ResolveActivePort targets 8090.
                     try
                     {
                         var running = TopSolidInstanceList.Scan();
-                        var first = running.Count > 0 ? running[0] : null;
-                        if (first != null && first.HasAutomationPort)
+                        int resolved = TopSolidInstanceList.ResolveActivePort(
+                            configuredPort, TraySettings.InstanceMode, running);
+                        port = resolved;
+                        var matched = TopSolidInstanceList.FindByPort(running, port);
+                        if (matched != null && matched.HasAutomationPort)
                         {
-                            port = first.Port;
-                            Console.Error.WriteLine($"[MCP-INFO] Auto-detected TopSolid {first.Version ?? ""} (pid {first.Pid}) on port {port}.");
+                            if (configuredPort > 0 && configuredPort != port)
+                            {
+                                Console.Error.WriteLine(
+                                    $"[MCP-INFO] Configured port {configuredPort} not active; auto-switched to running TopSolid {matched.Version ?? ""} (pid {matched.Pid}) on port {port}.");
+                            }
+                            else
+                            {
+                                Console.Error.WriteLine(
+                                    $"[MCP-INFO] Auto-detected TopSolid {matched.Version ?? ""} (pid {matched.Pid}) on port {port}.");
+                            }
                         }
-                        else if (first != null)
+                        else if (running.Count > 0)
                         {
-                            Console.Error.WriteLine("[MCP-INFO] Running TopSolid found but no automation port detected; using default port " + port + ".");
+                            Console.Error.WriteLine("[MCP-INFO] Running TopSolid found but no automation port detected; using port " + port + ".");
                         }
                     }
                     catch (Exception ex)
                     {
+                        port = configuredPort > 0 ? configuredPort : 8090;
                         Console.Error.WriteLine("[MCP-INFO] Instance scan failed: " + ex.Message);
                     }
                 }
@@ -442,28 +449,55 @@ namespace TopSolidMcpServer
 
                         // Wire tray icon to connector (AFTER tray.Start())
                         var startedTray = tray;
-                        startedTray.SetPort(port);
+                        startedTray.SetPort(connector.Port);
                         startedTray.SetReadOnly(readOnly);
                         startedTray.SetConnected(connector.IsConnected);
                         startedTray.SetApiKey(apiKey);
-                        startedTray.SetAutoConnectors(() => connector.Connect(), () => connector.IsConnected);
+
+                        Func<bool> tryConnectWithFallback = () =>
+                        {
+                            bool ok = connector.Connect();
+                            if (!ok && !portLockedByCliOrEnv)
+                            {
+                                try
+                                {
+                                    var running = TopSolidInstanceList.Scan();
+                                    int fallbackPort = TopSolidInstanceList.ResolveActivePort(
+                                        connector.Port, TraySettings.InstanceMode, running);
+                                    if (fallbackPort > 0 && fallbackPort != connector.Port)
+                                    {
+                                        Console.Error.WriteLine(
+                                            $"[MCP-INFO] Port {connector.Port} unreachable; auto-switching to running TopSolid on port {fallbackPort}...");
+                                        ok = connector.Retarget(fallbackPort);
+                                        startedTray.SetPort(connector.Port);
+                                    }
+                                }
+                                catch { }
+                            }
+                            startedTray.SetPort(connector.Port);
+                            startedTray.SetConnected(ok);
+                            return ok;
+                        };
+
+                        startedTray.SetAutoConnectors(() => tryConnectWithFallback(), () => connector.IsConnected);
                         startedTray.StartAutoReconnect();   // v1.8.0: automatic reconnection
 
                         connector.ConnectionChanged += (connected) =>
                         {
+                            startedTray.SetPort(connector.Port);
                             startedTray.SetConnected(connected);
                             startedTray.NoteConnectionState(connected);
                             Console.Error.WriteLine(connected
-                                ? "[MCP-INFO] TopSolid connection established."
+                                ? "[MCP-INFO] TopSolid connection established (port " + connector.Port + ")."
                                 : "[MCP-INFO] TopSolid connection lost.");
                         };
 
                         startedTray.SetReconnectAction(() =>
                         {
-                            bool ok = connector.Connect();
+                            bool ok = tryConnectWithFallback();
                             Console.Error.WriteLine(ok
-                                ? "[MCP-INFO] Manual reconnect succeeded."
-                                : "[MCP-INFO] Manual reconnect failed - TopSolid not available on port " + port + ".");
+                                ? "[MCP-INFO] Manual reconnect succeeded (port " + connector.Port + ")."
+                                : "[MCP-INFO] Manual reconnect failed - TopSolid not available on port " + connector.Port + ".");
                         });
 
                         // v1.8.3: instance picker — one click retargets immediately
@@ -471,6 +505,8 @@ namespace TopSolidMcpServer
                         startedTray.SetRetargetAction(retargetPort =>
                         {
                             bool ok = connector.Retarget(retargetPort);
+                            startedTray.SetPort(connector.Port);
+                            startedTray.SetConnected(ok);
                             Console.Error.WriteLine(ok
                                 ? "[MCP-INFO] Retargeted to port " + retargetPort + "."
                                 : "[MCP-INFO] Retarget to port " + retargetPort + " failed.");

@@ -101,12 +101,20 @@ namespace TopSolidMcpServer.Utils
         {
             if (port < 1 || port > 65535) return false;
 
+            bool wasConnected;
+            bool nowConnected;
             lock (_lock)
             {
+                wasConnected = _isConnected;
                 if (_isConnected) DisconnectInternal();
                 _port = port;
-                return ConnectInternal();
+                nowConnected = ConnectInternal();
             }
+
+            if (wasConnected != nowConnected)
+                RaiseConnectionChanged(nowConnected);
+
+            return nowConnected;
         }
 
         /// <summary>

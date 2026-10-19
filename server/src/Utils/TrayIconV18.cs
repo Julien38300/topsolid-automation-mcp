@@ -349,6 +349,12 @@ namespace TopSolidMcpServer.Utils
             {
                 try { tryConnect(); }
                 catch (Exception ex) { Console.Error.WriteLine("[TrayIcon] Auto-reconnect error: " + ex.Message); }
+                finally
+                {
+                    bool ok = false;
+                    try { ok = isConnected(); } catch { }
+                    PostState(ok ? TrayState.Connected : TrayState.Disconnected);
+                }
             });
         }
 

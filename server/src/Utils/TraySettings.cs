@@ -110,27 +110,37 @@ namespace TopSolidMcpServer.Utils
 
         /// <summary>
         /// Writes settings.json with the given port and read-only flag plus the
-        /// current instance-picker fields. Failure is logged, never thrown.
+        /// current instance-picker fields, preserving any other existing fields
+        /// (such as <c>api_key_dpapi</c> written by <see cref="ApiKeyStore"/>).
+        /// Failure is logged, never thrown.
         /// </summary>
         public static void Save(int port, bool readOnly)
         {
+            Port = port;
+            ReadOnly = readOnly;
             try
             {
-                var obj = new JObject
+                string path = FilePath();
+                JObject obj = null;
+                if (File.Exists(path))
                 {
-                    ["port"] = port,
-                    ["read_only"] = readOnly,
-                    ["instance_mode"] = InstanceMode,
-                    ["declared_instances"] = new JArray(
-                        DeclaredInstances.Select(d => new JObject
-                        {
-                            ["name"] = d.Name,
-                            ["port"] = d.Port,
-                            ["default"] = d.IsDefault
-                        }))
-                };
+                    try { obj = JObject.Parse(File.ReadAllText(path)); }
+                    catch { obj = null; }
+                }
+                if (obj == null) obj = new JObject();
+
+                obj["port"] = port;
+                obj["read_only"] = readOnly;
+                obj["instance_mode"] = InstanceMode;
+                obj["declared_instances"] = new JArray(
+                    DeclaredInstances.Select(d => new JObject
+                    {
+                        ["name"] = d.Name,
+                        ["port"] = d.Port,
+                        ["default"] = d.IsDefault
+                    }));
                 File.WriteAllText(
-                    Path.Combine(BaseDir(), "settings.json"),
+                    path,
                     obj.ToString(Newtonsoft.Json.Formatting.Indented));
             }
             catch (Exception ex)

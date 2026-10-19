@@ -140,5 +140,102 @@ namespace TopSolidMcpServer.Tests
 
             Assert.IsNull(TopSolidInstanceList.FindByPort(instances, 9999));
         }
+
+        // ---- Issue #13: Network byte-order port decoding & active port fallback ----
+
+        [Test]
+        public void DecodeNetworkPort_ConvertsBigEndianToHostPort()
+        {
+            // 8090 = 0x1F9A -> in network byte order on little-endian x86: 0x9A1F (39455)
+            Assert.AreEqual(8090, TopSolidInstanceList.DecodeNetworkPort(0x9A1F));
+            // 8091 = 0x1F9B -> 0x9B1F (39711)
+            Assert.AreEqual(8091, TopSolidInstanceList.DecodeNetworkPort(0x9B1F));
+            // Upper 16 bits garbage must be ignored per Win32 MIB_TCPROW_OWNER_PID docs
+            Assert.AreEqual(8090, TopSolidInstanceList.DecodeNetworkPort(unchecked((int)0xDEAD9A1F)));
+        }
+
+        [Test]
+        public void GetListeningPorts_DetectsRealLocalTcpListener()
+        {
+            var listener = new System.Net.Sockets.TcpListener(System.Net.IPAddress.Loopback, 0);
+            listener.Start();
+            try
+            {
+                int boundPort = ((System.Net.IPEndPoint)listener.LocalEndpoint).Port;
+                int myPid = System.Diagnostics.Process.GetCurrentProcess().Id;
+
+                var ports = TopSolidInstanceList.GetListeningPorts();
+                bool found = false;
+                foreach (var p in ports)
+                {
+                    if (p.Pid == myPid && p.Port == boundPort)
+                    {
+                        found = true;
+                        break;
+                    }
+                }
+                Assert.IsTrue(found, $"Expected GetListeningPorts() to find port {boundPort} for pid {myPid}");
+            }
+            finally
+            {
+                listener.Stop();
+            }
+        }
+
+        [Test]
+        public void ResolveActivePort_StaleConfiguredPort8091_FallsBackToRunning8090_Issue13()
+        {
+            // Issue #13 exact reproduction: settings.json had port 8091 from an earlier
+            // session, but today the user launched TopSolid with port 8090 open.
+            var running = new List<TopSolidInstance>
+            {
+                new TopSolidInstance(1234, "7.20", 8090)
+            };
+
+            int resolvedAuto = TopSolidInstanceList.ResolveActivePort(8091, "auto", running);
+            Assert.AreEqual(8090, resolvedAuto, "Must auto-switch from unreachable 8091 to running 8090 in auto mode");
+
+            int resolvedManual = TopSolidInstanceList.ResolveActivePort(8091, "manual", running);
+            Assert.AreEqual(8090, resolvedManual, "Must also fall back to running 8090 when manual port 8091 is not running");
+        }
+
+        [Test]
+        public void ResolveActivePort_ConfiguredPort8091IsRunning_Honours8091()
+        {
+            var running = new List<TopSolidInstance>
+            {
+                new TopSolidInstance(100, "7.21", 8091),
+                new TopSolidInstance(200, "7.20", 8090)
+            };
+
+            int resolved = TopSolidInstanceList.ResolveActivePort(8091, "manual", running);
+            Assert.AreEqual(8091, resolved);
+        }
+
+        [Test]
+        public void TraySettings_Save_PreservesExistingApiKeyDpapiField()
+        {
+            string tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "tsmcp_test_" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(tempDir);
+            try
+            {
+                string settingsPath = System.IO.Path.Combine(tempDir, "settings.json");
+                System.IO.File.WriteAllText(settingsPath, "{\"api_key_dpapi\":\"secret_blob\",\"port\":8091}");
+
+                TraySettings.OverrideBaseDirectoryForTests(tempDir);
+                TraySettings.Load();
+                Assert.AreEqual(8091, TraySettings.Port);
+
+                TraySettings.Save(8090, false);
+                var saved = Newtonsoft.Json.Linq.JObject.Parse(System.IO.File.ReadAllText(settingsPath));
+                Assert.AreEqual("secret_blob", saved.Value<string>("api_key_dpapi"), "TraySettings.Save must not wipe api_key_dpapi");
+                Assert.AreEqual(8090, saved.Value<int>("port"));
+            }
+            finally
+            {
+                TraySettings.OverrideBaseDirectoryForTests(null);
+                try { System.IO.Directory.Delete(tempDir, true); } catch { }
+            }
+        }
     }
 }
