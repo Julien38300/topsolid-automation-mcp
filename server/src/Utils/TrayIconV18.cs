@@ -110,6 +110,11 @@ namespace TopSolidMcpServer.Utils
             var suggestItem = new ToolStripMenuItem(L("Proposer une amélioration…", "Suggest a feature…"));
             suggestItem.Click += (s, ev) => OnFeedbackClick(GitHubFeedbackLogic.CategoryFeature);
             menu.Items.Insert(insertIdx + 2, suggestItem);
+
+            // Ensure the WinForms reconnect timer is created on the tray STA thread
+            // (System.Windows.Forms.Timer relies on the calling thread's message pump).
+            if (_autoConnect)
+                StartAutoReconnectOnTrayThread();
         }
 
         private string BuildApiKeyLabel()
@@ -295,8 +300,21 @@ namespace TopSolidMcpServer.Utils
 
         // ---- Auto-reconnect (v1.8.0) ----
 
-        /// <summary>Starts the reconnect timer; call from BuildTray / Program when the connector exists.</summary>
+        /// <summary>Starts the reconnect timer; safe to call from any thread.</summary>
         public void StartAutoReconnect()
+        {
+            var context = _uiContext;
+            if (!ReferenceEquals(Thread.CurrentThread, _thread))
+            {
+                if (context != null)
+                    context.Post(_ => StartAutoReconnectOnTrayThread(), null);
+                return;
+            }
+
+            StartAutoReconnectOnTrayThread();
+        }
+
+        private void StartAutoReconnectOnTrayThread()
         {
             if (_reconnectTimer == null)
             {

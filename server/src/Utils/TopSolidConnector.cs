@@ -222,7 +222,28 @@ namespace TopSolidMcpServer.Utils
                     return false;
 
                 Console.Error.WriteLine("[TopSolidConnector] Connection lost - attempting reconnect...");
-                return Connect();
+                if (Connect())
+                    return true;
+
+                // In auto mode, if the current port is not responding, scan for another
+                // running TopSolid instance with an active Automation port.
+                if (TraySettings.InstanceMode == "auto")
+                {
+                    try
+                    {
+                        var running = TopSolidInstanceList.Scan();
+                        int resolved = TopSolidInstanceList.ResolveActivePort(_port, "auto", running);
+                        if (resolved > 0 && resolved != _port)
+                        {
+                            Console.Error.WriteLine("[TopSolidConnector] Auto-mode switching from unreachable port " + _port + " to running instance on port " + resolved + "...");
+                            _port = resolved;
+                            return Connect();
+                        }
+                    }
+                    catch { }
+                }
+
+                return false;
             }
         }
 
@@ -280,6 +301,28 @@ namespace TopSolidMcpServer.Utils
             _hasDraftingModule = false;
         }
 
+        private static string FormatDetectedInstances()
+        {
+            try
+            {
+                var list = TopSolidInstanceList.Scan();
+                if (list == null || list.Count == 0)
+                    return "none";
+                var parts = new System.Collections.Generic.List<string>();
+                foreach (var inst in list)
+                {
+                    string ver = string.IsNullOrEmpty(inst.Version) ? "TopSolid" : "TopSolid " + inst.Version;
+                    string portInfo = inst.HasAutomationPort ? ("port " + inst.Port) : "no automation port";
+                    parts.Add(ver + " (pid " + inst.Pid + ", " + portInfo + ")");
+                }
+                return string.Join(", ", parts);
+            }
+            catch
+            {
+                return "unknown";
+            }
+        }
+
         /// <summary>
         /// Returns a human-readable snapshot of the TopSolid session: version, resolved
         /// bin directory, detected optional modules, edited document and project.
@@ -290,6 +333,7 @@ namespace TopSolidMcpServer.Utils
             if (!EnsureConnected())
             {
                 return "Not connected to TopSolid. Please check that TopSolid is running with Automation enabled (port " + _port + ").\n" +
+                       "Detected instances : " + FormatDetectedInstances() + "\n" +
                        "The tools find_path and explore_paths are still available.";
             }
 
@@ -297,7 +341,8 @@ namespace TopSolidMcpServer.Utils
             {
                 var sb = new System.Text.StringBuilder();
                 sb.AppendLine("TopSolid version : " + GetKernelVersion());
-                sb.AppendLine("Automation port : " + _port);
+                sb.AppendLine("Automation port : " + _port + " (mode: " + TraySettings.InstanceMode + ")");
+                sb.AppendLine("Detected instances : " + FormatDetectedInstances());
                 sb.AppendLine("Bin path : " + TopSolidPathResolver.Resolve() +
                     (TopSolidPathResolver.Found ? "" : " (not found - hardcoded fallback)"));
                 sb.AppendLine("Modules : Design = " + (_hasDesignModule ? "available" : "not available") +

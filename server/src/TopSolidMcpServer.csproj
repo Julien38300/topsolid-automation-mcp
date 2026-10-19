@@ -7,11 +7,10 @@
     <RootNamespace>TopSolidMcpServer</RootNamespace>
     <Platforms>AnyCPU</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <Version>1.8.4</Version>
+    <Version>1.8.5</Version>
     <ApplicationIcon>topsolid-mcp.ico</ApplicationIcon>
   </PropertyGroup>
-
-    <ItemGroup>
+  <ItemGroup>
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Security" />
@@ -30,7 +29,6 @@
   <ItemGroup>
     <Compile Include="..\update-check\UpdateCheckLogic.cs" Link="Utils\UpdateCheckLogic.cs" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\..\graph\src\TopSolidApiGraph.Core\TopSolidApiGraph.Core.csproj" />
   </ItemGroup>

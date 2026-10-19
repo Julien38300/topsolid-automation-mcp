@@ -55,7 +55,14 @@ namespace TopSolidMcpServer.Utils
             RefreshInstanceMenu();
         }
 
-        /// <summary>Rebuilds the instance list items. Callable from any thread.</summary>
+        /// <summary>
+        /// Rebuilds the instance list items. Callable from any thread.
+        /// CRITICAL WinForms rule: when called from DropDownOpening on the tray STA
+        /// thread, DropDownItems MUST be populated synchronously before DropDownOpening
+        /// returns — clearing DropDownItems and populating asynchronously via Post()
+        /// leaves DropDownItems.Count == 0 when OnDropDownShow checks it, which causes
+        /// WinForms to cancel opening the submenu every time.
+        /// </summary>
         private void RefreshInstanceMenu()
         {
             try
@@ -63,29 +70,30 @@ namespace TopSolidMcpServer.Utils
                 var menu = _instanceMenu;
                 if (menu == null) return;
 
-                // Menu items belong to the tray thread: post when called from
-                // elsewhere (the retarget/auto callbacks run on the thread pool).
                 var context = _uiContext;
                 if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
                 {
-                    context.Post(_ => RefreshInstanceMenu(), null);
+                    // Called from a worker thread: scan off-thread, then marshal
+                    // the menu rebuild to the tray thread.
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        List<TopSolidInstance> bgInstances;
+                        try { bgInstances = TopSolidInstanceList.Scan(); }
+                        catch { bgInstances = new List<TopSolidInstance>(); }
+
+                        var ctx = _uiContext;
+                        if (ctx != null)
+                            ctx.Post(__ => PopulateInstanceMenu(bgInstances), null);
+                    });
                     return;
                 }
 
-                menu.DropDownItems.Clear();
-
-                // Scan can hit MainModule access-denied and WMI: background it,
-                // then post the rebuild back on the tray thread.
-                ThreadPool.QueueUserWorkItem(_ =>
-                {
-                    List<TopSolidInstance> instances;
-                    try { instances = TopSolidInstanceList.Scan(); }
-                    catch { instances = new List<TopSolidInstance>(); }
-
-                    var ctx = _uiContext;
-                    if (ctx == null) return;
-                    ctx.Post(__ => PopulateInstanceMenu(instances), null);
-                });
+                // Already on the tray STA thread (e.g. DropDownOpening): scan and
+                // populate synchronously so DropDownItems is non-empty on return.
+                List<TopSolidInstance> instances;
+                try { instances = TopSolidInstanceList.Scan(); }
+                catch { instances = new List<TopSolidInstance>(); }
+                PopulateInstanceMenu(instances);
             }
             catch { /* tray gone */ }
         }
@@ -98,7 +106,16 @@ namespace TopSolidMcpServer.Utils
                 if (menu == null) return;
                 menu.DropDownItems.Clear();
 
-                if (instances.Count == 0)
+                var runningPorts = new HashSet<int>();
+                var declaredList = TraySettings.DeclaredInstances ?? new List<DeclaredTopSolidInstance>();
+                var declaredByPort = new Dictionary<int, DeclaredTopSolidInstance>();
+                foreach (var d in declaredList)
+                {
+                    if (d != null && d.Port > 0 && !declaredByPort.ContainsKey(d.Port))
+                        declaredByPort[d.Port] = d;
+                }
+
+                if (instances.Count == 0 && declaredList.Count == 0)
                 {
                     var none = new ToolStripMenuItem(
                         L("Aucun TopSolid détecté", "No TopSolid detected"));
@@ -110,12 +127,47 @@ namespace TopSolidMcpServer.Utils
                     foreach (var inst in instances)
                     {
                         int port = inst.Port;
-                        var item = new ToolStripMenuItem(BuildInstanceLabel(inst));
+                        if (port > 0) runningPorts.Add(port);
+
+                        DeclaredTopSolidInstance decl = null;
+                        if (port > 0) declaredByPort.TryGetValue(port, out decl);
+
+                        bool isActiveTarget = inst.HasAutomationPort && port == _port;
+                        string label = BuildInstanceLabel(inst, decl, isActiveTarget);
+                        var item = new ToolStripMenuItem(label);
                         item.Enabled = inst.HasAutomationPort;
+                        item.Checked = isActiveTarget;
+                        item.ToolTipText = inst.HasAutomationPort
+                            ? L("Cible cette instance pour les outils MCP (port " + port + ")",
+                                "Target this instance for the MCP tools (port " + port + ")")
+                            : L("Aucun port Automation détecté pour ce processus (vérifiez Outils > Options > Général > Automation ou un conflit de port 8090).",
+                                "No Automation port detected for this process (check Tools > Options > General > Automation or a port 8090 conflict).");
+                        var capturedInst = inst;
+                        item.Click += (s, ev) => OnInstanceClick(capturedInst);
+                        menu.DropDownItems.Add(item);
+                    }
+
+                    // Also show declared instances from "Gérer…" whose port is not currently detected
+                    foreach (var decl in declaredList)
+                    {
+                        if (decl == null || decl.Port <= 0 || runningPorts.Contains(decl.Port))
+                            continue;
+
+                        bool isActiveTarget = (decl.Port == _port);
+                        string suffix = L("non détecté", "not detected");
+                        string activeTag = isActiveTarget ? L(" — cible actuelle", " — current target") : "";
+                        string label = (decl.IsDefault ? "★ " : "") + decl.Name +
+                            " (port " + decl.Port + " — " + suffix + activeTag + ")";
+
+                        var item = new ToolStripMenuItem(label);
+                        item.Checked = isActiveTarget;
                         item.ToolTipText = L(
-                            "Cible cette instance pour les outils MCP (port " + port + ")",
-                            "Target this instance for the MCP tools (port " + port + ")");
-                        item.Click += (s, ev) => OnInstanceClick(inst);
+                            "Instance déclarée sur le port " + decl.Port + " (cliquer pour cibler ce port)",
+                            "Declared instance on port " + decl.Port + " (click to target this port)");
+                        var capturedDecl = decl;
+                        item.Click += (s, ev) => RetargetToPort(
+                            capturedDecl.Port,
+                            capturedDecl.Name + " (port " + capturedDecl.Port + ")");
                         menu.DropDownItems.Add(item);
                     }
                 }
@@ -140,7 +192,7 @@ namespace TopSolidMcpServer.Utils
             catch { /* menu gone */ }
         }
 
-        private string BuildInstanceLabel(TopSolidInstance inst)
+        private string BuildInstanceLabel(TopSolidInstance inst, DeclaredTopSolidInstance decl = null, bool isActiveTarget = false)
         {
             // "TopSolid 7.21 (port 8091)" — "TopSolid (sans port)" when Automation
             // is off: visible in the list but not clickable, like the FEA app.
@@ -148,38 +200,73 @@ namespace TopSolidMcpServer.Utils
             string name = string.IsNullOrEmpty(version)
                 ? "TopSolid"
                 : "TopSolid " + version;
-            return inst.HasAutomationPort
-                ? name + " (port " + inst.Port + ")"
-                : name + " (" + L("sans port", "no port") + ")";
+
+            if (decl != null && !string.IsNullOrWhiteSpace(decl.Name) &&
+                !string.Equals(decl.Name, name, StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(decl.Name, "TopSolid " + inst.Port, StringComparison.OrdinalIgnoreCase))
+            {
+                name = name + " — " + decl.Name;
+            }
+
+            if (decl != null && decl.IsDefault)
+                name = "★ " + name;
+
+            if (!inst.HasAutomationPort)
+                return name + " (" + L("sans port Automation", "no Automation port") + ")";
+
+            string activeSuffix = isActiveTarget
+                ? " [" + L("actif", "active") + "]"
+                : "";
+            return name + " (port " + inst.Port + ")" + activeSuffix;
         }
 
         private void OnInstanceClick(TopSolidInstance inst)
         {
-            var retarget = _retarget;
-            if (retarget == null) return;
+            RetargetToPort(inst.Port, BuildInstanceLabel(inst));
+        }
 
+        /// <summary>
+        /// Switches the active TopSolid target port in manual mode, persists it to
+        /// settings.json, updates the tray badge state, and refreshes the instance menu.
+        /// </summary>
+        internal void RetargetToPort(int port, string displayLabel)
+        {
+            if (port <= 0) return;
+
+            _port = port;
+            try { TraySettings.SaveInstanceMode(port, "manual"); }
+            catch { }
+
+            var retarget = _retarget;
+            if (retarget == null)
+            {
+                PostState((TrayState)Volatile.Read(ref _state));
+                RefreshInstanceMenu();
+                return;
+            }
+
+            PostState(TrayState.Connecting);
             ShowBalloon(L("Instance TopSolid", "TopSolid instance"),
-                L("Connexion à " + BuildInstanceLabel(inst) + "…", "Connecting to " + BuildInstanceLabel(inst) + "…"),
+                L("Connexion à " + displayLabel + "…", "Connecting to " + displayLabel + "…"),
                 ToolTipIcon.Info, 2000);
 
             ThreadPool.QueueUserWorkItem(_ =>
             {
-                bool ok;
-                try { ok = retarget(inst.Port); }
+                bool ok = false;
+                try { ok = retarget(port); }
                 catch { ok = false; }
+                finally
+                {
+                    PostState(ok ? TrayState.Connected : TrayState.Disconnected);
+                    ShowBalloonSafe("TopSolid MCP",
+                        ok
+                            ? L("Connecté à " + displayLabel + ".", "Connected to " + displayLabel + ".")
+                            : L("Cible définie sur " + displayLabel + ", mais TopSolid ne répond pas sur le port " + port + ".",
+                                "Target set to " + displayLabel + ", but TopSolid is not responding on port " + port + "."),
+                        ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
 
-                // Persist the choice: it becomes the startup default (the ★ in the
-                // "Manage" dialog), like the FEA app's default instance.
-                try { TraySettings.SaveInstanceMode(inst.Port, "manual"); }
-                catch { }
-
-                ShowBalloonSafe("TopSolid MCP",
-                    ok
-                        ? L("Connecté à " + BuildInstanceLabel(inst) + ".", "Connected to " + BuildInstanceLabel(inst) + ".")
-                        : L("Impossible de se connecter à " + BuildInstanceLabel(inst) + ".", "Could not connect to " + BuildInstanceLabel(inst) + "."),
-                    ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
-
-                if (!ok) RefreshInstanceMenu();
+                    RefreshInstanceMenu();
+                }
             });
         }
 
@@ -190,25 +277,37 @@ namespace TopSolidMcpServer.Utils
             try { TraySettings.SaveInstanceMode(0, "auto"); }
             catch { }
 
+            PostState(TrayState.Connecting);
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 int detected = 0;
                 try
                 {
                     var list = TopSolidInstanceList.Scan();
-                    if (list.Count > 0 && list[0].HasAutomationPort)
-                        detected = list[0].Port;
+                    foreach (var inst in list)
+                    {
+                        if (inst != null && inst.HasAutomationPort)
+                        {
+                            detected = inst.Port;
+                            break;
+                        }
+                    }
                 }
                 catch { }
 
                 if (detected > 0)
                 {
+                    _port = detected;
                     var retarget = _retarget;
                     bool ok = false;
-                    if (retarget != null)
+                    try
                     {
-                        try { ok = retarget(detected); }
-                        catch { ok = false; }
+                        if (retarget != null) ok = retarget(detected);
+                    }
+                    catch { ok = false; }
+                    finally
+                    {
+                        PostState(ok ? TrayState.Connected : TrayState.Disconnected);
                     }
 
                     ShowBalloonSafe("TopSolid MCP",
@@ -219,6 +318,10 @@ namespace TopSolidMcpServer.Utils
                 }
                 else
                 {
+                    bool currentlyConnected = false;
+                    try { if (_isConnected != null) currentlyConnected = _isConnected(); } catch { }
+                    PostState(currentlyConnected ? TrayState.Connected : TrayState.Disconnected);
+
                     ShowBalloonSafe("TopSolid MCP",
                         L("Mode automatique activé. Aucun TopSolid lancé pour l'instant — le serveur ciblera le premier détecté.", "Automatic mode enabled. No TopSolid running yet — the server will target the first detected one."),
                         ToolTipIcon.Info, 3000);
@@ -234,8 +337,8 @@ namespace TopSolidMcpServer.Utils
             {
                 using (var dlg = new ManageInstancesDialog(this))
                 {
-                    if (dlg.ShowDialog() == DialogResult.OK)
-                        RefreshInstanceMenu();
+                    dlg.ShowDialog();
+                    RefreshInstanceMenu();
                 }
             }
             catch (Exception ex)
@@ -251,6 +354,7 @@ namespace TopSolidMcpServer.Utils
     /// </summary>
     internal sealed class ManageInstancesDialog : Form
     {
+        private readonly TrayIcon _owner;
         private readonly ListBox _list;
         private readonly TextBox _nameBox;
         private readonly NumericUpDown _portBox;
@@ -260,6 +364,7 @@ namespace TopSolidMcpServer.Utils
 
         internal ManageInstancesDialog(TrayIcon owner)
         {
+            _owner = owner;
             Text = L("Gérer les TopSolid", "Manage TopSolid");
             Width = 480;
             Height = 400;
@@ -276,7 +381,10 @@ namespace TopSolidMcpServer.Utils
                 // user can immediately see what the server targets.
                 int currentPort = owner.CurrentTargetPort;
                 if (currentPort > 0)
+                {
                     _instances.Add(new DeclaredTopSolidInstance("TopSolid " + currentPort, currentPort) { IsDefault = true });
+                    TraySettings.SaveDeclaredInstances(_instances);
+                }
             }
 
             var layout = new FlowLayoutPanel
@@ -290,8 +398,8 @@ namespace TopSolidMcpServer.Utils
             var intro = new Label
             {
                 Text = L(
-                    "Déclarez vos instances TopSolid (nom + port Automation).\nLa coche « par défaut » sera ciblée au démarrage du serveur.",
-                    "Declare your TopSolid instances (name + Automation port).\nThe \"default\" one is targeted at server startup."),
+                    "Déclarez vos instances TopSolid (nom + port Automation).\nLa coche « par défaut » sera ciblée immédiatement et au démarrage.",
+                    "Declare your TopSolid instances (name + Automation port).\nThe \"default\" one is targeted immediately and at startup."),
                 AutoSize = true
             };
             layout.Controls.Add(intro);
@@ -333,7 +441,7 @@ namespace TopSolidMcpServer.Utils
             _removeButton.Click += (s, ev) => OnRemove();
             buttonRow.Controls.Add(_removeButton);
 
-            // "Par défaut" — marks the selected instance as the startup default.
+            // "Par défaut" — marks the selected instance as the startup default and retargets immediately.
             var defaultButton = new Button { Text = L("Définir par défaut", "Set as default"), AutoSize = true };
             defaultButton.Click += (s, ev) => OnSetDefault();
             buttonRow.Controls.Add(defaultButton);
@@ -378,8 +486,13 @@ namespace TopSolidMcpServer.Utils
                     Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
-            _instances.Add(new DeclaredTopSolidInstance(name, (int)_portBox.Value));
+            var added = new DeclaredTopSolidInstance(name, (int)_portBox.Value);
+            if (_instances.Count == 0)
+                added.IsDefault = true;
+            _instances.Add(added);
             TraySettings.SaveDeclaredInstances(_instances);
+            if (added.IsDefault && _owner != null)
+                _owner.RetargetToPort(added.Port, added.Name + " (port " + added.Port + ")");
             ReloadList();
             _nameBox.Clear();
         }
@@ -407,7 +520,7 @@ namespace TopSolidMcpServer.Utils
             ReloadList();
         }
 
-        /// <summary>Marks the selected instance as the startup default (exactly one).</summary>
+        /// <summary>Marks the selected instance as the startup default (exactly one) and retargets immediately.</summary>
         private void OnSetDefault()
         {
             int idx = _list.SelectedIndex;
@@ -422,9 +535,11 @@ namespace TopSolidMcpServer.Utils
             for (int i = 0; i < _instances.Count; i++)
                 _instances[i].IsDefault = (i == idx);
 
-            // The default is also the port the server targets: keep settings.json's
-            // "port" field in sync so Program.cs picks it at next startup.
-            TraySettings.SaveInstanceMode(_instances[idx].Port, "manual");
+            var chosen = _instances[idx];
+            TraySettings.SaveDeclaredInstances(_instances);
+            TraySettings.SaveInstanceMode(chosen.Port, "manual");
+            if (_owner != null)
+                _owner.RetargetToPort(chosen.Port, chosen.Name + " (port " + chosen.Port + ")");
             ReloadList();
         }
 

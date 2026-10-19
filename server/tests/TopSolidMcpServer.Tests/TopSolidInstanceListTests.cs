@@ -122,6 +122,28 @@ namespace TopSolidMcpServer.Tests
             Assert.AreEqual("7.21", instances[0].Version, "7.21 must sort before 7.20 and 7.19");
         }
 
+        [Test]
+        public void Merge_MultiplePortsForSamePid_PrefersAutomationPortOverEphemeral()
+        {
+            // When TopSolid.exe owns both an ephemeral/callback TCP listener (e.g. 49670)
+            // and its Automation listener (8090 or 8091), Merge must pick the Automation port
+            // regardless of the order in GetExtendedTcpTable.
+            var procs = new List<ProcessSnapshot>
+            {
+                new ProcessSnapshot(10600, @"C:\Program Files\TOPSOLID\TopSolid 7.20\bin\TopSolid.exe")
+            };
+            var ports = new List<PortSnapshot>
+            {
+                new PortSnapshot(10600, 49670),
+                new PortSnapshot(10600, 8090),
+                new PortSnapshot(10600, 51234)
+            };
+
+            var instances = TopSolidInstanceList.Merge(procs, ports);
+            Assert.AreEqual(1, instances.Count);
+            Assert.AreEqual(8090, instances[0].Port, "Automation port 8090 must win over ephemeral ports");
+        }
+
         // ---- Declared-instance matching (persisted vs detected) ----
 
         [Test]

@@ -69,6 +69,9 @@ namespace TopSolidMcpServer.Utils
         private static readonly Regex VersionSegment = new Regex(
             @"TopSolid\s+(7\.\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<int, string> ProcessPathCache =
+            new System.Collections.Concurrent.ConcurrentDictionary<int, string>();
+
         // ---- Pure logic ----
 
         /// <summary>
@@ -82,6 +85,25 @@ namespace TopSolidMcpServer.Utils
 
             Match m = VersionSegment.Match(exePath);
             return m.Success ? m.Groups[1].Value : null;
+        }
+
+        /// <summary>
+        /// Ranks a listening TCP port so that when a TopSolid.exe process owns multiple
+        /// listening sockets (e.g. an ephemeral WCF callback port + the Automation port
+        /// 8090/8091), Merge always picks the Automation port instead of an ephemeral port.
+        /// Higher score = preferred.
+        /// </summary>
+        public static int ScoreAutomationPort(int port)
+        {
+            if (port <= 0) return 0;
+            // Standard TopSolid Automation port range (8090 default, 8091..8099 multi-instance)
+            if (port >= 8085 && port <= 8099) return 300;
+            // Extended TopSolid / custom low range (8000..8999)
+            if (port >= 8000 && port <= 8999) return 200;
+            // User-registered non-ephemeral ports (< 49152)
+            if (port < 49152) return 100;
+            // Windows ephemeral/dynamic port range (49152..65535)
+            return 10;
         }
 
         /// <summary>
@@ -100,9 +122,12 @@ namespace TopSolidMcpServer.Utils
                 foreach (var p in ports)
                 {
                     if (p == null || p.Pid <= 0 || p.Port <= 0) continue;
-                    // Several listeners on one pid (IPv4+IPv6): keep the first, they
-                    // are the same automation endpoint.
-                    if (!portsByPid.ContainsKey(p.Pid)) portsByPid[p.Pid] = p.Port;
+                    int existing;
+                    if (!portsByPid.TryGetValue(p.Pid, out existing) ||
+                        ScoreAutomationPort(p.Port) > ScoreAutomationPort(existing))
+                    {
+                        portsByPid[p.Pid] = p.Port;
+                    }
                 }
             }
 
@@ -141,22 +166,28 @@ namespace TopSolidMcpServer.Utils
         /// <summary>
         /// Scans the machine for running TopSolid instances. Never throws:
         /// access-denied on MainModule (session 0, elevated instances) simply
-        /// drops the version label.
+        /// drops the version label. Caches executable paths by PID so UI-thread
+        /// menu refreshes complete in under 1 ms without repeated WMI queries.
         /// </summary>
         public static List<TopSolidInstance> Scan()
         {
             var procs = new List<ProcessSnapshot>();
             foreach (var p in Process.GetProcessesByName("TopSolid"))
             {
-                string path = null;
-                try { path = p.MainModule != null ? p.MainModule.FileName : null; }
-                catch { /* elevated or session-0 process: keep it without a path */ }
-                finally
+                string path;
+                if (!ProcessPathCache.TryGetValue(p.Id, out path) || string.IsNullOrEmpty(path))
                 {
-                    if (path == null)
+                    try { path = p.MainModule != null ? p.MainModule.FileName : null; }
+                    catch { /* elevated or session-0 process: keep it without a path */ }
+                    finally
                     {
-                        try { path = TryGetPathFromWmi(p.Id); } catch { }
+                        if (path == null)
+                        {
+                            try { path = TryGetPathFromWmi(p.Id); } catch { }
+                        }
                     }
+                    if (!string.IsNullOrEmpty(path))
+                        ProcessPathCache[p.Id] = path;
                 }
                 procs.Add(new ProcessSnapshot(p.Id, path));
             }
