@@ -1,10 +1,12 @@
 using System;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -98,48 +100,45 @@ namespace TopSolidMcpServer.Utils
                 int headerLineCount;
                 string wrappedCode = WrapCode(preprocessed, isModification, false, out headerLineCount);
 
-                using (var provider = new CSharpCodeProvider())
+                string parameterError;
+                CompilerParameters parameters = BuildCompilerParameters(out parameterError);
+                if (parameters == null) return parameterError;
+
+                CompilerResults results = CompileSource(parameters, wrappedCode, false);
+
+                if (results.Errors.HasErrors)
                 {
-                    string parameterError;
-                    CompilerParameters parameters = BuildCompilerParameters(out parameterError);
-                    if (parameters == null) return parameterError;
-
-                    CompilerResults results = provider.CompileAssemblyFromSource(parameters, wrappedCode);
-
-                    if (results.Errors.HasErrors)
-                    {
-                        var sb = new StringBuilder();
-                        sb.AppendLine("COMPILE ERRORS (" + results.Errors.Count + ")");
-                        foreach (CompilerError err in results.Errors)
-                        {
-                            if (err.IsWarning) continue;
-                            sb.AppendLine(string.Format("  Line {0}: {1} - {2}",
-                                FormatUserLine(err.Line, headerLineCount), err.ErrorNumber, err.ErrorText));
-                        }
-                        return sb.ToString();
-                    }
-
-                    // Success: report warnings if any
-                    int warnCount = 0;
+                    var sb = new StringBuilder();
+                    sb.AppendLine("COMPILE ERRORS (" + results.Errors.Count + ")");
                     foreach (CompilerError err in results.Errors)
                     {
-                        if (err.IsWarning) warnCount++;
+                        if (err.IsWarning) continue;
+                        sb.AppendLine(string.Format("  Line {0}: {1} - {2}",
+                            FormatUserLine(err.Line, headerLineCount), err.ErrorNumber, err.ErrorText));
                     }
-
-                    var okSb = new StringBuilder();
-                    okSb.AppendLine("OK: code compiles successfully.");
-                    okSb.AppendLine("Mode: " + (isModification ? "WRITE (transactional)" : "READ"));
-                    if (warnCount > 0)
-                    {
-                        okSb.AppendLine("Warnings: " + warnCount);
-                        foreach (CompilerError err in results.Errors)
-                        {
-                            if (!err.IsWarning) continue;
-                            okSb.AppendLine("  Line " + FormatUserLine(err.Line, headerLineCount) + ": " + err.ErrorText);
-                        }
-                    }
-                    return okSb.ToString();
+                    return sb.ToString();
                 }
+
+                // Success: report warnings if any
+                int warnCount = 0;
+                foreach (CompilerError err in results.Errors)
+                {
+                    if (err.IsWarning) warnCount++;
+                }
+
+                var okSb = new StringBuilder();
+                okSb.AppendLine("OK: code compiles successfully.");
+                okSb.AppendLine("Mode: " + (isModification ? "WRITE (transactional)" : "READ"));
+                if (warnCount > 0)
+                {
+                    okSb.AppendLine("Warnings: " + warnCount);
+                    foreach (CompilerError err in results.Errors)
+                    {
+                        if (!err.IsWarning) continue;
+                        okSb.AppendLine("  Line " + FormatUserLine(err.Line, headerLineCount) + ": " + err.ErrorText);
+                    }
+                }
+                return okSb.ToString();
             }
             catch (InvalidOperationException ex)
             {
@@ -190,41 +189,38 @@ namespace TopSolidMcpServer.Utils
                 MethodInfo cachedMethod = TryGetCachedMethod(cacheKey);
                 if (cachedMethod != null) return InvokeWithTimeout(cachedMethod);
 
-                using (var provider = new CSharpCodeProvider())
+                string parameterError;
+                CompilerParameters parameters = BuildCompilerParameters(out parameterError);
+                if (parameters == null) return parameterError;
+
+                CompilerResults results = CompileSource(parameters, wrappedCode, true);
+
+                if (results.Errors.HasErrors)
                 {
-                    string parameterError;
-                    CompilerParameters parameters = BuildCompilerParameters(out parameterError);
-                    if (parameters == null) return parameterError;
-
-                    CompilerResults results = provider.CompileAssemblyFromSource(parameters, wrappedCode);
-
-                    if (results.Errors.HasErrors)
+                    var errors = new List<string>();
+                    foreach (CompilerError err in results.Errors)
                     {
-                        var errors = new List<string>();
-                        foreach (CompilerError err in results.Errors)
-                        {
-                            if (err.IsWarning) continue;
-                            errors.Add(string.Format("Line {0}: {1} - {2}",
-                                FormatUserLine(err.Line, headerLineCount), err.ErrorNumber, err.ErrorText));
-                        }
-                        return DiagnoseCompilationErrors(errors, userCode, wrappedCode);
+                        if (err.IsWarning) continue;
+                        errors.Add(string.Format("Line {0}: {1} - {2}",
+                            FormatUserLine(err.Line, headerLineCount), err.ErrorNumber, err.ErrorText));
                     }
-
-                    Assembly assembly = results.CompiledAssembly;
-                    Type type = assembly.GetType("TopSolidMcpServer.Dynamic.DynamicScript");
-                    MethodInfo method = (type == null)
-                        ? null
-                        : type.GetMethod("Run", BindingFlags.Public | BindingFlags.Static);
-
-                    // Defensive: the wrapper always emits DynamicScript.Run(), so this only happens
-                    // if WrapCode is changed without updating these names.
-                    if (method == null)
-                        return "System error: the generated assembly does not expose " +
-                            "TopSolidMcpServer.Dynamic.DynamicScript.Run().";
-
-                    StoreCachedMethod(cacheKey, method);
-                    return InvokeWithTimeout(method);
+                    return DiagnoseCompilationErrors(errors, userCode, wrappedCode);
                 }
+
+                Assembly assembly = results.CompiledAssembly;
+                Type type = assembly.GetType("TopSolidMcpServer.Dynamic.DynamicScript");
+                MethodInfo method = (type == null)
+                    ? null
+                    : type.GetMethod("Run", BindingFlags.Public | BindingFlags.Static);
+
+                // Defensive: the wrapper always emits DynamicScript.Run(), so this only happens
+                // if WrapCode is changed without updating these names.
+                if (method == null)
+                    return "System error: the generated assembly does not expose " +
+                        "TopSolidMcpServer.Dynamic.DynamicScript.Run().";
+
+                StoreCachedMethod(cacheKey, method);
+                return InvokeWithTimeout(method);
             }
             catch (InvalidOperationException ex)
             {
@@ -362,6 +358,153 @@ namespace TopSolidMcpServer.Utils
             }
 
             return parameters;
+        }
+
+        private static readonly Regex CscDiagnosticRegex = new Regex(
+            @"^(?:(?<file>.*)\((?<line>\d+),(?<col>\d+)\):\s*)?(?:fatal\s+)?(?<level>error|warning)\s+(?<num>[A-Z]+\d+):\s*(?<msg>.*)$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant);
+
+        /// <summary>
+        /// Compiles <paramref name="wrappedCode"/> using the .NET Framework <c>csc.exe</c> compiler
+        /// launched with <c>CreateNoWindow = true</c> and redirected standard streams.
+        /// Direct invocation replaces <see cref="CSharpCodeProvider.CompileAssemblyFromSource"/>,
+        /// whose internal <c>Executor.ExecWaitWithCaptureUnimpersonated</c> spawns <c>csc.exe</c>
+        /// with <c>dwCreationFlags = 0</c> and inherits the parent's <c>STD_INPUT_HANDLE</c>; when
+        /// the server runs under a scheduled task (<c>conhost.exe --headless</c> after stdin EOF),
+        /// <c>csc.exe</c> fails console initialization (<c>0xC0000142</c>) and <c>FromFileBatch</c>
+        /// deletes the placeholder DLL before throwing a bogus <see cref="FileNotFoundException"/>.
+        /// </summary>
+        private static CompilerResults CompileSource(CompilerParameters parameters, string wrappedCode, bool loadAssembly)
+        {
+            var results = new CompilerResults(new TempFileCollection());
+            string tempDir = Path.Combine(Path.GetTempPath(), "TopSolidMcpCompile");
+            Directory.CreateDirectory(tempDir);
+
+            string baseName = "ts_" + Guid.NewGuid().ToString("N");
+            string csPath = Path.Combine(tempDir, baseName + ".cs");
+            string rspPath = Path.Combine(tempDir, baseName + ".cmdline");
+            string dllPath = Path.Combine(tempDir, baseName + ".dll");
+
+            try
+            {
+                File.WriteAllText(csPath, wrappedCode, Encoding.UTF8);
+
+                var rsp = new StringBuilder();
+                rsp.AppendLine("/t:library");
+                rsp.AppendLine("/utf8output");
+                rsp.AppendLine("/debug-");
+                rsp.AppendLine("/optimize+");
+                foreach (string asm in parameters.ReferencedAssemblies)
+                {
+                    rsp.AppendLine("/R:\"" + asm + "\"");
+                }
+                rsp.AppendLine("/out:\"" + dllPath + "\"");
+                rsp.AppendLine("\"" + csPath + "\"");
+                File.WriteAllText(rspPath, rsp.ToString(), Encoding.UTF8);
+
+                string cscPath = Path.Combine(RuntimeEnvironment.GetRuntimeDirectory(), "csc.exe");
+                var psi = new ProcessStartInfo
+                {
+                    FileName = cscPath,
+                    Arguments = "/noconfig /fullpaths @\"" + rspPath + "\"",
+                    WorkingDirectory = tempDir,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8
+                };
+
+                var stdout = new StringBuilder();
+                var stderr = new StringBuilder();
+                int exitCode;
+
+                using (var proc = new Process { StartInfo = psi })
+                {
+                    proc.OutputDataReceived += (s, e) => { if (e.Data != null) stdout.AppendLine(e.Data); };
+                    proc.ErrorDataReceived += (s, e) => { if (e.Data != null) stderr.AppendLine(e.Data); };
+
+                    proc.Start();
+                    try { proc.StandardInput.Close(); } catch { }
+                    proc.BeginOutputReadLine();
+                    proc.BeginErrorReadLine();
+
+                    if (!proc.WaitForExit(30000))
+                    {
+                        try { proc.Kill(); } catch { }
+                        results.Errors.Add(new CompilerError(csPath, 0, 0, "CS0000", "csc.exe timed out after 30 seconds."));
+                        return results;
+                    }
+                    proc.WaitForExit();
+                    exitCode = proc.ExitCode;
+                }
+
+                results.NativeCompilerReturnValue = exitCode;
+
+                string combined = stdout.ToString() + "\n" + stderr.ToString();
+                string[] lines = combined.Split(new[] { "\r\n", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (string rawLine in lines)
+                {
+                    Match m = CscDiagnosticRegex.Match(rawLine.Trim());
+                    if (!m.Success) continue;
+
+                    int line = 0;
+                    int col = 0;
+                    int.TryParse(m.Groups["line"].Value, out line);
+                    int.TryParse(m.Groups["col"].Value, out col);
+                    bool isWarning = string.Equals(m.Groups["level"].Value, "warning", StringComparison.OrdinalIgnoreCase);
+
+                    var err = new CompilerError(
+                        m.Groups["file"].Success ? m.Groups["file"].Value : csPath,
+                        line,
+                        col,
+                        m.Groups["num"].Value,
+                        m.Groups["msg"].Value.Trim())
+                    {
+                        IsWarning = isWarning
+                    };
+                    results.Errors.Add(err);
+                }
+
+                if (exitCode != 0 && !results.Errors.HasErrors)
+                {
+                    results.Errors.Add(new CompilerError(
+                        csPath,
+                        0,
+                        0,
+                        "CS0000",
+                        "csc.exe failed with exit code " + exitCode + " (0x" + exitCode.ToString("X8") + "): " + combined.Trim()));
+                    return results;
+                }
+
+                if (!results.Errors.HasErrors)
+                {
+                    if (!File.Exists(dllPath))
+                    {
+                        results.Errors.Add(new CompilerError(
+                            csPath,
+                            0,
+                            0,
+                            "CS0000",
+                            "csc.exe exited with code 0 but did not produce output assembly."));
+                    }
+                    else if (loadAssembly)
+                    {
+                        byte[] rawAssembly = File.ReadAllBytes(dllPath);
+                        results.CompiledAssembly = Assembly.Load(rawAssembly);
+                    }
+                }
+
+                return results;
+            }
+            finally
+            {
+                try { if (File.Exists(csPath)) File.Delete(csPath); } catch { }
+                try { if (File.Exists(rspPath)) File.Delete(rspPath); } catch { }
+                try { if (File.Exists(dllPath)) File.Delete(dllPath); } catch { }
+            }
         }
 
         /// <summary>
@@ -647,29 +790,80 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>
-        /// True when the code contains a real 'return' statement. String literals, character
-        /// literals and comments are neutralized first, so that a return hidden in the middle of a
-        /// line — for instance: if (docId.IsEmpty) return "no document"; — is caught as well.
-        /// Missing it used to leave the modification transaction open and freeze the TopSolid session.
+        /// True when the code contains a real 'return' statement at the method level of <c>Run()</c>.
+        /// String literals, character literals, comments, and lambda/anonymous-delegate bodies are
+        /// neutralized first, so that a return inside a helper lambda (<c>Func&lt;...&gt; f = x =&gt; { return y; };</c>)
+        /// is allowed while a method-level return that would bypass <c>EndModification</c> is caught.
         /// </summary>
         private static bool ContainsReturnStatement(string code)
         {
-            return Regex.IsMatch(StripLiteralsAndComments(code), @"\breturn\b");
+            string masked = MaskLambdaBodies(StripLiteralsAndComments(code));
+            return Regex.IsMatch(masked, @"\breturn\b");
+        }
+
+        /// <summary>
+        /// Replaces the brace-delimited bodies (<c>{ ... }</c>) of lambda expressions (<c>=&gt; { ... }</c>)
+        /// and anonymous delegates (<c>delegate(...) { ... }</c>) with spaces while preserving newlines
+        /// and exact character offsets. Expects input already passed through <see cref="StripLiteralsAndComments"/>.
+        /// </summary>
+        private static string MaskLambdaBodies(string sanitized)
+        {
+            if (string.IsNullOrEmpty(sanitized)) return sanitized ?? string.Empty;
+
+            MatchCollection matches = Regex.Matches(sanitized, @"(?:=>|\bdelegate\b(?:\s*\([^)]*\))?)\s*\{");
+            if (matches.Count == 0) return sanitized;
+
+            char[] chars = sanitized.ToCharArray();
+            int n = chars.Length;
+
+            foreach (Match match in matches)
+            {
+                int braceOpen = match.Index + match.Length - 1;
+                if (braceOpen < 0 || braceOpen >= n || chars[braceOpen] != '{')
+                    continue; // already masked by an enclosing lambda
+
+                int depth = 0;
+                int braceClose = -1;
+                for (int i = braceOpen; i < n; i++)
+                {
+                    if (chars[i] == '{') depth++;
+                    else if (chars[i] == '}')
+                    {
+                        depth--;
+                        if (depth == 0)
+                        {
+                            braceClose = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (braceClose > braceOpen)
+                {
+                    for (int k = braceOpen + 1; k < braceClose; k++)
+                    {
+                        if (chars[k] != '\n' && chars[k] != '\r')
+                            chars[k] = ' ';
+                    }
+                }
+            }
+
+            return new string(chars);
         }
 
         /// <summary>
         /// Replaces every real 'return;' statement by a jump to the commit label of the generated
-        /// modification wrapper. Literals and comments are masked first; the mask produced by
-        /// <see cref="StripLiteralsAndComments"/> has exactly the same length as the input, so the
-        /// match offsets are valid in the original text and a 'return;' quoted inside a string is
-        /// left untouched. <paramref name="replaced"/> reports whether at least one jump was emitted.
+        /// modification wrapper. Literals, comments, and lambda bodies are masked first; the mask
+        /// has exactly the same length as the input, so the match offsets are valid in the original
+        /// text and a 'return;' quoted inside a string or inside a helper lambda is left untouched.
+        /// <paramref name="replaced"/> reports whether at least one jump was emitted.
         /// </summary>
         private static string RewriteBareReturns(string code, out bool replaced)
         {
             replaced = false;
             if (string.IsNullOrEmpty(code)) return code ?? string.Empty;
 
-            string masked = StripLiteralsAndComments(code);
+            string masked = MaskLambdaBodies(StripLiteralsAndComments(code));
             MatchCollection matches = Regex.Matches(masked, @"\breturn\s*;");
             if (matches.Count == 0) return code;
 

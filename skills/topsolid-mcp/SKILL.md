@@ -1,7 +1,7 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.3.0
+version: 5.4.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation]
@@ -12,6 +12,7 @@ metadata:
 
 ## CHANGELOG
 
+- **v5.4.0 (2026-10-20)** — Ajout du **Coupe-Circuit (Circuit Breaker) MCP** et de la discipline stricte des tokens suite a l'analyse post-mortem des sessions Codex/Noemid (`11,1M tokens` / `20 min`) : interdiction absolue d'auto-depanner le serveur MCP (WinRM, lecture de `ScriptExecutor.cs`, compilation de serveur bis) ou de crawler le Web / fouiller le depot pendant une session CAO + support des `return` dans les lambdas C# (`Func<...>`) dans `ScriptExecutor.cs` (`v1.8.8`) + invocation directe `csc.exe` (`CreateNoWindow = true`) eliminant le bug `.dll introuvable` en mode tache planifiee headless.
 - **v5.3.0 (2026-10-19)** — Catalogue passe a **199 recettes** (+4 nouvelles : `create_drilling`, `set_material`, `set_coating`, `check_collisions`) + correctifs serveur MCP (`DetectModification` regex multi-variables dans `ScriptExecutor.cs`, auto-detection `7.21` dans `TopSolidPathResolver.cs`, synchronisation de toutes les representations `GetRepresentations` dans `extruder_esquisse`, pas besoin de `CreateProfile` dans les esquisses) + documentation des **Etapes TopSolid** (`GetModelingStage` / `SetWorkingStage` / `ResetInsertionOperation`), de la detection de collisions B-Rep (`SetCollisionsManagement` + `ShapeShapeCollisionEntity`) et du paradigme **One-Shot C# Builder** dans `references/concepts-core.md` et `references/gabarits-recipes.md`.
 - **v5.2.0 (2026-09-30)** — Catalogue passe a **151 recettes** : lots GREEN de la veille 7.21 implementes (19 nouvelles) — `list_positionings`, `is_positioning_underconstrained` (assemblage), getters durete/etats de surface (`get_material_*` 6 + `get_coating_*` 6), `get_profiles_folder` (esquisse), `get_operation_version`, lectures d'aretes `get_edge_faces`/`get_edge_ellipse_curve` (param `value`=AskEdge), `smooth_sketch_profiles` (RW, AskEdge + smoothing ISketches2D). Methode : membres confirmes via snapshot CHM 7.21 (`methods.json`) + reflection 7.20/7.21 ; corps compile-verifies (csc v4.0.30319 refs Automating) — les 7 recettes utilisant des membres 7.21-only (GetEdgeFaces, GetEdgeEllipseCurve, SmoothSketchProfiles, ICoatings Brinell/Vickers/Bump*) restent compile-verify en signatures seulement.
 - **v5.1.0 (2026-09-30)** — Veille API 7.21 : snapshot `7.21.304.0` (1978 méthodes, 3209 pages CHM) ; diff `7.20.311.0` → `7.21.304.0` = **+190 méthodes, 0 retirées, 1 signature changée** (`IPdmAdmin.GetUserGroups`, OBSOLETE → `GetGroupsOfUsers`). 20 recettes du catalogue désormais documentées dans les tables ci-dessous. Nouvelle section « Surface API 7.21 » (méthodes hors recettes) et « Nouveautés produit 7.21 » (What's New). Constat runtime : le graphe embarqué (`data/graph.json`, 4119 edges, 242 types, 1728 methodes x interface sur 46 interfaces, datant du 09/09) ne contient NI les méthodes 7.20 NI les 7.21 — `topsolid_api_help` peut donc ne pas connaître une méthode très récente (vérifier alors dans la section « Surface API 7.21 »).
@@ -42,8 +43,22 @@ metadata:
 5. **Etapes TopSolid (`Stages`) & Collisions B-Rep** :
    - Activer `SetCollisionsManagement` bascule le document en **Etape d'Analyse (`AnalysisStage`)**. Pour ajouter ou modifier ensuite des operations de modelisation ou des inclusions, revenir imperativement en **Etape de Modelisation (`ModelingStage`) a l'interieur d'un `StartModification`** :
      `TopSolidHost.Operations.SetWorkingStage(TopSolidHost.Operations.GetModelingStage(docId)); TopSolidHost.Operations.ResetInsertionOperation(docId);`
+6. **Architecture d'Assemblage reelle (ZERO multi-corps fourre-tout)** :
+   - **Interdiction absolue** de modeliser un ouvrage complet en creant des dizaines ou centaines d'esquisses/extrusions dans des fichiers `.TopPrt` multi-corps fourre-tout (ex: 16 poteaux extrudes dans 1 seul fichier).
+   - Toujours creer **1 document `.TopPrt` par composant reel unique** (avec son `.TopMat` et `.TopCot`), puis l'instancier $N$ fois par inclusion (`Assemblies.CreateInclusion`) dans un document d'assemblage `.TopAsm`.
 
-### B. Regles d'appel des recettes (`topsolid_run_recipe`) vs One-Shot C# Builder
+### B. Coupe-Circuit (Circuit Breaker) & Discipline de Tokens (CRITIQUE)
+1. **Coupe-Circuit immediat en cas de panne systeme MCP (Max 2 essais / < 15 secondes)** :
+   - Si `topsolid_compile`, `topsolid_execute_script` ou `topsolid_modify_script` renvoie une erreur systeme ou d'infrastructure (ex: `System error`, `.dll introuvable`, `csc.exe failed`, serveur HTTP injoignable), **ARRETE-TOI IMMEDIATEMENT apres 1 verification**.
+   - **INTERDICTION FORMELLE** pendant une session CAO :
+     - de lire le code source C# du serveur MCP (`ScriptExecutor.cs`, `Program.cs`, etc.),
+     - d'ouvrir des sessions WinRM/SSH vers le poste TopSolid pour debugger les processus ou `%TEMP%`,
+     - de compiler un exécutable wrapper de contournement (ex: `TaskMcpHost.exe`).
+   - Remonte simplement l'erreur systeme exacte a l'utilisateur en 3 lignes (seul le skill `topsolid-mcp-ops` sur demande explicite de maintenance a le droit de diagnostiquer le serveur).
+2. **Zero fouille de depot local & Zero Crawl Web normatif** :
+   - Ne cherche jamais de scripts Python/C# dans le depot `topsolid-automation-mcp` (ex: `tools/steel_ai_generator`) et ne lance jamais de recherches Web (AFNOR, Legifrance, etc.) qui gonflent la fenetre de contexte de +50 000 tokens relus a chaque tour. Tout est dans les skills metiers et les outils MCP.
+
+### C. Regles d'appel des recettes (`topsolid_run_recipe`) vs One-Shot C# Builder
 - Pour les **actions unitaires** (lecture, propriete PDM, export, modification d'un parametre) : appeler `topsolid__topsolid_run_recipe` avec le bon nom.
 - Pour la **creation complete d'un ouvrage multi-pieces et assemblage de A a Z** : utiliser le patron **One-Shot C# Builder** (`topsolid_compile` puis `topsolid_execute_script` delegue au sous-agent `flash`, voir `topsolid-mcp-modeling`).
 
