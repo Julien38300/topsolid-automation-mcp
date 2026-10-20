@@ -17,9 +17,35 @@ metadata:
 - **v5.1.0 (2026-09-30)** — Veille API 7.21 : snapshot `7.21.304.0` (1978 méthodes, 3209 pages CHM) ; diff `7.20.311.0` → `7.21.304.0` = **+190 méthodes, 0 retirées, 1 signature changée** (`IPdmAdmin.GetUserGroups`, OBSOLETE → `GetGroupsOfUsers`). 20 recettes du catalogue désormais documentées dans les tables ci-dessous. Nouvelle section « Surface API 7.21 » (méthodes hors recettes) et « Nouveautés produit 7.21 » (What's New). Constat runtime : le graphe embarqué (`data/graph.json`, 4119 edges, 242 types, 1728 methodes x interface sur 46 interfaces, datant du 09/09) ne contient NI les méthodes 7.20 NI les 7.21 — `topsolid_api_help` peut donc ne pas connaître une méthode très récente (vérifier alors dans la section « Surface API 7.21 »).
 - v5.0.0 — catalogue 132 recettes, mode R/RW/RD, outils MCP détaillés.
 
-## REGLES
+## REGLES & BONNES PRATIQUES UTILISATEUR TOPSOLID (SKILL VIVANT)
 
-Tu appelles `topsolid__topsolid_run_recipe` avec le bon nom. Tu ne generes JAMAIS de code C#.
+> **Regle d'evolution continue (Skill vivant)** : Ce skill centralise les bonnes pratiques d'utilisation de TopSolid et du pont MCP. **Chaque fois qu'un nouveau piege API, un bug d'execution ou une bonne pratique CAO est decouvert en test**, ce fichier (ainsi que `references/concepts-core.md` et `topsolid-mcp-modeling`) **doit etre immediatement mis a jour et synchronise**.
+> **Skills metiers specialises** : Des que la tache porte sur la conception d'un ouvrage metier specifique, **charger imperativement en parallele le skill metier correspondant** :
+> - **Garde-corps / rambardes / balustrades** : charger **`topsolid-railing-design`** (`TopSolid-Railing-Design`).
+> - **Cages SubD depuis photo** : charger **`topsolid-cage-from-image`**.
+
+### A. Bonnes pratiques CAO & PDM TopSolid (obligatoires)
+1. **Modification d'un sous-document & Mise a jour des Cas d'Emploi (`Where-Used`) avant sauvegarde** :
+   - Dans TopSolid, modifier une piece (`.TopPrt`) ou un sous-assemblage incremente sa revision mineure (`DocumentId` change apres `EnsureIsDirty(ref docId)`).
+   - **Regle d'or** : chaque fois qu'un sous-document est modifie, il faut :
+     1. Sauvegarder le sous-document enfant (`Pdm.Save(childPdmId, true)` / `save_document`),
+     2. Consulter ses **cas d'emploi** (`read_where_used` / `TopSolidHost.Pdm.GetWhereUsed`),
+     3. Ouvrir et reconstruire les assemblages / mises en plan parents (`EnsureIsDirty(ref parentDocId)` + `EndModification(true, true)` / `rebuild_document`) pour qu'ils pointent sur la nouvelle revision de l'enfant,
+     4. Sauvegarder les parents **dans l'ordre Enfant -> Parent**.
+2. **Materiaux PDM (`.TopMat`) et Revetements (`.TopCot`) obligatoires** :
+   - Une piece TopSolid sans materiau PDM (`.TopMat`) est invalide (masse nulle, nomenclature fausse). Ne jamais se contenter d'un `SetColor` RGB : toujours affecter un vrai materiau (`set_material` / `Parts.SetMaterial`) et revetement eventuel (`set_coating` / `Parts.SetCoating`) + `SetPhysicalPropertiesManagementRefreshAuto(docId, true)`.
+3. **Synchronisation de TOUTES les Representations (`Conception`, `Detaillee`, `Simplifiee`)** :
+   - Seule la toute premiere forme (`Shape 1`) d'une piece neuve est ajoutee par defaut aux representations. Toute forme supplementaire ou recreee doit etre ajoutee a toutes les representations (`GetRepresentations(docId)` -> `AddRepresentationConstituent(rep, shId)`), sinon la piece apparait vide dans l'assemblage parent.
+4. **Esquisses 2D & Extrusions sans fenetre modale** :
+   - Toujours passer **`true` en 4e argument de `CreateSketchIn3D`** (`bool inDefinesXDirection = true`, sinon les axes `(u, v)` de l'esquisse sont tournes de 90 degres).
+   - Toujours appeler **`TopSolidHost.Sketches2D.CleanSketch()`** juste avant `TopSolidHost.Sketches2D.EndModification()` (egalement auto-injecte par le serveur MCP depuis la `v1.8.7`) pour calculer les profils fermes (`GetProfileCount > 0`) avant toute extrusion dans la meme transaction.
+5. **Etapes TopSolid (`Stages`) & Collisions B-Rep** :
+   - Activer `SetCollisionsManagement` bascule le document en **Etape d'Analyse (`AnalysisStage`)**. Pour ajouter ou modifier ensuite des operations de modelisation ou des inclusions, revenir imperativement en **Etape de Modelisation (`ModelingStage`) a l'interieur d'un `StartModification`** :
+     `TopSolidHost.Operations.SetWorkingStage(TopSolidHost.Operations.GetModelingStage(docId)); TopSolidHost.Operations.ResetInsertionOperation(docId);`
+
+### B. Regles d'appel des recettes (`topsolid_run_recipe`) vs One-Shot C# Builder
+- Pour les **actions unitaires** (lecture, propriete PDM, export, modification d'un parametre) : appeler `topsolid__topsolid_run_recipe` avec le bon nom.
+- Pour la **creation complete d'un ouvrage multi-pieces et assemblage de A a Z** : utiliser le patron **One-Shot C# Builder** (`topsolid_compile` puis `topsolid_execute_script` delegue au sous-agent `flash`, voir `topsolid-mcp-modeling`).
 
 **Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type` (note : `check_collisions` active l'analyse de collisions dans une transaction mais ne modifie pas la geometrie). Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
 
