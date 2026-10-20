@@ -1954,26 +1954,32 @@ namespace TopSolidMcpServer.Tools
             { "check_missing_materials", R("MATERIALS", "Lists project parts without assigned material",
                 "PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();\n" +
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
-                "List<PdmObjectId> folders; List<PdmObjectId> docs;\nTopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);\nvar items = docs;\n" +
+                "List<PdmObjectId> allDocs = new List<PdmObjectId>();\n" +
+                "Action<PdmObjectId> collectDocs = null;\n" +
+                "collectDocs = (parentId) => {\n" +
+                "    List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(parentId, out folders, out docs);\n" +
+                "    if (docs != null) allDocs.AddRange(docs);\n" +
+                "    if (folders != null) foreach (var f in folders) collectDocs(f);\n" +
+                "};\n" +
+                "collectDocs(projId);\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
                 "sb.AppendLine(\"=== VERIFICATION MATERIALS ===\");\n" +
                 "int missing = 0; int total = 0;\n" +
-                "foreach (var item in items)\n" +
+                "foreach (var item in allDocs)\n" +
                 "{\n" +
+                "    string ext = \"\";\n" +
+                "    TopSolidHost.Pdm.GetType(item, out ext);\n" +
+                "    if (!string.Equals(ext, \".TopPrt\", StringComparison.OrdinalIgnoreCase)) continue;\n" +
                 "    string name = TopSolidHost.Pdm.GetName(item);\n" +
                 "    try\n" +
                 "    {\n" +
                 "        DocumentId dId = TopSolidHost.Documents.GetDocument(item);\n" +
                 "        if (dId.IsEmpty) continue;\n" +
                 "        total++;\n" +
-                "        var pList = TopSolidHost.Parameters.GetParameters(dId);\n" +
-                "        double mass = 0;\n" +
-                "        foreach (var p in pList)\n" +
-                "        {\n" +
-                "            if (TopSolidHost.Elements.GetFriendlyName(p) == \"Mass\")\n" +
-                "            { mass = TopSolidHost.Parameters.GetRealValue(p); break; }\n" +
-                "        }\n" +
-                "        if (mass <= 0) { sb.AppendLine(\"  SANS MATERIAU: \" + name); missing++; }\n" +
+                "        DocumentId matId = TopSolidDesignHost.Parts.GetMaterial(dId);\n" +
+                "        if (matId.IsEmpty) { sb.AppendLine(\"  SANS MATERIAU: \" + name); missing++; }\n" +
+                "        else { sb.AppendLine(\"  OK: \" + name + \" -> \" + TopSolidHost.Documents.GetName(matId)); }\n" +
                 "    }\n" +
                 "    catch { continue; }\n" +
                 "}\n" +

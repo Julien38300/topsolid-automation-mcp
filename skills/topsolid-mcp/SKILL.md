@@ -1,7 +1,7 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.4.0
+version: 5.5.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation]
@@ -12,6 +12,7 @@ metadata:
 
 ## CHANGELOG
 
+- **v5.5.0 (2026-10-20)** — Ajout de la **Recherche Generique Ultra-Rapide de Materiaux PDM (`< 500 ms`)** (filtrage des bibliotheques materiaux `CEN`/`Metal`/`Mat`/`Bois`/`Wood` + verification stricte `ext == ".TopMat"` pour eviter les timeouts sur les bibliotheques de visserie et les exceptions `.TopLam`), des **4 Regles Compile-First C#** (`CreateSketchIn3D` -> `ElementId`, pas d'operateur `!=`/`==` sur `PdmObjectId`/`DocumentId`, `DocumentId` pour `SetMaterial`/`CreateInclusion`), du **Budget CoT (zero tableau de coordonnees dans `reasoning`)** et du client CLI permanent `N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py`.
 - **v5.4.0 (2026-10-20)** — Ajout du **Coupe-Circuit (Circuit Breaker) MCP** et de la discipline stricte des tokens suite a l'analyse post-mortem des sessions Codex/Noemid (`11,1M tokens` / `20 min`) : interdiction absolue d'auto-depanner le serveur MCP (WinRM, lecture de `ScriptExecutor.cs`, compilation de serveur bis) ou de crawler le Web / fouiller le depot pendant une session CAO + support des `return` dans les lambdas C# (`Func<...>`) dans `ScriptExecutor.cs` (`v1.8.8`) + invocation directe `csc.exe` (`CreateNoWindow = true`) eliminant le bug `.dll introuvable` en mode tache planifiee headless.
 - **v5.3.0 (2026-10-19)** — Catalogue passe a **199 recettes** (+4 nouvelles : `create_drilling`, `set_material`, `set_coating`, `check_collisions`) + correctifs serveur MCP (`DetectModification` regex multi-variables dans `ScriptExecutor.cs`, auto-detection `7.21` dans `TopSolidPathResolver.cs`, synchronisation de toutes les representations `GetRepresentations` dans `extruder_esquisse`, pas besoin de `CreateProfile` dans les esquisses) + documentation des **Etapes TopSolid** (`GetModelingStage` / `SetWorkingStage` / `ResetInsertionOperation`), de la detection de collisions B-Rep (`SetCollisionsManagement` + `ShapeShapeCollisionEntity`) et du paradigme **One-Shot C# Builder** dans `references/concepts-core.md` et `references/gabarits-recipes.md`.
 - **v5.2.0 (2026-09-30)** — Catalogue passe a **151 recettes** : lots GREEN de la veille 7.21 implementes (19 nouvelles) — `list_positionings`, `is_positioning_underconstrained` (assemblage), getters durete/etats de surface (`get_material_*` 6 + `get_coating_*` 6), `get_profiles_folder` (esquisse), `get_operation_version`, lectures d'aretes `get_edge_faces`/`get_edge_ellipse_curve` (param `value`=AskEdge), `smooth_sketch_profiles` (RW, AskEdge + smoothing ISketches2D). Methode : membres confirmes via snapshot CHM 7.21 (`methods.json`) + reflection 7.20/7.21 ; corps compile-verifies (csc v4.0.30319 refs Automating) — les 7 recettes utilisant des membres 7.21-only (GetEdgeFaces, GetEdgeEllipseCurve, SmoothSketchProfiles, ICoatings Brinell/Vickers/Bump*) restent compile-verify en signatures seulement.
@@ -33,8 +34,10 @@ metadata:
      2. Consulter ses **cas d'emploi** (`read_where_used` / `TopSolidHost.Pdm.GetWhereUsed`),
      3. Ouvrir et reconstruire les assemblages / mises en plan parents (`EnsureIsDirty(ref parentDocId)` + `EndModification(true, true)` / `rebuild_document`) pour qu'ils pointent sur la nouvelle revision de l'enfant,
      4. Sauvegarder les parents **dans l'ordre Enfant -> Parent**.
-2. **Materiaux PDM (`.TopMat`) et Revetements (`.TopCot`) obligatoires** :
-   - Une piece TopSolid sans materiau PDM (`.TopMat`) est invalide (masse nulle, nomenclature fausse). Ne jamais se contenter d'un `SetColor` RGB : toujours affecter un vrai materiau (`set_material` / `Parts.SetMaterial`) et revetement eventuel (`set_coating` / `Parts.SetCoating`) + `SetPhysicalPropertiesManagementRefreshAuto(docId, true)`.
+2. **Materiaux PDM (`.TopMat`) et Revetements (`.TopCot`) obligatoires & Recherche Generique `< 500 ms`** :
+   - Une piece TopSolid sans materiau PDM (`.TopMat`) est invalide. Ne jamais se contenter d'un `SetColor` RGB : toujours affecter un vrai materiau (`Parts.SetMaterial(docId, matDocId)`) + `Parts.SetMassPropertyManagement(docId, true, new SmartReal(UnitType.Mass, 0))` + `Parts.SetPhysicalPropertiesManagementRefreshAuto(docId, true)`.
+   - **Recherche generique ultra-rapide (`< 500 ms`)** : Ne JAMAIS appeler `SearchProjectByName("Mécanique CEN TopSolid")` (une requete multi-mots retourne 0) et ne JAMAIS parcourir les 55 bibliotheques de `GetProjects(false, true)` sans filtre (timeout 60 s sur les bibliotheques de visserie). Filtrer `GetProjects(false, true)` uniquement sur les bibliotheques contenant `"CEN"`, `"Metal"`, `"Mat"`, `"Bois"`, `"Wood"`, chercher les designations metier standards (`*S235*`, `*S355*`, `*X2CrNi19-11*`, `*304*`, `*Chêne*`, `*Pin*`), et verifier que `TopSolidHost.Pdm.GetType(h, out ext)` vaut **`".TopMat"`** (pour exclure les `.TopLam` stratifies bois qui levent `InvalidCastException`).
+   - Verifier le materiau d'une piece via `TopSolidDesignHost.Parts.GetMaterial(docId)` (et non via `check_missing_materials` qui cherche un parametre `"Mass"` en anglais).
 3. **Synchronisation de TOUTES les Representations (`Conception`, `Detaillee`, `Simplifiee`)** :
    - Seule la toute premiere forme (`Shape 1`) d'une piece neuve est ajoutee par defaut aux representations. Toute forme supplementaire ou recreee doit etre ajoutee a toutes les representations (`GetRepresentations(docId)` -> `AddRepresentationConstituent(rep, shId)`), sinon la piece apparait vide dans l'assemblage parent.
 4. **Esquisses 2D & Extrusions sans fenetre modale** :
@@ -57,6 +60,14 @@ metadata:
    - Remonte simplement l'erreur systeme exacte a l'utilisateur en 3 lignes (seul le skill `topsolid-mcp-ops` sur demande explicite de maintenance a le droit de diagnostiquer le serveur).
 2. **Zero fouille de depot local & Zero Crawl Web normatif** :
    - Ne cherche jamais de scripts Python/C# dans le depot `topsolid-automation-mcp` (ex: `tools/steel_ai_generator`) et ne lance jamais de recherches Web (AFNOR, Legifrance, etc.) qui gonflent la fenetre de contexte de +50 000 tokens relus a chaque tour. Tout est dans les skills metiers et les outils MCP.
+3. **Zero Monologue de Coordonnees dans le `reasoning` (CoT) & Client CLI pret a l'emploi** :
+   - Ne calcule jamais des tableaux de coordonnees $(X, Y, Z)$ piece par piece dans ta reflexion interne (`reasoning`) avant de coder (gain : 4 a 5 minutes) : ecris directement les boucles `for` parametriques en C#.
+   - Utilise directement `python "N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py" compile|exec|state|recipe` sans reecrire de client `mcp_client.py`.
+4. **Les 4 Regles Compile-First C#** :
+   - `CreateSketchIn3D(...)` retourne un **`ElementId`** (jamais `ElementItemId`).
+   - `PdmObjectId`, `DocumentId` et `ElementId` n'ont **pas d'operateur `==` ou `!=`** (`CS0019`) : utiliser `.IsEmpty`, `!id.IsEmpty` ou `.Equals(...)`.
+   - `Parts.SetMaterial` et `Assemblies.CreateInclusion` prennent des **`DocumentId`** (jamais `PdmObjectId`).
+   - Depuis `v1.8.8`, les lambdas `Func<...>` avec `return` sont supportees dans `topsolid_compile` / `topsolid_execute_script`.
 
 ### C. Regles d'appel des recettes (`topsolid_run_recipe`) vs One-Shot C# Builder
 - Pour les **actions unitaires** (lecture, propriete PDM, export, modification d'un parametre) : appeler `topsolid__topsolid_run_recipe` avec le bon nom.
