@@ -1,14 +1,14 @@
 ---
 name: topsolid-railing-design
-version: 1.2.0
+version: 1.3.0
 author: Noemid-H
 license: internal
 metadata:
   hermes:
-    tags: [topsolid, railing, garde-corps, serrurerie, metallerie, cad, nf-p01-012, platine, s235, inox]
+    tags: [topsolid, railing, garde-corps, serrurerie, metallerie, cad, nf-p01-012, platine, extruded-bar, s235, inox]
     related_skills: [topsolid-mcp, topsolid-mcp-modeling]
     trigger_phrases: ["garde-corps", "garde corps", "railing", "rambarde", "balustrade", "barreaudage", "main courante"]
-description: Use when designing and modeling railings / guardrails (garde-corps) in TopSolid from photos, sketches, or specifications — structured visual inspection, French standards (NF P01-012 / NF P01-013), TopSolid'Steel trade practices (mandatory drilled baseplates, welded post sub-assemblies, Z=0 floor convention, through-drilled infill rods, L/U corners), generic PDM material search (S235/Inox 304/Wood), and 0 B-Rep collision verification.
+description: Use when designing and modeling railings / guardrails (garde-corps) in TopSolid from photos, sketches, or specifications — structured visual inspection, French standards (NF P01-012 / NF P01-013), TopSolid'Steel trade practices (100% MCP recipes create_extruded_bar & create_sheet_metal_plate, mandatory drilled baseplates, welded tronçon sub-assemblies with bolted splice posts, Z=0 floor convention, through-drilled infill rods, L/U corners), and 0 B-Rep collision verification.
 ---
 
 # TopSolid-Railing-Design — Conception & Modélisation Métier de Garde-Corps
@@ -96,9 +96,15 @@ Un garde-corps de métallerie comporte **obligatoirement une platine de fixation
 - **Gestion propre de l'angle à 90° (Garde-corps en L)** :
   - À la jonction des deux branches (Branche 1 selon $X$, Branche 2 selon $Y$), disposer un poteau en fin de Branche 1 et un poteau en début de Branche 2 décalés de $50\text{ à }60\text{ mm}$ de l'arête d'angle (chacun avec sa platine sans chevauchement B-Rep !), et arrêter les barres de chaque branche à $+20\text{ mm}$ après leur dernier poteau respectif pour garantir **0 collision B-Rep** dans l'angle.
 
-### D. Structuration Modulaire de l'Assemblage TopSolid
-- **ZÉRO pièce multi-corps fourre-tout** : chaque composant distinct est un `.TopPrt` unitaire (`GC_Platine`, `GC_Montant`, `GC_Barre_B1`, `GC_Barre_B2`, `GC_MC_B1`, `GC_MC_B2`, `Terrasse_Lame`, `Terrasse_Lambourde`).
-- **Sous-assemblage Poteau (`GC_Poteau_Complet.TopAsm`) recommandé** : assembler 1 fois `GC_Platine.TopPrt` ($Z \in [0, 10\text{ mm}]$) + `GC_Montant.TopPrt` ($Z \in [10, 990\text{ mm}]$) dans un sous-ensemble `GC_Poteau_Complet.TopAsm` (ou instancier systématiquement la paire `GC_Platine` + `GC_Montant` dans la même boucle d'implantation des poteaux). **Le nombre d'occurrences de `GC_Platine` dans l'assemblage doit TOUJOURS être strictement égal au nombre de montants !**
+### D. Structuration Modulaire par Tronçons Soudés & Poteaux de Raccord / Jonction
+- **ZÉRO pièce multi-corps fourre-tout** : chaque composant distinct est un `.TopPrt` unitaire (`GC_Platine_150x100x12`, `GC_Platine_Jonction_70x100x12`, `GC_Montant_50x10`, `GC_Montant_Jonction_50x10`, `GC_MainCourante_*`, `GC_LisseBasse_*`, `GC_Barreau_*`).
+- **Découpage en Tronçons Soudés (`GC_Troncon_*.TopAsm`) & Poteaux de Raccord Boulonnés** :
+  - Un garde-corps réel est fabriqué en atelier par **tronçons soudés transportables** (longueur typique $1{,}5\text{ à }2{,}5\text{ m}$), chaque tronçon étant un **sous-assemblage TopSolid (`.TopAsm`)** regroupant ses platines, montants, main courante, lisses et barreaux soudés ensemble.
+  - Dans 99 % des cas, la jonction entre deux tronçons adjacents se fait par un **poteau de raccord (jonction)** constitué de **2 fers plats boulonnés dos à dos** ($2 \times 50 \times 10\text{ mm}$ percés de $3 \times \varnothing 12\text{ mm}$ pour boulons M10, avec un jeu de pose de $2\text{ mm}$ entre les deux plats et chacune sa demi-platine `GC_Platine_Jonction_70x100x12`) : chaque fer plat et sa demi-platine appartiennent à leur sous-assemblage de tronçon respectif !
+- **Modélisation 100 % via Recettes MCP (`topsolid_run_recipe`)** :
+  - Toujours utiliser **`create_extruded_bar`** pour tous les profilés (`PLAT`, `TUBE_RECT`, `ROND`, `TUBE_ROND`, `CORNIERE`) : la recette câble automatiquement la fonction système TopSolid **`Extruded Bar.TopPrtFct`**, son repère **`Repere_ExtrudedBar_XY_Z`** (section dans `XY` avec `X` horizontal, extrusion longitudinale suivant `+Z`) et la propriété système **`Length` = `L`** visible en nomenclature BOM.
+  - Toujours utiliser **`create_sheet_metal_plate`** pour toutes les tôles et platines percées (contour extérieur + cercles des trous dans la même esquisse 2D + paramètre `Epaisseur`).
+  - Toujours utiliser **`create_assembly_document`** + **`batch_add_inclusions`** (mode `BETWEEN,x1,y1,z1,x2,y2,z2,ux,uy,uz,nomOcc` pour orienter automatiquement le `+Z` des profilés de `P1` vers `P2` et leur section `X` selon `uX`) + **`update_where_used_and_save`** + **`check_collisions`**.
 
 ---
 

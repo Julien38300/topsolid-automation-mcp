@@ -71,9 +71,31 @@ namespace TopSolidMcpServer.Utils
                 return normalized;
             }
 
-            // 1b. Active running TopSolid.exe instance (avoids 7.20 vs 7.21 mismatch on multi-version hosts)
+            // 1b. Active running TopSolid.exe instance (avoids 7.20 vs 7.21 mismatch on multi-version hosts).
+            // Prefer the process matching TraySettings.Port if configured.
             try
             {
+                if (TraySettings.Port == 0) TraySettings.Load();
+                int targetPort = TraySettings.Port;
+                if (targetPort > 0)
+                {
+                    var instances = TopSolidInstanceList.Scan();
+                    var matched = TopSolidInstanceList.FindByPort(instances, targetPort);
+                    if (matched != null && matched.Pid > 0)
+                    {
+                        var p = System.Diagnostics.Process.GetProcessById(matched.Pid);
+                        string exePath = p.MainModule != null ? p.MainModule.FileName : null;
+                        if (!string.IsNullOrWhiteSpace(exePath))
+                        {
+                            string binDir = ToBinDirectory(Path.GetDirectoryName(exePath));
+                            if (binDir != null)
+                            {
+                                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from port-matched TopSolid.exe (port " + targetPort + "): " + binDir);
+                                return binDir;
+                            }
+                        }
+                    }
+                }
                 var running = System.Diagnostics.Process.GetProcessesByName("TopSolid");
                 foreach (var proc in running)
                 {

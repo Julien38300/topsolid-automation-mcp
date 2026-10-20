@@ -3579,6 +3579,1091 @@ namespace TopSolidMcpServer.Tools
                 "    __message = \"Error: \" + ex.Message;\n" +
                 "}") },
 
+            // =====================================================================
+            // METALWORK, CAD CREATION & ASSEMBLY RECIPES (V4)
+            // =====================================================================
+            { "create_project_tree", RW("PROJECTS", "Creates or reuses a PDM project and optional comma-separated folders, and sets it as current project. Param: value=project_name[;folder1,folder2,...]",
+                "if (false) { TopSolidHost.Application.StartModification(\"\", false); TopSolidHost.Application.EndModification(false, false); }\n" +
+                "string raw = \"{value}\".Trim();\n" +
+                "if (string.IsNullOrEmpty(raw)) return \"Error: Use value=project_name[;folder1,folder2,...]\";\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "string projName = parts[0].Trim();\n" +
+                "PdmObjectId projPdm = PdmObjectId.Empty;\n" +
+                "foreach (var p in TopSolidHost.Pdm.GetProjects(true, false))\n" +
+                "{\n" +
+                "    if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { projPdm = p; break; }\n" +
+                "}\n" +
+                "bool createdProj = false;\n" +
+                "if (projPdm.IsEmpty)\n" +
+                "{\n" +
+                "    projPdm = TopSolidHost.Pdm.CreateProject(projName, false);\n" +
+                "    TopSolidHost.Pdm.Save(projPdm, true);\n" +
+                "    createdProj = true;\n" +
+                "}\n" +
+                "int createdFolders = 0;\n" +
+                "if (parts.Length > 1 && !string.IsNullOrEmpty(parts[1].Trim()))\n" +
+                "{\n" +
+                "    List<PdmObjectId> existFolders; List<PdmObjectId> existDocs;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(projPdm, out existFolders, out existDocs);\n" +
+                "    foreach (string fRaw in parts[1].Split(','))\n" +
+                "    {\n" +
+                "        string fName = fRaw.Trim();\n" +
+                "        if (string.IsNullOrEmpty(fName)) continue;\n" +
+                "        bool exists = false;\n" +
+                "        foreach (var ef in existFolders)\n" +
+                "        {\n" +
+                "            if (string.Equals(TopSolidHost.Pdm.GetName(ef), fName, StringComparison.OrdinalIgnoreCase)) { exists = true; break; }\n" +
+                "        }\n" +
+                "        if (!exists) { TopSolidHost.Pdm.CreateFolder(projPdm, fName); createdFolders++; }\n" +
+                "    }\n" +
+                "    TopSolidHost.Pdm.Save(projPdm, true);\n" +
+                "}\n" +
+                "return \"OK: Project '\" + projName + \"' (\" + (createdProj ? \"created\" : \"reused\") + \"), folders created: \" + createdFolders + \".\";") },
+
+            { "create_part_document", RW("DOCUMENT", "Creates or reuses a Part document (.TopPrt) in a project/folder, sets Name/Designation/Reference, and opens it. Param: value=doc_name[;designation[;reference[;folder_name[;project_name]]]]",
+                "string raw = \"{value}\".Trim();\n" +
+                "if (string.IsNullOrEmpty(raw)) return \"Error: Use value=doc_name[;designation[;reference[;folder_name[;project_name]]]]\";\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "string docName = parts[0].Trim();\n" +
+                "string desig = parts.Length > 1 ? parts[1].Trim() : \"\";\n" +
+                "string refer = parts.Length > 2 ? parts[2].Trim() : \"\";\n" +
+                "string folderName = parts.Length > 3 ? parts[3].Trim() : \"\";\n" +
+                "string projName = parts.Length > 4 ? parts[4].Trim() : \"\";\n" +
+                "PdmObjectId projPdm = PdmObjectId.Empty;\n" +
+                "if (!string.IsNullOrEmpty(projName))\n" +
+                "{\n" +
+                "    foreach (var p in TopSolidHost.Pdm.GetProjects(true, false))\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { projPdm = p; break; }\n" +
+                "}\n" +
+                "if (projPdm.IsEmpty) projPdm = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projPdm.IsEmpty) return \"Error: No target project found.\";\n" +
+                "PdmObjectId ownerPdm = projPdm;\n" +
+                "if (!string.IsNullOrEmpty(folderName))\n" +
+                "{\n" +
+                "    List<PdmObjectId> fList; List<PdmObjectId> dList;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(projPdm, out fList, out dList);\n" +
+                "    foreach (var f in fList)\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(f), folderName, StringComparison.OrdinalIgnoreCase)) { ownerPdm = f; break; }\n" +
+                "    if (ownerPdm.Equals(projPdm)) ownerPdm = TopSolidHost.Pdm.CreateFolder(projPdm, folderName);\n" +
+                "}\n" +
+                "List<PdmObjectId> subF; List<PdmObjectId> subD;\n" +
+                "TopSolidHost.Pdm.GetConstituents(ownerPdm, out subF, out subD);\n" +
+                "PdmObjectId docPdm = PdmObjectId.Empty;\n" +
+                "foreach (var d in subD) if (string.Equals(TopSolidHost.Pdm.GetName(d), docName, StringComparison.OrdinalIgnoreCase)) { docPdm = d; break; }\n" +
+                "if (docPdm.IsEmpty) docPdm = TopSolidHost.Pdm.CreateDocument(ownerPdm, \".TopPrt\", true);\n" +
+                "TopSolidHost.Pdm.SetName(docPdm, docName);\n" +
+                "if (!string.IsNullOrEmpty(desig)) TopSolidHost.Pdm.SetDescription(docPdm, desig);\n" +
+                "if (!string.IsNullOrEmpty(refer)) TopSolidHost.Pdm.SetPartNumber(docPdm, refer);\n" +
+                "DocumentId dId = TopSolidHost.Documents.GetDocument(docPdm);\n" +
+                "TopSolidHost.Documents.Open(ref dId);\n" +
+                "if (false) { TopSolidHost.Application.StartModification(\"\", false); TopSolidHost.Application.EndModification(false, false); }\n" +
+                "TopSolidHost.Pdm.Save(docPdm, true);\n" +
+                "return \"OK: Part document '\" + docName + \"' (.TopPrt) ready and saved.\";") },
+
+            { "create_assembly_document", RW("DOCUMENT", "Creates or reuses an Assembly document (.TopAsm) in a project/folder, sets Name/Designation/Reference, and opens it. Param: value=doc_name[;designation[;reference[;folder_name[;project_name]]]]",
+                "string raw = \"{value}\".Trim();\n" +
+                "if (string.IsNullOrEmpty(raw)) return \"Error: Use value=doc_name[;designation[;reference[;folder_name[;project_name]]]]\";\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "string docName = parts[0].Trim();\n" +
+                "string desig = parts.Length > 1 ? parts[1].Trim() : \"\";\n" +
+                "string refer = parts.Length > 2 ? parts[2].Trim() : \"\";\n" +
+                "string folderName = parts.Length > 3 ? parts[3].Trim() : \"\";\n" +
+                "string projName = parts.Length > 4 ? parts[4].Trim() : \"\";\n" +
+                "PdmObjectId projPdm = PdmObjectId.Empty;\n" +
+                "if (!string.IsNullOrEmpty(projName))\n" +
+                "{\n" +
+                "    foreach (var p in TopSolidHost.Pdm.GetProjects(true, false))\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { projPdm = p; break; }\n" +
+                "}\n" +
+                "if (projPdm.IsEmpty) projPdm = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projPdm.IsEmpty) return \"Error: No target project found.\";\n" +
+                "PdmObjectId ownerPdm = projPdm;\n" +
+                "if (!string.IsNullOrEmpty(folderName))\n" +
+                "{\n" +
+                "    List<PdmObjectId> fList; List<PdmObjectId> dList;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(projPdm, out fList, out dList);\n" +
+                "    foreach (var f in fList)\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(f), folderName, StringComparison.OrdinalIgnoreCase)) { ownerPdm = f; break; }\n" +
+                "    if (ownerPdm.Equals(projPdm)) ownerPdm = TopSolidHost.Pdm.CreateFolder(projPdm, folderName);\n" +
+                "}\n" +
+                "List<PdmObjectId> subF; List<PdmObjectId> subD;\n" +
+                "TopSolidHost.Pdm.GetConstituents(ownerPdm, out subF, out subD);\n" +
+                "PdmObjectId docPdm = PdmObjectId.Empty;\n" +
+                "foreach (var d in subD) if (string.Equals(TopSolidHost.Pdm.GetName(d), docName, StringComparison.OrdinalIgnoreCase)) { docPdm = d; break; }\n" +
+                "if (docPdm.IsEmpty) docPdm = TopSolidHost.Pdm.CreateDocument(ownerPdm, \".TopAsm\", true);\n" +
+                "TopSolidHost.Pdm.SetName(docPdm, docName);\n" +
+                "if (!string.IsNullOrEmpty(desig)) TopSolidHost.Pdm.SetDescription(docPdm, desig);\n" +
+                "if (!string.IsNullOrEmpty(refer)) TopSolidHost.Pdm.SetPartNumber(docPdm, refer);\n" +
+                "DocumentId dId = TopSolidHost.Documents.GetDocument(docPdm);\n" +
+                "TopSolidHost.Documents.Open(ref dId);\n" +
+                "if (false) { TopSolidHost.Application.StartModification(\"\", false); TopSolidHost.Application.EndModification(false, false); }\n" +
+                "TopSolidHost.Pdm.Save(docPdm, true);\n" +
+                "return \"OK: Assembly document '\" + docName + \"' (.TopAsm) ready and saved.\";") },
+
+            { "set_material", RW("MATERIALS", "Searches a standard material (.TopMat) in material libraries (<250ms) and applies it to a part while enabling physical properties (Mass, CoG). Param: value=[doc_name;]material_keyword (e.g. S235JR or GC_Montant_50x10;S235JR)",
+                "string raw = \"{value}\".Trim();\n" +
+                "if (string.IsNullOrEmpty(raw)) return \"Error: Provide material name or doc_name;material_name.\";\n" +
+                "string targetDocName = \"\";\n" +
+                "string matQuery = raw;\n" +
+                "if (raw.Contains(\";\"))\n" +
+                "{\n" +
+                "    string[] sp = raw.Split(';');\n" +
+                "    targetDocName = sp[0].Trim();\n" +
+                "    matQuery = sp[1].Trim();\n" +
+                "}\n" +
+                "DocumentId targetDoc = TopSolidHost.Documents.EditedDocument;\n" +
+                "PdmObjectId targetPdm = targetDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(targetDoc);\n" +
+                "if (!string.IsNullOrEmpty(targetDocName))\n" +
+                "{\n" +
+                "    PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "    var found = TopSolidHost.Pdm.SearchDocumentByName(proj, targetDocName);\n" +
+                "    if (found.Count == 0) return \"Error: Document '\" + targetDocName + \"' not found in current project.\";\n" +
+                "    targetPdm = found[0];\n" +
+                "    targetDoc = TopSolidHost.Documents.GetDocument(targetPdm);\n" +
+                "}\n" +
+                "if (targetDoc.IsEmpty) return \"Error: No active document and no doc_name specified.\";\n" +
+                "PdmObjectId matPdm = PdmObjectId.Empty;\n" +
+                "string pattern = matQuery.Contains(\"*\") ? matQuery : (\"*\" + matQuery + \"*\");\n" +
+                "var matLibs = new List<PdmObjectId>();\n" +
+                "foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))\n" +
+                "{\n" +
+                "    string lName = TopSolidHost.Pdm.GetName(lib);\n" +
+                "    if (string.Equals(lName, \"TopSolid MetalWork - Materials and Coatings\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Matériaux\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"Bois TopSolid\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Materials\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Wood\", StringComparison.OrdinalIgnoreCase))\n" +
+                "        matLibs.Add(lib);\n" +
+                "}\n" +
+                "foreach (var lib in matLibs)\n" +
+                "{\n" +
+                "    foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, matQuery))\n" +
+                "    { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, \".TopMat\", StringComparison.OrdinalIgnoreCase)) { matPdm = h; break; } }\n" +
+                "    if (!matPdm.IsEmpty) break;\n" +
+                "}\n" +
+                "if (matPdm.IsEmpty)\n" +
+                "{\n" +
+                "    foreach (var lib in matLibs)\n" +
+                "    {\n" +
+                "        foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, pattern))\n" +
+                "        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, \".TopMat\", StringComparison.OrdinalIgnoreCase)) { matPdm = h; break; } }\n" +
+                "        if (!matPdm.IsEmpty) break;\n" +
+                "    }\n" +
+                "}\n" +
+                "if (matPdm.IsEmpty) return \"Error: Material matching '\" + matQuery + \"' (.TopMat) not found in standard libraries.\";\n" +
+                "DocumentId matDoc = TopSolidHost.Documents.GetDocument(matPdm);\n" +
+                "string matRealName = TopSolidHost.Pdm.GetName(matPdm);\n" +
+                "TopSolidHost.Application.StartModification(\"SetMaterial_\" + matRealName, false);\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref targetDoc);\n" +
+                "    TopSolidDesignHost.Parts.SetMaterial(targetDoc, matDoc);\n" +
+                "    try { TopSolidDesignHost.Parts.SetMassPropertyManagement(targetDoc, true, new SmartReal(UnitType.Mass, 0)); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetCenterOfMassPropertyManagement(targetDoc, true, new SmartPoint3D(new Point3D(0, 0, 0))); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetPhysicalPropertiesManagementRefreshAuto(targetDoc, true); } catch { }\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }\n" +
+                "if (!targetPdm.IsEmpty) TopSolidHost.Pdm.Save(targetPdm, true);\n" +
+                "return \"OK: Material '\" + matRealName + \"' applied to '\" + TopSolidHost.Documents.GetName(targetDoc) + \"' (Mass & CoG enabled).\";") },
+
+            { "set_coating", RW("MATERIALS", "Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries and applies it (or RGB color) to all shapes of a part. Param: value=[doc_name;]coating_keyword[;R,G,B]",
+                "string raw = \"{value}\".Trim();\n" +
+                "if (string.IsNullOrEmpty(raw)) return \"Error: Provide coating name or doc_name;coating_name[;R,G,B].\";\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "string targetDocName = \"\";\n" +
+                "string cotQuery = \"\";\n" +
+                "string rgbSpec = \"\";\n" +
+                "if (parts.Length == 1) { cotQuery = parts[0].Trim(); }\n" +
+                "else if (parts.Length == 2)\n" +
+                "{\n" +
+                "    if (parts[1].Contains(\",\")) { cotQuery = parts[0].Trim(); rgbSpec = parts[1].Trim(); }\n" +
+                "    else { targetDocName = parts[0].Trim(); cotQuery = parts[1].Trim(); }\n" +
+                "}\n" +
+                "else { targetDocName = parts[0].Trim(); cotQuery = parts[1].Trim(); rgbSpec = parts[2].Trim(); }\n" +
+                "DocumentId targetDoc = TopSolidHost.Documents.EditedDocument;\n" +
+                "PdmObjectId targetPdm = targetDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(targetDoc);\n" +
+                "if (!string.IsNullOrEmpty(targetDocName))\n" +
+                "{\n" +
+                "    PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "    var found = TopSolidHost.Pdm.SearchDocumentByName(proj, targetDocName);\n" +
+                "    if (found.Count == 0) return \"Error: Document '\" + targetDocName + \"' not found in current project.\";\n" +
+                "    targetPdm = found[0];\n" +
+                "    targetDoc = TopSolidHost.Documents.GetDocument(targetPdm);\n" +
+                "}\n" +
+                "if (targetDoc.IsEmpty) return \"Error: No active document.\";\n" +
+                "PdmObjectId cotPdm = PdmObjectId.Empty;\n" +
+                "if (!string.IsNullOrEmpty(cotQuery))\n" +
+                "{\n" +
+                "    string pattern = cotQuery.Contains(\"*\") ? cotQuery : (\"*\" + cotQuery + \"*\");\n" +
+                "    var cotLibs = new List<PdmObjectId>();\n" +
+                "    foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))\n" +
+                "    {\n" +
+                "        string lName = TopSolidHost.Pdm.GetName(lib);\n" +
+                "        if (string.Equals(lName, \"TopSolid MetalWork - Materials and Coatings\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"RAL Classics, By TopSolidBlog\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Matériaux\", StringComparison.OrdinalIgnoreCase))\n" +
+                "            cotLibs.Add(lib);\n" +
+                "    }\n" +
+                "    foreach (var lib in cotLibs)\n" +
+                "    {\n" +
+                "        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, cotQuery))\n" +
+                "        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, \".TopCot\", StringComparison.OrdinalIgnoreCase)) { cotPdm = h; break; } }\n" +
+                "        if (!cotPdm.IsEmpty) break;\n" +
+                "    }\n" +
+                "    if (cotPdm.IsEmpty)\n" +
+                "    {\n" +
+                "        foreach (var lib in cotLibs)\n" +
+                "        {\n" +
+                "            foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, pattern))\n" +
+                "            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, \".TopCot\", StringComparison.OrdinalIgnoreCase)) { cotPdm = h; break; } }\n" +
+                "            if (!cotPdm.IsEmpty) break;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "DocumentId cotDoc = cotPdm.IsEmpty ? DocumentId.Empty : TopSolidHost.Documents.GetDocument(cotPdm);\n" +
+                "TopSolidHost.Application.StartModification(\"SetCoating\", false);\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref targetDoc);\n" +
+                "    string status = \"\";\n" +
+                "    if (!cotDoc.IsEmpty)\n" +
+                "    {\n" +
+                "        try\n" +
+                "        {\n" +
+                "            Color alb = TopSolidDesignHost.Coatings.GetAlbedoColor(cotDoc);\n" +
+                "            foreach (var s in TopSolidHost.Shapes.GetShapes(targetDoc))\n" +
+                "                TopSolidHost.Elements.SetColor(s, alb);\n" +
+                "        } catch { }\n" +
+                "        status = \"Coating '\" + TopSolidHost.Pdm.GetName(cotPdm) + \"'\";\n" +
+                "    }\n" +
+                "    if (!string.IsNullOrEmpty(rgbSpec))\n" +
+                "    {\n" +
+                "        string[] rgb = rgbSpec.Split(',');\n" +
+                "        if (rgb.Length == 3)\n" +
+                "        {\n" +
+                "            byte r = byte.Parse(rgb[0].Trim()); byte g = byte.Parse(rgb[1].Trim()); byte b = byte.Parse(rgb[2].Trim());\n" +
+                "            foreach (var s in TopSolidHost.Shapes.GetShapes(targetDoc))\n" +
+                "                try { TopSolidHost.Elements.SetColor(s, new Color(r, g, b)); } catch { }\n" +
+                "            status += (status.Length > 0 ? \" + \" : \"\") + \"RGB(\" + r + \",\" + g + \",\" + b + \")\";\n" +
+                "        }\n" +
+                "    }\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "    if (!targetPdm.IsEmpty) TopSolidHost.Pdm.Save(targetPdm, true);\n" +
+                "    return \"OK: \" + (status.Length > 0 ? status : \"No coating matched\") + \" on '\" + TopSolidHost.Documents.GetName(targetDoc) + \"'.\";\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }") },
+
+            { "provide_extruded_bar_function", RW("GEOMETRY", "Provides the TopSolid 'Extruded Bar' (Profilé) function on a part with its 3D Frame (XY section, X horizontal, Z longitudinal), Section sketch, Length parameter L, BottomLeft/TopRight points, and Minimal EnclosingBox. Param: value=[doc_name;]width_x_mm;height_y_mm;length_z_mm",
+                "string raw = \"{value}\".Trim();\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "if (parts.Length < 3) return \"Error: Use value=[doc_name;]width_x_mm;height_y_mm;length_z_mm\";\n" +
+                "int idx = parts.Length >= 4 ? 1 : 0;\n" +
+                "string targetDocName = idx == 1 ? parts[0].Trim() : \"\";\n" +
+                "double wx = double.Parse(parts[idx].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double hy = double.Parse(parts[idx + 1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double lz = double.Parse(parts[idx + 2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "DocumentId targetDoc = TopSolidHost.Documents.EditedDocument;\n" +
+                "PdmObjectId targetPdm = targetDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(targetDoc);\n" +
+                "if (!string.IsNullOrEmpty(targetDocName))\n" +
+                "{\n" +
+                "    PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "    var found = TopSolidHost.Pdm.SearchDocumentByName(proj, targetDocName);\n" +
+                "    if (found.Count == 0) return \"Error: Document '\" + targetDocName + \"' not found.\";\n" +
+                "    targetPdm = found[0];\n" +
+                "    targetDoc = TopSolidHost.Documents.GetDocument(targetPdm);\n" +
+                "}\n" +
+                "PdmObjectId fncPdm = PdmObjectId.Empty;\n" +
+                "foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))\n" +
+                "{\n" +
+                "    if (!string.Equals(TopSolidHost.Pdm.GetName(lib), \"TopSolid\", StringComparison.OrdinalIgnoreCase)) continue;\n" +
+                "    var hits = TopSolidHost.Pdm.SearchDocumentByName(lib, \"Extruded Bar\");\n" +
+                "    foreach (var h in hits) { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopPrtFct\") { fncPdm = h; break; } }\n" +
+                "    if (!fncPdm.IsEmpty) break;\n" +
+                "}\n" +
+                "if (fncPdm.IsEmpty) return \"Error: 'Extruded Bar.TopPrtFct' function not found in TopSolid library.\";\n" +
+                "DocumentId fncDoc = TopSolidHost.Documents.GetDocument(fncPdm);\n" +
+                "TopSolidHost.Application.StartModification(\"ProvideExtrudedBarFunction\", false);\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref targetDoc);\n" +
+                "    ElementId skId = ElementId.Empty;\n" +
+                "    foreach (var e in TopSolidHost.Elements.GetElements(targetDoc))\n" +
+                "        if (TopSolidHost.Elements.GetTypeFullName(e).IndexOf(\"Sketch\", StringComparison.OrdinalIgnoreCase) >= 0) { skId = e; break; }\n" +
+                "    ElementId lParam = ElementId.Empty;\n" +
+                "    foreach (var p in TopSolidHost.Parameters.GetParameters(targetDoc))\n" +
+                "        if (TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Real && TopSolidHost.Elements.GetName(p) == \"L\") { lParam = p; break; }\n" +
+                "    if (lParam.IsEmpty)\n" +
+                "    {\n" +
+                "        lParam = TopSolidHost.Parameters.CreateRealParameter(targetDoc, UnitType.Length, lz);\n" +
+                "        TopSolidHost.Elements.SetName(lParam, \"L\");\n" +
+                "    }\n" +
+                "    ElementId profFrame = TopSolidHost.Geometries3D.CreateFrame(targetDoc, new Frame3D(new Point3D(0, 0, 0), Direction3D.DX, Direction3D.DY, Direction3D.DZ));\n" +
+                "    try { TopSolidHost.Elements.SetName(profFrame, \"Repere_ExtrudedBar_XY_Z\"); } catch { }\n" +
+                "    ElementId fnc = ElementId.Empty;\n" +
+                "    foreach (var f in TopSolidHost.Entities.GetFunctions(targetDoc)) { fnc = f; break; }\n" +
+                "    if (fnc.IsEmpty) fnc = TopSolidHost.Entities.ProvideFunction(targetDoc, fncDoc, \"\");\n" +
+                "    foreach (var pub in TopSolidHost.Entities.GetFunctionPublishings(fnc))\n" +
+                "    {\n" +
+                "        string pName = TopSolidHost.Elements.GetName(pub);\n" +
+                "        if (pName == \"Section\" && !skId.IsEmpty) TopSolidHost.Geometries3D.SetSectionPublishingDefinition(pub, new SmartSection3D(skId));\n" +
+                "        else if (pName == \"Length\" && !lParam.IsEmpty) TopSolidHost.Parameters.SetRealPublishingDefinition(pub, new SmartReal(lParam));\n" +
+                "        else if (pName == \"Frame\" && !profFrame.IsEmpty) TopSolidHost.Geometries3D.SetFramePublishingDefinition(pub, new SmartFrame3D(profFrame, false));\n" +
+                "        else if (pName == \"BottomLeft\") TopSolidHost.Geometries3D.SetPointPublishingDefinition(pub, new SmartPoint3D(new Point3D(-wx / 2.0, -hy / 2.0, 0)));\n" +
+                "        else if (pName == \"TopRight\") TopSolidHost.Geometries3D.SetPointPublishingDefinition(pub, new SmartPoint3D(new Point3D(wx / 2.0, hy / 2.0, 0)));\n" +
+                "    }\n" +
+                "    try { TopSolidDesignHost.Parts.SetEnclosingBoxManagement(targetDoc, EnclosingBoxManagementType.Minimal, new SmartFrame3D(profFrame, false), new SmartFrame3D(profFrame, false), new SmartReal(UnitType.Length, 0), new SmartReal(UnitType.Length, 0), new SmartReal(UnitType.Length, 0)); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetMassPropertyManagement(targetDoc, true, new SmartReal(UnitType.Mass, 0)); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetCenterOfMassPropertyManagement(targetDoc, true, new SmartPoint3D(new Point3D(0, 0, 0))); } catch { }\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }\n" +
+                "if (!targetPdm.IsEmpty) TopSolidHost.Pdm.Save(targetPdm, true);\n" +
+                "return \"OK: Function 'Extruded Bar' + Frame (XY section, X horizontal, Z longitudinal) + Length L wired on '\" + TopSolidHost.Documents.GetName(targetDoc) + \"'.\";") },
+
+            { "create_extruded_bar", RW("GEOMETRY", "One-shot creation of a metalwork Extruded Bar part (.TopPrt) with XY section (X horizontal), +Z extrusion (Length parameter L), 'Extruded Bar' function + Frame (XY/X/Z), optional transverse through-holes, material, and coating. Param: value=doc_name;designation;reference;folder_name;section_type(PLAT|TUBE_RECT|ROND|TUBE_ROND|CORNIERE);dims_csv_mm;length_mm[;holes_spec[;material[;coating_or_rgb]]]",
+                "string raw = \"{value}\".Trim();\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "if (parts.Length < 7) return \"Error: Use value=doc_name;designation;reference;folder_name;section_type;dims_csv_mm;length_mm[;holes_spec[;material[;coating_or_rgb]]]\";\n" +
+                "string docName = parts[0].Trim();\n" +
+                "string desig = parts[1].Trim();\n" +
+                "string refer = parts[2].Trim();\n" +
+                "string folderName = parts[3].Trim();\n" +
+                "string explicitProj = \"\";\n" +
+                "if (folderName.Contains(\"/\")) { int sl = folderName.IndexOf('/'); explicitProj = folderName.Substring(0, sl).Trim(); folderName = folderName.Substring(sl + 1).Trim(); }\n" +
+                "string profType = parts[4].Trim().ToUpperInvariant();\n" +
+                "string[] dims = parts[5].Trim().Split(',');\n" +
+                "double lengthM = double.Parse(parts[6].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "string holesSpec = parts.Length > 7 ? parts[7].Trim() : \"\";\n" +
+                "string matQuery = parts.Length > 8 ? parts[8].Trim() : \"\";\n" +
+                "string cotSpec = parts.Length > 9 ? parts[9].Trim() : \"\";\n" +
+                "PdmObjectId projPdm = PdmObjectId.Empty;\n" +
+                "if (!string.IsNullOrEmpty(explicitProj))\n" +
+                "{\n" +
+                "    foreach (var p in TopSolidHost.Pdm.GetProjects(true, false))\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(p), explicitProj, StringComparison.OrdinalIgnoreCase)) { projPdm = p; break; }\n" +
+                "}\n" +
+                "if (projPdm.IsEmpty) projPdm = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projPdm.IsEmpty) return \"Error: No current project active.\";\n" +
+                "PdmObjectId ownerPdm = projPdm;\n" +
+                "if (!string.IsNullOrEmpty(folderName))\n" +
+                "{\n" +
+                "    List<PdmObjectId> fList; List<PdmObjectId> dList;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(projPdm, out fList, out dList);\n" +
+                "    foreach (var f in fList) if (string.Equals(TopSolidHost.Pdm.GetName(f), folderName, StringComparison.OrdinalIgnoreCase)) { ownerPdm = f; break; }\n" +
+                "    if (ownerPdm.Equals(projPdm)) ownerPdm = TopSolidHost.Pdm.CreateFolder(projPdm, folderName);\n" +
+                "}\n" +
+                "List<PdmObjectId> subF; List<PdmObjectId> subD;\n" +
+                "TopSolidHost.Pdm.GetConstituents(ownerPdm, out subF, out subD);\n" +
+                "PdmObjectId docPdm = PdmObjectId.Empty;\n" +
+                "foreach (var d in subD) if (string.Equals(TopSolidHost.Pdm.GetName(d), docName, StringComparison.OrdinalIgnoreCase)) { docPdm = d; break; }\n" +
+                "if (docPdm.IsEmpty) docPdm = TopSolidHost.Pdm.CreateDocument(ownerPdm, \".TopPrt\", true);\n" +
+                "TopSolidHost.Pdm.SetName(docPdm, docName);\n" +
+                "if (!string.IsNullOrEmpty(desig)) TopSolidHost.Pdm.SetDescription(docPdm, desig);\n" +
+                "if (!string.IsNullOrEmpty(refer)) TopSolidHost.Pdm.SetPartNumber(docPdm, refer);\n" +
+                "DocumentId dId = TopSolidHost.Documents.GetDocument(docPdm);\n" +
+                "TopSolidHost.Documents.Open(ref dId);\n" +
+                "PdmObjectId fncPdm = PdmObjectId.Empty;\n" +
+                "PdmObjectId matPdm = PdmObjectId.Empty;\n" +
+                "PdmObjectId cotPdm = PdmObjectId.Empty;\n" +
+                "string cotNameOnly = cotSpec.Contains(\",\") ? cotSpec.Substring(0, cotSpec.IndexOf(',')).Trim() : cotSpec;\n" +
+                "var matLibs = new List<PdmObjectId>();\n" +
+                "var cotLibs = new List<PdmObjectId>();\n" +
+                "foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))\n" +
+                "{\n" +
+                "    string lName = TopSolidHost.Pdm.GetName(lib);\n" +
+                "    if (fncPdm.IsEmpty && string.Equals(lName, \"TopSolid\", StringComparison.OrdinalIgnoreCase))\n" +
+                "    {\n" +
+                "        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, \"Extruded Bar\"))\n" +
+                "        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopPrtFct\") { fncPdm = h; break; } }\n" +
+                "    }\n" +
+                "    if (string.Equals(lName, \"TopSolid MetalWork - Materials and Coatings\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Matériaux\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"Bois TopSolid\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Materials\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Wood\", StringComparison.OrdinalIgnoreCase))\n" +
+                "        matLibs.Add(lib);\n" +
+                "    if (string.Equals(lName, \"TopSolid MetalWork - Materials and Coatings\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"RAL Classics, By TopSolidBlog\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Matériaux\", StringComparison.OrdinalIgnoreCase))\n" +
+                "        cotLibs.Add(lib);\n" +
+                "}\n" +
+                "if (!string.IsNullOrEmpty(matQuery))\n" +
+                "{\n" +
+                "    foreach (var lib in matLibs)\n" +
+                "    {\n" +
+                "        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, matQuery))\n" +
+                "        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopMat\") { matPdm = h; break; } }\n" +
+                "        if (!matPdm.IsEmpty) break;\n" +
+                "    }\n" +
+                "    if (matPdm.IsEmpty)\n" +
+                "    {\n" +
+                "        foreach (var lib in matLibs)\n" +
+                "        {\n" +
+                "            foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, \"*\" + matQuery + \"*\"))\n" +
+                "            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopMat\") { matPdm = h; break; } }\n" +
+                "            if (!matPdm.IsEmpty) break;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "if (!string.IsNullOrEmpty(cotNameOnly))\n" +
+                "{\n" +
+                "    foreach (var lib in cotLibs)\n" +
+                "    {\n" +
+                "        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, cotNameOnly))\n" +
+                "        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopCot\") { cotPdm = h; break; } }\n" +
+                "        if (!cotPdm.IsEmpty) break;\n" +
+                "    }\n" +
+                "    if (cotPdm.IsEmpty)\n" +
+                "    {\n" +
+                "        foreach (var lib in cotLibs)\n" +
+                "        {\n" +
+                "            foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, \"*\" + cotNameOnly + \"*\"))\n" +
+                "            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopCot\") { cotPdm = h; break; } }\n" +
+                "            if (!cotPdm.IsEmpty) break;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "DocumentId fncDoc = fncPdm.IsEmpty ? DocumentId.Empty : TopSolidHost.Documents.GetDocument(fncPdm);\n" +
+                "DocumentId matDoc = matPdm.IsEmpty ? DocumentId.Empty : TopSolidHost.Documents.GetDocument(matPdm);\n" +
+                "DocumentId cotDoc = cotPdm.IsEmpty ? DocumentId.Empty : TopSolidHost.Documents.GetDocument(cotPdm);\n" +
+                "TopSolidHost.Application.StartModification(\"CreateExtrudedBar_\" + docName, false);\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref dId);\n" +
+                "    var oldOps = TopSolidHost.Operations.GetOperations(dId);\n" +
+                "    for (int oi = oldOps.Count - 1; oi >= 0; oi--)\n" +
+                "    {\n" +
+                "        try\n" +
+                "        {\n" +
+                "            string tn = TopSolidHost.Elements.GetTypeFullName(oldOps[oi]);\n" +
+                "            if (tn.IndexOf(\"Shape\", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf(\"Extrud\", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf(\"Drill\", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf(\"Sketch\", StringComparison.OrdinalIgnoreCase) >= 0)\n" +
+                "                TopSolidHost.Elements.Delete(oldOps[oi]);\n" +
+                "        } catch { }\n" +
+                "    }\n" +
+                "    Point3D orig = new Point3D(0, 0, 0);\n" +
+                "    Plane3D plXY = new Plane3D(orig, Direction3D.DX, Direction3D.DY);\n" +
+                "    ElementId sk = TopSolidHost.Sketches2D.CreateSketchIn3D(dId, new SmartPlane3D(plXY, -1.0, 1.0, -1.0, 1.0), new SmartPoint3D(orig), true, SmartDirection3D.DX);\n" +
+                "    TopSolidHost.Sketches2D.StartModification(sk);\n" +
+                "    double wx = 0.05, hy = 0.01;\n" +
+                "    if (profType == \"PLAT\" || profType == \"FLAT\" || profType == \"TUBE_RECT\" || profType == \"RECT_TUBE\")\n" +
+                "    {\n" +
+                "        wx = double.Parse(dims[0].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "        hy = double.Parse(dims[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "        double hx = wx / 2.0, hhy = hy / 2.0;\n" +
+                "        ElementItemId p1 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(-hx, -hhy));\n" +
+                "        ElementItemId p2 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(hx, -hhy));\n" +
+                "        ElementItemId p3 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(hx, hhy));\n" +
+                "        ElementItemId p4 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(-hx, hhy));\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p1, p2);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p2, p3);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p3, p4);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p4, p1);\n" +
+                "        if ((profType == \"TUBE_RECT\" || profType == \"RECT_TUBE\") && dims.Length >= 3)\n" +
+                "        {\n" +
+                "            double t = double.Parse(dims[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double ix = hx - t, iy = hhy - t;\n" +
+                "            ElementItemId q1 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(-ix, -iy));\n" +
+                "            ElementItemId q2 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(ix, -iy));\n" +
+                "            ElementItemId q3 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(ix, iy));\n" +
+                "            ElementItemId q4 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(-ix, iy));\n" +
+                "            TopSolidHost.Sketches2D.CreateLineSegment(q1, q2);\n" +
+                "            TopSolidHost.Sketches2D.CreateLineSegment(q2, q3);\n" +
+                "            TopSolidHost.Sketches2D.CreateLineSegment(q3, q4);\n" +
+                "            TopSolidHost.Sketches2D.CreateLineSegment(q4, q1);\n" +
+                "        }\n" +
+                "    }\n" +
+                "    else if (profType == \"ROND\" || profType == \"ROUND_BAR\" || profType == \"TUBE_ROND\" || profType == \"ROUND_TUBE\")\n" +
+                "    {\n" +
+                "        double d = double.Parse(dims[0].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "        wx = d; hy = d;\n" +
+                "        ElementItemId c0 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(0, 0));\n" +
+                "        TopSolidHost.Sketches2D.CreateCircleSegment(c0, d / 2.0);\n" +
+                "        if ((profType == \"TUBE_ROND\" || profType == \"ROUND_TUBE\") && dims.Length >= 2)\n" +
+                "        {\n" +
+                "            double t = double.Parse(dims[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            TopSolidHost.Sketches2D.CreateCircleSegment(c0, (d / 2.0) - t);\n" +
+                "        }\n" +
+                "    }\n" +
+                "    else if (profType == \"CORNIERE\" || profType == \"L_ANGLE\")\n" +
+                "    {\n" +
+                "        wx = double.Parse(dims[0].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "        hy = double.Parse(dims[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "        double t = double.Parse(dims[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "        double x0 = -wx / 2.0, y0 = -hy / 2.0;\n" +
+                "        ElementItemId p1 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0, y0));\n" +
+                "        ElementItemId p2 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0 + wx, y0));\n" +
+                "        ElementItemId p3 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0 + wx, y0 + t));\n" +
+                "        ElementItemId p4 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0 + t, y0 + t));\n" +
+                "        ElementItemId p5 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0 + t, y0 + hy));\n" +
+                "        ElementItemId p6 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0, y0 + hy));\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p1, p2);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p2, p3);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p3, p4);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p4, p5);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p5, p6);\n" +
+                "        TopSolidHost.Sketches2D.CreateLineSegment(p6, p1);\n" +
+                "    }\n" +
+                "    TopSolidHost.Sketches2D.CleanSketch();\n" +
+                "    TopSolidHost.Sketches2D.EndModification();\n" +
+                "    ElementId lParam = ElementId.Empty;\n" +
+                "    foreach (var p in TopSolidHost.Parameters.GetParameters(dId))\n" +
+                "        if (TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Real && TopSolidHost.Elements.GetName(p) == \"L\") { lParam = p; break; }\n" +
+                "    if (lParam.IsEmpty)\n" +
+                "    {\n" +
+                "        lParam = TopSolidHost.Parameters.CreateRealParameter(dId, UnitType.Length, lengthM);\n" +
+                "        TopSolidHost.Elements.SetName(lParam, \"L\");\n" +
+                "    }\n" +
+                "    else { TopSolidHost.Parameters.SetRealValue(lParam, lengthM); }\n" +
+                "    ElementId body = TopSolidHost.Shapes.CreateExtrudedShape(dId, new SmartSection3D(sk), SmartDirection3D.DZ, new SmartReal(lParam), new SmartReal(UnitType.Angle, 0), false, false);\n" +
+                "    int holeCount = 0;\n" +
+                "    if (!string.IsNullOrEmpty(holesSpec) && holesSpec != \"-\" && holesSpec != \"none\")\n" +
+                "    {\n" +
+                "        double span = Math.Max(wx, hy) * 2.0 + 0.02;\n" +
+                "        foreach (string hItem in holesSpec.Split('|'))\n" +
+                "        {\n" +
+                "            string[] hp = hItem.Trim().Split(',');\n" +
+                "            if (hp.Length < 3) continue;\n" +
+                "            double zPos = double.Parse(hp[0].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double offX = double.Parse(hp[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double diam = double.Parse(hp[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            // CreateDrillingOperation: frame Z is outward normal (+DY), drilling goes along -Z (-DY) from Y = +hy/2\n" +
+                "            Frame3D drF = new Frame3D(new Point3D(offX, hy / 2.0, zPos), Direction3D.DX, Direction3D.DZ, Direction3D.DY);\n" +
+                "            var prims = new List<DrillingPrimitive> { new DrillingHolePrimitive(new SmartReal(UnitType.Length, diam), new SmartReal(UnitType.Length, span), DrillingHolePrimitiveBottomType.Flat) };\n" +
+                "            TopSolidDesignHost.Parts.CreateDrillingOperation(dId, new SmartShape(body), new SmartFrame3D(drF, -0.02, 0.02, -0.02, 0.02, -0.02, 0.02), prims, false);\n" +
+                "            holeCount++;\n" +
+                "        }\n" +
+                "    }\n" +
+                "    var allShapes = TopSolidHost.Shapes.GetShapes(dId);\n" +
+                "    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(dId))\n" +
+                "    {\n" +
+                "        try {\n" +
+                "            var repCons = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep);\n" +
+                "            if (!repCons.Contains(body)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, body);\n" +
+                "        } catch { }\n" +
+                "    }\n" +
+                "    ElementId profFrame = TopSolidHost.Geometries3D.CreateFrame(dId, new Frame3D(new Point3D(0, 0, 0), Direction3D.DX, Direction3D.DY, Direction3D.DZ));\n" +
+                "    try { TopSolidHost.Elements.SetName(profFrame, \"Repere_ExtrudedBar_XY_Z\"); } catch { }\n" +
+                "    if (!fncDoc.IsEmpty)\n" +
+                "    {\n" +
+                "        ElementId fnc = ElementId.Empty;\n" +
+                "        foreach (var f in TopSolidHost.Entities.GetFunctions(dId)) { fnc = f; break; }\n" +
+                "        if (fnc.IsEmpty) fnc = TopSolidHost.Entities.ProvideFunction(dId, fncDoc, \"\");\n" +
+                "        foreach (var pub in TopSolidHost.Entities.GetFunctionPublishings(fnc))\n" +
+                "        {\n" +
+                "            string pName = TopSolidHost.Elements.GetName(pub);\n" +
+                "            if (pName == \"Section\") TopSolidHost.Geometries3D.SetSectionPublishingDefinition(pub, new SmartSection3D(sk));\n" +
+                "            else if (pName == \"Length\") TopSolidHost.Parameters.SetRealPublishingDefinition(pub, new SmartReal(lParam));\n" +
+                "            else if (pName == \"Frame\") TopSolidHost.Geometries3D.SetFramePublishingDefinition(pub, new SmartFrame3D(profFrame, false));\n" +
+                "            else if (pName == \"BottomLeft\") TopSolidHost.Geometries3D.SetPointPublishingDefinition(pub, new SmartPoint3D(new Point3D(-wx / 2.0, -hy / 2.0, 0)));\n" +
+                "            else if (pName == \"TopRight\") TopSolidHost.Geometries3D.SetPointPublishingDefinition(pub, new SmartPoint3D(new Point3D(wx / 2.0, hy / 2.0, 0)));\n" +
+                "        }\n" +
+                "    }\n" +
+                "    try { TopSolidDesignHost.Parts.SetEnclosingBoxManagement(dId, EnclosingBoxManagementType.Minimal, new SmartFrame3D(profFrame, false), new SmartFrame3D(profFrame, false), new SmartReal(UnitType.Length, 0), new SmartReal(UnitType.Length, 0), new SmartReal(UnitType.Length, 0)); } catch { }\n" +
+                "    if (!matDoc.IsEmpty) TopSolidDesignHost.Parts.SetMaterial(dId, matDoc);\n" +
+                "    try { TopSolidDesignHost.Parts.SetMassPropertyManagement(dId, true, new SmartReal(UnitType.Mass, 0)); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetCenterOfMassPropertyManagement(dId, true, new SmartPoint3D(new Point3D(0, 0, 0))); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetPhysicalPropertiesManagementRefreshAuto(dId, true); } catch { }\n" +
+                "    if (!cotDoc.IsEmpty) { try { Color alb = TopSolidDesignHost.Coatings.GetAlbedoColor(cotDoc); foreach (var s in allShapes) TopSolidHost.Elements.SetColor(s, alb); } catch { } }\n" +
+                "    if (cotSpec.Contains(\",\")) {\n" +
+                "        string[] cParts = cotSpec.Split(',');\n" +
+                "        int startIdx = cParts.Length >= 4 ? 1 : 0;\n" +
+                "        if (cParts.Length - startIdx >= 3) {\n" +
+                "            byte r = byte.Parse(cParts[startIdx].Trim()); byte g = byte.Parse(cParts[startIdx+1].Trim()); byte b = byte.Parse(cParts[startIdx+2].Trim());\n" +
+                "            foreach (var s in allShapes) try { TopSolidHost.Elements.SetColor(s, new Color(r, g, b)); } catch { }\n" +
+                "        }\n" +
+                "    }\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }\n" +
+                "TopSolidHost.Pdm.Save(docPdm, true);\n" +
+                "return \"OK: Extruded Bar part '\" + docName + \"' (\" + profType + \", L=\" + (lengthM * 1000.0) + \"mm, holes=\" + (string.IsNullOrEmpty(holesSpec) ? \"0\" : holesSpec) + \") created with Extruded Bar function (Frame XY/X/Z) and saved.\";") },
+
+            { "create_sheet_metal_plate", RW("GEOMETRY", "One-shot creation of a metalwork sheet/baseplate (.TopPrt) in XY extruded along +Z, with optional circular through-holes in the same sketch, named parameter Epaisseur, Minimal EnclosingBox, material, and coating. Param: value=doc_name;designation;reference;folder_name;length_x_mm;width_y_mm;thickness_z_mm[;holes_x_y_diam_mm[;material[;coating_or_rgb[;ORIGIN|CENTER]]]]",
+                "string raw = \"{value}\".Trim();\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "if (parts.Length < 7) return \"Error: Use value=doc_name;designation;reference;folder_name;length_x_mm;width_y_mm;thickness_z_mm[;holes_x_y_diam_mm[;material[;coating_or_rgb[;ORIGIN|CENTER]]]]\";\n" +
+                "string docName = parts[0].Trim();\n" +
+                "string desig = parts.Length > 1 ? parts[1].Trim() : \"\";\n" +
+                "string refer = parts.Length > 2 ? parts[2].Trim() : \"\";\n" +
+                "string folderName = parts[3].Trim();\n" +
+                "string explicitProj = \"\";\n" +
+                "if (folderName.Contains(\"/\")) { int sl = folderName.IndexOf('/'); explicitProj = folderName.Substring(0, sl).Trim(); folderName = folderName.Substring(sl + 1).Trim(); }\n" +
+                "double lx = double.Parse(parts[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double wy = double.Parse(parts[5].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double tz = double.Parse(parts[6].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "string holesSpec = parts.Length > 7 ? parts[7].Trim() : \"\";\n" +
+                "string matQuery = parts.Length > 8 ? parts[8].Trim() : \"\";\n" +
+                "string cotSpec = parts.Length > 9 ? parts[9].Trim() : \"\";\n" +
+                "string alignMode = parts.Length > 10 ? parts[10].Trim().ToUpperInvariant() : \"CENTER\";\n" +
+                "PdmObjectId projPdm = PdmObjectId.Empty;\n" +
+                "if (!string.IsNullOrEmpty(explicitProj))\n" +
+                "{\n" +
+                "    foreach (var p in TopSolidHost.Pdm.GetProjects(true, false))\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(p), explicitProj, StringComparison.OrdinalIgnoreCase)) { projPdm = p; break; }\n" +
+                "}\n" +
+                "if (projPdm.IsEmpty) projPdm = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (projPdm.IsEmpty) return \"Error: No current project active.\";\n" +
+                "PdmObjectId ownerPdm = projPdm;\n" +
+                "if (!string.IsNullOrEmpty(folderName))\n" +
+                "{\n" +
+                "    List<PdmObjectId> fList; List<PdmObjectId> dList;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(projPdm, out fList, out dList);\n" +
+                "    foreach (var f in fList) if (string.Equals(TopSolidHost.Pdm.GetName(f), folderName, StringComparison.OrdinalIgnoreCase)) { ownerPdm = f; break; }\n" +
+                "    if (ownerPdm.Equals(projPdm)) ownerPdm = TopSolidHost.Pdm.CreateFolder(projPdm, folderName);\n" +
+                "}\n" +
+                "List<PdmObjectId> subF; List<PdmObjectId> subD;\n" +
+                "TopSolidHost.Pdm.GetConstituents(ownerPdm, out subF, out subD);\n" +
+                "PdmObjectId docPdm = PdmObjectId.Empty;\n" +
+                "foreach (var d in subD) if (string.Equals(TopSolidHost.Pdm.GetName(d), docName, StringComparison.OrdinalIgnoreCase)) { docPdm = d; break; }\n" +
+                "if (docPdm.IsEmpty) docPdm = TopSolidHost.Pdm.CreateDocument(ownerPdm, \".TopPrt\", true);\n" +
+                "TopSolidHost.Pdm.SetName(docPdm, docName);\n" +
+                "if (!string.IsNullOrEmpty(desig)) TopSolidHost.Pdm.SetDescription(docPdm, desig);\n" +
+                "if (!string.IsNullOrEmpty(refer)) TopSolidHost.Pdm.SetPartNumber(docPdm, refer);\n" +
+                "DocumentId dId = TopSolidHost.Documents.GetDocument(docPdm);\n" +
+                "TopSolidHost.Documents.Open(ref dId);\n" +
+                "PdmObjectId matPdm = PdmObjectId.Empty;\n" +
+                "PdmObjectId cotPdm = PdmObjectId.Empty;\n" +
+                "string cotNameOnly = cotSpec.Contains(\",\") ? cotSpec.Substring(0, cotSpec.IndexOf(',')).Trim() : cotSpec;\n" +
+                "var matLibs = new List<PdmObjectId>();\n" +
+                "var cotLibs = new List<PdmObjectId>();\n" +
+                "foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))\n" +
+                "{\n" +
+                "    string lName = TopSolidHost.Pdm.GetName(lib);\n" +
+                "    if (string.Equals(lName, \"TopSolid MetalWork - Materials and Coatings\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Matériaux\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"Bois TopSolid\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Materials\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Wood\", StringComparison.OrdinalIgnoreCase))\n" +
+                "        matLibs.Add(lib);\n" +
+                "    if (string.Equals(lName, \"TopSolid MetalWork - Materials and Coatings\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"RAL Classics, By TopSolidBlog\", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, \"TopSolid Matériaux\", StringComparison.OrdinalIgnoreCase))\n" +
+                "        cotLibs.Add(lib);\n" +
+                "}\n" +
+                "if (!string.IsNullOrEmpty(matQuery))\n" +
+                "{\n" +
+                "    foreach (var lib in matLibs)\n" +
+                "    {\n" +
+                "        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, matQuery))\n" +
+                "        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopMat\") { matPdm = h; break; } }\n" +
+                "        if (!matPdm.IsEmpty) break;\n" +
+                "    }\n" +
+                "    if (matPdm.IsEmpty)\n" +
+                "    {\n" +
+                "        foreach (var lib in matLibs)\n" +
+                "        {\n" +
+                "            foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, \"*\" + matQuery + \"*\"))\n" +
+                "            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopMat\") { matPdm = h; break; } }\n" +
+                "            if (!matPdm.IsEmpty) break;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "if (!string.IsNullOrEmpty(cotNameOnly))\n" +
+                "{\n" +
+                "    foreach (var lib in cotLibs)\n" +
+                "    {\n" +
+                "        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, cotNameOnly))\n" +
+                "        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopCot\") { cotPdm = h; break; } }\n" +
+                "        if (!cotPdm.IsEmpty) break;\n" +
+                "    }\n" +
+                "    if (cotPdm.IsEmpty)\n" +
+                "    {\n" +
+                "        foreach (var lib in cotLibs)\n" +
+                "        {\n" +
+                "            foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, \"*\" + cotNameOnly + \"*\"))\n" +
+                "            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == \".TopCot\") { cotPdm = h; break; } }\n" +
+                "            if (!cotPdm.IsEmpty) break;\n" +
+                "        }\n" +
+                "    }\n" +
+                "}\n" +
+                "DocumentId matDoc = matPdm.IsEmpty ? DocumentId.Empty : TopSolidHost.Documents.GetDocument(matPdm);\n" +
+                "DocumentId cotDoc = cotPdm.IsEmpty ? DocumentId.Empty : TopSolidHost.Documents.GetDocument(cotPdm);\n" +
+                "TopSolidHost.Application.StartModification(\"CreateSheetPlate_\" + docName, false);\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref dId);\n" +
+                "    var oldOps = TopSolidHost.Operations.GetOperations(dId);\n" +
+                "    for (int oi = oldOps.Count - 1; oi >= 0; oi--)\n" +
+                "    {\n" +
+                "        try\n" +
+                "        {\n" +
+                "            string tn = TopSolidHost.Elements.GetTypeFullName(oldOps[oi]);\n" +
+                "            if (tn.IndexOf(\"Shape\", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf(\"Extrud\", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf(\"Drill\", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf(\"Sketch\", StringComparison.OrdinalIgnoreCase) >= 0)\n" +
+                "                TopSolidHost.Elements.Delete(oldOps[oi]);\n" +
+                "        } catch { }\n" +
+                "    }\n" +
+                "    Point3D orig = new Point3D(0, 0, 0);\n" +
+                "    Plane3D plXY = new Plane3D(orig, Direction3D.DX, Direction3D.DY);\n" +
+                "    ElementId sk = TopSolidHost.Sketches2D.CreateSketchIn3D(dId, new SmartPlane3D(plXY, -1.0, 1.0, -1.0, 1.0), new SmartPoint3D(orig), true, SmartDirection3D.DX);\n" +
+                "    TopSolidHost.Sketches2D.StartModification(sk);\n" +
+                "    double x0 = alignMode == \"ORIGIN\" ? 0.0 : -lx / 2.0;\n" +
+                "    double y0 = alignMode == \"ORIGIN\" ? 0.0 : -wy / 2.0;\n" +
+                "    ElementItemId p1 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0, y0));\n" +
+                "    ElementItemId p2 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0 + lx, y0));\n" +
+                "    ElementItemId p3 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0 + lx, y0 + wy));\n" +
+                "    ElementItemId p4 = TopSolidHost.Sketches2D.CreateVertex(new Point2D(x0, y0 + wy));\n" +
+                "    TopSolidHost.Sketches2D.CreateLineSegment(p1, p2);\n" +
+                "    TopSolidHost.Sketches2D.CreateLineSegment(p2, p3);\n" +
+                "    TopSolidHost.Sketches2D.CreateLineSegment(p3, p4);\n" +
+                "    TopSolidHost.Sketches2D.CreateLineSegment(p4, p1);\n" +
+                "    if (!string.IsNullOrEmpty(holesSpec) && holesSpec != \"-\" && holesSpec != \"none\")\n" +
+                "    {\n" +
+                "        foreach (string hItem in holesSpec.Split('|'))\n" +
+                "        {\n" +
+                "            string[] hp = hItem.Trim().Split(',');\n" +
+                "            if (hp.Length < 3) continue;\n" +
+                "            double hx = double.Parse(hp[0].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double hy = double.Parse(hp[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double hd = double.Parse(hp[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            ElementItemId hc = TopSolidHost.Sketches2D.CreateVertex(new Point2D(hx, hy));\n" +
+                "            TopSolidHost.Sketches2D.CreateCircleSegment(hc, hd / 2.0);\n" +
+                "        }\n" +
+                "    }\n" +
+                "    TopSolidHost.Sketches2D.CleanSketch();\n" +
+                "    TopSolidHost.Sketches2D.EndModification();\n" +
+                "    ElementId pEp = ElementId.Empty;\n" +
+                "    foreach (var p in TopSolidHost.Parameters.GetParameters(dId))\n" +
+                "        if (TopSolidHost.Parameters.GetParameterType(p) == ParameterType.Real && TopSolidHost.Elements.GetName(p) == \"Epaisseur\") { pEp = p; break; }\n" +
+                "    if (pEp.IsEmpty) { pEp = TopSolidHost.Parameters.CreateRealParameter(dId, UnitType.Length, tz); TopSolidHost.Elements.SetName(pEp, \"Epaisseur\"); }\n" +
+                "    else { TopSolidHost.Parameters.SetRealValue(pEp, tz); }\n" +
+                "    ElementId body = TopSolidHost.Shapes.CreateExtrudedShape(dId, new SmartSection3D(sk), SmartDirection3D.DZ, new SmartReal(pEp), new SmartReal(UnitType.Angle, 0), false, false);\n" +
+                "    var allShapes = TopSolidHost.Shapes.GetShapes(dId);\n" +
+                "    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(dId))\n" +
+                "    {\n" +
+                "        try {\n" +
+                "            var repCons = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep);\n" +
+                "            if (!repCons.Contains(body)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, body);\n" +
+                "        } catch { }\n" +
+                "    }\n" +
+                "    if (!matDoc.IsEmpty) TopSolidDesignHost.Parts.SetMaterial(dId, matDoc);\n" +
+                "    try { TopSolidDesignHost.Parts.SetMassPropertyManagement(dId, true, new SmartReal(UnitType.Mass, 0)); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetCenterOfMassPropertyManagement(dId, true, new SmartPoint3D(new Point3D(0, 0, 0))); } catch { }\n" +
+                "    try { TopSolidDesignHost.Parts.SetPhysicalPropertiesManagementRefreshAuto(dId, true); } catch { }\n" +
+                "    if (!cotDoc.IsEmpty) { try { Color alb = TopSolidDesignHost.Coatings.GetAlbedoColor(cotDoc); foreach (var s in allShapes) TopSolidHost.Elements.SetColor(s, alb); } catch { } }\n" +
+                "    if (cotSpec.Contains(\",\")) {\n" +
+                "        string[] cParts = cotSpec.Split(',');\n" +
+                "        int startIdx = cParts.Length >= 4 ? 1 : 0;\n" +
+                "        if (cParts.Length - startIdx >= 3) {\n" +
+                "            byte r = byte.Parse(cParts[startIdx].Trim()); byte g = byte.Parse(cParts[startIdx+1].Trim()); byte b = byte.Parse(cParts[startIdx+2].Trim());\n" +
+                "            foreach (var s in allShapes) try { TopSolidHost.Elements.SetColor(s, new Color(r, g, b)); } catch { }\n" +
+                "        }\n" +
+                "    }\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }\n" +
+                "TopSolidHost.Pdm.Save(docPdm, true);\n" +
+                "return \"OK: Sheet/Plate part '\" + docName + \"' (\" + (lx*1000) + \"x\" + (wy*1000) + \"x\" + (tz*1000) + \"mm) created and saved.\";") },
+
+            { "create_drilling", RW("GEOMETRY", "Drills a cylindrical hole on the active part at (X,Y,Z) (mm) with outward face normal (NX,NY,NZ) and updates all representations. Param: value=diam_mm:depth_mm:X_mm:Y_mm:Z_mm:NX:NY:NZ",
+                "if (docId.IsEmpty) { __message = \"No active document.\"; return; }\n" +
+                "string[] p = \"{value}\".Split(':');\n" +
+                "if (p.Length < 8) { __message = \"Error: Use value=diam_mm:depth_mm:X_mm:Y_mm:Z_mm:NX:NY:NZ\"; return; }\n" +
+                "double diam = double.Parse(p[0].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double depth = double.Parse(p[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double x = double.Parse(p[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double y = double.Parse(p[3].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double z = double.Parse(p[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "double nx = double.Parse(p[5].Trim(), System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "double ny = double.Parse(p[6].Trim(), System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "double nz = double.Parse(p[7].Trim(), System.Globalization.CultureInfo.InvariantCulture);\n" +
+                "List<ElementId> shapes = TopSolidHost.Shapes.GetShapes(docId);\n" +
+                "if (shapes.Count == 0) { __message = \"Error: No solid shape in document.\"; return; }\n" +
+                "ElementId body = shapes[0];\n" +
+                "Direction3D norm = new Direction3D(nx, ny, nz);\n" +
+                "Direction3D xDir = Math.Abs(nx) < 0.9 ? Direction3D.DX : Direction3D.DY;\n" +
+                "Direction3D yDir = Math.Abs(nx) < 0.9 ? Direction3D.DZ : Direction3D.DZ;\n" +
+                "Frame3D drF = new Frame3D(new Point3D(x, y, z), xDir, yDir, norm);\n" +
+                "var prims = new List<DrillingPrimitive> { new DrillingHolePrimitive(new SmartReal(UnitType.Length, diam), new SmartReal(UnitType.Length, depth), DrillingHolePrimitiveBottomType.Flat) };\n" +
+                "TopSolidDesignHost.Parts.CreateDrillingOperation(docId, new SmartShape(body), new SmartFrame3D(drF, -0.02, 0.02, -0.02, 0.02, -0.02, 0.02), prims, false);\n" +
+                "__message = \"OK: Drilling d=\" + (diam*1000) + \"mm depth=\" + (depth*1000) + \"mm applied.\";") },
+
+            { "add_inclusion_positioned", RW("ASSEMBLIES", "Includes a part or sub-assembly in an assembly using either (tx,ty,tz[,rx,ry,rz]) or BETWEEN(x1,y1,z1,x2,y2,z2[,ux,uy,uz]) (aligns Extruded Bar +Z from P1 to P2 and section X along uX). Param: value=[target_asm|]child_doc;tx,ty,tz[,rx,ry,rz] OR [target_asm|]child_doc;BETWEEN,x1,y1,z1,x2,y2,z2[,ux,uy,uz]",
+                "string raw = \"{value}\".Trim();\n" +
+                "string targetAsmName = \"\";\n" +
+                "if (raw.Contains(\"|\")) { int bar = raw.IndexOf('|'); targetAsmName = raw.Substring(0, bar).Trim(); raw = raw.Substring(bar + 1).Trim(); }\n" +
+                "string[] parts = raw.Split(';');\n" +
+                "if (parts.Length < 2) return \"Error: Use value=[target_asm|]child_doc;tx,ty,tz[,rx,ry,rz] or child_doc;BETWEEN,x1,y1,z1,x2,y2,z2[,ux,uy,uz]\";\n" +
+                "string childName = parts[0].Trim();\n" +
+                "string[] coords = parts[1].Trim().Split(',');\n" +
+                "PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "Func<string, PdmObjectId> findDoc = (string dName) => {\n" +
+                "    List<PdmObjectId> rf; List<PdmObjectId> rd;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(proj, out rf, out rd);\n" +
+                "    for (int fi = rf.Count - 1; fi >= 0; fi--)\n" +
+                "    {\n" +
+                "        List<PdmObjectId> sf; List<PdmObjectId> sd;\n" +
+                "        TopSolidHost.Pdm.GetConstituents(rf[fi], out sf, out sd);\n" +
+                "        foreach (var d in sd) if (string.Equals(TopSolidHost.Pdm.GetName(d), dName, StringComparison.OrdinalIgnoreCase)) return d;\n" +
+                "    }\n" +
+                "    foreach (var d in rd) if (string.Equals(TopSolidHost.Pdm.GetName(d), dName, StringComparison.OrdinalIgnoreCase)) return d;\n" +
+                "    var s = TopSolidHost.Pdm.SearchDocumentByName(proj, dName);\n" +
+                "    return s.Count > 0 ? s[0] : PdmObjectId.Empty;\n" +
+                "};\n" +
+                "DocumentId asmDoc = TopSolidHost.Documents.EditedDocument;\n" +
+                "PdmObjectId asmPdm = asmDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(asmDoc);\n" +
+                "if (!string.IsNullOrEmpty(targetAsmName))\n" +
+                "{\n" +
+                "    asmPdm = findDoc(targetAsmName);\n" +
+                "    if (asmPdm.IsEmpty) return \"Error: Target assembly '\" + targetAsmName + \"' not found.\";\n" +
+                "    asmDoc = TopSolidHost.Documents.GetDocument(asmPdm);\n" +
+                "}\n" +
+                "PdmObjectId childPdm = findDoc(childName);\n" +
+                "if (childPdm.IsEmpty) return \"Error: Child document '\" + childName + \"' not found.\";\n" +
+                "DocumentId childDoc = TopSolidHost.Documents.GetDocument(childPdm);\n" +
+                "Transform3D tf = Transform3D.Identity;\n" +
+                "if (coords[0].Trim().ToUpperInvariant() == \"BETWEEN\")\n" +
+                "{\n" +
+                "    double x1 = double.Parse(coords[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double y1 = double.Parse(coords[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double z1 = double.Parse(coords[3].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double x2 = double.Parse(coords[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double y2 = double.Parse(coords[5].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double z2 = double.Parse(coords[6].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double dzx = x2 - x1, dzy = y2 - y1, dzz = z2 - z1;\n" +
+                "    double len = Math.Sqrt(dzx*dzx + dzy*dzy + dzz*dzz);\n" +
+                "    dzx /= len; dzy /= len; dzz /= len;\n" +
+                "    double rxx = coords.Length >= 10 ? double.Parse(coords[7].Trim(), System.Globalization.CultureInfo.InvariantCulture) : (Math.Abs(dzx) < 0.9 ? 1.0 : 0.0);\n" +
+                "    double rxy = coords.Length >= 10 ? double.Parse(coords[8].Trim(), System.Globalization.CultureInfo.InvariantCulture) : (Math.Abs(dzx) < 0.9 ? 0.0 : 1.0);\n" +
+                "    double rxz = coords.Length >= 10 ? double.Parse(coords[9].Trim(), System.Globalization.CultureInfo.InvariantCulture) : 0.0;\n" +
+                "    double dot = rxx*dzx + rxy*dzy + rxz*dzz;\n" +
+                "    double uxx = rxx - dot*dzx, uxy = rxy - dot*dzy, uxz = rxz - dot*dzz;\n" +
+                "    double nX = Math.Sqrt(uxx*uxx + uxy*uxy + uxz*uxz);\n" +
+                "    uxx /= nX; uxy /= nX; uxz /= nX;\n" +
+                "    double uyx = dzy*uxz - dzz*uxy, uyy = dzz*uxx - dzx*uxz, uyz = dzx*uxy - dzy*uxx;\n" +
+                "    tf = new Transform3D(uxx, uyx, dzx, x1, uxy, uyy, dzy, y1, uxz, uyz, dzz, z1, 0, 0, 0, 1);\n" +
+                "}\n" +
+                "else\n" +
+                "{\n" +
+                "    double tx = double.Parse(coords[0].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double ty = double.Parse(coords[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double tz = double.Parse(coords[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "    double rx = coords.Length > 3 ? double.Parse(coords[3].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;\n" +
+                "    double ry = coords.Length > 4 ? double.Parse(coords[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;\n" +
+                "    double rz = coords.Length > 5 ? double.Parse(coords[5].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;\n" +
+                "    double cx = Math.Cos(rx), sx = Math.Sin(rx), cy = Math.Cos(ry), sy = Math.Sin(ry), cz = Math.Cos(rz), sz = Math.Sin(rz);\n" +
+                "    Direction3D vx = new Direction3D(cy*cz, cy*sz, -sy);\n" +
+                "    Direction3D vy = new Direction3D(sx*sy*cz - cx*sz, sx*sy*sz + cx*cz, sx*cy);\n" +
+                "    Direction3D vz = new Direction3D(cx*sy*cz + sx*sz, cx*sy*sz - sx*cz, cx*cy);\n" +
+                "    tf = new Transform3D(vx.X, vy.X, vz.X, tx, vx.Y, vy.Y, vz.Y, ty, vx.Z, vy.Z, vz.Z, tz, 0, 0, 0, 1);\n" +
+                "}\n" +
+                "TopSolidHost.Application.StartModification(\"AddInclusion_\" + childName, false);\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref asmDoc);\n" +
+                "    ElementId posId = TopSolidDesignHost.Assemblies.CreatePositioning(asmDoc);\n" +
+                "    TopSolidDesignHost.Assemblies.CreateInclusion(asmDoc, posId, childName, childDoc, \"\", new List<string>(), new List<SmartObject>(), true, ElementId.Empty, ElementId.Empty, false, true, false, false, tf, true);\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }\n" +
+                "if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);\n" +
+                "return \"OK: Included '\" + childName + \"' in '\" + TopSolidHost.Documents.GetName(asmDoc) + \"'.\";") },
+
+            { "batch_add_inclusions", RW("ASSEMBLIES", "Batch-includes multiple parts or sub-assemblies into an assembly in a single transaction. Optional 'CLEAR|' prefix deletes existing occurrences first. Each item separated by ';' is either 'docName,tx,ty,tz[,rx,ry,rz[,occName]]' or 'docName,BETWEEN,x1,y1,z1,x2,y2,z2[,ux,uy,uz[,occName]]'. Param: value=[target_asm|][CLEAR|]item1;item2;...",
+                "string raw = \"{value}\".Trim();\n" +
+                "string targetAsmName = \"\";\n" +
+                "bool clearExisting = false;\n" +
+                "while (raw.Contains(\"|\"))\n" +
+                "{\n" +
+                "    int bar = raw.IndexOf('|');\n" +
+                "    string prefix = raw.Substring(0, bar).Trim();\n" +
+                "    raw = raw.Substring(bar + 1).Trim();\n" +
+                "    if (string.Equals(prefix, \"CLEAR\", StringComparison.OrdinalIgnoreCase)) clearExisting = true;\n" +
+                "    else targetAsmName = prefix;\n" +
+                "}\n" +
+                "PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "Func<string, PdmObjectId> findDoc = (string dName) => {\n" +
+                "    List<PdmObjectId> rf; List<PdmObjectId> rd;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(proj, out rf, out rd);\n" +
+                "    for (int fi = rf.Count - 1; fi >= 0; fi--)\n" +
+                "    {\n" +
+                "        List<PdmObjectId> sf; List<PdmObjectId> sd;\n" +
+                "        TopSolidHost.Pdm.GetConstituents(rf[fi], out sf, out sd);\n" +
+                "        foreach (var d in sd) if (string.Equals(TopSolidHost.Pdm.GetName(d), dName, StringComparison.OrdinalIgnoreCase)) return d;\n" +
+                "    }\n" +
+                "    foreach (var d in rd) if (string.Equals(TopSolidHost.Pdm.GetName(d), dName, StringComparison.OrdinalIgnoreCase)) return d;\n" +
+                "    var s = TopSolidHost.Pdm.SearchDocumentByName(proj, dName);\n" +
+                "    return s.Count > 0 ? s[0] : PdmObjectId.Empty;\n" +
+                "};\n" +
+                "DocumentId asmDoc = TopSolidHost.Documents.EditedDocument;\n" +
+                "PdmObjectId asmPdm = asmDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(asmDoc);\n" +
+                "if (!string.IsNullOrEmpty(targetAsmName))\n" +
+                "{\n" +
+                "    asmPdm = findDoc(targetAsmName);\n" +
+                "    if (asmPdm.IsEmpty) return \"Error: Target assembly '\" + targetAsmName + \"' not found.\";\n" +
+                "    asmDoc = TopSolidHost.Documents.GetDocument(asmPdm);\n" +
+                "}\n" +
+                "if (asmDoc.IsEmpty) return \"Error: No active assembly.\";\n" +
+                "TopSolidHost.Documents.Open(ref asmDoc);\n" +
+                "string[] items = raw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);\n" +
+                "var docCache = new Dictionary<string, DocumentId>(StringComparer.OrdinalIgnoreCase);\n" +
+                "foreach (string item in items)\n" +
+                "{\n" +
+                "    string cName = item.Split(',')[0].Trim();\n" +
+                "    if (!docCache.ContainsKey(cName))\n" +
+                "    {\n" +
+                "        PdmObjectId fc = findDoc(cName);\n" +
+                "        if (fc.IsEmpty) return \"Error: Child document '\" + cName + \"' not found in project.\";\n" +
+                "        docCache[cName] = TopSolidHost.Documents.GetDocument(fc);\n" +
+                "    }\n" +
+                "}\n" +
+                "TopSolidHost.Application.StartModification(\"BatchAddInclusions_\" + TopSolidHost.Documents.GetName(asmDoc), false);\n" +
+                "int count = 0;\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref asmDoc);\n" +
+                "    ElementId modStage = TopSolidHost.Operations.GetModelingStage(asmDoc);\n" +
+                "    if (!modStage.IsEmpty) { try { TopSolidHost.Operations.SetWorkingStage(modStage); TopSolidHost.Operations.ResetInsertionOperation(asmDoc); } catch { } }\n" +
+                "    if (clearExisting)\n" +
+                "    {\n" +
+                "        foreach (var op in TopSolidHost.Operations.GetOperations(asmDoc))\n" +
+                "            try { if (TopSolidDesignHost.Assemblies.IsInclusion(op)) TopSolidHost.Elements.Delete(op); } catch { }\n" +
+                "    }\n" +
+                "    foreach (string item in items)\n" +
+                "    {\n" +
+                "        string[] c = item.Trim().Split(',');\n" +
+                "        if (c.Length < 4) continue;\n" +
+                "        string cName = c[0].Trim();\n" +
+                "        DocumentId childDoc = docCache[cName];\n" +
+                "        Transform3D tf = Transform3D.Identity;\n" +
+                "        string occName = cName + \"_\" + (count + 1);\n" +
+                "        if (c[1].Trim().ToUpperInvariant() == \"BETWEEN\")\n" +
+                "        {\n" +
+                "            double x1 = double.Parse(c[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double y1 = double.Parse(c[3].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double z1 = double.Parse(c[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double x2 = double.Parse(c[5].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double y2 = double.Parse(c[6].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double z2 = double.Parse(c[7].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double dzx = x2 - x1, dzy = y2 - y1, dzz = z2 - z1;\n" +
+                "            double len = Math.Sqrt(dzx*dzx + dzy*dzy + dzz*dzz);\n" +
+                "            dzx /= len; dzy /= len; dzz /= len;\n" +
+                "            double rxx = c.Length >= 11 ? double.Parse(c[8].Trim(), System.Globalization.CultureInfo.InvariantCulture) : (Math.Abs(dzx) < 0.9 ? 1.0 : 0.0);\n" +
+                "            double rxy = c.Length >= 11 ? double.Parse(c[9].Trim(), System.Globalization.CultureInfo.InvariantCulture) : (Math.Abs(dzx) < 0.9 ? 0.0 : 1.0);\n" +
+                "            double rxz = c.Length >= 11 ? double.Parse(c[10].Trim(), System.Globalization.CultureInfo.InvariantCulture) : 0.0;\n" +
+                "            if (c.Length >= 12) occName = c[11].Trim();\n" +
+                "            double dot = rxx*dzx + rxy*dzy + rxz*dzz;\n" +
+                "            double uxx = rxx - dot*dzx, uxy = rxy - dot*dzy, uxz = rxz - dot*dzz;\n" +
+                "            double nX = Math.Sqrt(uxx*uxx + uxy*uxy + uxz*uxz);\n" +
+                "            uxx /= nX; uxy /= nX; uxz /= nX;\n" +
+                "            double uyx = dzy*uxz - dzz*uxy, uyy = dzz*uxx - dzx*uxz, uyz = dzx*uxy - dzy*uxx;\n" +
+                "            tf = new Transform3D(uxx, uyx, dzx, x1, uxy, uyy, dzy, y1, uxz, uyz, dzz, z1, 0, 0, 0, 1);\n" +
+                "        }\n" +
+                "        else\n" +
+                "        {\n" +
+                "            double tx = double.Parse(c[1].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double ty = double.Parse(c[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double tz = double.Parse(c[3].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;\n" +
+                "            double rx = c.Length > 4 ? double.Parse(c[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;\n" +
+                "            double ry = c.Length > 5 ? double.Parse(c[5].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;\n" +
+                "            double rz = c.Length > 6 ? double.Parse(c[6].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;\n" +
+                "            if (c.Length > 7) occName = c[7].Trim();\n" +
+                "            double cx = Math.Cos(rx), sx = Math.Sin(rx), cy = Math.Cos(ry), sy = Math.Sin(ry), cz = Math.Cos(rz), sz = Math.Sin(rz);\n" +
+                "            Direction3D vx = new Direction3D(cy*cz, cy*sz, -sy);\n" +
+                "            Direction3D vy = new Direction3D(sx*sy*cz - cx*sz, sx*sy*sz + cx*cz, sx*cy);\n" +
+                "            Direction3D vz = new Direction3D(cx*sy*cz + sx*sz, cx*sy*sz - sx*cz, cx*cy);\n" +
+                "            tf = new Transform3D(vx.X, vy.X, vz.X, tx, vx.Y, vy.Y, vz.Y, ty, vx.Z, vy.Z, vz.Z, tz, 0, 0, 0, 1);\n" +
+                "        }\n" +
+                "        ElementId posId = TopSolidDesignHost.Assemblies.CreatePositioning(asmDoc);\n" +
+                "        TopSolidDesignHost.Assemblies.CreateInclusion(asmDoc, posId, occName, childDoc, \"\", new List<string>(), new List<SmartObject>(), true, ElementId.Empty, ElementId.Empty, false, true, false, false, tf, true);\n" +
+                "        count++;\n" +
+                "    }\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }\n" +
+                "if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);\n" +
+                "return \"OK: Batch-included \" + count + \" occurrence(s) into '\" + TopSolidHost.Documents.GetName(asmDoc) + \"' and saved.\";") },
+
+            { "check_collisions", RW("AUDIT", "Activates TopSolid native B-Rep 3D collision analysis (SetCollisionsManagement + ShapeShapeCollisionEntity) on an assembly, reports any colliding pairs, and restores Modeling stage. Param: value=[asm_doc_name]",
+                "string targetAsmName = \"{value}\".Trim();\n" +
+                "DocumentId asmDoc = TopSolidHost.Documents.EditedDocument;\n" +
+                "PdmObjectId asmPdm = asmDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(asmDoc);\n" +
+                "if (!string.IsNullOrEmpty(targetAsmName))\n" +
+                "{\n" +
+                "    PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "    PdmObjectId foundPdm = PdmObjectId.Empty;\n" +
+                "    List<PdmObjectId> rf; List<PdmObjectId> rd;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(proj, out rf, out rd);\n" +
+                "    for (int fi = rf.Count - 1; fi >= 0 && foundPdm.IsEmpty; fi--)\n" +
+                "    {\n" +
+                "        List<PdmObjectId> sf; List<PdmObjectId> sd;\n" +
+                "        TopSolidHost.Pdm.GetConstituents(rf[fi], out sf, out sd);\n" +
+                "        foreach (var d in sd) if (string.Equals(TopSolidHost.Pdm.GetName(d), targetAsmName, StringComparison.OrdinalIgnoreCase)) { foundPdm = d; break; }\n" +
+                "    }\n" +
+                "    if (foundPdm.IsEmpty)\n" +
+                "    {\n" +
+                "        var found = TopSolidHost.Pdm.SearchDocumentByName(proj, targetAsmName);\n" +
+                "        if (found.Count > 0) foundPdm = found[0];\n" +
+                "    }\n" +
+                "    if (foundPdm.IsEmpty) return \"Error: Assembly '\" + targetAsmName + \"' not found.\";\n" +
+                "    asmPdm = foundPdm; asmDoc = TopSolidHost.Documents.GetDocument(asmPdm);\n" +
+                "}\n" +
+                "if (asmDoc.IsEmpty) return \"Error: No assembly open or specified.\";\n" +
+                "TopSolidHost.Documents.Open(ref asmDoc);\n" +
+                "TopSolidHost.Application.StartModification(\"CheckCollisions_\" + TopSolidHost.Documents.GetName(asmDoc), false);\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Documents.EnsureIsDirty(ref asmDoc);\n" +
+                "    ElementId designRep = TopSolidDesignHost.Representations.GetDesignRepresentation(asmDoc);\n" +
+                "    TopSolidDesignHost.Assemblies.SetCollisionsManagement(asmDoc, designRep, true, true, true);\n" +
+                "    TopSolidDesignHost.Assemblies.SetCollisionsManagementCheckingMechanisms(asmDoc, false);\n" +
+                "    TopSolidDesignHost.Assemblies.SetCollisionsManagementInvalidWhenColliding(asmDoc, false);\n" +
+                "    ElementId modStage = TopSolidHost.Operations.GetModelingStage(asmDoc);\n" +
+                "    if (!modStage.IsEmpty)\n" +
+                "    {\n" +
+                "        TopSolidHost.Operations.SetWorkingStage(modStage);\n" +
+                "        TopSolidHost.Operations.ResetInsertionOperation(asmDoc);\n" +
+                "    }\n" +
+                "    TopSolidHost.Application.EndModification(true, true);\n" +
+                "}\n" +
+                "catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return \"Error: \" + ex.Message; }\n" +
+                "int collCount = 0;\n" +
+                "var sb = new StringBuilder();\n" +
+                "foreach (var el in TopSolidHost.Elements.GetElements(asmDoc))\n" +
+                "{\n" +
+                "    if (TopSolidHost.Elements.GetTypeFullName(el) == \"TopSolid.Cad.Design.DB.Collisions.ShapeShapeCollisionEntity\")\n" +
+                "    {\n" +
+                "        collCount++;\n" +
+                "        var chs = TopSolidHost.Elements.GetConstituents(el);\n" +
+                "        var pair = new List<string>();\n" +
+                "        foreach (var ch in chs)\n" +
+                "        {\n" +
+                "            ElementId target = TopSolidHost.Entities.IsShortcut(ch) ? TopSolidHost.Entities.GetShortcutTarget(ch) : ElementId.Empty;\n" +
+                "            ElementId occ = target.IsEmpty ? ElementId.Empty : TopSolidHost.Elements.GetParent(target);\n" +
+                "            pair.Add(TopSolidHost.Elements.GetFriendlyName(ch) + \" (\" + (occ.IsEmpty ? \"\" : TopSolidHost.Elements.GetFriendlyName(occ)) + \")\");\n" +
+                "        }\n" +
+                "        sb.AppendLine(\"  COLLISION: \" + string.Join(\" <-> \", pair));\n" +
+                "    }\n" +
+                "}\n" +
+                "if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);\n" +
+                "return \"OK: B-Rep Collision Check on '\" + TopSolidHost.Documents.GetName(asmDoc) + \"' — Collisions: \" + collCount + (collCount > 0 ? \"\\n\" + sb.ToString() : \" (0 collision)\");") },
+
+            { "update_where_used_and_save", RW("PROJECTS", "Updates (rebuilds) and saves all documents of the current project in bottom-up dependency order (Parts .TopPrt -> Sub-Assemblies .TopAsm -> Root Assembly .TopAsm) so all Where-Used links stay up to date. Param: value=[project_name]",
+                "if (false) { TopSolidHost.Application.StartModification(\"\", false); TopSolidHost.Application.EndModification(false, false); }\n" +
+                "string projName = \"{value}\".Trim();\n" +
+                "PdmObjectId projPdm = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (!string.IsNullOrEmpty(projName))\n" +
+                "{\n" +
+                "    foreach (var p in TopSolidHost.Pdm.GetProjects(true, false))\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { projPdm = p; break; }\n" +
+                "}\n" +
+                "if (projPdm.IsEmpty) return \"Error: No current project.\";\n" +
+                "var allDocs = new List<PdmObjectId>();\n" +
+                "var fStack = new Stack<PdmObjectId>();\n" +
+                "fStack.Push(projPdm);\n" +
+                "while (fStack.Count > 0)\n" +
+                "{\n" +
+                "    PdmObjectId cur = fStack.Pop();\n" +
+                "    List<PdmObjectId> subF; List<PdmObjectId> subD;\n" +
+                "    TopSolidHost.Pdm.GetConstituents(cur, out subF, out subD);\n" +
+                "    foreach (var d in subD) allDocs.Add(d);\n" +
+                "    foreach (var f in subF) fStack.Push(f);\n" +
+                "}\n" +
+                "var partsList = new List<PdmObjectId>();\n" +
+                "var asmsList = new List<PdmObjectId>();\n" +
+                "foreach (var d in allDocs)\n" +
+                "{\n" +
+                "    string ext; TopSolidHost.Pdm.GetType(d, out ext);\n" +
+                "    if (string.Equals(ext, \".TopPrt\", StringComparison.OrdinalIgnoreCase)) partsList.Add(d);\n" +
+                "    else if (string.Equals(ext, \".TopAsm\", StringComparison.OrdinalIgnoreCase)) asmsList.Add(d);\n" +
+                "}\n" +
+                "int updatedParts = 0, updatedAsms = 0;\n" +
+                "foreach (var p in partsList)\n" +
+                "{\n" +
+                "    try { TopSolidHost.Pdm.Save(p, true); updatedParts++; } catch { }\n" +
+                "}\n" +
+                "foreach (var a in asmsList)\n" +
+                "{\n" +
+                "    try { DocumentId dId = TopSolidHost.Documents.GetDocument(a); TopSolidHost.Documents.Open(ref dId); try { TopSolidHost.Documents.Update(dId, false); } catch { } TopSolidHost.Pdm.Save(a, true); updatedAsms++; } catch { }\n" +
+                "}\n" +
+                "foreach (var a in asmsList)\n" +
+                "{\n" +
+                "    try { DocumentId dId = TopSolidHost.Documents.GetDocument(a); TopSolidHost.Documents.Open(ref dId); try { TopSolidHost.Documents.Update(dId, false); } catch { } TopSolidHost.Pdm.Save(a, true); } catch { }\n" +
+                "}\n" +
+                "TopSolidHost.Pdm.Save(projPdm, true);\n" +
+                "return \"OK: Where-Used bottom-up update & save complete on '\" + TopSolidHost.Pdm.GetName(projPdm) + \"' (Parts: \" + updatedParts + \", Assemblies: \" + updatedAsms + \").\";") },
         };
 
         // Shortcut factory methods for readability.

@@ -1,13 +1,13 @@
 ---
 name: topsolid-mcp-modeling
-version: 2.5.0
+version: 2.6.0
 author: Noemid-H
 license: internal
 metadata:
   hermes:
-    tags: [topsolid, mcp, cad, assemblage, stl, verification-perceptive, one-shot-builder, collisions, where-used, circuit-breaker]
+    tags: [topsolid, mcp, cad, assemblage, stl, verification-perceptive, recipes, extruded-bar, sheet-metal, collisions, where-used, circuit-breaker]
     related_skills: [topsolid-mcp, topsolid-railing-design, topsolid-api-knowledge, topsolid-cage-from-image]
-description: Use when modeling TopSolid via the MCP bridge (TopSolid user best practices, Circuit-Breaker & Token Discipline, CoT Reasoning Budget, Compile-First C# Rules, Generic <500ms Material Lookup, Where-Used update before save, One-Shot C# Builder + Native B-Rep Collision Check).
+description: Use when modeling TopSolid via the MCP bridge (TopSolid user best practices, 100% MCP Recipe-First workflow for Extruded Bars, Sheet Metal Plates & Assemblies, Circuit-Breaker & Token Discipline, CoT Reasoning Budget, Compile-First C# Rules, Generic <500ms Material Lookup, Where-Used update before save, Native B-Rep Collision Check).
 ---
 
 # Modélisation & Bonnes Pratiques Utilisateur TopSolid via MCP (LY458 :8080)
@@ -20,10 +20,11 @@ description: Use when modeling TopSolid via the MCP bridge (TopSolid user best p
 ## When to Use
 
 Use when creating, modifying, or inspecting TopSolid geometry through the JSON-RPC bridge on LY458
-(port 8080) — sketch-based parts, extrusions, drillings, assemblies with positioned inclusions,
-Where-Used (`cas d'emploi`) propagation, native TopSolid B-Rep collision checks, and visual verification gates.
+(port 8080) — metalwork extruded bars (`create_extruded_bar`), sheet metal / drilled plates (`create_sheet_metal_plate`),
+part/assembly creation (`create_part_document`, `create_assembly_document`), positioned inclusions (`batch_add_inclusions`),
+Where-Used (`cas d'emploi`) propagation (`update_where_used_and_save`), native TopSolid B-Rep collision checks (`check_collisions`), and visual verification gates.
 
-Classe de travail : analyser finement le besoin/photo (avec le skill métier spécialisé), ne poser de question que sur les vrais choix ou doutes, puis générer et exécuter le CAD en **1 seul script C# (« One-Shot Builder »)** compilé du premier coup (`topsolid_compile`) et exécuté (`topsolid_execute_script`), avec vérification native des collisions B-Rep TopSolid (`ShapeShapeCollisionEntity`). Cible : **< 2 minutes et < 25 000 tokens**.
+Classe de travail : analyser finement le besoin/photo (avec le skill métier spécialisé), ne poser de question que sur les vrais choix ou doutes, puis **privilégier en priorité absolue les Recettes MCP de création (`topsolid_run_recipe`)** — ou un script One-Shot C# uniquement si une géométrie complexe sort du cadre des recettes — avec vérification native des collisions B-Rep TopSolid (`check_collisions`). Cible : **< 90 secondes et < 20 000 tokens**.
 
 ## Règles permanentes & Pratiques Utilisateur TopSolid
 
@@ -53,16 +54,18 @@ Classe de travail : analyser finement le besoin/photo (avec le skill métier sp�
       - Ne **JAMAIS** appeler `SearchProjectByName("Mécanique CEN TopSolid")` (une requête multi-mots retourne 0 résultat), et ne **JAMAIS** parcourir les 55 bibliothèques de `GetProjects(false, true)` sans filtre (les bibliothèques de visserie font 60 s de timeout).
       - Filtrer `GetProjects(false, true)` uniquement sur les bibliothèques dont le nom contient `"CEN"`, `"Metal"`, `"Mat"`, `"Bois"`, `"Wood"`, vérifier que `TopSolidHost.Pdm.GetType(h, out ext)` vaut **`".TopMat"`** (sinon un `.TopLam` stratifié bois lève `InvalidCastException: LaminateMaterialDocument`), et activer `SetMassPropertyManagement(dId, true, new SmartReal(UnitType.Mass, 0))` + `SetPhysicalPropertiesManagementRefreshAuto(dId, true)`.
 
-4. **Architecture « One-Shot C# Builder » obligatoire** — Écrire **un seul script C# complet** (corps de méthode `Run()`, supportant les helpers `Func<...>` avec `return`) qui :
-   - réutilise le projet cible existant (`SearchProjectByName`) ou crée le projet PDM hors `StartModification`,
-   - recherche génériquement en `< 500 ms` les matériaux métier standards (`*S235*`, `*X2CrNi19-11*` / `*304*`, `*Chêne*` / `*Pin*`) avec vérification `ext == ".TopMat"`,
-   - crée toutes les pièces unitaires (`.TopPrt`), y compris les **platines de fixation percées (`GC_Platine`)**,
-   - appelle **`TopSolidHost.Sketches2D.CleanSketch();`** juste avant chaque `TopSolidHost.Sketches2D.EndModification();`,
-   - passe **`true` en 4e argument de `CreateSketchIn3D`** (`bool inDefinesXDirection = true`),
-   - ajoute toutes les formes à toutes les représentations,
-   - affecte les matériaux PDM (`.TopMat`) + `SetMassPropertyManagement` + `SetPhysicalPropertiesManagementRefreshAuto` + couleurs RGB,
-   - assemble toutes les inclusions (`CreateInclusion` à **16 arguments avec `Transform3D`**) dans le `.TopAsm`,
-   - lance la détection de collisions native TopSolid (`SetCollisionsManagement`), vérifie les matériaux directement via `Parts.GetMaterial(dId)` (ne pas utiliser la recette `check_missing_materials` qui cherche un paramètre `"Mass"` en anglais) et retourne le rapport complet en **1 seul appel `topsolid_execute_script`**.
+4. **Workflow Prioritaire « 100 % Recettes MCP » (`topsolid_run_recipe`) pour la Métallerie & l'Assemblage** :
+   - **Toujours utiliser les recettes MCP natives avant d'écrire du C# sur mesure** :
+     1. **`create_project_tree`** : `nom_projet;01_Environnement,02_Composants_GC,03_Assemblages`
+     2. **`create_sheet_metal_plate`** (tôles, platines percées, dalles/murs) :
+        `nom_doc;designation;reference;dossier;Lx_mm;Wy_mm;Ep_mm;x1,y1,d1|x2,y2,d2;S235JR;RAL 7016,56,62,66;CENTER`
+     3. **`create_extruded_bar`** (profilés de métallerie : `PLAT`, `TUBE_RECT`, `ROND`, `TUBE_ROND`, `CORNIERE` avec fonction système **`Extruded Bar.TopPrtFct`**, repère **`XY` section / `X` horizontal / `+Z` longitudinal**, paramètre système **`Length` = `L`**, alésages transversaux optionnels `zPos,offX,diam`, matériau `.TopMat` et revêtement `.TopCot`) :
+        `nom_doc;designation;reference;dossier;PLAT;50,10;988;98,0,17|528,0,17;S235JR;RAL 7016,56,62,66`
+     4. **`create_part_document`** / **`create_assembly_document`** : crée un `.TopPrt` ou `.TopAsm` avec ses propriétés PDM.
+     5. **`batch_add_inclusions`** : assemble en une seule transaction toutes les pièces d'un sous-assemblage soudé (`GC_Troncon_*`) ou de l'assemblage général, soit par coordonnées `(tx,ty,tz,rx,ry,rz,nomOcc)`, soit par vecteur directeur **`BETWEEN,x1,y1,z1,x2,y2,z2,ux,uy,uz,nomOcc`** (qui aligne automatiquement le `+Z` longitudinal du profilé `Extruded Bar` de `P1` vers `P2` et l'axe `X` de sa section selon `uX`).
+     6. **`update_where_used_and_save`** : reconstruit et sauvegarde en bottom-up (`Pièces .TopPrt -> Sous-Assemblages .TopAsm -> Assemblage Général .TopAsm`).
+     7. **`check_collisions`** : active `SetCollisionsManagement`, compte les `ShapeShapeCollisionEntity` B-Rep et restaure `ModelingStage`.
+   - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 208 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
 
 5. **COUPE-CIRCUIT (CIRCUIT-BREAKER) & 5 INTERDICTIONS ABSOLUES** :
    - **COUPE-CIRCUIT IMMÉDIAT SUR PANNE INFRASTRUCTURE / SERVEUR MCP** : Si `topsolid_compile` ou `topsolid_execute_script` renvoie une erreur système interne, **ARRÊT IMMÉDIAT** (interdiction de lire le code source du serveur MCP, de bricoler un exécutable ou d'ouvrir WinRM).

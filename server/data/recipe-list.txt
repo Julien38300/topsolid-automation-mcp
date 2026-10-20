@@ -1,200 +1,208 @@
-Total recipes: 199
-activate_bom_row|RW|Activates a BOM row by its index (0-based, among root-children). Param: value=row_index
-add_draft_to_bundle|RW|Adds a draft to the opened bundle (its pages become separate bundle pages). Param: value=draft_doc_name
-add_page_to_bundle|RW|Adds a new page to the opened drafting bundle. No value expected.
-ajouter_inclusion|RW|Adds an inclusion of a part document into the active assembly document. Param: value=part_document_name
-assembly_mass_report|R|Reads total mass, volume, surface and part count of an assembly
-attr_assign_layer|RW|Assigns an element to a layer. Param: value=element_name:layer_name
-attr_list_layers|R|Lists document layers
-attr_read_all|R|Reads color, transparency, layer and visibility of all elements
-attr_read_color|R|Reads element colors
-attr_read_face_colors|R|Reads individual face colors
-attr_read_transparency|R|Reads element transparency
-attr_replace_color|RW|Replaces a color with another on elements. Param: value=R1,G1,B1:R2,G2,B2 (e.g. 0,128,0:255,0,0 = green->red)
-attr_set_color|RW|Sets color. If 1 shape: direct. If multiple: asks selection. Param: value=R,G,B (e.g. 0,0,255)
-attr_set_color_all|RW|Sets color on ALL elements. Param: value=R,G,B
-attr_set_transparency|RW|Sets transparency. If 1 shape: direct. If multiple: asks. Param: value=0.0 to 1.0
-audit_assembly|R|Full assembly audit: parts, inclusions, mass
-audit_parameter_names|R|Audits parameter name syntax: detects convention inconsistencies and near-duplicates
-audit_part|R|Full part audit: properties, parameters, shapes, mass, volume
-batch_audit_driver_designations|R|Lists driver designations of all project families for inspection (typos, inconsistencies)
-batch_audit_parameter_names|R|Audits parameter name syntax across all project documents
-batch_check_family_drivers|R|Checks drivers of all families in the project
-batch_check_virtual|R|Checks the virtual property (IsVirtualDocument) on all project documents
-batch_clear_author|RW|Clears the Author field on all project documents
-batch_enable_virtual|RW|Enables virtual mode on ALL non-virtual project documents
-batch_export_step|RD|Exports ALL project parts to STEP in a folder. Param: value=folder_path
-batch_read_property|R|Reads a specific property across all project documents. Param: value=property_name
-batch_set_designation|RW|Sets Designation (Description) on ALL documents of the current project. Param: value=new_designation
-batch_set_manufacturer|RW|Sets Manufacturer on ALL documents of the current project. Param: value=new_manufacturer
-batch_set_reference|RW|Sets Reference (PartNumber) on ALL documents of the current project. Param: value=new_reference
-check_collisions|RW|Enables B-Rep collision detection on the active assembly, lists ShapeShapeCollisionEntity clashes, and restores ModelingStage. No value expected.
-check_family_drivers|R|Checks that family drivers have a designation. Lists those without.
-check_missing_materials|R|Lists project parts without assigned material
-check_part|R|Quality check: designation, reference, material filled?
-check_project|R|Full project quality check: parts without designation/reference
-clear_document_author|RW|Clears the Author field on the current document
-compare_document_entities|R|Compares entities (shapes, sketches, points, frames) between the current and another document. Param: value=other_doc_name
-compare_document_operations|R|Compares operations (feature tree) between the current and another document. Param: value=other_doc_name
-compare_parameters|R|Compares parameters of the active document with another. Param: value=other_document_name
-compare_revisions|R|Compares parameters of the current revision with the previous one
-copy_parameters_to|RW|Copies parameter values from the current document to another. Param: value=target_doc_name
-copy_pdm_properties_to|RW|Copies designation/reference/manufacturer from current to another document. Param: value=target_doc_name
-count_assembly_parts|R|Counts parts grouped by type with quantities
-count_bom_rows|R|Counts active BOM rows
-count_documents_by_type|R|Counts project documents grouped by type (.TopPrt, .TopAsm, .TopDft...)
-create_drilling|RW|Creates a drilling operation on a face at (X,Y,Z) with normal (NX,NY,NZ). Param: value=diam_mm:depth_mm:X_mm:Y_mm:Z_mm:NX:NY:NZ
-creer_esquisse_rectangle|RW|Creates a 2D rectangular sketch in the active document. Param: value=width:height (mm)
-creer_parametre_formule|RW|Creates a new formula-driven real parameter in the active document. Param: value=name:unit:formula (e.g. DiagBolt:Length:Longueur * 1.414). The formula uses TopSolid expression syntax (parameter names, operators, SI units). Supported units: Length, Mass, Angle, NoUnit.
-creer_parametre_reel|RW|Creates a new real parameter in the active document. Param: value=name:unit:SIvalue (e.g. Longueur:Length:0.05 for 50mm) or name::SIvalue for NoUnit. Supported units: Length, Mass, Angle, NoUnit.
-deactivate_bom_row|RW|Deactivates a BOM row by its index (0-based, among root-children). Param: value=row_index
-detect_assembly|R|Detects if the document is an assembly and lists parts
-detect_bom|R|Detects if the document is a BOM
-detect_drafting|R|Detects if the document is a drafting and provides info
-detect_family|R|Detects if the document is a family
-detect_unfolding|R|Detects if the document is an unfolding (sheet metal)
-document_type|R|Detects the type of the active document
-enable_virtual_document|RW|Enables virtual mode on the current document
-export_bom_csv|R|Exports the BOM as text (separated columns)
-export_dxf|RD|Exports to DXF. Param: value=path
-export_iges|RD|Exports to IGES. Param: value=path
-export_pdf|RD|Exports to PDF. Param: value=path
-export_step|RD|Exports to STEP. Param: value=path (e.g. C:\temp\part.stp)
-export_stl|RD|Exports to STL (3D printing). Param: value=path
-extruder_esquisse|RW|Extrudes the last 2D sketch of the active document into a 3D solid. Param: value=height_mm
-find_modified_documents|R|Lists unsaved (dirty) documents of the project
-fix_family_drivers|RW|Assigns a designation to family drivers that lack one (inferred from parameter name)
-get_coating_anisotropy_angle_factor|R|Get the anisotropy angle factor of the active coating
-get_coating_brinell_hardness_factor|R|Get the Brinell hardness factor of the active coating
-get_coating_bump_rotation|R|Get the bump texture rotation of the active coating (radians)
-get_coating_bump_scale|R|Get the bump texture scale factor of the active coating
-get_coating_glossiness_factor|R|Get the glossiness factor of the active coating
-get_coating_vickers_hardness_factor|R|Get the Vickers hardness factor of the active coating
-get_edge_ellipse_curve|R|Gets the ellipse (plane + radii, mm) of a selected elliptical edge
-get_edge_faces|R|Lists the faces bordering a selected edge (count + names)
-get_face_cone_length|R|Gets the length of a selected cone face (mm). Requires a cone face selection.
-get_face_cone_radius|R|Gets the base radius of a selected cone face (mm). Requires a cone face selection.
-get_face_cone_semi_angle|R|Gets the half-angle of a selected cone face (degrees). Requires a cone face selection.
-get_face_torus_major_radius|R|Gets the major radius of a selected torus face (mm). Requires a torus face selection.
-get_face_torus_minor_radius|R|Gets the minor radius of a selected torus face (mm). Requires a torus face selection.
-get_item_last_operation_name|R|Gets the name of the last operation that produced a selected face.
-get_material_anisotropy_angle_factor|R|Get the anisotropy angle factor of the active material. Reports (also) error when no material is set
-get_material_brinell_hardness_factor|R|Get the Brinell hardness factor of the active material (from its standards file). Reports (also) error when no material is set
-get_material_bump_rotation|R|Get the bump texture rotation of the active material (radians). Reports (also) error when no material is set
-get_material_bump_scale|R|Get the bump texture scale factor of the active material. Reports (also) error when no material is set
-get_material_glossiness_factor|R|Get the glossiness factor of the active material. Reports (also) error when no material is set
-get_material_vickers_hardness_factor|R|Get the Vickers hardness factor of the active material (from its standards file). Reports (also) error when no material is set
-get_operation_version|R|Gets the algorithm version of an operation. Param: value=operation_name (use list_operations to find it)
-get_page_count|R|Returns the number of pages of the opened drafting bundle.
-get_profiles_folder|R|Gets the profiles folder entity of the active document (name + id)
-include_draft_in_bundle|RW|Includes a draft (all pages on the same bundle page) in the opened bundle. Param: value=draft_doc_name
-include_draft_page_in_bundle_current_page|RW|Includes a specific draft page in the current bundle page with offset. Param: value=draft_doc_name;page;offset (e.g. draft;1;0)
-invoke_command|RW|Executes a TopSolid menu command by name. Param: value=command_name
-is_positioning_underconstrained|R|Tells if a positioning is underconstrained. Param: value=positioning_name (exact or substring)
-list_documents_without_designation|R|Lists project documents without designation (empty description)
-list_documents_without_reference|R|Lists project documents without reference (empty part number)
-list_drafting_views|R|Lists views of a drafting
-list_exporters|R|Lists all available exporters
-list_folder_documents|R|Lists documents of a specific project folder. Param: value=folder_name
-list_inclusions|R|Lists inclusions of an assembly
-list_positionings|R|Lists positioning operations of the active assembly with their constraint status
-list_project_documents|R|Lists ALL project documents with designation and reference
-list_sketches|R|Lists sketches of the document
-open_document_by_name|R|Searches and opens a document by name. Param: value=name
-open_drafting|R|Finds and opens the drafting associated with the current part/assembly via PDM back-references
-print_drafting|RD|Prints the current drafting (all pages, black & white, 300 DPI, printed to scale)
-read_3d_frames|R|Lists 3D frames of the document
-read_3d_points|R|Lists 3D points of the document
-read_bend_features|R|Lists bends of an unfolding (angles, radii, lengths)
-read_bom_columns|R|Reads BOM columns
-read_bom_contents|R|Reads the full BOM contents (rows and cells)
-read_bounding_box|R|Reads bounding box dimensions from system properties
-read_current_project|R|Returns the current project
-read_designation|R|Reads the designation of the active document
-read_drafting_format|R|Reads the format (size, margins) of a drafting
-read_drafting_scale|R|Reads global and per-view scale of a drafting
-read_family_codes|R|Reads family codes
-read_inertia_moments|R|Reads principal inertia moments from system properties
-read_main_projection|R|Reads the main projection of a drafting
-read_manufacturer|R|Reads the manufacturer of the active document
-read_mass_volume|R|Reads mass, volume, surface from document system properties
-read_material|R|Reads part material (mass and calculated density)
-read_material_density|R|Calculates density from document mass/volume
-read_name|R|Reads the name of the active document
-read_occurrences|R|Lists occurrences of an assembly with their definition
-read_operations|R|Lists operations (feature tree)
-read_parameters|R|Lists all parameters of the active document
-read_part_dimensions|R|Reads dimensions (Height, Width, Length, Box Size) from system properties
-read_pdm_properties|R|Reads all PDM properties (name, designation, reference, manufacturer)
-read_project_contents|R|Lists folders, subfolders and documents of the current project (full tree)
-read_real_parameter|R|Reads a real parameter by name. Param: value=name
-read_reference|R|Reads the reference (part number) of the active document
-read_revision_history|R|Lists all major/minor revisions of the current document
-read_shapes|R|Lists shapes of the document
-read_text_parameter|R|Reads a text parameter by name. Param: value=name
-read_unfolding_dimensions|R|Reads unfolding dimensions from system properties (sheet metal)
-read_user_property|R|Reads a text user property. Param: value=property_name
-read_where_used|R|Finds where-used references of the current document in the project
-rebuild_document|RW|Rebuilds the active document
-rename_occurrence|RW|Renames an occurrence. Param: value=old_name:new_name
-save_all_project|RW|Saves all documents of the current project
-save_document|RW|Saves the active document
-search_document|R|Searches for a document by name (CONTAINS). Param: value
-search_folder|R|Searches for a folder by name (CONTAINS). Param: value
-search_parts_by_material|R|Lists parts with their material (via mass > 0). Param: value=optional filter
-select_3d_point|R|Asks the user to click a 3D point and returns coordinates
-select_face|R|Asks the user to select a face and returns its info
-select_shape|R|Asks the user to select a shape and returns its info
-set_angular_scale|RW|Sets the angular scale factor of the material applied to the edited document. Param: value=<number>
-set_anisotropy_angle_factor|RW|Sets the anisotropy angle factor of the material applied to the edited document. Param: value=<number>
-set_brinell_hardness_factor|RW|Sets the Brinell hardness factor of the material applied to the edited document. Param: value=<number>
-set_bulk_modulus|RW|Sets the bulk modulus of the material applied to the edited document. Param: value=<number>
-set_bump_rotation|RW|Sets the bump texture rotation angle of the material applied to the edited document. Param: value=<number>
-set_bump_scale|RW|Sets the bump texture scale factor of the material applied to the edited document. Param: value=<number>
-set_bundle_page_dimensions|RW|Sets the dimensions of a bundle page. Param: value=page;width;height (mm, e.g. 1;420;297)
-set_bundle_page_format|RW|Sets the format of a bundle page. Param: value=page;format_name (e.g. 1;A3 landscape)
-set_bundle_page_format_name|RW|Sets the format name of a bundle page to 'A3'. Param: value=page_number (e.g. 1)
-set_coating|RW|Applies a coating (.TopCot) from PDM/libraries to the active part. Param: value=coating_name_filter
-set_coating_brinell_hardness_factor|RW|Sets the Brinell hardness factor of the active coating. Param: value=<number>
-set_coating_bump_rotation|RW|Sets the bump texture rotation angle of the active coating. Param: value=<number>
-set_coating_bump_scale|RW|Sets the bump texture scale factor of the active coating. Param: value=<number>
-set_coating_homogeneous_parameter_value|RW|Sets the homogeneous parameter value (bool) of the active coating. Param: value=empty(unset)/true/false
-set_coating_isotropic_parameter_value|RW|Sets the isotropic parameter value (bool) of the active coating. Param: value=empty(unset)/true/false
-set_coating_rockwell_factors|RW|Sets the Rockwell factors (A,B,C) of the active coating. Param: value=A,B,C (double or 'null')
-set_coating_vickers_hardness_factor|RW|Sets the Vickers hardness factor of the active coating. Param: value=<number>
-set_current_bundle_page|RW|Sets the current page of the opened drafting bundle. Param: value=page_number (e.g. 1)
-set_cutting_force|RW|Sets the cutting force of the material applied to the edited document. Param: value=<number>
-set_cutting_force_increment|RW|Sets the cutting force increment of the material applied to the edited document. Param: value=<number>
-set_designation|RW|Sets the designation. Param: value
-set_drafting_format|RW|Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')
-set_drafting_scale|RW|Sets the global scale of a drafting. Param: value=denominator (e.g. '10' for 1:10)
-set_elastic_limit|RW|Sets the elastic limit of the material applied to the edited document. Param: value=<number>
-set_elongation_at_break|RW|Sets the elongation at break of the material applied to the edited document. Param: value=<number>
-set_glossiness_factor|RW|Sets the glossiness factor of the material applied to the edited document. Param: value=<number>
-set_homogeneous_parameter_value|RW|Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false
-set_isotropic_parameter_value|RW|Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false
-set_manufacturer|RW|Sets the manufacturer. Param: value
-set_material|RW|Assigns a material (.TopMat) from PDM/libraries to the active part. Param: value=material_name_filter
-set_melting_temperature|RW|Sets the melting temperature of the material applied to the edited document. Param: value=<number>
-set_name|RW|Sets the name. Param: value
-set_plastic_strain_ratio|RW|Sets the plastic strain ratio of the material applied to the edited document. Param: value=<number>
-set_poisson_ratio|RW|Sets the Poisson ratio of the material applied to the edited document. Param: value=<number>
-set_projection_quality|RW|Sets the drafting projection quality. Param: value='exact' (precise) or 'fast' (quick)
-set_real_parameter|RW|Sets a real parameter. Param: value=name:SIvalue (e.g. Length:0.15)
-set_reference|RW|Sets the reference. Param: value
-set_rockwell_factors|RW|Sets the Rockwell factors (A,B,C) of the material applied to the edited document. Param: value=A,B,C (double or 'null')
-set_section_reduction_at_break|RW|Sets the section reduction at break of the material applied to the edited document. Param: value=<number>
-set_shear_modulus|RW|Sets the shear modulus of the material applied to the edited document. Param: value=<number>
-set_shrinkage_factor|RW|Sets the shrinkage factor of the material applied to the edited document. Param: value=<number>
-set_specific_heat_capacity|RW|Sets the specific heat capacity of the material applied to the edited document. Param: value=<number>
-set_specular_color|RW|Sets the specular color (R,G,B) of the material applied to the edited document. Param: value=R,G,B (0-255)
-set_text_parameter|RW|Sets a text parameter. Param: value=name:value
-set_thermal_conductivity|RW|Sets the thermal conductivity of the material applied to the edited document. Param: value=<number>
-set_thermal_expansion_coefficient|RW|Sets the thermal expansion coefficient of the material applied to the edited document. Param: value=<number>
-set_ultimate_stress|RW|Sets the ultimate stress of the material applied to the edited document. Param: value=<number>
-set_user_property|RW|Sets a text user property. Param: value=property_name:value
-set_vertical_angular_scale|RW|Sets the vertical angular scale factor of the material applied to the edited document. Param: value=<number>
-set_vickers_hardness_factor|RW|Sets the Vickers hardness factor of the material applied to the edited document. Param: value=<number>
-set_young_modulus|RW|Sets the Young modulus of the material applied to the edited document. Param: value=<number>
-smooth_sketch_profiles|RW|Smooths the profiles of the last 2D sketch (G1 continuity). WARNING: modifies the sketch. Param: value=empty (defaults) or tolerance_mm
-summarize_project|R|Project summary: document count by type, folders, size
+read_designation
+read_name
+read_reference
+read_manufacturer
+read_pdm_properties
+set_designation
+set_name
+set_reference
+set_manufacturer
+read_current_project
+read_project_contents
+search_document
+search_folder
+document_type
+save_document
+rebuild_document
+read_parameters
+read_real_parameter
+read_text_parameter
+set_real_parameter
+set_text_parameter
+creer_parametre_reel
+creer_parametre_formule
+creer_esquisse_rectangle
+extruder_esquisse
+ajouter_inclusion
+read_3d_points
+read_3d_frames
+list_sketches
+read_shapes
+read_operations
+detect_assembly
+list_inclusions
+detect_family
+read_family_codes
+open_drafting
+detect_drafting
+list_drafting_views
+detect_bom
+read_bom_columns
+read_drafting_scale
+read_drafting_format
+read_main_projection
+read_bom_contents
+count_bom_rows
+detect_unfolding
+read_bend_features
+read_unfolding_dimensions
+set_drafting_scale
+set_drafting_format
+set_projection_quality
+print_drafting
+activate_bom_row
+deactivate_bom_row
+list_exporters
+export_step
+export_dxf
+export_pdf
+read_user_property
+audit_part
+audit_assembly
+check_part
+read_mass_volume
+read_material_density
+invoke_command
+read_occurrences
+rename_occurrence
+set_user_property
+read_bounding_box
+read_part_dimensions
+read_inertia_moments
+list_project_documents
+check_project
+compare_parameters
+compare_document_operations
+compare_document_entities
+copy_parameters_to
+copy_pdm_properties_to
+batch_export_step
+batch_read_property
+find_modified_documents
+batch_clear_author
+batch_set_designation
+batch_set_reference
+batch_set_manufacturer
+clear_document_author
+batch_check_virtual
+batch_enable_virtual
+enable_virtual_document
+check_family_drivers
+fix_family_drivers
+batch_check_family_drivers
+audit_parameter_names
+batch_audit_parameter_names
+batch_audit_driver_designations
+read_revision_history
+compare_revisions
+export_bom_csv
+check_missing_materials
+assembly_mass_report
+read_material
+export_stl
+export_iges
+count_assembly_parts
+save_all_project
+open_document_by_name
+list_folder_documents
+summarize_project
+list_documents_without_reference
+list_documents_without_designation
+count_documents_by_type
+search_parts_by_material
+read_where_used
+attr_read_all
+attr_set_color
+attr_set_color_all
+attr_read_color
+attr_set_transparency
+attr_read_transparency
+attr_list_layers
+attr_assign_layer
+attr_replace_color
+select_shape
+select_face
+get_face_cone_length
+get_face_cone_radius
+get_face_cone_semi_angle
+get_face_torus_major_radius
+get_face_torus_minor_radius
+get_item_last_operation_name
+select_3d_point
+list_positionings
+is_positioning_underconstrained
+get_material_brinell_hardness_factor
+get_material_vickers_hardness_factor
+get_material_glossiness_factor
+get_material_bump_scale
+get_material_bump_rotation
+get_material_anisotropy_angle_factor
+get_coating_brinell_hardness_factor
+get_coating_vickers_hardness_factor
+get_coating_glossiness_factor
+get_coating_bump_scale
+get_coating_bump_rotation
+get_coating_anisotropy_angle_factor
+get_profiles_folder
+get_operation_version
+get_edge_faces
+get_edge_ellipse_curve
+smooth_sketch_profiles
+attr_read_face_colors
+set_angular_scale
+set_anisotropy_angle_factor
+set_brinell_hardness_factor
+set_bulk_modulus
+set_bump_rotation
+set_bump_scale
+set_cutting_force
+set_cutting_force_increment
+set_elastic_limit
+set_elongation_at_break
+set_glossiness_factor
+set_melting_temperature
+set_plastic_strain_ratio
+set_poisson_ratio
+set_section_reduction_at_break
+set_shear_modulus
+set_shrinkage_factor
+set_specific_heat_capacity
+set_thermal_conductivity
+set_thermal_expansion_coefficient
+set_ultimate_stress
+set_vertical_angular_scale
+set_vickers_hardness_factor
+set_young_modulus
+set_homogeneous_parameter_value
+set_isotropic_parameter_value
+set_rockwell_factors
+set_specular_color
+set_coating_brinell_hardness_factor
+set_coating_bump_rotation
+set_coating_bump_scale
+set_coating_vickers_hardness_factor
+set_coating_homogeneous_parameter_value
+set_coating_isotropic_parameter_value
+set_coating_rockwell_factors
+add_page_to_bundle
+set_current_bundle_page
+set_bundle_page_format_name
+set_bundle_page_format
+set_bundle_page_dimensions
+include_draft_in_bundle
+include_draft_page_in_bundle_current_page
+add_draft_to_bundle
+get_page_count
+create_project_tree
+create_part_document
+create_assembly_document
+set_material
+set_coating
+provide_extruded_bar_function
+create_extruded_bar
+create_sheet_metal_plate
+create_drilling
+add_inclusion_positioned
+batch_add_inclusions
+check_collisions
+update_where_used_and_save

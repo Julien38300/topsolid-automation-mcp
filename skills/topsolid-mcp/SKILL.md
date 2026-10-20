@@ -1,17 +1,24 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.5.0
+version: 5.6.0
 metadata:
   hermes:
-    tags: [topsolid, cao, cad, pdm, mcp, automation]
-    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "transparence", "calque", "attribut", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges", "famille", "driver", "selectionner", "face", "shape", "usinage", "cam", "cone", "tore", "bi-arc", "tolerance geometrique"]
+    tags: [topsolid, cao, cad, pdm, mcp, automation, extruded-bar, sheet-metal]
+    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "transparence", "calque", "attribut", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges", "famille", "driver", "selectionner", "face", "shape", "usinage", "cam", "cone", "tore", "bi-arc", "tolerance geometrique", "profile", "profilé", "extruded bar", "tole", "tôle", "platine"]
 ---
 
 # TopSolid MCP — Skill de pilotage
 
 ## CHANGELOG
 
+- **v5.6.0 (2026-10-20)** — Catalogue passe a **208 recettes** : ajout de la suite complete de **Recettes de Creation CAO, Metallerie (`Extruded Bar` & Toles/Platines), Assemblage Positionne (`BETWEEN`) et Cas d'Emploi (`Where-Used`)** permettant de modeliser un ouvrage complet **100 % via `topsolid_run_recipe`** sans script C# custom :
+  - `create_project_tree` (creation projet PDM + arborescence de dossiers),
+  - `create_part_document` (`.TopPrt`) et `create_assembly_document` (`.TopAsm`),
+  - `create_extruded_bar` et `provide_extruded_bar_function` (profilé metallerie avec fonction système `Extruded Bar.TopPrtFct`, repère `XY` section / `X` horizontal / `+Z` longitudinal, paramètre système `Length` = `L`, perçages transversants optionnels, matériau `.TopMat` et revêtement `.TopCot`),
+  - `create_sheet_metal_plate` (tôle / platine percée dans la même esquisse 2D, paramètre `Epaisseur`, boîte englobante minimale, matériau et revêtement),
+  - `add_inclusion_positioned` et `batch_add_inclusions` (positionnement par translation/rotation Euler ou mode directeur `BETWEEN,x1,y1,z1,x2,y2,z2,ux,uy,uz`),
+  - `update_where_used_and_save` (reconstruction et sauvegarde bottom-up `Pièces -> Sous-Assemblages -> Assemblage Général`).
 - **v5.5.0 (2026-10-20)** — Ajout de la **Recherche Generique Ultra-Rapide de Materiaux PDM (`< 500 ms`)** (filtrage des bibliotheques materiaux `CEN`/`Metal`/`Mat`/`Bois`/`Wood` + verification stricte `ext == ".TopMat"` pour eviter les timeouts sur les bibliotheques de visserie et les exceptions `.TopLam`), des **4 Regles Compile-First C#** (`CreateSketchIn3D` -> `ElementId`, pas d'operateur `!=`/`==` sur `PdmObjectId`/`DocumentId`, `DocumentId` pour `SetMaterial`/`CreateInclusion`), du **Budget CoT (zero tableau de coordonnees dans `reasoning`)** et du client CLI permanent `N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py`.
 - **v5.4.0 (2026-10-20)** — Ajout du **Coupe-Circuit (Circuit Breaker) MCP** et de la discipline stricte des tokens suite a l'analyse post-mortem des sessions Codex/Noemid (`11,1M tokens` / `20 min`) : interdiction absolue d'auto-depanner le serveur MCP (WinRM, lecture de `ScriptExecutor.cs`, compilation de serveur bis) ou de crawler le Web / fouiller le depot pendant une session CAO + support des `return` dans les lambdas C# (`Func<...>`) dans `ScriptExecutor.cs` (`v1.8.8`) + invocation directe `csc.exe` (`CreateNoWindow = true`) eliminant le bug `.dll introuvable` en mode tache planifiee headless.
 - **v5.3.0 (2026-10-19)** — Catalogue passe a **199 recettes** (+4 nouvelles : `create_drilling`, `set_material`, `set_coating`, `check_collisions`) + correctifs serveur MCP (`DetectModification` regex multi-variables dans `ScriptExecutor.cs`, auto-detection `7.21` dans `TopSolidPathResolver.cs`, synchronisation de toutes les representations `GetRepresentations` dans `extruder_esquisse`, pas besoin de `CreateProfile` dans les esquisses) + documentation des **Etapes TopSolid** (`GetModelingStage` / `SetWorkingStage` / `ResetInsertionOperation`), de la detection de collisions B-Rep (`SetCollisionsManagement` + `ShapeShapeCollisionEntity`) et du paradigme **One-Shot C# Builder** dans `references/concepts-core.md` et `references/gabarits-recipes.md`.
@@ -69,13 +76,13 @@ metadata:
    - `Parts.SetMaterial` et `Assemblies.CreateInclusion` prennent des **`DocumentId`** (jamais `PdmObjectId`).
    - Depuis `v1.8.8`, les lambdas `Func<...>` avec `return` sont supportees dans `topsolid_compile` / `topsolid_execute_script`.
 
-### C. Regles d'appel des recettes (`topsolid_run_recipe`) vs One-Shot C# Builder
-- Pour les **actions unitaires** (lecture, propriete PDM, export, modification d'un parametre) : appeler `topsolid__topsolid_run_recipe` avec le bon nom.
-- Pour la **creation complete d'un ouvrage multi-pieces et assemblage de A a Z** : utiliser le patron **One-Shot C# Builder** (`topsolid_compile` puis `topsolid_execute_script` delegue au sous-agent `flash`, voir `topsolid-mcp-modeling`).
+### C. Regles d'appel des recettes (`topsolid_run_recipe`) — Priorite Absolue aux Recettes MCP
+- **Priorite n°1 (`topsolid_run_recipe`)** : Utiliser systematiquement `topsolid_run_recipe` aussi bien pour les actions unitaires que pour la **creation complete de projets, pieces de metallerie (`create_extruded_bar`, `create_sheet_metal_plate`), sous-assemblages et assemblages (`create_part_document`, `create_assembly_document`, `batch_add_inclusions`), mise a jour Where-Used (`update_where_used_and_save`) et verification des collisions B-Rep (`check_collisions`)**.
+- Ne recourir a `topsolid_execute_script` / `topsolid_modify_script` qu'en dernier ressort pour des geometries complexes hors catalogue de recettes.
 
 **Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type` (note : `check_collisions` active l'analyse de collisions dans une transaction mais ne modifie pas la geometrie). Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
 
-**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `creer_*`, `create_drilling`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`, `set_drafting_*`, `set_projection_quality`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque. Tu annonces la recette et la valeur exacte, puis tu ATTENDS la confirmation de l'utilisateur avant d'appeler. Une confirmation vaut pour un appel, pas pour les suivants.
+**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `create_*`, `provide_*`, `add_*`, `update_*`, `creer_*`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`, `set_drafting_*`, `set_projection_quality`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque.
 
 **Regle de secours (celle qui tranche)** : si une recette ne commence PAS par un des prefixes de LECTURE ci-dessus, tu la traites comme une ECRITURE et tu demandes confirmation. Le doute va toujours vers la confirmation.
 
@@ -128,6 +135,22 @@ User: "non, laisse tomber"
 | "modifie le parametre" sans valeur | "Quelle valeur ?" |
 
 ## RECETTES DISPONIBLES
+
+### Creation CAO, Metallerie (Extruded Bar & Toles) et Assemblage Positionne
+| Demande | recipe | value |
+|---|---|---|
+| creer projet PDM + dossiers | create_project_tree | `nom_projet[;dossier1,dossier2,...]` |
+| creer document Piece (`.TopPrt`) | create_part_document | `nom_doc[;designation[;reference[;dossier[;projet]]]]` |
+| creer document Assemblage (`.TopAsm`) | create_assembly_document | `nom_doc[;designation[;reference[;dossier[;projet]]]]` |
+| creer un profilé (`Extruded Bar`) complet | create_extruded_bar | `nom;desig;ref;dossier;PLAT\|TUBE_RECT\|ROND\|TUBE_ROND\|CORNIERE;dims_mm;L_mm[;trous_z_offX_diam[;mat[;cot_ou_rgb]]]` |
+| fournir la fonction `Extruded Bar` + repere XY/X/Z | provide_extruded_bar_function | `[nom_doc;]largeur_x_mm;hauteur_y_mm;longueur_z_mm` |
+| creer une tole / platine percee | create_sheet_metal_plate | `nom;desig;ref;dossier;Lx_mm;Wy_mm;Ep_mm[;trous_x_y_diam[;mat[;cot_ou_rgb[;CENTER\|ORIGIN]]]]` |
+| affecter materiau (`.TopMat`) + Masse/CdG | set_material | `[nom_doc;]mot_cle_mat` (ex: `S235JR` ou `GC_Montant;S235JR`) |
+| affecter revetement (`.TopCot`) + RGB | set_coating | `[nom_doc;]mot_cle_cot[;R,G,B]` (ex: `RAL 7016;56,62,66`) |
+| inclure et positionner 1 composant | add_inclusion_positioned | `[asm\|]enfant;tx,ty,tz[,rx,ry,rz]` ou `[asm\|]enfant;BETWEEN,x1,y1,z1,x2,y2,z2[,ux,uy,uz]` |
+| inclure et positionner N composants en lot | batch_add_inclusions | `[asm\|][CLEAR\|]item1;item2;...` (avec `tx,ty,tz` ou `BETWEEN,x1,y1,z1,x2,y2,z2,ux,uy,uz,nomOcc`) |
+| mettre a jour Where-Used et sauvegarder | update_where_used_and_save | `[nom_projet]` (reconstruit Pieces -> Sous-Assemblages -> Assemblage General) |
+| verifier collisions B-Rep 3D | check_collisions | `[nom_asm]` |
 
 ### Proprietes PDM
 | Demande | recipe | value |

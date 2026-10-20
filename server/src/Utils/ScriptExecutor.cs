@@ -90,9 +90,12 @@ namespace TopSolidMcpServer.Utils
                 string blocked = CheckForBlockedApis(preprocessed);
                 if (blocked != null) return blocked;
 
-                bool isModification = autoDetect
+                bool hasManualTransaction = Regex.IsMatch(
+                    StripLiteralsAndComments(preprocessed),
+                    @"\bApplication\s*\.\s*StartModification\s*\(");
+                bool isModification = !hasManualTransaction && (autoDetect
                     ? (forceModification || DetectModification(preprocessed))
-                    : forceModification;
+                    : forceModification);
 
                 string deadlockGuard = CheckForDeadlockingUpdate(preprocessed, isModification);
                 if (deadlockGuard != null) return deadlockGuard;
@@ -174,9 +177,12 @@ namespace TopSolidMcpServer.Utils
                 string blocked = CheckForBlockedApis(preprocessed);
                 if (blocked != null) return blocked;
 
-                bool isModification = autoDetect
+                bool hasManualTransaction = Regex.IsMatch(
+                    StripLiteralsAndComments(preprocessed),
+                    @"\bApplication\s*\.\s*StartModification\s*\(");
+                bool isModification = !hasManualTransaction && (autoDetect
                     ? (forceModification || DetectModification(preprocessed))
-                    : forceModification;
+                    : forceModification);
 
                 string deadlockGuard = CheckForDeadlockingUpdate(preprocessed, isModification);
                 if (deadlockGuard != null) return deadlockGuard;
