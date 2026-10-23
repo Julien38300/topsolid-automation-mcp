@@ -2949,6 +2949,10 @@ return "OK: Impression lancee (" + pages + " pages, 300dpi).";
 
 ---
 
+## Create a revolved part through the MCP recipe
+
+Use `topsolid_run_recipe` with `create_revolved_part` and a value shaped like `doc_name;profile_points;angle_deg[;designation[;reference]]` to create a new part. Use `revolve_active_part` with `profile_points;angle_deg` to add the same feature to an active empty part. For an existing simple turned part, `replace_revolved_profile` accepts a named sketch and a closed sequence of line/arc segments, and refuses additional solid features. Profile coordinates are in millimeters.
+
 ## TYPES DE PARAMETRES (ParameterType enum)
 
 | Type | Getter | Setter | Creator |
