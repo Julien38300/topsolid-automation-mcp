@@ -53,12 +53,15 @@ namespace TopSolidMcpServer.Protocol
         private string Url => "http://+:" + _port + "/mcp/";
 
         /// <summary>
-        /// Starts the HTTP listener on a background thread. Binds "+" when possible
-        /// (Tailscale/LAN access), falls back to localhost when the URL ACL denies it.
+        /// Starts the HTTP listener on a background thread. Binds the ROOT of the
+        /// port ("http://+:PORT/") so both /mcp and /status are reachable — a /mcp/
+        /// -only prefix makes HttpListener answer 400 to every other path, which
+        /// stranded the /status health endpoint (found by the v1.8.10 release
+        /// probe). Falls back to localhost when the URL ACL denies "+".
         /// </summary>
         public void Start()
         {
-            var prefixes = new[] { "http://+:" + _port + "/mcp/", "http://localhost:" + _port + "/mcp/" };
+            var prefixes = new[] { "http://+:" + _port + "/", "http://localhost:" + _port + "/" };
             foreach (var prefix in prefixes)
             {
                 try
@@ -161,7 +164,7 @@ namespace TopSolidMcpServer.Protocol
                 }
 
                 // Health endpoint, no auth: lets monitoring probe without a key.
-                if (ctx.Request.Url.AbsolutePath.TrimEnd('/') == "/status")
+                if (ctx.Request.HttpMethod == "GET" && ctx.Request.Url.AbsolutePath.TrimEnd('/') == "/status")
                 {
                     WriteJson(ctx, 200, JsonConvert.SerializeObject(new Dictionary<string, object>
                     {
@@ -170,6 +173,14 @@ namespace TopSolidMcpServer.Protocol
                         ["http"] = "up",
                         ["uptime_seconds"] = (int)(DateTime.UtcNow - _started).TotalSeconds
                     }));
+                    return;
+                }
+
+                // Root prefix listens to everything on the port: only /mcp is
+                // the MCP endpoint, anything else is a plain 404.
+                if (ctx.Request.Url.AbsolutePath.TrimEnd('/') != "/mcp")
+                {
+                    WriteJson(ctx, 404, "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32000,\"message\":\"Not found: the MCP endpoint is /mcp (health check: GET /status)\"}}");
                     return;
                 }
 
