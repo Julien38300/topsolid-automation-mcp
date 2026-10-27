@@ -34,6 +34,12 @@ Consequence directe : **un endpoint accessible depuis Internet sans authentifica
 
 Le serveur natif parle **Streamable HTTP** (spec MCP 2025-03-26) directement sur `/mcp` — pas de translate, pas de dépendance externe. Le process sert aussi stdio en parallèle (client unique configuré avec `command`), sans conflit.
 
+::: tip v1.8.10 — SSE legacy supporté + port configurable depuis le tray
+- **SSE legacy (MCP 2024-11-05)** : `GET /mcp` ouvre un flux `text/event-stream`, le serveur y annonce l'endpoint messages (`event: endpoint`), et les réponses aux `POST /mcp?sessionId=<sid>` sont poussées dans le flux (POST → `202 Accepted`). Les gateways de petits modèles locaux (OpenWebUI, anciens SDK) qui n'implémentent que le SSE se connectent désormais nativement. Même auth `X-API-Key` sur le GET et le POST.
+- **Port MCP** : modifiable dans le tray (**Paramètres > Instance TopSolid > Gérer… > Port MCP > Appliquer**) — l'endpoint est redémarré à chaud, sans relancer le serveur. Précédence inchangée : `TOPSOLID_MCP_HTTP_PORT` > réglage Gérer… > 8080.
+- **Diagnostics** : chaque requête HTTP reçoit une ligne de trace dans `server.log` (`[MCP-HTTP] <METHOD> <path> from <ip> UA=<…> key=<yes/no> accept=<…>`), les 400 loggent le body reçu — la cause d'un échec de connexion client se lit directement dans le log. Les erreurs 400/404 renvoient un message qui rappelle les deux transports supportés et l'endpoint de test `GET /status` (sans auth).
+:::
+
 ::: tip v1.8.0+ — serveur HTTP natif et clé API (recommandé)
 Depuis la **v1.8.0**, le serveur embarque son propre endpoint HTTP natif (`/mcp` sur le port 8080, redéfinissable par `TOPSOLID_MCP_HTTP_PORT`) **avec authentification `X-API-Key`** : plus besoin du proxy Node pour un usage local ou tunnelisé.
 

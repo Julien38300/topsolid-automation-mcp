@@ -19,7 +19,6 @@ namespace TopSolidMcpServer.Utils
         // ---- API key (v1.8.0) ----
         private ToolStripMenuItem _apiKeyItem;
         private volatile string _apiKey;             // effective key, hot-reloadable
-        private Func<string> _apiKeyProvider;       // how the HTTP server reads the key live
 
         // ---- Auto-reconnect (v1.8.0) ----
         private System.Windows.Forms.Timer _reconnectTimer;

@@ -42,6 +42,60 @@ namespace TopSolidMcpServer.Tests
         }
 
         [Test]
+        public void SaveHttpPort_ThenLoad_RoundTrips()
+        {
+            // v1.8.10: the "Manage" dialog MCP HTTP port persists in settings.json
+            // and comes back on Load — the Program.cs resolution (env > settings > 8080)
+            // depends on it.
+            TraySettings.SaveHttpPort(8123);
+            Assert.AreEqual(8123, TraySettings.HttpPort);
+            TraySettings.HttpPort = 0;
+            TraySettings.Load();
+            Assert.AreEqual(8123, TraySettings.HttpPort, "http_port must survive a save/load cycle");
+        }
+
+        [Test]
+        public void SaveHttpPort_ClampsOutOfRangeValues()
+        {
+            TraySettings.SaveHttpPort(-5);
+            Assert.AreEqual(0, TraySettings.HttpPort, "negative port clamps to 0 (default)");
+            TraySettings.SaveHttpPort(70000);
+            Assert.AreEqual(65535, TraySettings.HttpPort, "oversized port clamps to 65535");
+        }
+
+        [Test]
+        public void SaveDeclaredInstances_PreservesListOrder()
+        {
+            // v1.8.10: the "Manage" dialog reorder must survive persistence — the
+            // JSON array order IS the menu order.
+            var list = new List<DeclaredTopSolidInstance>
+            {
+                new DeclaredTopSolidInstance("Zulu", 8099),
+                new DeclaredTopSolidInstance("Alpha", 8091),
+                new DeclaredTopSolidInstance("Mike", 8095) { IsDefault = true }
+            };
+            TraySettings.SaveDeclaredInstances(list);
+            TraySettings.DeclaredInstances.Clear();
+            TraySettings.Load();
+            Assert.AreEqual(3, TraySettings.DeclaredInstances.Count);
+            Assert.AreEqual("Zulu", TraySettings.DeclaredInstances[0].Name);
+            Assert.AreEqual("Alpha", TraySettings.DeclaredInstances[1].Name);
+            Assert.AreEqual("Mike", TraySettings.DeclaredInstances[2].Name);
+            Assert.IsTrue(TraySettings.DeclaredInstances[2].IsDefault);
+        }
+
+        [Test]
+        public void Save_ReadOnlyToggledFromManageDialog_Persists()
+        {
+            // v1.8.10: read-only moved from the tray menu to the "Manage" dialog
+            // checkbox — TraySettings.Save(port, readOnly) must keep persisting it.
+            TraySettings.Save(8090, true);
+            TraySettings.ReadOnly = false;
+            TraySettings.Load();
+            Assert.IsTrue(TraySettings.ReadOnly, "read_only must survive a save/load cycle");
+        }
+
+        [Test]
         public void Load_OldSettingsFile_PortFieldStillRead()
         {
             // A v1.8.2-era settings.json: only "port" + "read_only".

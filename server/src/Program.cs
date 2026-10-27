@@ -295,11 +295,18 @@ namespace TopSolidMcpServer
 
                 // ── v1.8.0: HTTP port for the native endpoint (default 8080, the old
                 // bridge port, so existing clients keep working unchanged). ──
+                // v1.8.10: settings.json (tray "Manage" dialog) fills what the env
+                // leaves unset — CLI/env keep winning, same rule as the TopSolid port.
                 int httpPort = 8080;
                 string envHttpPort = Environment.GetEnvironmentVariable("TOPSOLID_MCP_HTTP_PORT");
                 if (envHttpPort != null && int.TryParse(envHttpPort, out int parsedHttpPort))
                 {
                     httpPort = parsedHttpPort;
+                }
+                else if (TraySettings.HttpPort > 0)
+                {
+                    httpPort = TraySettings.HttpPort;
+                    Console.Error.WriteLine("[MCP-INFO] HTTP port " + httpPort + " from settings.json (Manage dialog).");
                 }
 
                 // ── Graph: lazy-loaded on first tool call (heavy) ──
@@ -511,6 +518,58 @@ namespace TopSolidMcpServer
                                 ? "[MCP-INFO] Retargeted to port " + retargetPort + "."
                                 : "[MCP-INFO] Retarget to port " + retargetPort + " failed.");
                             return ok;
+                        });
+
+                        // v1.8.10: "Manage" dialog MCP port — hot-restart the native
+                        // HTTP endpoint (stop, rebind, same live key provider). The
+                        // httpServer local is captured by this lambda, so the
+                        // keepalive check below sees the restarted instance too.
+                        startedTray.SetHttpPort(httpPort);
+                        startedTray.SetHttpRestartAction(newPort =>
+                        {
+                            try
+                            {
+                                if (httpServer != null)
+                                {
+                                    try { httpServer.Stop(); }
+                                    catch (Exception stopEx)
+                                    {
+                                        Console.Error.WriteLine("[MCP-WARN] Old HTTP endpoint stop failed: " + stopEx.Message);
+                                    }
+                                }
+
+                                var restarted = new McpHttpServer(router, newPort, () =>
+                                {
+                                    var t = tray;
+                                    if (t != null) return t.ApiKey;
+                                    return apiKey;
+                                });
+                                restarted.Start();
+                                httpPort = newPort;
+                                httpServer = restarted;
+                                Console.Error.WriteLine("[MCP-INFO] Native HTTP MCP endpoint restarted on port " + newPort + ".");
+                                return true;
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.Error.WriteLine("[MCP-ERROR] HTTP restart on port " + newPort + " failed: " + ex.Message);
+                                // Rollback: try to rebind the previous port so
+                                // existing clients are not left stranded.
+                                try
+                                {
+                                    var rollback = new McpHttpServer(router, httpPort, () =>
+                                    {
+                                        var t = tray;
+                                        if (t != null) return t.ApiKey;
+                                        return apiKey;
+                                    });
+                                    rollback.Start();
+                                    httpServer = rollback;
+                                    Console.Error.WriteLine("[MCP-INFO] HTTP endpoint rolled back on port " + httpPort + ".");
+                                }
+                                catch { httpServer = null; }
+                                return false;
+                            }
                         });
                     }
                     catch (Exception ex)

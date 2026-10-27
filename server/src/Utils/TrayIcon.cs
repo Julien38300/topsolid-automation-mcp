@@ -38,8 +38,6 @@ namespace TopSolidMcpServer.Utils
         private Thread _thread;
         private readonly Action _onShutdownRequested;
         private ToolStripMenuItem _statusItem;
-        private ToolStripMenuItem _portItem;
-        private ToolStripMenuItem _readOnlyItem;
         private ToolStripMenuItem _reconnectItem;
         private ToolStripMenuItem _updateAvailableItem;   // "Télécharger la mise à jour…" when an update exists
         private Action _onReconnectRequested;
@@ -97,22 +95,12 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>
-        /// Reflects the read-only startup mode in the Settings submenu. Called once at startup.
+        /// v1.8.10: keeps the effective read-only mode for the "Manage" dialog
+        /// (the menu item moved there). Called once at startup by Program.
         /// </summary>
         public void SetReadOnly(bool readOnly)
         {
             _readOnly = readOnly;
-            string text = readOnly
-                ? L("Mode lecture seule : oui", "Read-only mode: yes")
-                : L("Mode lecture seule : non", "Read-only mode: no");
-            var context = _uiContext;
-            var item = _readOnlyItem;
-            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
-            {
-                context.Post(_ => { if (item != null) item.Text = text; }, null);
-                return;
-            }
-            if (item != null) item.Text = text;
         }
 
         /// <summary>
@@ -159,12 +147,6 @@ namespace TopSolidMcpServer.Utils
             {
                 string text = BuildStatusText(state);
                 if (_statusItem != null) _statusItem.Text = text;
-                if (_portItem != null)
-                {
-                    _portItem.Text = _port > 0
-                        ? string.Format(L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), _port)
-                        : L("Port TopSolid : par défaut (cliquer pour changer)", "TopSolid port: default (click to change)");
-                }
 
                 if (_notifyIcon != null)
                 {
@@ -273,80 +255,10 @@ namespace TopSolidMcpServer.Utils
             // ── Settings zone ──
             var settingsMenu = new ToolStripMenuItem(L("Paramètres", "Settings"));
 
-            // Port: click to change. Persisted in settings.json and applied immediately.
-            _portItem = new ToolStripMenuItem(_port > 0
-                ? string.Format(L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), _port)
-                : L("Port TopSolid : par défaut (cliquer pour changer)", "TopSolid port: default (click to change)"));
-            _portItem.Click += (s, e) =>
-            {
-                int currentPort = _port > 0 ? _port : 8090;
-                string input = PromptInput(
-                    L("Port TopSolid", "TopSolid port"),
-                    L("Port TCP de TopSolid (8090 par défaut) :\nAppliqué immédiatement.",
-                      "TopSolid TCP port (8090 default):\nApplied immediately."),
-                    currentPort.ToString(CultureInfo.InvariantCulture));
-                if (string.IsNullOrWhiteSpace(input)) return;
-                int newPort;
-                if (!int.TryParse(input.Trim(), out newPort) || newPort < 1 || newPort > 65535)
-                {
-                    ShowBalloon(L("Paramètres", "Settings"),
-                        L("Port invalide (1-65535 attendu), valeur conservée.", "Invalid port (1-65535 expected), value kept."),
-                        ToolTipIcon.Warning, 3000);
-                    return;
-                }
-                int stored = newPort == 8090 ? 0 : newPort;   // 8090 = default, do not store
-                TraySettings.Save(stored, _readOnly);
-                _port = newPort;
-                _portItem.Text = string.Format(
-                    L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), newPort);
-
-                var retarget = _retarget;
-                if (retarget != null)
-                {
-                    PostState(TrayState.Connecting);
-                    ThreadPool.QueueUserWorkItem(_ =>
-                    {
-                        bool ok = false;
-                        try { ok = retarget(newPort); }
-                        catch { ok = false; }
-                        finally
-                        {
-                            PostState(ok ? TrayState.Connected : TrayState.Disconnected);
-                            ShowBalloonSafe("TopSolid MCP",
-                                ok
-                                    ? string.Format(L("Connecté à TopSolid sur le port {0}.", "Connected to TopSolid on port {0}."), newPort)
-                                    : string.Format(L("Port {0} enregistré, mais TopSolid ne répond pas sur ce port.", "Port {0} saved, but TopSolid is not responding on this port."), newPort),
-                                ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
-                        }
-                    });
-                }
-                else
-                {
-                    ShowBalloon(L("Paramètres", "Settings"),
-                        string.Format(L("Port {0} enregistré.", "Port {0} saved."), newPort),
-                        ToolTipIcon.Info, 3000);
-                }
-            };
-            settingsMenu.DropDownItems.Add(_portItem);
-
-            // Read-only: click to toggle. Persisted, applied on next start.
-            _readOnlyItem = new ToolStripMenuItem(_readOnly
-                ? L("Mode lecture seule : oui (cliquer pour désactiver)", "Read-only mode: yes (click to turn off)")
-                : L("Mode lecture seule : non (cliquer pour activer)", "Read-only mode: no (click to turn on)"));
-            _readOnlyItem.Click += (s, ev) =>
-            {
-                _readOnly = !_readOnly;
-                TraySettings.Save(_port > 0 ? _port : 0, _readOnly);
-                _readOnlyItem.Text = _readOnly
-                    ? L("Mode lecture seule : oui (cliquer pour désactiver)", "Read-only mode: yes (click to turn off)")
-                    : L("Mode lecture seule : non (cliquer pour activer)", "Read-only mode: no (click to turn on)");
-                ShowBalloon(L("Paramètres", "Settings"),
-                    _readOnly
-                        ? L("Lecture seule activée. Appliqué au prochain démarrage du serveur.", "Read-only enabled. Applied next time the server starts.")
-                        : L("Lecture seule désactivée. Appliqué au prochain démarrage du serveur.", "Read-only disabled. Applied next time the server starts."),
-                    ToolTipIcon.Info, 3000);
-            };
-            settingsMenu.DropDownItems.Add(_readOnlyItem);
+            // v1.8.10: the legacy "Port TopSolid" and "Read-only" menu items are
+            // GONE — everything lives in the "Instance TopSolid" submenu and its
+            // "Manage…" dialog (edit, reorder, default star, MCP HTTP port,
+            // read-only). One place, no duplicate.
 
             settingsMenu.DropDownItems.Add(new ToolStripSeparator());
 

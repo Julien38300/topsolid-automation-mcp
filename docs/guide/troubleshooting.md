@@ -168,7 +168,25 @@ Plus besoin d'editer la config a la main : clic droit sur l'icone tray → **Par
 - Le sous-menu liste **tous les TopSolid lances sur le PC**, avec leur version et leur port Automation (`TopSolid 7.21 (port 8091)`), ou `(sans port)` quand l'option Automation n'est pas activee dans cette instance — l'entree est alors visible mais grisee.
 - **Automatique (premier TopSolid détecté)** — le mode par defaut : au demarrage et au clic, le serveur detecte le premier TopSolid lance et cible son port. C'est le mode "tout automatique", coche dans le menu.
 - Un clic sur une instance **retargete le serveur immediatement** (deconnexion + reconnexion sur le port choisi) et enregistre le choix comme default pour les demarrages suivants.
-- **Gérer…** ouvre la fenetre modale de declaration : nom + port, **Definir par defaut** (l'etoile), Ajouter / Supprimer. Le defaut est le port cible au demarrage du serveur.
+- **Gérer…** ouvre la fenetre modale de declaration (v1.8.10), la seule surface de reglage :
+
+| Bouton | Action |
+|---|---|
+| ↑ / ↓ | Reordonne l'instance dans la liste (l'ordre persiste et devient l'ordre du menu) |
+| ✎ (ou double-clic) | **Edite** l'instance selectionnee : nom + port modifiables, puis Enregistrer |
+| 🗑 | Supprime l'instance |
+| ★ | Definit par defaut — ciblee immediatement et au demarrage |
+| ➕ | Ajoute une instance declaree (nom + port) |
+
+  La section **Serveur MCP** de la meme fenetre regroupe le reste :
+
+- **Port MCP (HTTP)** : le port de l'endpoint natif (`8080` par defaut). **Appliquer** redemarre l'endpoint immediatement, sans relancer le serveur. La variable d'environnement `TOPSOLID_MCP_HTTP_PORT` garde priorite.
+- **URL client** affichee a cote : `http://localhost:<port>/mcp` — c'est cette URL + la cle API (Parametres > Cle API) que met un client HTTP.
+- **Mode lecture seule** : coche/decoche (remplace l'ancien item de menu). Applique au prochain demarrage du serveur.
+
+::: tip v1.8.10 — suppression des doublons
+Les anciens items de menu « Port TopSolid » et « Mode lecture seule » ont disparu du menu tray : tout se gere dans **Parametres > Instance TopSolid > Gérer…**. Une seule surface, pas de doublon.
+:::
 
 ::: tip Ports differents par instance
 Chaque instance TopSolid a son propre port dans **Outils > Options > General > Automation**. Le menu tray le montre pour chaque instance lancee — plus besoin de les connaitre par coeur.
