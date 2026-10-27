@@ -144,7 +144,7 @@ La spécification MCP exige qu'un serveur HTTP local **valide l'en-tête `Origin
 La clé vit dans `settings.json` chiffré DPAPI, à côté de l'exe. Trois façons de la définir :
 
 1. **Automatique** — au premier démarrage sans clé, l'exe en génère une et la persiste (affichée dans la console) ;
-2. **Depuis le tray** — menu *Clé API* : afficher / copier / régénérer / révoquer ;
+2. **Depuis le tray** — clic droit → **Paramètres du serveur MCP…** (afficher / copier / régénérer / saisir manuellement) ou raccourci direct **Copier la clé API** ;
 3. **Par environnement `TOPSOLID_MCP_API_KEY`** — pour les serveurs headless (session 0) où DPAPI/tray n'est pas dispo ; la variable est relue à chaque requête, jamais sur la ligne de commande — les arguments de processus sont lisibles par n'importe quel utilisateur local et finissent dans les journaux d'audit.
 
 ```powershell

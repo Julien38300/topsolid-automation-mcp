@@ -94,8 +94,8 @@ Laissez ce terminal ouvert. Le serveur tourne tant que la fenetre est ouverte ; 
 
 Le serveur HTTP exige la clé `X-API-Key` sur **chaque requête**. Deux informations à récupérer, toutes deux visibles dans le tray :
 
-1. **L'URL** : `http://127.0.0.1:8080/mcp` par défaut — le port se change dans **Paramètres > Instance TopSolid > Gérer… > Port MCP** (appliqué à chaud, l'URL exacte s'affiche à côté).
-2. **La clé API** : clic droit sur l'icône tray → **Paramètres > Clé API** (elle y est affichée et se régénère au besoin).
+1. **L'URL** : `http://127.0.0.1:8080/mcp` par défaut — le port se change dans **Paramètres du serveur MCP…** (appliqué à chaud, l'URL exacte s'affiche directement avec un bouton **Copier l'URL**).
+2. **La clé API** : clic droit sur l'icône tray → **Copier la clé API** (ou **Paramètres du serveur MCP…** pour l'afficher, la copier ou la régénérer).
 
 Sans le header `X-API-Key`, tout client HTTP reçoit `401`. Testez votre serveur sans clé :
 

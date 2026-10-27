@@ -1,474 +1,1004 @@
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.IO;
+using System.Net;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json.Linq;
+using TopSolidMcpServer.Protocol;
 
 namespace TopSolidMcpServer.Utils
 {
-    /// <summary>
-    /// Tray features added in v1.8.0: API key management, GitHub feedback,
-    /// "What's new" release page, automatic reconnection. Split from TrayIcon.cs
-    /// (partial class) to keep each file reviewable; all UI rules of TrayIcon.cs
-    /// apply here too (tray-thread marshalling via _uiContext, L() for FR/EN).
-    /// </summary>
+    // ─────────────────────────────────────────────────────────────────────
+    // TrayIcon partial — MCP Server Settings dialog, API key, auto-reconnect, feedback
+    // ─────────────────────────────────────────────────────────────────────
     public partial class TrayIcon
     {
-        // ---- API key (v1.8.0) ----
-        private ToolStripMenuItem _apiKeyItem;
-        private volatile string _apiKey;             // effective key, hot-reloadable
+        private const string RepoUrl = "https://github.com/Julien38300/topsolid-automation-mcp";
+        private const string FeedbackProxyUrl = "https://topsolid-mcp-feedback.julienpoirier-pro.workers.dev/issue";
 
-        // ---- Auto-reconnect (v1.8.0) ----
-        private System.Windows.Forms.Timer _reconnectTimer;
+        private volatile string _apiKey = "";
         private bool _autoConnect = true;
-        private ToolStripMenuItem _autoConnectItem;
-        private DateTime _lastAutoAttemptUtc = DateTime.MinValue;
-        private int _autoAttempt;
-        private volatile bool _lastConnectedState;   // for transition balloons
-        private volatile bool _stateAnnounced;       // skip the first transition balloon
+        private Action _tryConnect;
+        private Func<bool> _isConnectedProbe;
+        private System.Threading.Timer _reconnectTimer;
+        private int _reconnectAttempts;
+        private DateTime _lastReconnectAttemptUtc = DateTime.MinValue;
+        private bool _wasEverConnected;
+        private bool _disconnectNotified;
+        private McpServerSettingsDialog _mcpSettingsDialog;
 
-        /// <summary>
-        /// Gives the tray the live API key (read from ApiKeyStore at startup,
-        /// regenerated from the menu afterwards). The HTTP server reads the key
-        /// through the same provider so a regeneration applies immediately.
-        /// </summary>
-        public void SetApiKey(string key)
-        {
-            _apiKey = key ?? "";
-        }
-
-        /// <summary>Current effective key (may be empty = auth disabled).</summary>
         public string ApiKey => _apiKey ?? "";
 
-        /// <summary>Whether auto-reconnect is on (persisted in settings.json by Program).</summary>
         public bool AutoConnect => _autoConnect;
 
-        /// <summary>
-        /// Program wires this so the tray's auto-reconnect can drive the connector.
-        /// </summary>
+        public void SetApiKey(string key)
+        {
+            _apiKey = (key ?? "").Trim();
+        }
+
         public void SetAutoConnectors(Action tryConnect, Func<bool> isConnected)
         {
             _tryConnect = tryConnect;
-            _isConnected = isConnected;
+            _isConnectedProbe = isConnected;
         }
 
-        private Action _tryConnect;
-        private Func<bool> _isConnected;
-
-        /// <summary>Builds the v1.8.0 menu entries; called from BuildTray() on the tray thread.</summary>
-        private void BuildV18MenuItems(ContextMenuStrip menu, ToolStripMenuItem settingsMenu)
-        {
-            // ── API key, inside Settings ──
-            _apiKeyItem = new ToolStripMenuItem(BuildApiKeyLabel());
-            _apiKeyItem.Click += OnApiKeyClick;
-            settingsMenu.DropDownItems.Add(new ToolStripSeparator());
-            settingsMenu.DropDownItems.Add(_apiKeyItem);
-
-            var keyGenItem = new ToolStripMenuItem(L("Regénérer la clé API…", "Regenerate API key…"));
-            keyGenItem.Click += OnApiKeyRegenerateClick;
-            settingsMenu.DropDownItems.Add(keyGenItem);
-
-            var keyCopyItem = new ToolStripMenuItem(L("Copier la clé API", "Copy API key"));
-            keyCopyItem.Click += OnApiKeyCopyClick;
-            settingsMenu.DropDownItems.Add(keyCopyItem);
-
-            // ── Auto-connect toggle, inside Settings ──
-            _autoConnectItem = new ToolStripMenuItem(_autoConnect
-                ? L("Connexion automatique : oui (cliquer pour désactiver)", "Auto-connect: on (click to turn off)")
-                : L("Connexion automatique : non (cliquer pour activer)", "Auto-connect: off (click to turn on)"));
-            _autoConnectItem.Click += (s, ev) =>
-            {
-                _autoConnect = !_autoConnect;
-                TraySettings.Save(_port > 0 ? _port : 0, _readOnly);
-                _autoConnectItem.Text = _autoConnect
-                    ? L("Connexion automatique : oui (cliquer pour désactiver)", "Auto-connect: on (click to turn off)")
-                    : L("Connexion automatique : non (cliquer pour activer)", "Auto-connect: off (click to turn on)");
-                if (_autoConnect) StartAutoReconnect();
-            };
-            settingsMenu.DropDownItems.Add(_autoConnectItem);
-
-            // ── What's new / feedback / report bug, next to GitHub ──
-            int insertIdx = 0;
-            foreach (ToolStripItem it in menu.Items)
-            {
-                var tsmi = it as ToolStripMenuItem;
-                if (tsmi != null && tsmi.Text == "GitHub") break;
-                insertIdx++;
-            }
-
-            var whatsNewItem = new ToolStripMenuItem(L("Nouveautés de la version actuelle", "What's new in this version"));
-            whatsNewItem.Click += (s, ev) => OpenUrl(GitHubFeedbackLogic.BuildReleaseUrl(GetVersion()));
-            menu.Items.Insert(insertIdx, whatsNewItem);
-
-            var reportBug = new ToolStripMenuItem(L("Signaler un bug…", "Report a bug…"));
-            reportBug.Click += (s, ev) => OnFeedbackClick(GitHubFeedbackLogic.CategoryBug);
-            menu.Items.Insert(insertIdx + 1, reportBug);
-
-            var suggestItem = new ToolStripMenuItem(L("Proposer une amélioration…", "Suggest a feature…"));
-            suggestItem.Click += (s, ev) => OnFeedbackClick(GitHubFeedbackLogic.CategoryFeature);
-            menu.Items.Insert(insertIdx + 2, suggestItem);
-
-            // Ensure the WinForms reconnect timer is created on the tray STA thread
-            // (System.Windows.Forms.Timer relies on the calling thread's message pump).
-            if (_autoConnect)
-                StartAutoReconnectOnTrayThread();
-        }
-
-        private string BuildApiKeyLabel()
-        {
-            string key = _apiKey ?? "";
-            if (string.IsNullOrEmpty(key))
-                return L("Clé API : aucune (accès libre)", "API key: none (open access)");
-            return string.Format(L("Clé API : {0}", "API key: {0}"), Protocol.McpHttpAuthLogic.MaskKey(key));
-        }
-
-        // ---- API key handlers ----
-
-        private void OnApiKeyClick(object sender, EventArgs e)
-        {
-            string input = PromptInput(
-                L("Clé API", "API key"),
-                L("Clé API du serveur HTTP (laisser VIDE pour désactiver l'auth) :", "HTTP server API key (leave EMPTY to disable auth):"),
-                _apiKey ?? "");
-            if (input == null) return; // cancelled
-            input = input.Trim();
-            if (input.Length > 0 && !Protocol.McpHttpAuthLogic.IsValidKeyShape(input))
-            {
-                ShowResultBox(L("Clé API", "API key"),
-                    L("Format invalide : attendu tsmcp_ + 32 caractères hexadécimaux.\nUtilisez « Regénérer » pour en produire une valide.",
-                      "Invalid format: expected tsmcp_ + 32 hex chars.\nUse 'Regenerate' to produce a valid one."),
-                    MessageBoxIcon.Warning);
-                return;
-            }
-            ApplyNewKey(input);
-        }
-
-        private void OnApiKeyRegenerateClick(object sender, EventArgs e)
-        {
-            var choice = MessageBox.Show(
-                L("L'ANCIENNE clé sera révoquée immédiatement. Continuer ?", "The OLD key will be revoked immediately. Continue?"),
-                L("Regénérer la clé API", "Regenerate API key"),
-                MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
-            if (choice != DialogResult.Yes) return;
-
-            string newKey = Protocol.McpHttpAuthLogic.GenerateKey();
-            ApplyNewKey(newKey);
-            TryClipboardSetText(newKey);
-            ShowResultBox(L("Clé API", "API key"),
-                L("Nouvelle clé générée et copiée dans le presse-papiers.\nElle est active immédiatement (les anciennes sessions sont rejetées).",
-                  "New key generated and copied to the clipboard.\nIt is effective immediately (old sessions are rejected)."),
-                MessageBoxIcon.Information);
-        }
-
-        private void OnApiKeyCopyClick(object sender, EventArgs e)
-        {
-            string key = _apiKey ?? "";
-            if (string.IsNullOrEmpty(key))
-            {
-                ShowResultBox(L("Clé API", "API key"),
-                    L("Aucune clé configurée. Utilisez « Regénérer » d'abord.", "No key configured. Use 'Regenerate' first."),
-                    MessageBoxIcon.Warning);
-                return;
-            }
-            TryClipboardSetText(key);
-            ShowBalloon(L("Clé API", "API key"),
-                L("Clé copiée dans le presse-papiers.", "Key copied to the clipboard."),
-                ToolTipIcon.Info, 2500);
-        }
-
-        /// <summary>Stores + applies the key; the HTTP server picks it up live.</summary>
-        private void ApplyNewKey(string key)
-        {
-            _apiKey = key ?? "";
-            ApiKeyStore.SaveKey(_apiKey);
-            if (_apiKeyItem != null) _apiKeyItem.Text = BuildApiKeyLabel();
-            ShowBalloon(L("Clé API", "API key"),
-                _apiKey.Length == 0
-                    ? L("Authentification désactivée.", "Authentication disabled.")
-                    : L("Clé enregistrée — active immédiatement.", "Key saved — effective immediately."),
-                ToolTipIcon.Info, 2500);
-        }
-
-        private static void TryClipboardSetText(string text)
-        {
-            try { Clipboard.SetText(text); }
-            catch (Exception ex) { Console.Error.WriteLine("[TrayIcon] Clipboard error: " + ex.Message); }
-        }
-
-        // ---- GitHub feedback handlers ----
-
-        private void OnFeedbackClick(string category)
-        {
-            string subject = PromptInput(
-                category == GitHubFeedbackLogic.CategoryBug ? L("Signaler un bug", "Report a bug") : L("Proposer une amélioration", "Suggest a feature"),
-                L("Décrivez en une ligne (le détail sera demandé après) :", "Describe in one line (details asked after):"),
-                "");
-            if (string.IsNullOrWhiteSpace(subject)) return;
-
-            string details = PromptInput(
-                L("Détails", "Details"),
-                L("Détails / étapes pour reproduire (optionnel) :", "Details / reproduction steps (optional):"),
-                "");
-            if (details == null) details = "";
-
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                try { SubmitFeedback(category, subject, details); }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine("[TrayIcon] Feedback error: " + ex.Message);
-                }
-            });
-        }
-
-        /// <summary>Builds the issue and posts it (PAT) or opens the prefilled form.
-        /// v1.8.1: when a crash report file exists (last 30 days), its content is
-        /// appended so the issue carries the stack trace without the user doing
-        /// anything — crashes reported after the fact used to ship with zero
-        /// technical context.</summary>
-        private void SubmitFeedback(string category, string subject, string details)
-        {
-            string title = GitHubFeedbackLogic.BuildTitle(category, subject);
-            string body = GitHubFeedbackLogic.BuildBody(details, GetVersion(),
-                Environment.OSVersion.VersionString,
-                _isConnected != null && _isConnected(),
-                _port > 0 ? _port : 8090,
-                RecentLogLines(), _apiKey);
-
-            // v1.8.1: attach the newest crash report (scrubbed) to bug reports.
-            if (category == GitHubFeedbackLogic.CategoryBug)
-            {
-                try
-                {
-                    string crashPath = LogTail.GetNewestCrashReport();
-                    if (crashPath != null)
-                    {
-                        string crash = File.ReadAllText(crashPath);
-                        body += "\n## Rapport de crash (auto-attaché)\n\n```\n"
-                              + GitHubFeedbackLogic.ScrubKey(crash, _apiKey)
-                              + "\n```\n";
-                    }
-                }
-                catch { }
-            }
-
-            string token = GitHubPatStore.LoadToken();
-            if (!string.IsNullOrEmpty(token))
-            {
-                try
-                {
-                    var client = new System.Net.WebClient();
-                    client.Headers["User-Agent"] = "TopSolidMcpServer-Tray";
-                    client.Headers["Authorization"] = "token " + token;
-                    client.Headers["Accept"] = "application/vnd.github+json";
-                    var payload = GitHubFeedbackLogic.BuildIssueJson(title, body,
-                        new[] { category == GitHubFeedbackLogic.CategoryBug ? "tray-report" : "tray-enhancement" });
-                    string resp = client.UploadString(
-                        "https://api.github.com/repos/" + GitHubFeedbackLogic.RepoOwner + "/" + GitHubFeedbackLogic.RepoName + "/issues",
-                        payload);
-                    string url = (JObject.Parse(resp)["html_url"] ?? "").ToString();
-                    ShowBalloonSafe(L("Remontée envoyée", "Feedback sent"),
-                        L("Issue GitHub créée : " + url, "GitHub issue created: " + url),
-                        ToolTipIcon.Info, 6000);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine("[TrayIcon] Issue create failed, falling back to browser: " + ex.Message);
-                }
-            }
-
-            // Fallback: prefilled new-issue form in the browser.
-            string formUrl = GitHubFeedbackLogic.BuildNewIssueUrl(category, title, body);
-            OpenUrl(formUrl);
-        }
-
-        /// <summary>Last ~30 stderr log lines for the issue body. Thread-safe ring buffer read.</summary>
-        private static IList<string> RecentLogLines()
-        {
-            try
-            {
-                string logPath = LogTail.GetLogPath();
-                if (!File.Exists(logPath)) return new string[0];
-                return LogTail.ReadLastLines(logPath, 30);
-            }
-            catch { return new string[0]; }
-        }
-
-        // ---- Auto-reconnect (v1.8.0) ----
-
-        /// <summary>Starts the reconnect timer; safe to call from any thread.</summary>
         public void StartAutoReconnect()
         {
-            var context = _uiContext;
-            if (!ReferenceEquals(Thread.CurrentThread, _thread))
-            {
-                if (context != null)
-                    context.Post(_ => StartAutoReconnectOnTrayThread(), null);
-                return;
-            }
-
-            StartAutoReconnectOnTrayThread();
+            _autoConnect = LoadAutoConnectSetting();
+            _reconnectTimer = new System.Threading.Timer(_ => AutoReconnectTick(), null, 5000, 5000);
         }
 
-        private void StartAutoReconnectOnTrayThread()
+        private void StopAutoReconnect()
         {
-            if (_reconnectTimer == null)
-            {
-                _reconnectTimer = new System.Windows.Forms.Timer { Interval = 5000 };
-                _reconnectTimer.Tick += OnReconnectTimerTick;
-            }
-            _reconnectTimer.Start();
+            try { _reconnectTimer?.Dispose(); } catch { }
+            _reconnectTimer = null;
         }
 
-        private void OnReconnectTimerTick(object sender, EventArgs e)
-        {
-            // Timer runs on the tray thread — do the actual connect on a worker thread.
-            var tryConnect = _tryConnect;
-            var isConnected = _isConnected;
-            if (tryConnect == null || isConnected == null) return;
-
-            bool connected = false;
-            try { connected = isConnected(); } catch { }
-
-            if (connected)
-            {
-                _autoAttempt = 0;
-                // Announce only transitions (down → up).
-                if (!_lastConnectedState && _stateAnnounced)
-                {
-                    ShowBalloon("TopSolid MCP",
-                        L("Connexion TopSolid rétablie.", "TopSolid connection restored."),
-                        ToolTipIcon.Info, 3000);
-                }
-                _lastConnectedState = true;
-                _stateAnnounced = true;
-                return;
-            }
-
-            if (_lastConnectedState && _stateAnnounced)
-            {
-                ShowBalloon("TopSolid MCP",
-                    L("Connexion TopSolid perdue — nouvelle tentative automatique…", "TopSolid connection lost — auto-retrying…"),
-                    ToolTipIcon.Warning, 3000);
-            }
-            _lastConnectedState = false;
-            _stateAnnounced = true;
-
-            if (!ShouldAttemptNow()) return;
-
-            _lastAutoAttemptUtc = DateTime.UtcNow;
-            _autoAttempt++;
-            PostState(TrayState.Connecting);
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                try { tryConnect(); }
-                catch (Exception ex) { Console.Error.WriteLine("[TrayIcon] Auto-reconnect error: " + ex.Message); }
-                finally
-                {
-                    bool ok = false;
-                    try { ok = isConnected(); } catch { }
-                    PostState(ok ? TrayState.Connected : TrayState.Disconnected);
-                }
-            });
-        }
-
-        private bool ShouldAttemptNow()
-        {
-            return ReconnectBackoff.ShouldRetry(_autoConnect, _lastConnectedState,
-                _lastAutoAttemptUtc, DateTime.UtcNow, _autoAttempt + 1);
-        }
-
-        /// <summary>Called by Program when the connector state changes, so the tray mirrors it.</summary>
-        public void NoteConnectionState(bool connected)
-        {
-            _lastConnectedState = connected;
-            _stateAnnounced = true;
-        }
-    }
-
-    /// <summary>
-    /// Minimal stderr tail used by the feedback feature. Program.cs redirects
-    /// stderr to a file in v1.8.1 (ServerLog.Setup in Utils/ServerLog.cs); this
-    /// reads it back. Kept as a thin wrapper for compatibility with v1.8.0 call
-    /// sites; the canonical implementation lives in ServerLog.
-    /// </summary>
-    internal static class LogTail
-    {
-        public static string GetLogPath()
-        {
-            return ServerLog.GetPath();
-        }
-
-        public static IList<string> ReadLastLines(string path, int count)
-        {
-            return ServerLog.ReadLastLines(path, count);
-        }
-
-        /// <summary>
-        /// Newest crash-*.txt in the log dir (last 30 days), or null. Attached to
-        /// the next bug report so a crash reported after the fact carries its
-        /// stack trace + log context.
-        /// </summary>
-        public static string GetNewestCrashReport()
-        {
-            try
-            {
-                string dir = Path.GetDirectoryName(ServerLog.GetPath());
-                if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return null;
-                string newest = null;
-                DateTime newestTime = DateTime.MinValue;
-                foreach (string f in Directory.GetFiles(dir, "crash-*.txt"))
-                {
-                    DateTime t = File.GetLastWriteTimeUtc(f);
-                    if (t > newestTime && t > DateTime.UtcNow.AddDays(-30))
-                    {
-                        newestTime = t;
-                        newest = f;
-                    }
-                }
-                return newest;
-            }
-            catch { return null; }
-        }
-    }
-
-    /// <summary>
-    /// GitHub PAT (optional, scope public_repo) used by the tray feedback feature.
-    /// Stored DPAPI-encrypted next to the API key in settings.json.
-    /// </summary>
-    internal static class GitHubPatStore
-    {
-        public static string LoadToken()
+        private static bool LoadAutoConnectSetting()
         {
             try
             {
                 string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
-                if (!File.Exists(path)) return "";
-                var obj = JObject.Parse(File.ReadAllText(path));
-                string enc = obj.Value<string>("github_pat_dpapi") ?? "";
-                if (string.IsNullOrEmpty(enc)) return "";
-                return ApiKeyStore.Unprotect(enc);
+                if (!File.Exists(path)) return true;
+                var obj = JObject.Parse(File.ReadAllText(path, Encoding.UTF8));
+                var tok = obj["auto_connect"];
+                return tok == null || tok.Value<bool>();
             }
-            catch { return ""; }
+            catch
+            {
+                return true;
+            }
         }
 
-        public static void SaveToken(string token)
+        private static void SaveAutoConnectSetting(bool enabled)
         {
             try
             {
                 string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "settings.json");
                 var obj = File.Exists(path)
-                    ? JObject.Parse(File.ReadAllText(path))
+                    ? JObject.Parse(File.ReadAllText(path, Encoding.UTF8))
                     : new JObject();
-                obj["github_pat_dpapi"] = string.IsNullOrEmpty(token) ? "" : ApiKeyStore.Protect(token);
-                File.WriteAllText(path, obj.ToString());
+                obj["auto_connect"] = enabled;
+                File.WriteAllText(path, obj.ToString(Newtonsoft.Json.Formatting.Indented), Encoding.UTF8);
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("[GitHubPatStore] Save failed: " + ex.Message);
+                Console.Error.WriteLine($"[MCP-WARN] Could not save auto_connect: {ex.Message}");
+            }
+        }
+
+        private void AutoReconnectTick()
+        {
+            if (_disposed) return;
+            try
+            {
+                bool live = _isConnectedProbe != null ? _isConnectedProbe() : _connected;
+                if (live != _connected)
+                {
+                    SetConnected(live);
+                    NoteConnectionState(live);
+                }
+
+                if (!ReconnectBackoff.ShouldRetry(_autoConnect, live,
+                        _lastReconnectAttemptUtc, DateTime.UtcNow, _reconnectAttempts + 1))
+                    return;
+
+                _reconnectAttempts++;
+                _lastReconnectAttemptUtc = DateTime.UtcNow;
+
+                _tryConnect?.Invoke();
+                bool nowConnected = _isConnectedProbe != null ? _isConnectedProbe() : _connected;
+                if (nowConnected)
+                {
+                    _reconnectAttempts = 0;
+                    NoteConnectionState(true);
+                }
+            }
+            catch { }
+        }
+
+        public void NoteConnectionState(bool connected)
+        {
+            if (connected)
+            {
+                bool reconnected = _wasEverConnected && _disconnectNotified;
+                _wasEverConnected = true;
+                _disconnectNotified = false;
+                _reconnectAttempts = 0;
+                if (reconnected)
+                    ShowBalloon("TopSolid reconnecté", $"Connexion rétablie sur le port {_port}.", ToolTipIcon.Info);
+            }
+            else if (_wasEverConnected && !_disconnectNotified)
+            {
+                _disconnectNotified = true;
+                string suffix = _autoConnect ? " Reconnexion automatique activée." : "";
+                ShowBalloon("TopSolid déconnecté", "La session TopSolid a été fermée." + suffix, ToolTipIcon.Warning);
+            }
+        }
+
+        private void InitV18State()
+        {
+            _autoConnect = LoadAutoConnectSetting();
+            if (string.IsNullOrEmpty(_apiKey))
+            {
+                _apiKey = ApiKeyStore.ResolveKey(
+                    ApiKeyStore.LoadStoredKey(),
+                    Environment.GetEnvironmentVariable(ApiKeyStore.EnvVarName));
+            }
+        }
+
+        /// <summary>
+        /// Builds the root-level MCP Server section items (max 1 level here:
+        /// opens the unified MCP Server Settings window or copies the API key in 1 click).
+        /// </summary>
+        private void BuildMcpServerMenuItems(ContextMenuStrip menu)
+        {
+            var mcpSettingsItem = new ToolStripMenuItem("Paramètres du serveur MCP…", null, (s, e) => ShowMcpServerSettingsDialog());
+            StyleMenuItem(mcpSettingsItem);
+            menu.Items.Add(mcpSettingsItem);
+
+            var copyKeyItem = new ToolStripMenuItem("Copier la clé API", null, (s, e) => OnCopyApiKey());
+            StyleMenuItem(copyKeyItem);
+            menu.Items.Add(copyKeyItem);
+        }
+
+        /// <summary>
+        /// Populates the 2nd-level "Aide &amp; Maintenance" submenu.
+        /// </summary>
+        private void BuildHelpSubmenuItems(ToolStripMenuItem helpMenu)
+        {
+            var whatsNewItem = new ToolStripMenuItem("Nouveautés de cette version", null,
+                (s, e) => OpenUrl(GitHubFeedbackLogic.BuildReleaseUrl(_currentVersion)));
+            StyleMenuItem(whatsNewItem);
+            helpMenu.DropDownItems.Add(whatsNewItem);
+
+            var openDirItem = new ToolStripMenuItem("Ouvrir le dossier d'installation", null, (s, e) => OpenInstallFolder());
+            StyleMenuItem(openDirItem);
+            helpMenu.DropDownItems.Add(openDirItem);
+
+            helpMenu.DropDownItems.Add(new ToolStripSeparator());
+
+            var bugItem = new ToolStripMenuItem("Signaler un bug…", null, (s, e) => ShowFeedbackDialog(GitHubFeedbackLogic.CategoryBug));
+            StyleMenuItem(bugItem);
+            helpMenu.DropDownItems.Add(bugItem);
+
+            var featItem = new ToolStripMenuItem("Proposer une amélioration…", null, (s, e) => ShowFeedbackDialog(GitHubFeedbackLogic.CategoryFeature));
+            StyleMenuItem(featItem);
+            helpMenu.DropDownItems.Add(featItem);
+
+            var ghItem = new ToolStripMenuItem("Page GitHub du projet", null, (s, e) => OpenUrl(RepoUrl));
+            StyleMenuItem(ghItem);
+            helpMenu.DropDownItems.Add(ghItem);
+        }
+
+        internal void ShowMcpServerSettingsDialog()
+        {
+            try
+            {
+                if (_mcpSettingsDialog != null && !_mcpSettingsDialog.IsDisposed)
+                {
+                    _mcpSettingsDialog.BringToFront();
+                    _mcpSettingsDialog.Activate();
+                    return;
+                }
+
+                TraySettings.Load();
+                int currentHttpPort = _httpPort > 0
+                    ? _httpPort
+                    : (TraySettings.HttpPort > 0 ? TraySettings.HttpPort : 8080);
+
+                _mcpSettingsDialog = new McpServerSettingsDialog(
+                    initialHttpPort: currentHttpPort,
+                    initialApiKey: _apiKey,
+                    initialAutoConnect: _autoConnect,
+                    initialReadOnly: TraySettings.ReadOnly,
+                    onApplyHttpPort: newHttpPort =>
+                    {
+                        TraySettings.SaveHttpPort(newHttpPort);
+                        bool ok = _httpRestartAction == null || _httpRestartAction(newHttpPort);
+                        if (ok)
+                        {
+                            _httpPort = newHttpPort;
+                            UpdateStatusDisplay();
+                        }
+                        return ok;
+                    },
+                    onSaveApiKey: newKey =>
+                    {
+                        _apiKey = (newKey ?? "").Trim();
+                        ApiKeyStore.SaveKey(_apiKey);
+                    },
+                    onToggleAutoConnect: enabled =>
+                    {
+                        _autoConnect = enabled;
+                        SaveAutoConnectSetting(enabled);
+                        if (enabled) _reconnectAttempts = 0;
+                    },
+                    onToggleReadOnly: ro =>
+                    {
+                        TraySettings.Save(TraySettings.Port, ro);
+                    },
+                    onOpenInstallFolder: OpenInstallFolder);
+
+                _mcpSettingsDialog.Show();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("[MCP-WARN] McpServerSettingsDialog failed: " + ex.Message);
+            }
+        }
+
+        private void PromptInitialApiKeySetupIfNeeded()
+        {
+            if (!string.IsNullOrEmpty(_apiKey)) return;
+
+            var menu = _notifyIcon?.ContextMenuStrip;
+            Action prompt = () =>
+            {
+                var r = MessageBox.Show(
+                    "Aucune clé API n'est configurée pour le serveur MCP HTTP.\n\n" +
+                    "• Oui : générer automatiquement une clé sécurisée (recommandé)\n" +
+                    "• Non : ouvrir les paramètres du serveur MCP pour saisir une clé existante\n" +
+                    "• Annuler : configurer plus tard",
+                    "TopSolid MCP — Configuration de la clé API",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Information);
+
+                if (r == DialogResult.Yes)
+                {
+                    GenerateAndStoreNewKey(showPopup: true);
+                }
+                else if (r == DialogResult.No)
+                {
+                    ShowMcpServerSettingsDialog();
+                }
+            };
+            if (menu != null && menu.IsHandleCreated) menu.BeginInvoke(prompt);
+            else prompt();
+        }
+
+        private void GenerateAndStoreNewKey(bool showPopup)
+        {
+            string key = McpHttpAuthLogic.GenerateKey();
+            _apiKey = key;
+            ApiKeyStore.SaveKey(key);
+            TrySetClipboard(key);
+            if (showPopup)
+            {
+                MessageBox.Show(
+                    "Nouvelle clé API générée et copiée dans le presse-papiers :\n\n" + key +
+                    "\n\nCollez-la dans l'en-tête X-API-Key de votre client MCP.",
+                    "TopSolid MCP — Clé API",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Information);
+            }
+            else
+            {
+                ShowBalloon("Nouvelle clé API", "Générée et copiée dans le presse-papiers.", ToolTipIcon.Info);
+            }
+        }
+
+        private void OnCopyApiKey()
+        {
+            if (string.IsNullOrEmpty(_apiKey))
+            {
+                ShowMcpServerSettingsDialog();
+                return;
+            }
+            if (TrySetClipboard(_apiKey))
+                ShowBalloon("Clé API copiée", "La clé API a été copiée dans le presse-papiers.", ToolTipIcon.Info);
+        }
+
+        internal static bool TrySetClipboard(string text)
+        {
+            try
+            {
+                Clipboard.SetText(text ?? "");
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static void OpenInstallFolder()
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = AppDomain.CurrentDomain.BaseDirectory,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[MCP-WARN] Could not open folder: {ex.Message}");
+            }
+        }
+
+        private static string TrySubmitFeedbackViaProxy(string kind, string title, string body, string version)
+        {
+            try
+            {
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                var req = (HttpWebRequest)WebRequest.Create(FeedbackProxyUrl);
+                req.Method = "POST";
+                req.ContentType = "application/json; charset=utf-8";
+                req.UserAgent = "TopSolidMcpServer/" + (version ?? "0.0.0");
+                req.Timeout = 8000;
+                req.ReadWriteTimeout = 8000;
+
+                var payload = new JObject
+                {
+                    ["kind"] = kind,
+                    ["title"] = title,
+                    ["body"] = body,
+                    ["version"] = version ?? ""
+                };
+                byte[] bytes = Encoding.UTF8.GetBytes(payload.ToString(Newtonsoft.Json.Formatting.None));
+                req.ContentLength = bytes.Length;
+                using (var s = req.GetRequestStream())
+                    s.Write(bytes, 0, bytes.Length);
+
+                using (var resp = (HttpWebResponse)req.GetResponse())
+                using (var r = new StreamReader(resp.GetResponseStream(), Encoding.UTF8))
+                {
+                    var obj = JObject.Parse(r.ReadToEnd());
+                    return obj.Value<string>("html_url");
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private void ShowFeedbackDialog(string kind)
+        {
+            using (var dlg = new FeedbackDialog(kind))
+            {
+                if (dlg.ShowDialog() != DialogResult.OK) return;
+
+                string title = GitHubFeedbackLogic.BuildTitle(kind, dlg.SubjectText);
+                var logs = dlg.IncludeLogs
+                    ? ServerLog.ReadLastLines(ServerLog.GetPath(), 50)
+                    : new System.Collections.Generic.List<string>();
+                string body = GitHubFeedbackLogic.BuildBody(
+                    dlg.DescriptionText, _currentVersion, Environment.OSVersion.VersionString,
+                    _connected, _port, logs, _apiKey);
+
+                ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    string issueUrl = TrySubmitFeedbackViaProxy(kind, title, body, _currentVersion);
+                    if (!string.IsNullOrEmpty(issueUrl))
+                    {
+                        ShowBalloon("Merci pour votre retour !", "Ticket GitHub créé — cliquez pour l'ouvrir.", ToolTipIcon.Info);
+                        OpenUrl(issueUrl);
+                    }
+                    else
+                    {
+                        OpenUrl(GitHubFeedbackLogic.BuildNewIssueUrl(kind, title, body));
+                    }
+                });
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // McpServerSettingsDialog — Unified, modern MCP Server Settings UI
+        // ─────────────────────────────────────────────────────────────────
+
+        internal sealed class McpServerSettingsDialog : Form
+        {
+            private readonly Func<int, bool> _onApplyHttpPort;
+            private readonly Action<string> _onSaveApiKey;
+            private readonly Action<bool> _onToggleAutoConnect;
+            private readonly Action<bool> _onToggleReadOnly;
+
+            private readonly TextBox _urlBox;
+            private readonly NumericUpDown _httpPortBox;
+            private readonly Label _httpStatusLabel;
+
+            private readonly TextBox _apiKeyBox;
+            private readonly Button _toggleRevealButton;
+            private readonly Button _editSaveKeyButton;
+            private readonly Label _keyStatusLabel;
+
+            private string _currentApiKey;
+            private bool _keyRevealed;
+            private bool _keyEditing;
+
+            public McpServerSettingsDialog(
+                int initialHttpPort,
+                string initialApiKey,
+                bool initialAutoConnect,
+                bool initialReadOnly,
+                Func<int, bool> onApplyHttpPort,
+                Action<string> onSaveApiKey,
+                Action<bool> onToggleAutoConnect,
+                Action<bool> onToggleReadOnly,
+                Action onOpenInstallFolder)
+            {
+                _onApplyHttpPort = onApplyHttpPort;
+                _onSaveApiKey = onSaveApiKey;
+                _onToggleAutoConnect = onToggleAutoConnect;
+                _onToggleReadOnly = onToggleReadOnly;
+                _currentApiKey = (initialApiKey ?? "").Trim();
+
+                int safePort = (initialHttpPort >= 1024 && initialHttpPort <= 65535) ? initialHttpPort : 8080;
+
+                Text = "Paramètres du serveur MCP";
+                FormBorderStyle = FormBorderStyle.FixedDialog;
+                MaximizeBox = false;
+                MinimizeBox = false;
+                StartPosition = FormStartPosition.CenterScreen;
+                ClientSize = new Size(560, 520);
+                BackColor = Color.FromArgb(248, 250, 252);
+                Font = new Font("Segoe UI", 9.25f, FontStyle.Regular);
+
+                // ── Top Banner ──
+                var banner = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 66,
+                    BackColor = Color.White
+                };
+                banner.Paint += (s, e) =>
+                {
+                    using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1))
+                        e.Graphics.DrawLine(pen, 0, banner.Height - 1, banner.Width, banner.Height - 1);
+                };
+
+                var titleLabel = new Label
+                {
+                    Text = "Paramètres du serveur MCP",
+                    Font = new Font("Segoe UI Semibold", 12f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Location = new Point(22, 12),
+                    AutoSize = true
+                };
+                var subtitleLabel = new Label
+                {
+                    Text = "Point d'accès HTTP, clé d'authentification API et comportement du serveur",
+                    Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(22, 37),
+                    AutoSize = true
+                };
+                banner.Controls.Add(titleLabel);
+                banner.Controls.Add(subtitleLabel);
+                Controls.Add(banner);
+
+                // ── Card 1 : Point d'accès HTTP (Streamable HTTP) ──
+                var httpCard = CreateCard(20, 82, 520, 138, "POINT D'ACCÈS HTTP (STREAMABLE HTTP)");
+
+                var urlLabel = new Label
+                {
+                    Text = "URL cliente MCP :",
+                    ForeColor = Color.FromArgb(51, 65, 85),
+                    Location = new Point(16, 42),
+                    AutoSize = true
+                };
+                httpCard.Controls.Add(urlLabel);
+
+                var urlContainer = CreateInputContainer(132, 36, 254, 32, Color.FromArgb(248, 250, 252));
+                _urlBox = new TextBox
+                {
+                    BorderStyle = BorderStyle.None,
+                    ReadOnly = true,
+                    TabStop = false,
+                    BackColor = Color.FromArgb(248, 250, 252),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Font = new Font("Consolas", 9.75f, FontStyle.Regular),
+                    Text = $"http://localhost:{safePort}/mcp",
+                    Location = new Point(8, 7),
+                    Width = 238
+                };
+                urlContainer.Controls.Add(_urlBox);
+                httpCard.Controls.Add(urlContainer);
+
+                var copyUrlBtn = CreateSecondaryButton("Copier l'URL", 394, 36, 110, 32);
+                copyUrlBtn.Click += (s, e) =>
+                {
+                    if (TrySetClipboard(_urlBox.Text))
+                    {
+                        _httpStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
+                        _httpStatusLabel.Text = "\u2713 URL copiée";
+                    }
+                };
+                httpCard.Controls.Add(copyUrlBtn);
+
+                var portLabel = new Label
+                {
+                    Text = "Port d'écoute TCP :",
+                    ForeColor = Color.FromArgb(51, 65, 85),
+                    Location = new Point(16, 86),
+                    AutoSize = true
+                };
+                httpCard.Controls.Add(portLabel);
+
+                var portContainer = CreateInputContainer(132, 80, 96, 32, Color.White);
+                _httpPortBox = new NumericUpDown
+                {
+                    BorderStyle = BorderStyle.None,
+                    Minimum = 1024,
+                    Maximum = 65535,
+                    Value = safePort,
+                    Font = new Font("Consolas", 10f, FontStyle.Regular),
+                    Location = new Point(8, 6),
+                    Width = 82
+                };
+                portContainer.Controls.Add(_httpPortBox);
+                httpCard.Controls.Add(portContainer);
+
+                var applyPortBtn = CreatePrimaryButton("Appliquer", 236, 80, 100, 32);
+                applyPortBtn.Click += OnApplyHttpPortClick;
+                httpCard.Controls.Add(applyPortBtn);
+
+                _httpStatusLabel = new Label
+                {
+                    Text = $"Actif sur le port {safePort}",
+                    Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(344, 87),
+                    AutoSize = true
+                };
+                httpCard.Controls.Add(_httpStatusLabel);
+                Controls.Add(httpCard);
+
+                // ── Card 2 : Authentification (Clé API X-API-Key) ──
+                var authCard = CreateCard(20, 234, 520, 138, "AUTHENTIFICATION (EN-TÊTE X-API-KEY)");
+
+                var keyContainer = CreateInputContainer(16, 36, 294, 32, Color.FromArgb(248, 250, 252));
+                _apiKeyBox = new TextBox
+                {
+                    BorderStyle = BorderStyle.None,
+                    ReadOnly = true,
+                    TabStop = false,
+                    BackColor = Color.FromArgb(248, 250, 252),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Font = new Font("Consolas", 9.5f, FontStyle.Regular),
+                    Location = new Point(8, 7),
+                    Width = 278
+                };
+                keyContainer.Controls.Add(_apiKeyBox);
+                authCard.Controls.Add(keyContainer);
+
+                _toggleRevealButton = CreateSecondaryButton("Afficher", 318, 36, 88, 32);
+                _toggleRevealButton.Click += (s, e) =>
+                {
+                    if (_keyEditing) return;
+                    _keyRevealed = !_keyRevealed;
+                    RefreshApiKeyDisplay();
+                };
+                authCard.Controls.Add(_toggleRevealButton);
+
+                var copyKeyBtn = CreatePrimaryButton("Copier", 414, 36, 90, 32);
+                copyKeyBtn.Click += (s, e) =>
+                {
+                    string toCopy = _keyEditing ? (_apiKeyBox.Text ?? "").Trim() : _currentApiKey;
+                    if (string.IsNullOrEmpty(toCopy))
+                    {
+                        _keyStatusLabel.ForeColor = Color.FromArgb(185, 28, 28);
+                        _keyStatusLabel.Text = "Aucune clé API définie.";
+                        return;
+                    }
+                    if (TrySetClipboard(toCopy))
+                    {
+                        _keyStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
+                        _keyStatusLabel.Text = "\u2713 Clé API copiée dans le presse-papiers";
+                    }
+                };
+                authCard.Controls.Add(copyKeyBtn);
+
+                var regenKeyBtn = CreateSecondaryButton("Régénérer une clé…", 16, 80, 148, 32);
+                regenKeyBtn.Click += OnRegenerateKeyClick;
+                authCard.Controls.Add(regenKeyBtn);
+
+                _editSaveKeyButton = CreateSecondaryButton("Saisir manuellement…", 172, 80, 152, 32);
+                _editSaveKeyButton.Click += (s, e) => OnEditOrSaveKeyClick(keyContainer);
+                authCard.Controls.Add(_editSaveKeyButton);
+
+                _keyStatusLabel = new Label
+                {
+                    Text = "Chiffrée via Windows DPAPI",
+                    Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(332, 87),
+                    AutoSize = true
+                };
+                authCard.Controls.Add(_keyStatusLabel);
+                Controls.Add(authCard);
+
+                // ── Card 3 : Comportement & Sécurité ──
+                var behaviorCard = CreateCard(20, 386, 520, 76, "COMPORTEMENT && SÉCURITÉ");
+
+                var autoConnectCheck = new CheckBox
+                {
+                    Text = "Connexion automatique à TopSolid",
+                    Checked = initialAutoConnect,
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Location = new Point(16, 38),
+                    AutoSize = true,
+                    Cursor = Cursors.Hand
+                };
+                autoConnectCheck.CheckedChanged += (s, e) =>
+                {
+                    try { _onToggleAutoConnect?.Invoke(autoConnectCheck.Checked); } catch { }
+                };
+                behaviorCard.Controls.Add(autoConnectCheck);
+
+                var readOnlyCheck = new CheckBox
+                {
+                    Text = "Mode lecture seule (au redémarrage)",
+                    Checked = initialReadOnly,
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Location = new Point(268, 38),
+                    AutoSize = true,
+                    Cursor = Cursors.Hand
+                };
+                readOnlyCheck.CheckedChanged += (s, e) =>
+                {
+                    try { _onToggleReadOnly?.Invoke(readOnlyCheck.Checked); } catch { }
+                };
+                behaviorCard.Controls.Add(readOnlyCheck);
+                Controls.Add(behaviorCard);
+
+                // ── Footer ──
+                var openFolderBtn = CreateSecondaryButton("Ouvrir le dossier d'installation", 20, 474, 210, 32);
+                openFolderBtn.Click += (s, e) =>
+                {
+                    try { onOpenInstallFolder?.Invoke(); } catch { }
+                };
+                Controls.Add(openFolderBtn);
+
+                var closeBtn = CreateSecondaryButton("Fermer", 440, 474, 100, 32);
+                closeBtn.Click += (s, e) => Close();
+                Controls.Add(closeBtn);
+                CancelButton = closeBtn;
+
+                RefreshApiKeyDisplay();
+            }
+
+            private void RefreshApiKeyDisplay()
+            {
+                if (_keyEditing) return;
+
+                if (string.IsNullOrEmpty(_currentApiKey))
+                {
+                    _apiKeyBox.Text = "(aucune clé configurée — accès libre local)";
+                    _apiKeyBox.ForeColor = Color.FromArgb(100, 116, 139);
+                    _toggleRevealButton.Enabled = false;
+                    _toggleRevealButton.Text = "Afficher";
+                }
+                else
+                {
+                    _apiKeyBox.ForeColor = Color.FromArgb(15, 23, 42);
+                    _toggleRevealButton.Enabled = true;
+                    if (_keyRevealed)
+                    {
+                        _apiKeyBox.Text = _currentApiKey;
+                        _toggleRevealButton.Text = "Masquer";
+                    }
+                    else
+                    {
+                        string suffix = _currentApiKey.Length > 4
+                            ? _currentApiKey.Substring(_currentApiKey.Length - 4)
+                            : _currentApiKey;
+                        _apiKeyBox.Text = "tsmcp_\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" + suffix;
+                        _toggleRevealButton.Text = "Afficher";
+                    }
+                }
+            }
+
+            private void OnApplyHttpPortClick(object sender, EventArgs e)
+            {
+                int newPort = (int)_httpPortBox.Value;
+                bool ok = false;
+                try
+                {
+                    ok = _onApplyHttpPort == null || _onApplyHttpPort(newPort);
+                }
+                catch { ok = false; }
+
+                if (ok)
+                {
+                    _urlBox.Text = $"http://localhost:{newPort}/mcp";
+                    _httpStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
+                    _httpStatusLabel.Text = $"\u2713 Port {newPort} actif";
+                }
+                else
+                {
+                    _httpStatusLabel.ForeColor = Color.FromArgb(185, 28, 28);
+                    _httpStatusLabel.Text = $"Port {newPort} indisponible";
+                }
+            }
+
+            private void OnRegenerateKeyClick(object sender, EventArgs e)
+            {
+                var confirm = MessageBox.Show(
+                    "Générer une nouvelle clé API ?\n\n" +
+                    "L'ancienne clé sera immédiatement invalidée et la nouvelle clé sera copiée dans le presse-papiers.",
+                    "Régénérer la clé API",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Warning);
+
+                if (confirm != DialogResult.Yes) return;
+
+                string newKey = McpHttpAuthLogic.GenerateKey();
+                _currentApiKey = newKey;
+                _keyEditing = false;
+                _keyRevealed = true;
+                _apiKeyBox.ReadOnly = true;
+                _editSaveKeyButton.Text = "Saisir manuellement…";
+                try { _onSaveApiKey?.Invoke(newKey); } catch { }
+                TrySetClipboard(newKey);
+                RefreshApiKeyDisplay();
+
+                _keyStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
+                _keyStatusLabel.Text = "\u2713 Nouvelle clé générée et copiée";
+            }
+
+            private void OnEditOrSaveKeyClick(Panel keyContainer)
+            {
+                if (!_keyEditing)
+                {
+                    _keyEditing = true;
+                    _apiKeyBox.ReadOnly = false;
+                    _apiKeyBox.BackColor = Color.White;
+                    keyContainer.BackColor = Color.White;
+                    _apiKeyBox.ForeColor = Color.FromArgb(15, 23, 42);
+                    _apiKeyBox.Text = _currentApiKey;
+                    _apiKeyBox.Focus();
+                    _apiKeyBox.SelectAll();
+                    _toggleRevealButton.Enabled = false;
+                    _editSaveKeyButton.Text = "Enregistrer la clé";
+                    _keyStatusLabel.ForeColor = Color.FromArgb(37, 99, 235);
+                    _keyStatusLabel.Text = "Modifiez puis cliquez sur Enregistrer";
+                }
+                else
+                {
+                    string entered = (_apiKeyBox.Text ?? "").Trim();
+                    _currentApiKey = entered;
+                    _keyEditing = false;
+                    _keyRevealed = false;
+                    _apiKeyBox.ReadOnly = true;
+                    _apiKeyBox.BackColor = Color.FromArgb(248, 250, 252);
+                    keyContainer.BackColor = Color.FromArgb(248, 250, 252);
+                    _editSaveKeyButton.Text = "Saisir manuellement…";
+                    try { _onSaveApiKey?.Invoke(_currentApiKey); } catch { }
+                    RefreshApiKeyDisplay();
+
+                    _keyStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
+                    _keyStatusLabel.Text = string.IsNullOrEmpty(_currentApiKey)
+                        ? "Authentification désactivée"
+                        : "\u2713 Clé API enregistrée";
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // Shared UI Builder Helpers (Modern Slate / Blue Windows 11 Theme)
+        // ─────────────────────────────────────────────────────────────────
+
+        internal static Panel CreateCard(int x, int y, int width, int height, string sectionTitle)
+        {
+            var card = new Panel
+            {
+                Location = new Point(x, y),
+                Size = new Size(width, height),
+                BackColor = Color.White
+            };
+            card.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1))
+                    e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+            };
+
+            if (!string.IsNullOrEmpty(sectionTitle))
+            {
+                var header = new Label
+                {
+                    Text = sectionTitle,
+                    Font = new Font("Segoe UI Semibold", 8.25f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(16, 12),
+                    AutoSize = true
+                };
+                card.Controls.Add(header);
+            }
+            return card;
+        }
+
+        internal static Panel CreateInputContainer(int x, int y, int width, int height, Color backColor)
+        {
+            var panel = new Panel
+            {
+                Location = new Point(x, y),
+                Size = new Size(width, height),
+                BackColor = backColor
+            };
+            panel.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(203, 213, 225), 1))
+                    e.Graphics.DrawRectangle(pen, 0, 0, panel.Width - 1, panel.Height - 1);
+            };
+            return panel;
+        }
+
+        internal static Button CreatePrimaryButton(string text, int x, int y, int width, int height)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Location = new Point(x, y),
+                Size = new Size(width, height),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI Semibold", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            btn.FlatAppearance.BorderSize = 0;
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(29, 78, 216);
+            btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(30, 64, 175);
+            return btn;
+        }
+
+        internal static Button CreateSecondaryButton(string text, int x, int y, int width, int height)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Location = new Point(x, y),
+                Size = new Size(width, height),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(241, 245, 249);
+            btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(226, 232, 240);
+            btn.EnabledChanged += (s, e) =>
+            {
+                btn.BackColor = btn.Enabled ? Color.White : Color.FromArgb(248, 250, 252);
+                btn.ForeColor = btn.Enabled ? Color.FromArgb(30, 41, 59) : Color.FromArgb(148, 163, 184);
+            };
+            return btn;
+        }
+
+        internal static Button CreateDangerButton(string text, int x, int y, int width, int height)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Location = new Point(x, y),
+                Size = new Size(width, height),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(255, 241, 242),
+                ForeColor = Color.FromArgb(190, 18, 60),
+                Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                Cursor = Cursors.Hand,
+                UseVisualStyleBackColor = false
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(254, 205, 211);
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(255, 228, 230);
+            btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(254, 205, 211);
+            btn.EnabledChanged += (s, e) =>
+            {
+                btn.BackColor = btn.Enabled ? Color.FromArgb(255, 241, 242) : Color.FromArgb(248, 250, 252);
+                btn.ForeColor = btn.Enabled ? Color.FromArgb(190, 18, 60) : Color.FromArgb(148, 163, 184);
+                btn.FlatAppearance.BorderColor = btn.Enabled ? Color.FromArgb(254, 205, 211) : Color.FromArgb(203, 213, 225);
+            };
+            return btn;
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // FeedbackDialog — Modernized bug / feature report dialog
+        // ─────────────────────────────────────────────────────────────────
+
+        private sealed class FeedbackDialog : Form
+        {
+            private readonly TextBox _subject;
+            private readonly TextBox _description;
+            private readonly CheckBox _includeLogs;
+
+            public string SubjectText => _subject.Text;
+            public string DescriptionText => _description.Text;
+            public bool IncludeLogs => _includeLogs.Checked;
+
+            public FeedbackDialog(string kind)
+            {
+                bool isBug = !string.Equals(kind, GitHubFeedbackLogic.CategoryFeature, StringComparison.OrdinalIgnoreCase);
+                Text = isBug ? "Signaler un bug — TopSolid MCP" : "Proposer une amélioration — TopSolid MCP";
+                Width = 520;
+                Height = 400;
+                FormBorderStyle = FormBorderStyle.FixedDialog;
+                StartPosition = FormStartPosition.CenterScreen;
+                MaximizeBox = false;
+                MinimizeBox = false;
+                BackColor = Color.FromArgb(248, 250, 252);
+                Font = new Font("Segoe UI", 9.25f, FontStyle.Regular);
+
+                var lbl1 = new Label
+                {
+                    Text = "Sujet :",
+                    Left = 20,
+                    Top = 18,
+                    AutoSize = true,
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Font = new Font("Segoe UI Semibold", 9.25f, FontStyle.Bold)
+                };
+                _subject = new TextBox { Left = 20, Top = 42, Width = 464, Font = new Font("Segoe UI", 9.5f) };
+
+                var lbl2 = new Label
+                {
+                    Text = isBug ? "Étapes pour reproduire / comportement observé :" : "Description de l'amélioration souhaitée :",
+                    Left = 20,
+                    Top = 78,
+                    AutoSize = true,
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Font = new Font("Segoe UI Semibold", 9.25f, FontStyle.Bold)
+                };
+                _description = new TextBox
+                {
+                    Left = 20,
+                    Top = 102,
+                    Width = 464,
+                    Height = 165,
+                    Multiline = true,
+                    ScrollBars = ScrollBars.Vertical,
+                    Font = new Font("Segoe UI", 9.5f)
+                };
+
+                _includeLogs = new CheckBox
+                {
+                    Left = 20,
+                    Top = 280,
+                    Width = 464,
+                    Checked = isBug,
+                    ForeColor = Color.FromArgb(51, 65, 85),
+                    Text = "Joindre la version, l'OS et les 50 dernières lignes de log (clé API masquée)"
+                };
+
+                var ok = CreatePrimaryButton("Envoyer", 384, 314, 100, 32);
+                ok.DialogResult = DialogResult.OK;
+                var cancel = CreateSecondaryButton("Annuler", 276, 314, 100, 32);
+                cancel.DialogResult = DialogResult.Cancel;
+
+                Controls.AddRange(new Control[] { lbl1, _subject, lbl2, _description, _includeLogs, ok, cancel });
+                AcceptButton = ok;
+                CancelButton = cancel;
             }
         }
     }

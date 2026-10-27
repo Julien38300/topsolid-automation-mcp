@@ -1,985 +1,722 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Threading;
 using System.Windows.Forms;
 
 namespace TopSolidMcpServer.Utils
 {
-    /// <summary>
-    /// v1.8.3: TopSolid instance picker for the tray, mirroring the FEA Quality
-    /// app's "version TopSolid" dropdown: the Settings submenu lists every running
-    /// TopSolid (version + automation port, or no port), one click retargets the
-    /// connector immediately; "Manage…" opens the declared-instance dialog where
-    /// known instances can be named and a default chosen.
-    /// <para>
-    /// All UI rules of TrayIcon.cs apply: tray-thread only mutations, L() FR/EN,
-    /// settings.json persistence with CLI/env precedence kept by Program.cs.
-    /// </para>
-    /// </summary>
+    // ─────────────────────────────────────────────────────────────────────
+    // TrayIcon partial — Direct Level-1 "Instance TopSolid" submenu
+    // and dedicated "Gérer les instances TopSolid" dialog (zero MCP clutter).
+    // ─────────────────────────────────────────────────────────────────────
     public partial class TrayIcon
     {
-        private ToolStripMenuItem _instanceMenu;          // "Instance TopSolid" submenu
+        private Func<int, bool> _retargetAction;
+        private Func<int, bool> _httpRestartAction;
+        private int _httpPort = 8080;
+        private ToolStripMenuItem _instancePickerMenuItem;
+        private ManageInstancesDialog _manageDialog;
 
         /// <summary>
-        /// Program wires the retarget so a picker click applies immediately
-        /// (disconnect + reconnect on the new port), like the FEA app.
-        /// Returns true when connected to the new target.
+        /// Sets the callback invoked when the user picks a TopSolid instance in the
+        /// tray menu: disconnects and reconnects the WCF channel on the given port,
+        /// returning <c>true</c> if the connection succeeded.
         /// </summary>
-        private Func<int, bool> _retarget;
-
-        /// <summary>Wires the connector retarget used by the instance picker.</summary>
-        public void SetRetargetAction(Func<int, bool> retarget)
+        public void SetRetargetAction(Func<int, bool> onRetarget)
         {
-            _retarget = retarget;
-        }
-
-        /// <summary>
-        /// v1.8.10: Program wires the native HTTP endpoint hot-restart so the
-        /// "Manage" dialog can change the MCP port without a server restart.
-        /// Returns true when the endpoint listens on the new port.
-        /// </summary>
-        private Func<int, bool> _httpRestart;
-
-        /// <summary>v1.8.10: port the native HTTP endpoint currently listens on.</summary>
-        private volatile int _httpPort;
-
-        /// <summary>Wires the HTTP endpoint restart used by the "Manage" dialog (v1.8.10).</summary>
-        public void SetHttpRestartAction(Func<int, bool> restart)
-        {
-            _httpRestart = restart;
-        }
-
-        /// <summary>Program reports the effective HTTP port after binding (v1.8.10).</summary>
-        public void SetHttpPort(int port)
-        {
-            _httpPort = port;
-        }
-
-        /// <summary>Port the native MCP endpoint listens on (default 8080).</summary>
-        public int HttpPort
-        {
-            get { int p = _httpPort; return p > 0 ? p : 8080; }
+            _retargetAction = onRetarget;
         }
 
         /// <summary>
-        /// v1.8.10: live HTTP-restart action, read by the "Manage" dialog
-        /// (null = stdio-only mode, port saved for the next start).
+        /// Sets the current HTTP port displayed in the tray status and MCP Server Settings dialog.
         /// </summary>
-        internal Func<int, bool> HttpRestart
+        public void SetHttpPort(int httpPort)
         {
-            get { return _httpRestart; }
-        }
-
-        /// <summary>Effective read-only mode, shown by the "Manage" dialog (v1.8.10).</summary>
-        internal bool ReadOnlyMode
-        {
-            get { return _readOnly; }
+            if (httpPort > 0 && httpPort <= 65535)
+                _httpPort = httpPort;
+            UpdateStatusDisplay();
         }
 
         /// <summary>
-        /// v1.8.3: the port the connector currently targets. Read by the
-        /// "Manage" dialog to seed a fresh list with the running target.
+        /// Sets the callback invoked when the user clicks "Appliquer" on the MCP
+        /// HTTP port in the MCP Server Settings dialog: stops the running HTTP listener
+        /// and restarts it on the new port, returning <c>true</c> on success.
         /// </summary>
-        public int CurrentTargetPort
+        public void SetHttpRestartAction(Func<int, bool> onRestartHttp)
         {
-            get { return _port; }
-        }
-
-        /// <summary>Builds the instance picker items, called from BuildTray() on the tray thread.</summary>
-        private void BuildInstancePicker(ToolStripMenuItem settingsMenu)
-        {
-            _instanceMenu = new ToolStripMenuItem(L("Instance TopSolid", "TopSolid instance"));
-            settingsMenu.DropDownItems.Insert(0, _instanceMenu);
-
-            // Rescan each time the submenu is about to open: the running set
-            // changes while the tray lives for days.
-            _instanceMenu.DropDownOpening += (s, e) => RefreshInstanceMenu();
-
-            RefreshInstanceMenu();
+            _httpRestartAction = onRestartHttp;
         }
 
         /// <summary>
-        /// Rebuilds the instance list items. Callable from any thread.
-        /// CRITICAL WinForms rule: when called from DropDownOpening on the tray STA
-        /// thread, DropDownItems MUST be populated synchronously before DropDownOpening
-        /// returns — clearing DropDownItems and populating asynchronously via Post()
-        /// leaves DropDownItems.Count == 0 when OnDropDownShow checks it, which causes
-        /// WinForms to cancel opening the submenu every time.
+        /// Adds the "Instance TopSolid" submenu directly at Level 1 of the root
+        /// ContextMenuStrip (maximum 2 menu levels total).
         /// </summary>
-        private void RefreshInstanceMenu()
+        private void BuildInstancePickerMenu(ContextMenuStrip rootMenu)
+        {
+            TraySettings.Load();
+
+            _instancePickerMenuItem = new ToolStripMenuItem("Instance TopSolid");
+            StyleMenuItem(_instancePickerMenuItem);
+            _instancePickerMenuItem.DropDown.Font = rootMenu.Font;
+            _instancePickerMenuItem.DropDown.BackColor = Color.White;
+            _instancePickerMenuItem.DropDown.Padding = new Padding(4, 4, 4, 4);
+            if (_instancePickerMenuItem.DropDown is ToolStripDropDownMenu dropDown)
+                dropDown.ShowImageMargin = false;
+
+            // Seed with a placeholder so the submenu arrow is always drawn;
+            // the real list is rebuilt every time the user opens the submenu.
+            _instancePickerMenuItem.DropDownItems.Add(new ToolStripMenuItem("(chargement…)") { Enabled = false });
+            _instancePickerMenuItem.DropDownOpening += (s, e) => PopulateInstanceSubmenu();
+
+            rootMenu.Items.Add(_instancePickerMenuItem);
+        }
+
+        private void PopulateInstanceSubmenu()
         {
             try
             {
-                var menu = _instanceMenu;
-                if (menu == null) return;
+                if (_instancePickerMenuItem == null) return;
+                var items = _instancePickerMenuItem.DropDownItems;
+                items.Clear();
 
-                var context = _uiContext;
-                if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
+                TraySettings.Load();
+                string mode = TraySettings.InstanceMode;
+                var declared = TraySettings.DeclaredInstances ?? new List<DeclaredTopSolidInstance>();
+                List<TopSolidInstance> running = TopSolidInstanceList.Scan();
+
+                // ── Section 1: Running TopSolid instances (live scan) ──
+                if (running.Count == 0)
                 {
-                    // Called from a worker thread: scan off-thread, then marshal
-                    // the menu rebuild to the tray thread.
-                    ThreadPool.QueueUserWorkItem(_ =>
+                    var noneItem = new ToolStripMenuItem("(aucun TopSolid en cours d'exécution)")
                     {
-                        List<TopSolidInstance> bgInstances;
-                        try { bgInstances = TopSolidInstanceList.Scan(); }
-                        catch { bgInstances = new List<TopSolidInstance>(); }
-
-                        var ctx = _uiContext;
-                        if (ctx != null)
-                            ctx.Post(__ => PopulateInstanceMenu(bgInstances), null);
-                    });
-                    return;
-                }
-
-                // Already on the tray STA thread (e.g. DropDownOpening): scan and
-                // populate synchronously so DropDownItems is non-empty on return.
-                List<TopSolidInstance> instances;
-                try { instances = TopSolidInstanceList.Scan(); }
-                catch { instances = new List<TopSolidInstance>(); }
-                PopulateInstanceMenu(instances);
-            }
-            catch { /* tray gone */ }
-        }
-
-        private void PopulateInstanceMenu(List<TopSolidInstance> instances)
-        {
-            try
-            {
-                var menu = _instanceMenu;
-                if (menu == null) return;
-                menu.DropDownItems.Clear();
-
-                var runningPorts = new HashSet<int>();
-                var declaredList = TraySettings.DeclaredInstances ?? new List<DeclaredTopSolidInstance>();
-                var declaredByPort = new Dictionary<int, DeclaredTopSolidInstance>();
-                foreach (var d in declaredList)
-                {
-                    if (d != null && d.Port > 0 && !declaredByPort.ContainsKey(d.Port))
-                        declaredByPort[d.Port] = d;
-                }
-
-                if (instances.Count == 0 && declaredList.Count == 0)
-                {
-                    var none = new ToolStripMenuItem(
-                        L("Aucun TopSolid détecté", "No TopSolid detected"));
-                    none.Enabled = false;
-                    menu.DropDownItems.Add(none);
+                        Enabled = false
+                    };
+                    StyleMenuItem(noneItem);
+                    items.Add(noneItem);
                 }
                 else
                 {
-                    foreach (var inst in instances)
+                    foreach (var inst in running)
                     {
-                        int port = inst.Port;
-                        if (port > 0) runningPorts.Add(port);
-
-                        DeclaredTopSolidInstance decl = null;
-                        if (port > 0) declaredByPort.TryGetValue(port, out decl);
-
-                        bool isActiveTarget = inst.HasAutomationPort && port == _port;
-                        string label = BuildInstanceLabel(inst, decl, isActiveTarget);
-                        var item = new ToolStripMenuItem(label);
-                        item.Enabled = inst.HasAutomationPort;
-                        item.Checked = isActiveTarget;
-                        item.ToolTipText = inst.HasAutomationPort
-                            ? L("Cible cette instance pour les outils MCP (port " + port + ")",
-                                "Target this instance for the MCP tools (port " + port + ")")
-                            : L("Aucun port Automation détecté pour ce processus (vérifiez Outils > Options > Général > Automation ou un conflit de port 8090).",
-                                "No Automation port detected for this process (check Tools > Options > General > Automation or a port 8090 conflict).");
-                        var capturedInst = inst;
-                        item.Click += (s, ev) => OnInstanceClick(capturedInst);
-                        menu.DropDownItems.Add(item);
-                    }
-
-                    // Also show declared instances from "Gérer…" whose port is not currently detected
-                    foreach (var decl in declaredList)
-                    {
-                        if (decl == null || decl.Port <= 0 || runningPorts.Contains(decl.Port))
-                            continue;
-
-                        bool isActiveTarget = (decl.Port == _port);
-                        string suffix = L("non détecté", "not detected");
-                        string activeTag = isActiveTarget ? L(" — cible actuelle", " — current target") : "";
-                        string label = (decl.IsDefault ? "★ " : "") + decl.Name +
-                            " (port " + decl.Port + " — " + suffix + activeTag + ")";
-
-                        var item = new ToolStripMenuItem(label);
-                        item.Checked = isActiveTarget;
-                        item.ToolTipText = L(
-                            "Instance déclarée sur le port " + decl.Port + " (cliquer pour cibler ce port)",
-                            "Declared instance on port " + decl.Port + " (click to target this port)");
-                        var capturedDecl = decl;
-                        item.Click += (s, ev) => RetargetToPort(
-                            capturedDecl.Port,
-                            capturedDecl.Name + " (port " + capturedDecl.Port + ")");
-                        menu.DropDownItems.Add(item);
-                    }
-                }
-
-                menu.DropDownItems.Add(new ToolStripSeparator());
-
-                // "Automatic" — the ideal case: detect the first running TopSolid
-                // and target it, now and at every startup (instance_mode = "auto").
-                var autoItem = new ToolStripMenuItem(
-                    L("Automatique (premier TopSolid détecté)", "Automatic (first detected TopSolid)"));
-                autoItem.Checked = (TraySettings.InstanceMode == "auto");
-                autoItem.ToolTipText = L(
-                    "Au démarrage, le serveur détecte le premier TopSolid lancé et cible son port Automation.",
-                    "At startup, the server detects the first running TopSolid and targets its Automation port.");
-                autoItem.Click += (s, ev) => OnAutoClick();
-                menu.DropDownItems.Add(autoItem);
-
-                var manageItem = new ToolStripMenuItem(L("Gérer…", "Manage…"));
-                manageItem.Click += (s, ev) => OnManageInstancesClick();
-                menu.DropDownItems.Add(manageItem);
-            }
-            catch { /* menu gone */ }
-        }
-
-        private string BuildInstanceLabel(TopSolidInstance inst, DeclaredTopSolidInstance decl = null, bool isActiveTarget = false)
-        {
-            // "TopSolid 7.21 (port 8091)" — "TopSolid (sans port)" when Automation
-            // is off: visible in the list but not clickable, like the FEA app.
-            string version = inst.Version ?? "";
-            string name = string.IsNullOrEmpty(version)
-                ? "TopSolid"
-                : "TopSolid " + version;
-
-            if (decl != null && !string.IsNullOrWhiteSpace(decl.Name) &&
-                !string.Equals(decl.Name, name, StringComparison.OrdinalIgnoreCase) &&
-                !string.Equals(decl.Name, "TopSolid " + inst.Port, StringComparison.OrdinalIgnoreCase))
-            {
-                name = name + " — " + decl.Name;
-            }
-
-            if (decl != null && decl.IsDefault)
-                name = "★ " + name;
-
-            if (!inst.HasAutomationPort)
-                return name + " (" + L("sans port Automation", "no Automation port") + ")";
-
-            string activeSuffix = isActiveTarget
-                ? " [" + L("actif", "active") + "]"
-                : "";
-            return name + " (port " + inst.Port + ")" + activeSuffix;
-        }
-
-        private void OnInstanceClick(TopSolidInstance inst)
-        {
-            RetargetToPort(inst.Port, BuildInstanceLabel(inst));
-        }
-
-        /// <summary>
-        /// Switches the active TopSolid target port in manual mode, persists it to
-        /// settings.json, updates the tray badge state, and refreshes the instance menu.
-        /// </summary>
-        internal void RetargetToPort(int port, string displayLabel)
-        {
-            if (port <= 0) return;
-
-            _port = port;
-            try { TraySettings.SaveInstanceMode(port, "manual"); }
-            catch { }
-
-            var retarget = _retarget;
-            if (retarget == null)
-            {
-                PostState((TrayState)Volatile.Read(ref _state));
-                RefreshInstanceMenu();
-                return;
-            }
-
-            PostState(TrayState.Connecting);
-            ShowBalloon(L("Instance TopSolid", "TopSolid instance"),
-                L("Connexion à " + displayLabel + "…", "Connecting to " + displayLabel + "…"),
-                ToolTipIcon.Info, 2000);
-
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                bool ok = false;
-                try { ok = retarget(port); }
-                catch { ok = false; }
-                finally
-                {
-                    PostState(ok ? TrayState.Connected : TrayState.Disconnected);
-                    ShowBalloonSafe("TopSolid MCP",
-                        ok
-                            ? L("Connecté à " + displayLabel + ".", "Connected to " + displayLabel + ".")
-                            : L("Cible définie sur " + displayLabel + ", mais TopSolid ne répond pas sur le port " + port + ".",
-                                "Target set to " + displayLabel + ", but TopSolid is not responding on port " + port + "."),
-                        ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
-
-                    RefreshInstanceMenu();
-                }
-            });
-        }
-
-        private void OnAutoClick()
-        {
-            // Switch to "auto" mode: save it, then retarget now to the first
-            // detected running TopSolid (if any) so the change is immediate.
-            try { TraySettings.SaveInstanceMode(0, "auto"); }
-            catch { }
-
-            PostState(TrayState.Connecting);
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                int detected = 0;
-                try
-                {
-                    var list = TopSolidInstanceList.Scan();
-                    foreach (var inst in list)
-                    {
-                        if (inst != null && inst.HasAutomationPort)
+                        var captured = inst;
+                        bool isCurrent = _connected && captured.HasAutomationPort && captured.Port == _port;
+                        string prefix = isCurrent ? "\u2713  " : "     ";
+                        string verText = !string.IsNullOrEmpty(captured.Version) ? " " + captured.Version : "";
+                        string portText = captured.HasAutomationPort
+                            ? $" (port {captured.Port})"
+                            : " (Automation inactif)";
+                        var item = new ToolStripMenuItem($"{prefix}TopSolid{verText}{portText}")
                         {
-                            detected = inst.Port;
-                            break;
+                            Enabled = captured.HasAutomationPort
+                        };
+                        StyleMenuItem(item);
+                        if (isCurrent)
+                            item.Font = new Font("Segoe UI", 9.25f, FontStyle.Bold);
+
+                        if (captured.HasAutomationPort)
+                        {
+                            item.Click += (s, e) => SelectInstancePort(captured.Port, manual: true);
                         }
+                        items.Add(item);
                     }
                 }
-                catch { }
 
-                if (detected > 0)
+                // ── Section 2: User-declared instances (settings.json) ──
+                if (declared.Count > 0)
                 {
-                    _port = detected;
-                    var retarget = _retarget;
-                    bool ok = false;
-                    try
+                    items.Add(new ToolStripSeparator());
+                    foreach (var decl in declared)
                     {
-                        if (retarget != null) ok = retarget(detected);
+                        var captured = decl;
+                        var match = TopSolidInstanceList.FindByPort(running, captured.Port);
+                        bool isCurrent = _connected && captured.Port == _port;
+                        string stateTag = match != null ? " [actif]" : " [non démarré]";
+                        string defaultStar = captured.IsDefault ? " \u2605" : "";
+                        string prefix = isCurrent ? "\u2713  " : "     ";
+                        string label = $"{prefix}{captured.Name} (port {captured.Port}){defaultStar}{stateTag}";
+
+                        var item = new ToolStripMenuItem(label);
+                        StyleMenuItem(item);
+                        if (isCurrent)
+                            item.Font = new Font("Segoe UI", 9.25f, FontStyle.Bold);
+
+                        item.Click += (s, e) => SelectInstancePort(captured.Port, manual: true);
+                        items.Add(item);
                     }
-                    catch { ok = false; }
-                    finally
-                    {
-                        PostState(ok ? TrayState.Connected : TrayState.Disconnected);
-                    }
-
-                    ShowBalloonSafe("TopSolid MCP",
-                        ok
-                            ? L("Mode automatique : connecté au TopSolid détecté (port " + detected + ").", "Automatic mode: connected to the detected TopSolid (port " + detected + ").")
-                            : L("Mode automatique : détection ok (port " + detected + ") mais connexion échouée.", "Automatic mode: detection ok (port " + detected + ") but connection failed."),
-                        ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
-                }
-                else
-                {
-                    bool currentlyConnected = false;
-                    try { if (_isConnected != null) currentlyConnected = _isConnected(); } catch { }
-                    PostState(currentlyConnected ? TrayState.Connected : TrayState.Disconnected);
-
-                    ShowBalloonSafe("TopSolid MCP",
-                        L("Mode automatique activé. Aucun TopSolid lancé pour l'instant — le serveur ciblera le premier détecté.", "Automatic mode enabled. No TopSolid running yet — the server will target the first detected one."),
-                        ToolTipIcon.Info, 3000);
                 }
 
-                RefreshInstanceMenu();
-            });
-        }
+                // ── Section 3: Automatic mode + Manage TopSolid Instances dialog ──
+                items.Add(new ToolStripSeparator());
 
-        private void OnManageInstancesClick()
-        {
-            try
-            {
-                using (var dlg = new ManageInstancesDialog(this))
-                {
-                    dlg.ShowDialog();
-                    RefreshInstanceMenu();
-                }
+                bool isAuto = !string.Equals(mode, "manual", StringComparison.OrdinalIgnoreCase);
+                string autoPrefix = isAuto ? "\u2713  " : "     ";
+                var autoItem = new ToolStripMenuItem(autoPrefix + "Automatique (premier TopSolid détecté)");
+                StyleMenuItem(autoItem);
+                if (isAuto)
+                    autoItem.Font = new Font("Segoe UI", 9.25f, FontStyle.Bold);
+                autoItem.Click += (s, e) => SelectAutomaticMode(running);
+                items.Add(autoItem);
+
+                items.Add(new ToolStripSeparator());
+
+                var manageItem = new ToolStripMenuItem("Gérer les instances TopSolid…");
+                StyleMenuItem(manageItem);
+                manageItem.Click += (s, e) => ShowManageInstancesDialog();
+                items.Add(manageItem);
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("[TrayIcon] Manage instances dialog error: " + ex.Message);
+                Console.Error.WriteLine("[MCP-WARN] PopulateInstanceSubmenu failed: " + ex.Message);
             }
         }
-    }
 
-    /// <summary>
-    /// v1.8.10: "Manage TopSolid" dialog — the single settings surface:
-    /// declared instances with icon buttons (add, edit, remove, default star,
-    /// reorder up/down) and a server section (MCP HTTP port hot-restarted,
-    /// read-only mode, client connection URL). Persisted to settings.json;
-    /// the env var keeps winning over the dialog.
-    /// </summary>
-    internal sealed class ManageInstancesDialog : Form
-    {
-        // ── Segoe icon glyphs (Segoe Fluent Icons on Win11 / MDL2 on Win10) ──
-        private const string GlyphAdd = "\uE710";
-        private const string GlyphRemove = "\uE74D";
-        private const string GlyphEdit = "\uE70F";
-        private const string GlyphStar = "\uE735";
-        private const string GlyphUp = "\uE70D";
-        private const string GlyphDown = "\uE70E";
-        private const string GlyphApply = "\uE72C";
-        private const string GlyphCancel = "\uE711";
-        private const string GlyphSave = "\uE73E";
-
-        private static string _iconFontFamily;   // null until probed; "" = no icon font
-
-        private readonly TrayIcon _owner;
-        private readonly ListBox _list;
-        private readonly TextBox _nameBox;
-        private readonly NumericUpDown _portBox;
-        private readonly Button _addButton;          // "+ Add" -> "Save" in edit mode
-        private readonly Button _cancelEditButton;   // visible in edit mode only
-        private readonly Button _upButton;
-        private readonly Button _downButton;
-        private readonly Button _editButton;
-        private readonly Button _removeButton;
-        private readonly Button _defaultButton;
-        private readonly NumericUpDown _httpPortBox;
-        private readonly Button _httpApplyButton;
-        private readonly Label _urlLabel;
-        private readonly CheckBox _readOnlyBox;
-        private readonly ToolTip _tips;
-        private List<DeclaredTopSolidInstance> _instances;
-        private int _editIndex = -1;                // >= 0 while editing that row
-
-        internal ManageInstancesDialog(TrayIcon owner)
+        private void SelectInstancePort(int targetPort, bool manual)
         {
-            _owner = owner;
-            _tips = new ToolTip();
-            Text = L("Gérer les instances TopSolid", "Manage TopSolid instances");
-            Width = 580;
-            Height = 640;
-            FormBorderStyle = FormBorderStyle.FixedDialog;
-            StartPosition = FormStartPosition.CenterScreen;
-            MaximizeBox = false;
-            MinimizeBox = false;
+            if (targetPort <= 0) return;
 
-            _instances = new List<DeclaredTopSolidInstance>(TraySettings.DeclaredInstances);
-            if (_instances.Count == 0)
-            {
-                // v1.8.3: nothing declared yet — seed the list with the currently
-                // targeted port as default, so the dialog is never empty and the
-                // user can immediately see what the server targets.
-                int currentPort = owner.CurrentTargetPort;
-                if (currentPort > 0)
-                {
-                    _instances.Add(new DeclaredTopSolidInstance("TopSolid " + currentPort, currentPort) { IsDefault = true });
-                    TraySettings.SaveDeclaredInstances(_instances);
-                }
-            }
+            TraySettings.SaveInstanceMode(targetPort, manual ? "manual" : "auto");
 
-            var layout = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Padding = new Padding(12)
-            };
-
-            // ── Section: declared instances ──
-            var instancesBox = new GroupBox
-            {
-                Text = L("Instances TopSolid", "TopSolid instances"),
-                Width = 540,
-                Height = 300
-            };
-            var instancesFlow = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Padding = new Padding(8, 18, 8, 4)
-            };
-            instancesBox.Controls.Add(instancesFlow);
-
-            var listRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
-            _list = new ListBox { Width = 420, Height = 170 };
-            _list.HorizontalScrollbar = true;
-            _list.DoubleClick += (s, ev) => OnEditRequested();
-            _tips.SetToolTip(_list,
-                L("Double-clic sur une instance pour l'éditer.", "Double-click an instance to edit it."));
-            listRow.Controls.Add(_list);
-
-            var sideButtons = new FlowLayoutPanel
-            {
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Width = 46,
-                Padding = new Padding(2)
-            };
-            _upButton = IconButton(GlyphUp, "↑", L("Monter", "Move up"));
-            _upButton.Click += (s, ev) => OnMove(-1);
-            _downButton = IconButton(GlyphDown, "↓", L("Descendre", "Move down"));
-            _downButton.Click += (s, ev) => OnMove(+1);
-            _editButton = IconButton(GlyphEdit, L("Éditer", "Edit"), L("Modifier l'instance sélectionnée (ou double-clic).", "Edit the selected instance (or double-click)."));
-            _editButton.Click += (s, ev) => OnEditRequested();
-            _removeButton = IconButton(GlyphRemove, L("Suppr.", "Del"), L("Supprimer", "Remove"));
-            _removeButton.Click += (s, ev) => OnRemove();
-            _defaultButton = IconButton(GlyphStar, L("Défaut", "Def."), L("Définir par défaut (★) — ciblée immédiatement et au démarrage.", "Set as default (★) — targeted immediately and at startup."));
-            _defaultButton.Click += (s, ev) => OnSetDefault();
-            sideButtons.Controls.Add(_upButton);
-            sideButtons.Controls.Add(_downButton);
-            sideButtons.Controls.Add(_editButton);
-            sideButtons.Controls.Add(_removeButton);
-            sideButtons.Controls.Add(_defaultButton);
-            listRow.Controls.Add(sideButtons);
-            instancesFlow.Controls.Add(listRow);
-
-            var intro = new Label
-            {
-                Text = L(
-                    "Déclarez vos instances (nom + port Automation). L'ordre de la liste est celui du menu.",
-                    "Declare your instances (name + Automation port). The list order is the menu order."),
-                AutoSize = true
-            };
-            instancesFlow.Controls.Add(intro);
-
-            var nameRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
-            nameRow.Controls.Add(new Label
-            {
-                Text = L("Nom : ", "Name: "),
-                AutoSize = true,
-                Padding = new Padding(0, 8, 0, 0)
-            });
-            _nameBox = new TextBox { Width = 190 };
-            nameRow.Controls.Add(_nameBox);
-            nameRow.Controls.Add(new Label
-            {
-                Text = L("  Port : ", "  Port: "),
-                AutoSize = true,
-                Padding = new Padding(0, 8, 0, 0)
-            });
-            _portBox = new NumericUpDown
-            {
-                Minimum = 1,
-                Maximum = 65535,
-                Value = 8090,
-                Width = 80
-            };
-            nameRow.Controls.Add(_portBox);
-            _addButton = new Button
-            {
-                Width = 120,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                TabStop = false,
-                Margin = new Padding(1)
-            };
-            _addButton.Click += (s, ev) => OnAddOrSave();
-            _tips.SetToolTip(_addButton, L("Ajouter une instance déclarée.", "Add a declared instance."));
-            nameRow.Controls.Add(_addButton);
-            _cancelEditButton = new Button
-            {
-                Width = 90,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                TabStop = false,
-                Margin = new Padding(1)
-            };
-            _cancelEditButton.Visible = false;
-            _cancelEditButton.Click += (s, ev) => CancelEdit();
-            _tips.SetToolTip(_cancelEditButton, L("Annuler la modification en cours.", "Cancel the ongoing edit."));
-            nameRow.Controls.Add(_cancelEditButton);
-            instancesFlow.Controls.Add(nameRow);
-
-            layout.Controls.Add(instancesBox);
-
-            // ── Section: server / client connection ──
-            var serverBox = new GroupBox
-            {
-                Text = L("Serveur MCP", "MCP server"),
-                Width = 540,
-                Height = 180
-            };
-            var serverFlow = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                Padding = new Padding(8, 18, 8, 4)
-            };
-            serverBox.Controls.Add(serverFlow);
-
-            var portRow = new FlowLayoutPanel { AutoSize = true, WrapContents = false };
-            portRow.Controls.Add(new Label
-            {
-                Text = L("Port MCP (HTTP) : ", "MCP port (HTTP): "),
-                AutoSize = true,
-                Padding = new Padding(0, 8, 0, 0)
-            });
-            _httpPortBox = new NumericUpDown
-            {
-                Minimum = 1,
-                Maximum = 65535,
-                Value = owner.HttpPort,
-                Width = 80
-            };
-            portRow.Controls.Add(_httpPortBox);
-            _httpApplyButton = new Button
-            {
-                Width = 120,
-                Height = 30,
-                FlatStyle = FlatStyle.Flat,
-                TabStop = false,
-                Margin = new Padding(1)
-            };
-            _httpApplyButton.Click += (s, ev) => OnApplyHttpPort();
-            _tips.SetToolTip(_httpApplyButton, L("Redémarre l'endpoint HTTP sur ce port, immédiatement.", "Restarts the HTTP endpoint on this port, immediately."));
-            portRow.Controls.Add(_httpApplyButton);
-            serverFlow.Controls.Add(portRow);
-
-            _urlLabel = new Label
-            {
-                Text = L("URL client : ", "Client URL: ") + "http://localhost:" + owner.HttpPort + "/mcp",
-                AutoSize = true
-            };
-            _tips.SetToolTip(_urlLabel,
-                L("Clients HTTP : cette URL + la clé API (Paramètres > Clé API).\nClients stdio (Claude Desktop…) : aucun port ni clé requis.",
-                  "HTTP clients: this URL + the API key (Settings > API key).\nstdio clients (Claude Desktop…): no port, no key."));
-            serverFlow.Controls.Add(_urlLabel);
-
-            _readOnlyBox = new CheckBox
-            {
-                Text = L("Mode lecture seule (appliqué au prochain démarrage)", "Read-only mode (applied next start)"),
-                AutoSize = true
-            };
-            _readOnlyBox.Checked = owner.ReadOnlyMode;
-            _readOnlyBox.CheckedChanged += (s, ev) =>
-            {
-                try { TraySettings.Save(TraySettings.Port, _readOnlyBox.Checked); }
-                catch { }
-            };
-            serverFlow.Controls.Add(_readOnlyBox);
-
-            layout.Controls.Add(serverBox);
-
-            var okRow = new FlowLayoutPanel { FlowDirection = FlowDirection.RightToLeft, AutoSize = true, Width = 540 };
-            var ok = new Button { Text = "OK", DialogResult = DialogResult.OK };
-            var cancel = new Button { Text = L("Annuler", "Cancel"), DialogResult = DialogResult.Cancel };
-            okRow.Controls.Add(cancel);
-            okRow.Controls.Add(ok);
-            layout.Controls.Add(okRow);
-
-            Controls.Add(layout);
-            AcceptButton = ok;
-            CancelButton = cancel;
-
-            ApplyButtonGlyphs();
-            ReloadList();
-        }
-
-        /// <summary>Small square button with a Segoe icon glyph, text fallback included.</summary>
-        private Button IconButton(string glyph, string fallbackText, string tooltip)
-        {
-            var b = new Button
-            {
-                Width = 40,
-                Height = 32,
-                FlatStyle = FlatStyle.Flat,
-                TabStop = false,
-                Margin = new Padding(1)
-            };
-            string family = IconFontFamily();
-            if (family.Length > 0)
-            {
-                b.Text = glyph;
-                b.Font = new Font(family, 11f);
-            }
-            else
-            {
-                b.Text = fallbackText;
-            }
-            if (tooltip != null) _tips.SetToolTip(b, tooltip);
-            return b;
-        }
-
-        /// <summary>Probes the Segoe icon fonts once; empty string = none installed.</summary>
-        private static string IconFontFamily()
-        {
-            if (_iconFontFamily != null) return _iconFontFamily;
-            foreach (var family in new[] { "Segoe Fluent Icons", "Segoe MDL2 Assets" })
+            ThreadPool.QueueUserWorkItem(_ =>
             {
                 try
                 {
-                    using (var probe = new Font(family, 9f))
+                    bool ok = _retargetAction != null && _retargetAction(targetPort);
+                    if (ok)
                     {
-                        if (string.Equals(probe.FontFamily.Name, family, StringComparison.OrdinalIgnoreCase))
-                        {
-                            _iconFontFamily = family;
-                            return _iconFontFamily;
-                        }
+                        ShowBalloon(
+                            "Instance TopSolid sélectionnée",
+                            $"Connecté à TopSolid sur le port {targetPort}.",
+                            ToolTipIcon.Info);
+                    }
+                    else
+                    {
+                        ShowBalloon(
+                            "TopSolid non disponible",
+                            $"Port {targetPort} enregistré, mais aucun TopSolid ne répond sur ce port.",
+                            ToolTipIcon.Warning);
                     }
                 }
                 catch { }
-            }
-            _iconFontFamily = "";
-            return _iconFontFamily;
+            });
         }
 
-        /// <summary>Sets the labelled button glyphs according to the icon font availability.</summary>
-        private void ApplyButtonGlyphs()
+        private void SelectAutomaticMode(List<TopSolidInstance> runningSnapshot)
         {
-            string family = IconFontFamily();
-            _addButton.Text = family.Length > 0
-                ? GlyphAdd + "  " + L("Ajouter", "Add")
-                : L("Ajouter", "Add");
-            _cancelEditButton.Text = family.Length > 0
-                ? GlyphCancel + "  " + L("Annuler", "Cancel")
-                : L("Annuler", "Cancel");
-            _httpApplyButton.Text = family.Length > 0
-                ? GlyphApply + "  " + L("Appliquer", "Apply")
-                : L("Appliquer", "Apply");
-        }
-
-        /// <summary>Add-mode button shows "+" / edit-mode shows the check "Save".</summary>
-        private void SetAddMode(bool addMode)
-        {
-            string family = IconFontFamily();
-            _addButton.Text = addMode
-                ? (family.Length > 0 ? GlyphAdd + "  " + L("Ajouter", "Add") : L("Ajouter", "Add"))
-                : (family.Length > 0 ? GlyphSave + "  " + L("Enregistrer", "Save") : L("Enregistrer", "Save"));
-            _cancelEditButton.Visible = !addMode;
-        }
-
-        private void Persist()
-        {
-            try { TraySettings.SaveDeclaredInstances(_instances); }
-            catch { }
-        }
-
-        private void ReloadList()
-        {
-            if (_list == null) return;
-            _list.Items.Clear();
-            for (int i = 0; i < _instances.Count; i++)
+            int targetPort = 0;
+            if (runningSnapshot != null)
             {
-                var inst = _instances[i];
-                _list.Items.Add((i + 1) + ". " + (inst.IsDefault ? "★ " : "") +
-                    inst.Name + " — port " + inst.Port);
-            }
-            if (_editIndex >= 0 && _editIndex < _list.Items.Count)
-                _list.SelectedIndex = _editIndex;
-        }
-
-        private void OnAdd()
-        {
-            string name = _nameBox.Text.Trim();
-            if (name.Length == 0)
-            {
-                MessageBox.Show(this,
-                    L("Saisissez un nom.", "Enter a name."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (TraySettingsContains(name))
-            {
-                MessageBox.Show(this,
-                    L("Ce nom existe déjà.", "This name already exists."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            var added = new DeclaredTopSolidInstance(name, (int)_portBox.Value);
-            if (_instances.Count == 0)
-                added.IsDefault = true;
-            _instances.Add(added);
-            TraySettings.SaveDeclaredInstances(_instances);
-            if (added.IsDefault && _owner != null)
-                _owner.RetargetToPort(added.Port, added.Name + " (port " + added.Port + ")");
-            ReloadList();
-            _nameBox.Clear();
-        }
-
-        private bool TraySettingsContains(string name)
-        {
-            foreach (var i in _instances)
-                if (string.Equals(i.Name, name, StringComparison.OrdinalIgnoreCase))
-                    return true;
-            return false;
-        }
-
-        private void OnRemove()
-        {
-            int idx = _list.SelectedIndex;
-            if (idx < 0)
-            {
-                MessageBox.Show(this,
-                    L("Sélectionnez une instance à supprimer.", "Select an instance to remove."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            if (idx == _editIndex) CancelEdit();
-            else if (idx < _editIndex) _editIndex--;
-
-            _instances.RemoveAt(idx);
-            Persist();
-            ReloadList();
-        }
-
-        /// <summary>Marks the selected instance as the startup default (exactly one) and retargets immediately.</summary>
-        private void OnSetDefault()
-        {
-            int idx = _list.SelectedIndex;
-            if (idx < 0)
-            {
-                MessageBox.Show(this,
-                    L("Sélectionnez une instance.", "Select an instance."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            for (int i = 0; i < _instances.Count; i++)
-                _instances[i].IsDefault = (i == idx);
-
-            var chosen = _instances[idx];
-            Persist();
-            TraySettings.SaveInstanceMode(chosen.Port, "manual");
-            if (_owner != null)
-                _owner.RetargetToPort(chosen.Port, chosen.Name + " (port " + chosen.Port + ")");
-            ReloadList();
-        }
-
-        // ── Editing (v1.8.10) ──
-
-        private void OnEditRequested()
-        {
-            int idx = _list.SelectedIndex;
-            if (idx < 0)
-            {
-                MessageBox.Show(this,
-                    L("Sélectionnez une instance à modifier.", "Select an instance to edit."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            _editIndex = idx;
-            _nameBox.Text = _instances[idx].Name;
-            _portBox.Value = _instances[idx].Port;
-            SetAddMode(false);
-            _nameBox.Focus();
-        }
-
-        private void CancelEdit()
-        {
-            _editIndex = -1;
-            _nameBox.Clear();
-            SetAddMode(true);
-        }
-
-        private void OnAddOrSave()
-        {
-            if (_editIndex >= 0) OnSaveEdit();
-            else OnAdd();
-        }
-
-        private void OnSaveEdit()
-        {
-            int idx = _editIndex;
-            string name = _nameBox.Text.Trim();
-            if (name.Length == 0)
-            {
-                MessageBox.Show(this,
-                    L("Saisissez un nom.", "Enter a name."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            for (int i = 0; i < _instances.Count; i++)
-            {
-                if (i != idx && string.Equals(_instances[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                foreach (var r in runningSnapshot)
                 {
-                    MessageBox.Show(this,
-                        L("Ce nom existe déjà.", "This name already exists."),
-                        Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
+                    if (r.HasAutomationPort) { targetPort = r.Port; break; }
                 }
             }
-
-            int newPort = (int)_portBox.Value;
-            var old = _instances[idx];
-            if (old.Name == name && old.Port == newPort)
+            if (targetPort == 0)
             {
-                CancelEdit();
-                return;                              // nothing changed
+                TraySettings.Load();
+                foreach (var d in TraySettings.DeclaredInstances)
+                {
+                    if (d.IsDefault && d.Port > 0) { targetPort = d.Port; break; }
+                }
             }
+            if (targetPort == 0) targetPort = _port > 0 ? _port : 8090;
 
-            // DeclaredTopSolidInstance has private setters: rebuild the row,
-            // keeping the default star.
-            _instances[idx] = new DeclaredTopSolidInstance(name, newPort) { IsDefault = old.IsDefault };
-            Persist();
+            TraySettings.SaveInstanceMode(0, "auto");
 
-            // Keep the live target consistent when the default instance moved.
-            if (_instances[idx].IsDefault)
-                TraySettings.SaveInstanceMode(newPort, "manual");
-
-            _editIndex = -1;
-            _nameBox.Clear();
-            SetAddMode(true);
-            ReloadList();
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                try
+                {
+                    bool ok = _retargetAction != null && _retargetAction(targetPort);
+                    ShowBalloon(
+                        "Mode automatique activé",
+                        ok
+                            ? $"Connecté à TopSolid (port {targetPort})."
+                            : $"Aucun TopSolid actif sur le port {targetPort} — reconnexion automatique en attente.",
+                        ok ? ToolTipIcon.Info : ToolTipIcon.Warning);
+                }
+                catch { }
+            });
         }
 
-        // ── Reorder (v1.8.10) ──
-
-        /// <summary>
-        /// Moves the selected instance one slot up (-1) or down (+1).
-        /// The new order is the JSON order and the menu order.
-        /// </summary>
-        private void OnMove(int delta)
-        {
-            int idx = _list.SelectedIndex;
-            int target = idx + delta;
-            if (idx < 0 || target < 0 || target >= _instances.Count)
-                return;
-
-            var tmp = _instances[idx];
-            _instances[idx] = _instances[target];
-            _instances[target] = tmp;
-            Persist();
-            ReloadList();
-            _list.SelectedIndex = target;
-        }
-
-        // ── MCP HTTP port (v1.8.10) ──
-
-        private void OnApplyHttpPort()
-        {
-            int newPort = (int)_httpPortBox.Value;
-            int current = _owner != null ? _owner.HttpPort : 8080;
-            if (newPort == current)
-                return;                               // nothing to do
-
-            var restart = _owner != null ? _owner.HttpRestart : null;
-            if (restart == null)
-            {
-                // No live endpoint (stdio-only mode): persist for the next start.
-                TraySettings.SaveHttpPort(newPort);
-                _urlLabel.Text = L("URL client : ", "Client URL: ") + "http://localhost:" + newPort + "/mcp";
-                MessageBox.Show(this,
-                    L("Port enregistré. Il sera utilisé au prochain démarrage du serveur.", "Port saved. It will be used the next time the server starts."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            bool ok = false;
-            try { ok = restart(newPort); }
-            catch { ok = false; }
-
-            if (ok && _owner != null)
-            {
-                // v1.8.10 (acceptor M1): the live port must ALSO be persisted —
-                // without this the hot-restart was lost on the next server start.
-                TraySettings.SaveHttpPort(newPort);
-                _owner.SetHttpPort(newPort);
-                _urlLabel.Text = L("URL client : ", "Client URL: ") + "http://localhost:" + newPort + "/mcp";
-                MessageBox.Show(this,
-                    L("Endpoint MCP redémarré sur le port " + newPort + ".", "MCP endpoint restarted on port " + newPort + "."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                _httpPortBox.Value = current;
-                MessageBox.Show(this,
-                    L("Impossible d'écouter sur le port " + newPort + " (port occupé ?). L'ancien port est conservé.",
-                      "Cannot listen on port " + newPort + " (port busy?). The previous port is kept."),
-                    Text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        private static string L(string fr, string en)
+        internal void ShowManageInstancesDialog()
         {
             try
             {
-                return System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? fr : en;
+                if (_manageDialog != null && !_manageDialog.IsDisposed)
+                {
+                    _manageDialog.BringToFront();
+                    _manageDialog.Activate();
+                    return;
+                }
+
+                TraySettings.Load();
+                _manageDialog = new ManageInstancesDialog(
+                    TraySettings.DeclaredInstances,
+                    updatedList =>
+                    {
+                        TraySettings.SaveDeclaredInstances(updatedList);
+                        foreach (var d in updatedList)
+                        {
+                            if (d.IsDefault && d.Port > 0)
+                            {
+                                SelectInstancePort(d.Port, manual: true);
+                                break;
+                            }
+                        }
+                    });
+                _manageDialog.Show();
             }
-            catch { return en; }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("[MCP-WARN] ManageInstancesDialog failed: " + ex.Message);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // ManageInstancesDialog — 100% Dedicated to TopSolid CAD Instances
+        // ─────────────────────────────────────────────────────────────────
+
+        internal sealed class ManageInstancesDialog : Form
+        {
+            private readonly List<DeclaredTopSolidInstance> _items;
+            private readonly Action<List<DeclaredTopSolidInstance>> _onSave;
+
+            private readonly ListBox _listBox;
+            private readonly TextBox _nameBox;
+            private readonly NumericUpDown _portBox;
+            private readonly Button _addOrSaveButton;
+            private readonly Button _cancelEditButton;
+            private readonly Label _editorHeaderLabel;
+            private readonly Button _upButton;
+            private readonly Button _downButton;
+            private readonly Button _editButton;
+            private readonly Button _removeButton;
+            private readonly Button _defaultButton;
+
+            private int _editingIndex = -1;
+
+            public ManageInstancesDialog(
+                List<DeclaredTopSolidInstance> initial,
+                Action<List<DeclaredTopSolidInstance>> onSave)
+            {
+                _items = new List<DeclaredTopSolidInstance>();
+                if (initial != null)
+                {
+                    foreach (var d in initial)
+                        _items.Add(new DeclaredTopSolidInstance(d.Name, d.Port) { IsDefault = d.IsDefault });
+                }
+                _onSave = onSave;
+
+                Text = "Gérer les instances TopSolid";
+                FormBorderStyle = FormBorderStyle.FixedDialog;
+                MaximizeBox = false;
+                MinimizeBox = false;
+                StartPosition = FormStartPosition.CenterScreen;
+                ClientSize = new Size(560, 486);
+                BackColor = Color.FromArgb(248, 250, 252);
+                Font = new Font("Segoe UI", 9.25f, FontStyle.Regular);
+
+                // ── Top Banner ──
+                var banner = new Panel
+                {
+                    Dock = DockStyle.Top,
+                    Height = 66,
+                    BackColor = Color.White
+                };
+                banner.Paint += (s, e) =>
+                {
+                    using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1))
+                        e.Graphics.DrawLine(pen, 0, banner.Height - 1, banner.Width, banner.Height - 1);
+                };
+
+                var titleLabel = new Label
+                {
+                    Text = "Instances TopSolid déclarées",
+                    Font = new Font("Segoe UI Semibold", 12f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Location = new Point(22, 12),
+                    AutoSize = true
+                };
+                var subtitleLabel = new Label
+                {
+                    Text = "Définissez l'ordre d'affichage de vos sessions CAO et le port Automation par défaut",
+                    Font = new Font("Segoe UI", 9f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(22, 37),
+                    AutoSize = true
+                };
+                banner.Controls.Add(titleLabel);
+                banner.Controls.Add(subtitleLabel);
+                Controls.Add(banner);
+
+                // ── Card 1 : Liste ordonnée des instances ──
+                var listCard = CreateCard(20, 82, 520, 226, "LISTE ORDONNÉE DES INSTANCES");
+
+                var listBorder = CreateInputContainer(16, 36, 362, 174, Color.White);
+                _listBox = new ListBox
+                {
+                    BorderStyle = BorderStyle.None,
+                    Location = new Point(2, 2),
+                    Size = new Size(358, 170),
+                    DrawMode = DrawMode.OwnerDrawFixed,
+                    ItemHeight = 34,
+                    IntegralHeight = false,
+                    BackColor = Color.White,
+                    Font = new Font("Segoe UI", 9.25f, FontStyle.Regular)
+                };
+                _listBox.DrawItem += OnDrawInstanceItem;
+                _listBox.Paint += OnListBoxPaintEmptyState;
+                _listBox.SelectedIndexChanged += (s, e) => UpdateActionButtonsState();
+                _listBox.DoubleClick += OnBeginEdit;
+                listBorder.Controls.Add(_listBox);
+                listCard.Controls.Add(listBorder);
+
+                // Right-side clean vertical button stack (with readable labels + symbols)
+                _upButton = CreateSecondaryButton("\u25B2  Monter", 390, 36, 114, 31);
+                _upButton.Click += OnMoveUp;
+                listCard.Controls.Add(_upButton);
+
+                _downButton = CreateSecondaryButton("\u25BC  Descendre", 390, 72, 114, 31);
+                _downButton.Click += OnMoveDown;
+                listCard.Controls.Add(_downButton);
+
+                _defaultButton = CreateSecondaryButton("\u2605  Par défaut", 390, 108, 114, 31);
+                _defaultButton.Click += OnSetDefault;
+                listCard.Controls.Add(_defaultButton);
+
+                _editButton = CreateSecondaryButton("\u270E  Modifier", 390, 144, 114, 31);
+                _editButton.Click += OnBeginEdit;
+                listCard.Controls.Add(_editButton);
+
+                _removeButton = CreateDangerButton("\u2715  Supprimer", 390, 179, 114, 31);
+                _removeButton.Click += OnRemove;
+                listCard.Controls.Add(_removeButton);
+
+                Controls.Add(listCard);
+
+                // ── Card 2 : Ajouter / Modifier une instance ──
+                var editCard = CreateCard(20, 322, 520, 106, null);
+
+                _editorHeaderLabel = new Label
+                {
+                    Text = "AJOUTER UNE INSTANCE TOPSOLID",
+                    Font = new Font("Segoe UI Semibold", 8.25f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(16, 12),
+                    AutoSize = true
+                };
+                editCard.Controls.Add(_editorHeaderLabel);
+
+                var nameLbl = new Label
+                {
+                    Text = "Nom de l'instance",
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(71, 85, 105),
+                    Location = new Point(16, 36),
+                    AutoSize = true
+                };
+                editCard.Controls.Add(nameLbl);
+
+                var nameContainer = CreateInputContainer(16, 56, 204, 32, Color.White);
+                _nameBox = new TextBox
+                {
+                    BorderStyle = BorderStyle.None,
+                    Font = new Font("Segoe UI", 9.5f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Location = new Point(8, 6),
+                    Width = 188
+                };
+                nameContainer.Controls.Add(_nameBox);
+                editCard.Controls.Add(nameContainer);
+
+                var portLbl = new Label
+                {
+                    Text = "Port Automation",
+                    Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(71, 85, 105),
+                    Location = new Point(230, 36),
+                    AutoSize = true
+                };
+                editCard.Controls.Add(portLbl);
+
+                var portContainer = CreateInputContainer(230, 56, 94, 32, Color.White);
+                _portBox = new NumericUpDown
+                {
+                    BorderStyle = BorderStyle.None,
+                    Minimum = 1,
+                    Maximum = 65535,
+                    Value = 8090,
+                    Font = new Font("Consolas", 10f, FontStyle.Regular),
+                    Location = new Point(8, 6),
+                    Width = 80
+                };
+                portContainer.Controls.Add(_portBox);
+                editCard.Controls.Add(portContainer);
+
+                _addOrSaveButton = CreatePrimaryButton("Ajouter", 334, 56, 96, 32);
+                _addOrSaveButton.Click += OnAddOrSave;
+                editCard.Controls.Add(_addOrSaveButton);
+
+                _cancelEditButton = CreateSecondaryButton("Annuler", 436, 56, 68, 32);
+                _cancelEditButton.Visible = false;
+                _cancelEditButton.Click += (s, e) => ExitEditMode();
+                editCard.Controls.Add(_cancelEditButton);
+
+                Controls.Add(editCard);
+
+                // ── Footer ──
+                var hintLabel = new Label
+                {
+                    Text = "Les changements sont enregistrés automatiquement.",
+                    Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(20, 446),
+                    AutoSize = true
+                };
+                Controls.Add(hintLabel);
+
+                var closeButton = CreateSecondaryButton("Fermer", 440, 440, 100, 32);
+                closeButton.Click += (s, e) => Close();
+                Controls.Add(closeButton);
+                CancelButton = closeButton;
+
+                RefreshList(_items.Count > 0 ? 0 : -1);
+            }
+
+            private void OnListBoxPaintEmptyState(object sender, PaintEventArgs e)
+            {
+                if (_items.Count > 0) return;
+                using (var brush = new SolidBrush(Color.FromArgb(148, 163, 184)))
+                using (var font = new Font("Segoe UI", 9f, FontStyle.Regular))
+                {
+                    var sf = new StringFormat
+                    {
+                        Alignment = StringAlignment.Center,
+                        LineAlignment = StringAlignment.Center
+                    };
+                    e.Graphics.DrawString(
+                        "Aucune instance déclarée (détection automatique active)",
+                        font,
+                        brush,
+                        new RectangleF(0, 0, _listBox.Width, _listBox.Height),
+                        sf);
+                }
+            }
+
+            private void OnDrawInstanceItem(object sender, DrawItemEventArgs e)
+            {
+                if (e.Index < 0 || e.Index >= _items.Count) return;
+
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                var bounds = e.Bounds;
+                bool selected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+                var item = _items[e.Index];
+
+                Color bgColor = selected ? Color.FromArgb(239, 246, 255) : Color.White;
+                using (var bgBrush = new SolidBrush(bgColor))
+                    g.FillRectangle(bgBrush, bounds);
+
+                if (selected)
+                {
+                    using (var accentBrush = new SolidBrush(Color.FromArgb(37, 99, 235)))
+                        g.FillRectangle(accentBrush, bounds.Left, bounds.Top, 3, bounds.Height);
+                }
+
+                using (var sepPen = new Pen(Color.FromArgb(241, 245, 249), 1))
+                    g.DrawLine(sepPen, bounds.Left + 8, bounds.Bottom - 1, bounds.Right - 8, bounds.Bottom - 1);
+
+                // Index number
+                using (var idxFont = new Font("Segoe UI", 8.75f, FontStyle.Regular))
+                using (var idxBrush = new SolidBrush(Color.FromArgb(100, 116, 139)))
+                {
+                    g.DrawString($"{e.Index + 1}.", idxFont, idxBrush, bounds.Left + 10, bounds.Top + 8);
+                }
+
+                // Instance Name
+                using (var nameFont = new Font("Segoe UI Semibold", 9.5f, FontStyle.Bold))
+                using (var nameBrush = new SolidBrush(selected ? Color.FromArgb(29, 78, 216) : Color.FromArgb(15, 23, 42)))
+                {
+                    g.DrawString(item.Name, nameFont, nameBrush, bounds.Left + 32, bounds.Top + 7);
+                    SizeF nameSize = g.MeasureString(item.Name, nameFont);
+
+                    // Port badge
+                    using (var portFont = new Font("Consolas", 9f, FontStyle.Regular))
+                    using (var portBrush = new SolidBrush(Color.FromArgb(71, 85, 105)))
+                    {
+                        float portX = Math.Min(bounds.Left + 38 + nameSize.Width, bounds.Right - 170);
+                        g.DrawString($"port {item.Port}", portFont, portBrush, portX, bounds.Top + 9);
+                    }
+                }
+
+                // Default badge pill on the right
+                if (item.IsDefault)
+                {
+                    var badgeRect = new Rectangle(bounds.Right - 96, bounds.Top + 7, 86, 20);
+                    using (var badgeFill = new SolidBrush(Color.FromArgb(219, 234, 254)))
+                        g.FillRectangle(badgeFill, badgeRect);
+                    using (var badgeBorder = new Pen(Color.FromArgb(147, 197, 253), 1))
+                        g.DrawRectangle(badgeBorder, badgeRect);
+                    using (var badgeFont = new Font("Segoe UI Semibold", 7.75f, FontStyle.Bold))
+                    using (var badgeText = new SolidBrush(Color.FromArgb(29, 78, 216)))
+                    {
+                        var sf = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+                        g.DrawString("\u2605 PAR DÉFAUT", badgeFont, badgeText, badgeRect, sf);
+                    }
+                }
+            }
+
+            private void RefreshList(int selectIndex)
+            {
+                _listBox.BeginUpdate();
+                _listBox.Items.Clear();
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    var d = _items[i];
+                    _listBox.Items.Add($"{i + 1}. {d.Name} (port {d.Port})");
+                }
+                if (selectIndex >= 0 && selectIndex < _items.Count)
+                    _listBox.SelectedIndex = selectIndex;
+                _listBox.EndUpdate();
+                _listBox.Invalidate();
+                UpdateActionButtonsState();
+            }
+
+            private void UpdateActionButtonsState()
+            {
+                int idx = _listBox.SelectedIndex;
+                bool hasSel = idx >= 0 && idx < _items.Count;
+                _upButton.Enabled = hasSel && idx > 0;
+                _downButton.Enabled = hasSel && idx < _items.Count - 1;
+                _editButton.Enabled = hasSel;
+                _removeButton.Enabled = hasSel;
+                _defaultButton.Enabled = hasSel;
+            }
+
+            private void Persist()
+            {
+                try { _onSave?.Invoke(_items); } catch { }
+            }
+
+            private void OnAddOrSave(object sender, EventArgs e)
+            {
+                string name = (_nameBox.Text ?? "").Trim();
+                int port = (int)_portBox.Value;
+                if (string.IsNullOrEmpty(name))
+                    name = $"TopSolid ({port})";
+
+                if (_editingIndex >= 0 && _editingIndex < _items.Count)
+                {
+                    bool wasDefault = _items[_editingIndex].IsDefault;
+                    _items[_editingIndex] = new DeclaredTopSolidInstance(name, port) { IsDefault = wasDefault };
+                    int editedIdx = _editingIndex;
+                    ExitEditMode();
+                    RefreshList(editedIdx);
+                    Persist();
+                    return;
+                }
+
+                for (int i = 0; i < _items.Count; i++)
+                {
+                    if (_items[i].Port == port)
+                    {
+                        bool wasDefault = _items[i].IsDefault;
+                        _items[i] = new DeclaredTopSolidInstance(name, port) { IsDefault = wasDefault };
+                        _nameBox.Text = "";
+                        RefreshList(i);
+                        Persist();
+                        return;
+                    }
+                }
+
+                bool makeDefault = _items.Count == 0;
+                _items.Add(new DeclaredTopSolidInstance(name, port) { IsDefault = makeDefault });
+                _nameBox.Text = "";
+                _portBox.Value = Math.Min(65535, port + 1);
+                RefreshList(_items.Count - 1);
+                Persist();
+            }
+
+            private void OnBeginEdit(object sender, EventArgs e)
+            {
+                int idx = _listBox.SelectedIndex;
+                if (idx < 0 || idx >= _items.Count) return;
+
+                _editingIndex = idx;
+                _nameBox.Text = _items[idx].Name;
+                int p = _items[idx].Port;
+                if (p < _portBox.Minimum) p = (int)_portBox.Minimum;
+                if (p > _portBox.Maximum) p = (int)_portBox.Maximum;
+                _portBox.Value = p;
+
+                _editorHeaderLabel.Text = $"MODIFIER L'INSTANCE #{idx + 1}";
+                _editorHeaderLabel.ForeColor = Color.FromArgb(37, 99, 235);
+                _addOrSaveButton.Text = "Enregistrer";
+                _cancelEditButton.Visible = true;
+                _nameBox.Focus();
+                _nameBox.SelectAll();
+            }
+
+            private void ExitEditMode()
+            {
+                _editingIndex = -1;
+                _nameBox.Text = "";
+                _editorHeaderLabel.Text = "AJOUTER UNE INSTANCE TOPSOLID";
+                _editorHeaderLabel.ForeColor = Color.FromArgb(100, 116, 139);
+                _addOrSaveButton.Text = "Ajouter";
+                _cancelEditButton.Visible = false;
+            }
+
+            private void OnRemove(object sender, EventArgs e)
+            {
+                int idx = _listBox.SelectedIndex;
+                if (idx < 0 || idx >= _items.Count) return;
+                ExitEditMode();
+                _items.RemoveAt(idx);
+                RefreshList(Math.Min(idx, _items.Count - 1));
+                Persist();
+            }
+
+            private void OnMoveUp(object sender, EventArgs e)
+            {
+                int idx = _listBox.SelectedIndex;
+                if (idx <= 0 || idx >= _items.Count) return;
+                ExitEditMode();
+                var tmp = _items[idx - 1];
+                _items[idx - 1] = _items[idx];
+                _items[idx] = tmp;
+                RefreshList(idx - 1);
+                Persist();
+            }
+
+            private void OnMoveDown(object sender, EventArgs e)
+            {
+                int idx = _listBox.SelectedIndex;
+                if (idx < 0 || idx >= _items.Count - 1) return;
+                ExitEditMode();
+                var tmp = _items[idx + 1];
+                _items[idx + 1] = _items[idx];
+                _items[idx] = tmp;
+                RefreshList(idx + 1);
+                Persist();
+            }
+
+            private void OnSetDefault(object sender, EventArgs e)
+            {
+                int idx = _listBox.SelectedIndex;
+                if (idx < 0 || idx >= _items.Count) return;
+                bool willBeDefault = !_items[idx].IsDefault;
+                for (int i = 0; i < _items.Count; i++)
+                    _items[i].IsDefault = (i == idx) && willBeDefault;
+                RefreshList(idx);
+                Persist();
+            }
         }
     }
 }
