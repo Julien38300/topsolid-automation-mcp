@@ -954,6 +954,9 @@ namespace TopSolidMcpServer.Utils
 
             if (ok && _owner != null)
             {
+                // v1.8.10 (acceptor M1): the live port must ALSO be persisted —
+                // without this the hot-restart was lost on the next server start.
+                TraySettings.SaveHttpPort(newPort);
                 _owner.SetHttpPort(newPort);
                 _urlLabel.Text = L("URL client : ", "Client URL: ") + "http://localhost:" + newPort + "/mcp";
                 MessageBox.Show(this,

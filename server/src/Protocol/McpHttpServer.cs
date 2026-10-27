@@ -35,9 +35,24 @@ namespace TopSolidMcpServer.Protocol
         /// <summary>An open server-push SSE stream, owned by the thread that served the GET.</summary>
         private sealed class SseSession
         {
+            // Bounded at 100 pending replies: a dead client must not grow the
+            // queue forever (acceptor review, minor M).
             public readonly System.Collections.Concurrent.BlockingCollection<string> Queue =
-                new System.Collections.Concurrent.BlockingCollection<string>();
+                new System.Collections.Concurrent.BlockingCollection<string>(
+                    new System.Collections.Concurrent.ConcurrentQueue<string>(), 100);
             public volatile bool Open;
+        }
+
+        /// <summary>SseSession expiry hook: closes the stream and drops it from the registries.</summary>
+        private void DropSseSession(string sid)
+        {
+            SseSession sse;
+            if (_sseSessions.TryGetValue(sid, out sse))
+            {
+                sse.Open = false;
+                try { sse.Queue.CompleteAdding(); } catch { }
+                _sseSessions.Remove(sid);
+            }
         }
 
         public McpHttpServer(McpRouter router, int port, Func<string> getApiKey)
@@ -201,25 +216,32 @@ namespace TopSolidMcpServer.Protocol
                     return;
                 }
 
-                // DELETE on /mcp: end a session.
-                if (ctx.Request.HttpMethod == "DELETE")
-                {
-                    string sid = ctx.Request.Headers[McpHttpAuthLogic.SessionIdHeader];
-                    if (!string.IsNullOrEmpty(sid))
-                    {
-                        lock (_sessionLock) _sessions.Remove(sid);
-                    }
-                    ctx.Response.StatusCode = 204;
-                    ctx.Response.Close();
-                    return;
-                }
-
-                // Auth on everything else.
+                // Auth on everything else (POST and DELETE alike).
                 string expected = _getApiKey();
                 string presented = ctx.Request.Headers[McpHttpAuthLogic.ApiKeyHeader];
                 if (!McpHttpAuthLogic.IsAuthorized(expected, presented))
                 {
                     WriteJson(ctx, 401, "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32001,\"message\":\"Unauthorized: invalid or missing X-API-Key\"}}");
+                    return;
+                }
+
+                // v1.8.10: DELETE on /mcp ends a session — AFTER the auth check
+                // (it used to be keyless, acceptor minor M) and also tears the
+                // SSE stream down so no stream thread lingers.
+                if (ctx.Request.HttpMethod == "DELETE")
+                {
+                    string delSid = ctx.Request.Headers[McpHttpAuthLogic.SessionIdHeader]
+                                    ?? ctx.Request.QueryString["sessionId"];
+                    if (!string.IsNullOrEmpty(delSid))
+                    {
+                        lock (_sessionLock)
+                        {
+                            _sessions.Remove(delSid);
+                            DropSseSession(delSid);
+                        }
+                    }
+                    ctx.Response.StatusCode = 204;
+                    ctx.Response.Close();
                     return;
                 }
 
@@ -324,7 +346,11 @@ namespace TopSolidMcpServer.Protocol
             if (request.Method == "initialize")
             {
                 string sid = McpHttpAuthLogic.NewSessionId();
-                lock (_sessionLock) _sessions[sid] = DateTime.UtcNow;
+                lock (_sessionLock)
+                {
+                    PurgeExpiredSessionsNoLock();
+                    _sessions[sid] = DateTime.UtcNow;
+                }
                 var response = _router.Route(request);
                 ctx.Response.Headers[McpHttpAuthLogic.SessionIdHeader] = sid;
                 WriteJson(ctx, 200, JsonConvert.SerializeObject(response, Formatting.None));
@@ -335,6 +361,7 @@ namespace TopSolidMcpServer.Protocol
             string sessionId = ctx.Request.Headers[McpHttpAuthLogic.SessionIdHeader];
             lock (_sessionLock)
             {
+                PurgeExpiredSessionsNoLock();
                 if (!McpHttpAuthLogic.IsValidSessionId(sessionId) || !_sessions.ContainsKey(sessionId))
                 {
                     WriteJson(ctx, 404, "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32002,\"message\":\"Session not found: initialize first\"}}");
@@ -368,7 +395,13 @@ namespace TopSolidMcpServer.Protocol
                 ctx.Response.ContentType = "text/event-stream";
                 ctx.Response.Headers["Cache-Control"] = "no-cache";
                 var outStream = ctx.Response.OutputStream;
-                byte[] hello = Encoding.UTF8.GetBytes("event: endpoint\ndata: /mcp?sessionId=" + sid + "\n\n");
+                // MCP 2024-11-05: the endpoint event carries an ABSOLUTE URI —
+                // built from the Host header so it stays correct for localhost
+                // AND LAN/Tailscale callers (acceptor review, minor M).
+                string host = ctx.Request.Headers["Host"];
+                if (string.IsNullOrEmpty(host)) host = "127.0.0.1:" + _port;
+                byte[] hello = Encoding.UTF8.GetBytes(
+                    "event: endpoint\ndata: http://" + host + "/mcp?sessionId=" + sid + "\n\n");
                 outStream.Write(hello, 0, hello.Length);
                 outStream.Flush();
                 sse.Open = true;
@@ -408,6 +441,32 @@ namespace TopSolidMcpServer.Protocol
                     _sseSessions.Remove(sid);
                 }
                 try { ctx.Response.Close(); } catch { }
+            }
+        }
+
+        /// <summary>
+        /// Applies the 12h session TTL: sessions used to live forever in the
+        /// dictionary (acceptor review, minor M). Caller must hold _sessionLock.
+        /// </summary>
+        private void PurgeExpiredSessionsNoLock()
+        {
+            DateTime now = DateTime.UtcNow;
+            List<string> expired = null;
+            foreach (var kvp in _sessions)
+            {
+                if (now - kvp.Value > SessionTtl)
+                {
+                    if (expired == null) expired = new List<string>();
+                    expired.Add(kvp.Key);
+                }
+            }
+            if (expired != null)
+            {
+                foreach (var k in expired)
+                {
+                    _sessions.Remove(k);
+                    DropSseSession(k);
+                }
             }
         }
 
