@@ -262,6 +262,10 @@ Recherche dans les **2428 commandes UI** de TopSolid (Layer 2 du graphe). Comple
 
 Retourne : nom de la commande, FullName, domaine, description. Index charge depuis `data/commands-catalog.json`.
 
+::: tip Resolution insensible a la casse dans `invoke_command` (v1.8.11+)
+Depuis la **v1.8.11**, les 2 428 commandes de `commands-catalog.json` sont normalisees selon la casse exacte des classes C# TopSolid (`.UI.`, PascalCase comme `TopSolid.Cad.Wood.UI.ConstructionVolumes.Sketches.CreateLayoutSketchCommand`), et la recette `invoke_command` resout automatiquement la commande **quelle que soit la casse** (qu'on lui passe le `FullName` complet, une variante en minuscules ou simplement le nom court `CreateLayoutSketchCommand`).
+:::
+
 **Sans TopSolid connecte.**
 
 ## Recettes batch PDM (v1.6.7+)

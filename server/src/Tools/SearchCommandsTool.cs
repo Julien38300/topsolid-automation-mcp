@@ -318,6 +318,89 @@ namespace TopSolidMcpServer.Tools
             }
         }
 
+        /// <summary>
+        /// Resolves a user- or LLM-supplied command name (which may be all-lowercase,
+        /// use '.Ui.' instead of '.UI.', or be a short command class name such as
+        /// 'CreateLayoutSketchCommand' or 'createlayoutsketchcommand') into an ordered
+        /// list of candidate FullNames to pass to IApplication.InvokeCommand.
+        /// </summary>
+        public static List<string> ResolveCommandCandidates(string input)
+        {
+            var candidates = new List<string>();
+            if (string.IsNullOrWhiteSpace(input))
+                return candidates;
+
+            string trimmed = input.Trim();
+            string shortQuery = trimmed;
+            if (!shortQuery.EndsWith("Command", StringComparison.OrdinalIgnoreCase) &&
+                !shortQuery.Contains("."))
+            {
+                shortQuery = shortQuery + "Command";
+            }
+
+            Action<string> addUnique = (s) =>
+            {
+                if (string.IsNullOrWhiteSpace(s)) return;
+                if (!candidates.Contains(s))
+                    candidates.Add(s);
+            };
+
+            var catalog = LoadCatalog();
+            if (catalog != null && catalog.Count > 0)
+            {
+                // 1. Exact or case-insensitive FullName match in catalog
+                foreach (var entry in catalog)
+                {
+                    if (string.Equals(entry.FullName, trimmed, StringComparison.OrdinalIgnoreCase))
+                    {
+                        addUnique(entry.FullName);
+                        if (entry.FullName.IndexOf(".UI.", StringComparison.Ordinal) >= 0)
+                            addUnique(entry.FullName.Replace(".UI.", ".Ui."));
+                    }
+                }
+
+                // 2. Case-insensitive short Name match (with or without 'Command' suffix)
+                foreach (var entry in catalog)
+                {
+                    if (string.Equals(entry.Name, trimmed, StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(entry.Name, shortQuery, StringComparison.OrdinalIgnoreCase))
+                    {
+                        addUnique(entry.FullName);
+                        if (entry.FullName.IndexOf(".UI.", StringComparison.Ordinal) >= 0)
+                            addUnique(entry.FullName.Replace(".UI.", ".Ui."));
+                    }
+                }
+
+                // 3. Suffix match on FullName (e.g. 'Sketches.createlayoutsketchcommand')
+                if (candidates.Count == 0)
+                {
+                    string dotSuffix = "." + trimmed;
+                    foreach (var entry in catalog)
+                    {
+                        if (entry.FullName != null &&
+                            entry.FullName.EndsWith(dotSuffix, StringComparison.OrdinalIgnoreCase))
+                        {
+                            addUnique(entry.FullName);
+                            if (entry.FullName.IndexOf(".UI.", StringComparison.Ordinal) >= 0)
+                                addUnique(entry.FullName.Replace(".UI.", ".Ui."));
+                        }
+                    }
+                }
+            }
+
+            // 4. Normalize '.Ui.' / '.ui.' -> '.UI.' on raw input even if not in catalog
+            if (trimmed.IndexOf(".ui.", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                string uiUpper = System.Text.RegularExpressions.Regex.Replace(
+                    trimmed, @"\.ui\.", ".UI.", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                addUnique(uiUpper);
+            }
+
+            // 5. Always keep the caller's verbatim string as final fallback
+            addUnique(trimmed);
+            return candidates;
+        }
+
         private class CommandEntry
         {
             public string Name;

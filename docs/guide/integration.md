@@ -367,6 +367,26 @@ ChatGPT Desktop ne supporte pas les serveurs MCP locaux (mai 2026). Utilisez Cla
 
 ---
 
+## Modeles locaux (Ollama, Gemma 4, LM Studio, OpenWebUI) & Auto-Onboarding IA (v1.8.11+)
+
+### 1. Donner directement le repo a votre IA (`AGENTS.md` & `CLAUDE.md`)
+Le depot embarque a sa racine un fichier universel **`AGENTS.md`** (lu par Codex, Cursor, Windsurf, Cline, Continue, OpenCode, Antigravity) ainsi que **`CLAUDE.md`** (lu par Claude Code) et **4 skills metiers complets** dans `skills/` :
+- `skills/topsolid-mcp` : pilotage general et catalogue des 211 recettes
+- `skills/topsolid-mcp-modeling` : modelisation 3D, profilés (`Extruded Bar`), tôlerie et assemblages
+- `skills/topsolid-api-knowledge` : règles C# 5 et unités SI
+- `skills/topsolid-railing-design` : règles métier garde-corps (NF P01-012 / NF P01-013)
+
+Il suffit de pointer votre agent sur le dépôt local pour qu'il sache comment installer le serveur ou quel skill charger avant d'appeler TopSolid.
+
+### 2. Utiliser un petit modèle local (Gemma 4, Ministral 3B/8B, Llama 8B, Qwen 7B)
+Depuis la **v1.8.11**, le serveur MCP injecte automatiquement des instructions **Recipe-First** lors du handshake `initialize` MCP :
+- **Règle d'or pour les petits modèles (3B à 12B)** : ne leur faites **jamais** générer de C# (`topsolid_execute_script` / `topsolid_modify_script`). Désactivez ces deux outils dans votre client local (OpenWebUI / LM Studio) et laissez uniquement :
+  1. `topsolid_list_recipes` (pour trouver le nom exact d'une recette),
+  2. `topsolid_run_recipe` (pour exécuter une des 211 recettes pré-compilées),
+  3. `topsolid_search_commands` (pour chercher parmi les 2 428 commandes ruban/menu et les lancer via `invoke_command`, qui résout désormais automatiquement la casse `.UI.` et accepte aussi bien le `FullName` complet que le nom court `CreateLayoutSketchCommand`).
+
+---
+
 ## Outils disponibles
 
 Une fois connecte, votre assistant IA dispose des outils suivants :

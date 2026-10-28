@@ -163,7 +163,8 @@ def main() -> None:
             _dot_path = _dot_path[3:]
         if _dot_path.lower().endswith(".md"):
             _dot_path = _dot_path[:-3]
-        full_name = "TopSolid." + _dot_path.replace("/", ".")
+        parts = ["UI" if p.lower() == "ui" else p for p in _dot_path.split("/")]
+        full_name = "TopSolid." + ".".join(parts)
         entry = {
             "name": f.stem,                         # e.g. BomTableCommand
             "fullName": full_name,                  # e.g. TopSolid.Cad.Drafting.UI.Bom.BomTableCommand

@@ -4,7 +4,7 @@
     Build TopSolid MCP Server, scrub build-machine paths, leak-scan, and package for release.
 .DESCRIPTION
     Compile le projet en Release, copie dans release-staging/, nettoie les chemins PDB RSDS
-    et settings.json, verifie l'absence de fuite (Noemid_System / jpoir), et genere le zip
+    et settings.json, verifie l'absence de fuite de chemins locaux, et genere le zip
     + SHA256SUMS.txt (LF ASCII) prets a publier sur GitHub Releases.
 .EXAMPLE
     .\scripts\build-release.ps1
@@ -159,8 +159,8 @@ $stagingSettings = Join-Path $releaseDir "settings.json"
 if (Test-Path $stagingSettings) { Remove-Item $stagingSettings -Force }
 
 # --- Scrub build-machine PDB paths (RSDS) in staged binaries ---
-$needleStr = "N:\Noemid_System\Projets\topsolid-automation-mcp"
-$replacementStr = "C:\topsolid-automation-mcp                      "
+$needleStr = $projectRootAll
+$replacementStr = ("C:\topsolid-automation-mcp").PadRight($needleStr.Length, ' ')
 $needleBytes = [System.Text.Encoding]::ASCII.GetBytes($needleStr)
 $replacementBytes = [System.Text.Encoding]::ASCII.GetBytes($replacementStr)
 if ($needleBytes.Length -ne $replacementBytes.Length) {
@@ -190,7 +190,8 @@ foreach ($binName in @("TopSolidMcpServer.exe", "TopSolidApiGraph.Core.dll")) {
 }
 
 # --- Leak scan on release-staging ---
-$leakPatterns = @("Noemid_System", "jpoir")
+$rootFolder = Split-Path -Leaf (Split-Path -Parent (Split-Path -Parent $projectRootAll))
+$leakPatterns = @($rootFolder, $projectRootAll, $env:USERNAME) | Where-Object { $_ }
 foreach ($fileObj in Get-ChildItem $releaseDir -Recurse -File) {
     $rawText = [System.IO.File]::ReadAllText($fileObj.FullName, [System.Text.Encoding]::GetEncoding("ISO-8859-1"))
     foreach ($pat in $leakPatterns) {
