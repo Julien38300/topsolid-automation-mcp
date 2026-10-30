@@ -72,16 +72,19 @@ namespace TopSolidMcpServer.Utils
             }
 
             // 1b. Active running TopSolid.exe instance (avoids 7.20 vs 7.21 mismatch on multi-version hosts).
-            // Prefer the process matching TraySettings.Port if configured.
+            // Uses the exact same ResolveActivePort logic as Program.cs (which prefers newest version in auto mode,
+            // or the configured port when set).
             try
             {
                 if (TraySettings.Port == 0) TraySettings.Load();
-                int targetPort = TraySettings.Port;
-                if (targetPort > 0)
+                var instances = TopSolidInstanceList.Scan();
+                int activePort = TopSolidInstanceList.ResolveActivePort(
+                    TraySettings.Port, TraySettings.InstanceMode, instances);
+                var matched = TopSolidInstanceList.FindByPort(instances, activePort)
+                              ?? (instances.Count > 0 ? instances[0] : null);
+                if (matched != null && matched.Pid > 0)
                 {
-                    var instances = TopSolidInstanceList.Scan();
-                    var matched = TopSolidInstanceList.FindByPort(instances, targetPort);
-                    if (matched != null && matched.Pid > 0)
+                    try
                     {
                         var p = System.Diagnostics.Process.GetProcessById(matched.Pid);
                         string exePath = p.MainModule != null ? p.MainModule.FileName : null;
@@ -90,24 +93,7 @@ namespace TopSolidMcpServer.Utils
                             string binDir = ToBinDirectory(Path.GetDirectoryName(exePath));
                             if (binDir != null)
                             {
-                                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from port-matched TopSolid.exe (port " + targetPort + "): " + binDir);
-                                return binDir;
-                            }
-                        }
-                    }
-                }
-                var running = System.Diagnostics.Process.GetProcessesByName("TopSolid");
-                foreach (var proc in running)
-                {
-                    try
-                    {
-                        string exePath = proc.MainModule != null ? proc.MainModule.FileName : null;
-                        if (!string.IsNullOrWhiteSpace(exePath))
-                        {
-                            string binDir = ToBinDirectory(Path.GetDirectoryName(exePath));
-                            if (binDir != null)
-                            {
-                                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from running TopSolid.exe: " + binDir);
+                                Console.Error.WriteLine("[MCP-INFO] TopSolid bin path from active TopSolid.exe (port " + matched.Port + ", v" + (matched.Version ?? "?") + "): " + binDir);
                                 return binDir;
                             }
                         }
