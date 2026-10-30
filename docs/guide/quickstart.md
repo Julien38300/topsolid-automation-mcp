@@ -90,9 +90,23 @@ Laissez ce terminal ouvert. Le serveur tourne tant que la fenetre est ouverte ; 
 
 ## Etape 4 — Configurer votre assistant IA
 
+### La clé API et l'URL, d'abord
+
+Le serveur HTTP exige la clé `X-API-Key` sur **chaque requête**. Deux informations à récupérer, toutes deux visibles dans le tray :
+
+1. **L'URL** : `http://127.0.0.1:8080/mcp` par défaut — le port se change dans **Paramètres du serveur MCP…** (appliqué à chaud, l'URL exacte s'affiche directement avec un bouton **Copier l'URL**).
+2. **La clé API** : clic droit sur l'icône tray → **Copier la clé API** (ou **Paramètres du serveur MCP…** pour l'afficher, la copier ou la régénérer).
+
+Sans le header `X-API-Key`, tout client HTTP reçoit `401`. Testez votre serveur sans clé :
+
+```powershell
+curl http://127.0.0.1:8080/status
+# -> {"service":"TopSolid-MCP-Server","version":"1.8.10","http":"up",...}
+```
+
 ### Mode HTTP natif (recommande) — une URL pour tous
 
-Une fois le serveur demarre (ou via l'installer), la config est identique pour tous les clients :
+Une fois le serveur demarre (ou via l'installer), la config est identique pour tous les clients — **avec la clé** :
 
 ::: code-group
 ```json [Claude Desktop]
@@ -100,19 +114,21 @@ Une fois le serveur demarre (ou via l'installer), la config est identique pour t
 {
   "mcpServers": {
     "topsolid": {
-      "url": "http://127.0.0.1:8080/mcp"
+      "url": "http://127.0.0.1:8080/mcp",
+      "headers": { "X-API-Key": "VOTRE-CLE" }
     }
   }
 }
 ```
 ```powershell [Claude Code CLI]
-claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp
+claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp --header "X-API-Key: VOTRE-CLE"
 ```
 ```json [Cursor / Windsurf]
 {
   "mcpServers": {
     "topsolid": {
-      "url": "http://127.0.0.1:8080/mcp"
+      "url": "http://127.0.0.1:8080/mcp",
+      "headers": { "X-API-Key": "VOTRE-CLE" }
     }
   }
 }
@@ -123,7 +139,8 @@ claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp
   "servers": {
     "topsolid": {
       "type": "http",
-      "url": "http://127.0.0.1:8080/mcp"
+      "url": "http://127.0.0.1:8080/mcp",
+      "headers": { "X-API-Key": "VOTRE-CLE" }
     }
   }
 }
@@ -133,11 +150,53 @@ claude mcp add --transport http topsolid http://127.0.0.1:8080/mcp
   "mcpServers": {
     "topsolid": {
       "url": "http://127.0.0.1:8080/mcp",
+      "headers": { "X-API-Key": "VOTRE-CLE" },
       "disabled": false
     }
   }
 }
 ```
+:::
+
+::: warning Sans le header X-API-Key : 401
+Un client configuré avec l'URL seule (sans header) reçoit `401 Unauthorized`. La clé est obligatoire dès qu'une clé existe sur le serveur — ce qui est le cas par défaut.
+:::
+
+### Petits modeles locaux et clients SSE (OpenWebUI, Gemma, LM Studio…)
+
+Depuis la **v1.8.10**, l'endpoint supporte les **deux transports HTTP du protocole MCP** :
+
+| Transport | Protocole | Clients typiques |
+|---|---|---|
+| **Streamable HTTP** | MCP 2025-03-26 : `POST /mcp`, session via header `Mcp-Session-Id` | Claude Desktop, Cursor, VS Code |
+| **SSE legacy** | MCP 2024-11-05 : `GET /mcp` ouvre le flux, le serveur annonce l'endpoint messages, reponses poussees dans le flux | OpenWebUI, vieilles versions des SDK, nombreuses gateways de petits modeles |
+
+Configurations pour un petit modele local :
+
+```json [OpenWebUI — mode SSE]
+// OpenWebUI > Settings > Tools > MCP Servers
+{
+  "url": "http://127.0.0.1:8080/mcp",
+  "key": "VOTRE-CLE"
+}
+```
+```json [Gateway SSE generique]
+{
+  "mcpServers": {
+    "topsolid": {
+      "url": "http://127.0.0.1:8080/mcp",
+      "headers": { "X-API-Key": "VOTRE-CLE" },
+      "transport": "sse"
+    }
+  }
+}
+```
+
+::: tip Le test de connexion echoue avec un code 400/401 ?
+1. Verifiez le serveur : `curl http://127.0.0.1:8080/status` doit repondre.
+2. Verifiez la **cle** (401 = cle absente ou fausse) — elle est dans le tray, Parametres > Cle API.
+3. Verifiez le **port** : si vous l'avez change dans Gérer…, l'URL change aussi.
+4. Chaque requete recue est tracee dans `logs/server.log` (`[MCP-HTTP] GET/POST …`) : le log montre exactement ce que le client envoie et le statut renvoye.
 :::
 
 ### Mode stdio (alternatif) — un client a la fois

@@ -2,620 +2,496 @@ using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Globalization;
 using System.IO;
+using System.Net;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using Newtonsoft.Json.Linq;
+using TopSolidMcp.UpdateCheck;
 
 namespace TopSolidMcpServer.Utils
 {
     /// <summary>
-    /// System tray icon for TopSolid MCP Server.
-    /// Runs on a dedicated STA thread so the main thread can block on stdin.
-    /// <para>
-    /// Every UI mutation is marshalled to that STA thread: the message loop belongs to
-    /// it, so calling <see cref="Application.ExitThread"/> from the main thread would be
-    /// a no-op and leave the icon in the notification area.
-    /// </para>
-    /// <para>
-    /// The icon carries a TeamViewer-style status badge: green when TopSolid is
-    /// connected, orange while connecting/reconnecting, red when disconnected. Menu
-    /// labels follow the OS UI language (French when the OS runs in French, English
-    /// otherwise), and a Settings submenu exposes the connection state and the
-    /// installation folder.
-    /// </para>
+    /// System tray icon for the TopSolid MCP server.
+    /// Runs its own Windows message loop on a dedicated STA background thread.
+    /// Provides visual status (connected / disconnected / read-only), update checks,
+    /// direct TopSolid instance selection (max 2 menu levels), and a dedicated
+    /// MCP Server settings dialog.
     /// </summary>
     public partial class TrayIcon : IDisposable
     {
-        private const string GitHubUrl = "https://github.com/Julien38300/topsolid-automation-mcp";
         private const string DocsUrl = "https://julien38300.github.io/topsolid-automation-mcp/";
+        private const string LatestReleaseApiUrl = "https://api.github.com/repos/Julien38300/topsolid-automation-mcp/releases/latest";
 
-        private enum TrayState { Connecting, Connected, Disconnected }
-
-        private NotifyIcon _notifyIcon;
+        private readonly Action _onQuit;
+        private Action _onReconnect;
         private Thread _thread;
-        private readonly Action _onShutdownRequested;
+        private NotifyIcon _notifyIcon;
         private ToolStripMenuItem _statusItem;
-        private ToolStripMenuItem _portItem;
-        private ToolStripMenuItem _readOnlyItem;
+        private ToolStripMenuItem _mcpStatusItem;
         private ToolStripMenuItem _reconnectItem;
-        private ToolStripMenuItem _updateAvailableItem;   // "Télécharger la mise à jour…" when an update exists
-        private Action _onReconnectRequested;
-        private int _port;
+        private ToolStripMenuItem _updateItem;
+        private ToolStripMenuItem _checkUpdateItem;
+        private int _port = 8090;
         private bool _readOnly;
+        private bool _connected;
+        private bool _disposed;
+        private string _updateUrl;
+        private string _latestVersion;
+        private string _currentVersion;
+        private int _checkInProgress;
 
-        // Current state: written with Interlocked from any thread, read on the tray thread.
-        private int _state = (int)TrayState.Connecting;
+        public TrayIcon(Action onQuit)
+        {
+            _onQuit = onQuit;
+            _currentVersion = GetCurrentVersion();
+        }
 
-        // Base icon loaded once; the badge is composited over it for each state change.
-        private Icon _baseIcon;
-        private IntPtr _iconHandle = IntPtr.Zero;
+        public static string GetVersion() => GetCurrentVersion();
 
-        /// <summary>
-        /// Synchronization context owned by the tray STA thread. Created inside
-        /// <see cref="RunTray"/> so that <see cref="Dispose"/> can post the shutdown
-        /// onto the thread that actually runs the message loop.
-        /// </summary>
-        private volatile SynchronizationContext _uiContext;
-
-        private volatile bool _disposed;
-
-        private static string L(string fr, string en)
+        private static string GetCurrentVersion()
         {
             try
             {
-                return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName == "fr" ? fr : en;
-            }
-            catch
-            {
-                return en;
-            }
-        }
-
-        public TrayIcon(Action onShutdownRequested)
-        {
-            _onShutdownRequested = onShutdownRequested;
-        }
-
-        /// <summary>
-        /// Sets the callback invoked when the user clicks "Reconnect to TopSolid" in the tray menu.
-        /// </summary>
-        public void SetReconnectAction(Action onReconnect)
-        {
-            _onReconnectRequested = onReconnect;
-        }
-
-        /// <summary>
-        /// Sets the TCP port used for the TopSolid connection. Safe to call at startup or on retarget.
-        /// </summary>
-        public void SetPort(int port)
-        {
-            _port = port;
-            PostState((TrayState)Volatile.Read(ref _state));
-        }
-
-        /// <summary>
-        /// Reflects the read-only startup mode in the Settings submenu. Called once at startup.
-        /// </summary>
-        public void SetReadOnly(bool readOnly)
-        {
-            _readOnly = readOnly;
-            string text = readOnly
-                ? L("Mode lecture seule : oui", "Read-only mode: yes")
-                : L("Mode lecture seule : non", "Read-only mode: no");
-            var context = _uiContext;
-            var item = _readOnlyItem;
-            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
-            {
-                context.Post(_ => { if (item != null) item.Text = text; }, null);
-                return;
-            }
-            if (item != null) item.Text = text;
-        }
-
-        /// <summary>
-        /// Updates the TopSolid connection status shown in the tray menu and the badge
-        /// color of the icon. Thread-safe.
-        /// </summary>
-        public void SetConnected(bool connected)
-        {
-            PostState(connected ? TrayState.Connected : TrayState.Disconnected);
-        }
-
-        /// <summary>
-        /// Switches the icon to the orange "connecting" state (startup or manual reconnect).
-        /// </summary>
-        public void SetConnecting()
-        {
-            PostState(TrayState.Connecting);
-        }
-
-        private void PostState(TrayState state)
-        {
-            Interlocked.Exchange(ref _state, (int)state);
-
-            var context = _uiContext;
-            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
-            {
-                // Menu items and the icon belong to the tray thread — never touch them
-                // from here. Post() is asynchronous, so a caller holding a lock cannot
-                // deadlock.
-                context.Post(_ => ApplyState((TrayState)Volatile.Read(ref _state)), null);
-                return;
-            }
-
-            ApplyState(state);
-        }
-
-        /// <summary>
-        /// Applies the current state: status text, badge color and tooltip.
-        /// Must run on the tray thread.
-        /// </summary>
-        private void ApplyState(TrayState state)
-        {
-            try
-            {
-                string text = BuildStatusText(state);
-                if (_statusItem != null) _statusItem.Text = text;
-                if (_portItem != null)
+                var asm = Assembly.GetExecutingAssembly();
+                var infoAttr = asm.GetCustomAttribute<AssemblyInformationalVersionAttribute>();
+                if (infoAttr != null && !string.IsNullOrEmpty(infoAttr.InformationalVersion))
                 {
-                    _portItem.Text = _port > 0
-                        ? string.Format(L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), _port)
-                        : L("Port TopSolid : par défaut (cliquer pour changer)", "TopSolid port: default (click to change)");
+                    string v = infoAttr.InformationalVersion;
+                    int plus = v.IndexOf('+');
+                    return plus > 0 ? v.Substring(0, plus) : v;
                 }
-
-                if (_notifyIcon != null)
-                {
-                    _notifyIcon.Icon = ComposeIcon(state);
-                    string tooltip = string.Format(
-                        L("TopSolid MCP v{0} — TopSolid : {1}", "TopSolid MCP v{0} — TopSolid: {1}"),
-                        GetVersion(),
-                        state == TrayState.Connected
-                            ? L("connecté", "connected")
-                            : state == TrayState.Disconnected
-                                ? L("déconnecté", "disconnected")
-                                : L("connexion…", "connecting…"));
-                    if (tooltip.Length > 63) tooltip = tooltip.Substring(0, 63);
-                    _notifyIcon.Text = tooltip;
-                }
+                var ver = asm.GetName().Version;
+                if (ver != null)
+                    return $"{ver.Major}.{ver.Minor}.{ver.Build}";
             }
-            catch { /* tray already disposed */ }
-        }
-
-        private string BuildStatusText(TrayState state)
-        {
-            string portSuffix = _port > 0 ? " (port " + _port + ")" : "";
-            string label;
-            switch (state)
-            {
-                case TrayState.Connected: label = L("connecté", "connected"); break;
-                case TrayState.Disconnected: label = L("déconnecté", "disconnected"); break;
-                default: label = L("connexion en cours…", "connecting…"); break;
-            }
-            return "● TopSolid : " + label + portSuffix;
+            catch { }
+            return "0.0.0";
         }
 
         /// <summary>
-        /// Starts the tray icon on a background STA thread.
+        /// Starts the tray icon on a dedicated STA thread.
+        /// Safe to call from any thread; returns immediately.
         /// </summary>
         public void Start()
         {
-            _thread = new Thread(RunTray);
+            _thread = new Thread(RunMessageLoop);
             _thread.SetApartmentState(ApartmentState.STA);
             _thread.IsBackground = true;
-            _thread.Name = "TrayIcon";
+            _thread.Name = "TopSolidMCP-TrayIcon";
             _thread.Start();
         }
 
         /// <summary>
-        /// Body of the tray thread. Any failure here (headless host, session 0, no window
-        /// station) is logged and swallowed: an unhandled exception on this thread would
-        /// take the whole server down.
+        /// Updates the displayed TopSolid connection status (tooltip, menu text, icon badge).
+        /// Thread-safe.
         /// </summary>
-        private void RunTray()
+        public void SetConnected(bool connected)
+        {
+            _connected = connected;
+            UpdateStatusDisplay();
+        }
+
+        /// <summary>
+        /// Sets the TopSolid WCF port number displayed in the tray menu and tooltip.
+        /// Thread-safe.
+        /// </summary>
+        public void SetPort(int port)
+        {
+            _port = port;
+            UpdateStatusDisplay();
+        }
+
+        /// <summary>
+        /// Sets whether the server is running in read-only mode.
+        /// Thread-safe.
+        /// </summary>
+        public void SetReadOnly(bool readOnly)
+        {
+            _readOnly = readOnly;
+            UpdateStatusDisplay();
+        }
+
+        /// <summary>
+        /// Sets the callback invoked when the user clicks "Se reconnecter à TopSolid".
+        /// </summary>
+        public void SetReconnectAction(Action onReconnect)
+        {
+            _onReconnect = onReconnect;
+        }
+
+        private void UpdateStatusDisplay()
         {
             try
             {
-                BuildTray();
+                if (_notifyIcon == null) return;
 
-                // Run the Windows Forms message loop (blocks this thread)
+                string stateText = _connected ? "connecté" : "déconnecté";
+                string modeSuffix = _readOnly ? " [lecture seule]" : "";
+                int effectiveHttpPort = _httpPort > 0 ? _httpPort : 8080;
+
+                string tip = $"TopSolid MCP v{_currentVersion} — {stateText} (port {_port}){modeSuffix}";
+                if (!string.IsNullOrEmpty(_latestVersion))
+                    tip += $"\nMise à jour v{_latestVersion} disponible";
+                if (tip.Length > 63) tip = tip.Substring(0, 63);
+                _notifyIcon.Text = tip;
+
+                var menu = _notifyIcon.ContextMenuStrip;
+                if (menu != null && menu.IsHandleCreated)
+                {
+                    menu.BeginInvoke((Action)(() =>
+                    {
+                        if (_statusItem != null)
+                        {
+                            string dot = _connected ? "\u25CF" : "\u25CB";
+                            _statusItem.Text = $"{dot}  TopSolid : {stateText} (port {_port}){modeSuffix}";
+                        }
+                        if (_mcpStatusItem != null)
+                        {
+                            _mcpStatusItem.Text = $"\u25CF  Serveur MCP : http://localhost:{effectiveHttpPort}/mcp";
+                        }
+                        RefreshTrayIcon();
+                    }));
+                }
+                else
+                {
+                    if (_statusItem != null)
+                    {
+                        string dot = _connected ? "\u25CF" : "\u25CB";
+                        _statusItem.Text = $"{dot}  TopSolid : {stateText} (port {_port}){modeSuffix}";
+                    }
+                    if (_mcpStatusItem != null)
+                    {
+                        _mcpStatusItem.Text = $"\u25CF  Serveur MCP : http://localhost:{effectiveHttpPort}/mcp";
+                    }
+                    RefreshTrayIcon();
+                }
+            }
+            catch { }
+        }
+
+        private void RefreshTrayIcon()
+        {
+            try
+            {
+                if (_notifyIcon == null) return;
+                var oldIcon = _notifyIcon.Icon;
+                _notifyIcon.Icon = CreateBadgedIcon(_connected, _readOnly);
+                if (oldIcon != null)
+                {
+                    try { oldIcon.Dispose(); } catch { }
+                }
+            }
+            catch { }
+        }
+
+        private void RunMessageLoop()
+        {
+            try
+            {
+                Application.EnableVisualStyles();
+                InitV18State();
+
+                var menuFont = new Font("Segoe UI", 9.25f, FontStyle.Regular);
+                var headerFont = new Font("Segoe UI", 9.5f, FontStyle.Bold);
+
+                var menu = new ContextMenuStrip
+                {
+                    Font = menuFont,
+                    Renderer = new ModernTrayMenuRenderer(),
+                    ShowImageMargin = false,
+                    BackColor = Color.White,
+                    Padding = new Padding(4, 6, 4, 6)
+                };
+
+                // ── Section 1 : En-tête & état en direct ──
+                var headerItem = new ToolStripMenuItem($"TopSolid MCP v{_currentVersion}")
+                {
+                    Enabled = false,
+                    Font = headerFont
+                };
+                StyleMenuItem(headerItem);
+                menu.Items.Add(headerItem);
+
+                string initialDot = _connected ? "\u25CF" : "\u25CB";
+                string initialState = _connected ? "connecté" : "déconnecté";
+                string initialMode = _readOnly ? " [lecture seule]" : "";
+                _statusItem = new ToolStripMenuItem($"{initialDot}  TopSolid : {initialState} (port {_port}){initialMode}")
+                {
+                    Enabled = false
+                };
+                StyleMenuItem(_statusItem);
+                menu.Items.Add(_statusItem);
+
+                int initialHttpPort = _httpPort > 0 ? _httpPort : 8080;
+                _mcpStatusItem = new ToolStripMenuItem($"\u25CF  Serveur MCP : http://localhost:{initialHttpPort}/mcp")
+                {
+                    Enabled = false
+                };
+                StyleMenuItem(_mcpStatusItem);
+                menu.Items.Add(_mcpStatusItem);
+
+                menu.Items.Add(new ToolStripSeparator());
+
+                // ── Section 2 : Instance CAO TopSolid (Accès direct niveau 1 -> sous-menu niveau 2 max) ──
+                BuildInstancePickerMenu(menu);
+
+                _reconnectItem = new ToolStripMenuItem("Se reconnecter à TopSolid");
+                StyleMenuItem(_reconnectItem);
+                _reconnectItem.Click += (s, e) =>
+                {
+                    ThreadPool.QueueUserWorkItem(_ =>
+                    {
+                        try { _onReconnect?.Invoke(); } catch { }
+                    });
+                };
+                menu.Items.Add(_reconnectItem);
+
+                menu.Items.Add(new ToolStripSeparator());
+
+                // ── Section 3 : Serveur MCP (Fenêtre dédiée unifiée + raccourci clé API) ──
+                BuildMcpServerMenuItems(menu);
+
+                menu.Items.Add(new ToolStripSeparator());
+
+                // ── Section 4 : Aide, Maintenance & Mises à jour ──
+                var helpMenu = new ToolStripMenuItem("Aide && Maintenance");
+                StyleMenuItem(helpMenu);
+                helpMenu.DropDown.Font = menuFont;
+                helpMenu.DropDown.BackColor = Color.White;
+                helpMenu.DropDown.Padding = new Padding(4, 4, 4, 4);
+                if (helpMenu.DropDown is ToolStripDropDownMenu helpDropDown)
+                    helpDropDown.ShowImageMargin = false;
+
+                var docsItem = new ToolStripMenuItem("Documentation en ligne", null, (s, e) => OpenUrl(DocsUrl));
+                StyleMenuItem(docsItem);
+                helpMenu.DropDownItems.Add(docsItem);
+
+                BuildHelpSubmenuItems(helpMenu);
+                menu.Items.Add(helpMenu);
+
+                _checkUpdateItem = new ToolStripMenuItem("Vérifier les mises à jour…");
+                StyleMenuItem(_checkUpdateItem);
+                _checkUpdateItem.Click += (s, e) => CheckForUpdatesAsync(manual: true);
+                menu.Items.Add(_checkUpdateItem);
+
+                _updateItem = new ToolStripMenuItem("Télécharger la mise à jour…")
+                {
+                    Visible = false,
+                    Font = new Font("Segoe UI", 9.25f, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(37, 99, 235)
+                };
+                StyleMenuItem(_updateItem);
+                _updateItem.Click += (s, e) =>
+                {
+                    _updateItem.Visible = false;
+                    LaunchUpdater();
+                };
+                menu.Items.Add(_updateItem);
+
+                menu.Items.Add(new ToolStripSeparator());
+
+                // ── Section 5 : Quitter ──
+                var quitItem = new ToolStripMenuItem("Arrêter le serveur");
+                StyleMenuItem(quitItem);
+                quitItem.Click += (s, e) =>
+                {
+                    try { _notifyIcon.Visible = false; } catch { }
+                    Application.ExitThread();
+                    _onQuit?.Invoke();
+                };
+                menu.Items.Add(quitItem);
+
+                string stateInit = _connected ? "connecté" : "déconnecté";
+                string modeInit = _readOnly ? " [lecture seule]" : "";
+                _notifyIcon = new NotifyIcon
+                {
+                    Icon = CreateBadgedIcon(_connected, _readOnly),
+                    Text = $"TopSolid MCP v{_currentVersion} — {stateInit} (port {_port}){modeInit}",
+                    ContextMenuStrip = menu,
+                    Visible = true
+                };
+
+                // Double-clicking the tray icon opens the unified MCP Server Settings window.
+                _notifyIcon.DoubleClick += (s, e) => ShowMcpServerSettingsDialog();
+
+                _notifyIcon.BalloonTipClicked += (s, e) =>
+                {
+                    if (!string.IsNullOrEmpty(_latestVersion))
+                        LaunchUpdater();
+                };
+
+                CheckForUpdatesAsync(manual: false);
+                PromptInitialApiKeySetupIfNeeded();
+
                 Application.Run();
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine("[MCP-WARN] Tray icon unavailable, continuing without it: " + ex.Message);
-            }
-            finally
-            {
-                // The loop ended (or never started): release the icon on this thread.
-                DisposeNotifyIcon();
+                Console.Error.WriteLine($"[MCP-WARN] Tray icon failed: {ex.Message}");
             }
         }
 
-        private void BuildTray()
+        internal static void StyleMenuItem(ToolStripMenuItem item)
         {
-            // Captured before the message loop starts: the marshaling window it creates
-            // belongs to this thread, so posts are delivered to this message loop.
-            _uiContext = new WindowsFormsSynchronizationContext();
-
-            var version = GetVersion();
-
-            _baseIcon = LoadIcon();
-
-            _notifyIcon = new NotifyIcon();
-            _notifyIcon.Text = $"TopSolid MCP v{version}";
-            _notifyIcon.Icon = ComposeIcon((TrayState)Volatile.Read(ref _state));
-            _notifyIcon.Visible = true;
-
-            var menu = new ContextMenuStrip();
-
-            // Version (disabled, info only)
-            var versionItem = new ToolStripMenuItem($"TopSolid MCP v{version}");
-            versionItem.Enabled = false;
-            versionItem.Font = new Font(versionItem.Font, FontStyle.Bold);
-            menu.Items.Add(versionItem);
-
-            // Connection status — show the port if already known
-            var state = (TrayState)Volatile.Read(ref _state);
-            _statusItem = new ToolStripMenuItem(BuildStatusText(state));
-            _statusItem.Enabled = false;
-            menu.Items.Add(_statusItem);
-
-            // Reconnect button
-            _reconnectItem = new ToolStripMenuItem(L("Se reconnecter à TopSolid", "Reconnect to TopSolid"));
-            _reconnectItem.Click += OnReconnectClick;
-            menu.Items.Add(_reconnectItem);
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            // ── Settings zone ──
-            var settingsMenu = new ToolStripMenuItem(L("Paramètres", "Settings"));
-
-            // Port: click to change. Persisted in settings.json and applied immediately.
-            _portItem = new ToolStripMenuItem(_port > 0
-                ? string.Format(L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), _port)
-                : L("Port TopSolid : par défaut (cliquer pour changer)", "TopSolid port: default (click to change)"));
-            _portItem.Click += (s, e) =>
-            {
-                int currentPort = _port > 0 ? _port : 8090;
-                string input = PromptInput(
-                    L("Port TopSolid", "TopSolid port"),
-                    L("Port TCP de TopSolid (8090 par défaut) :\nAppliqué immédiatement.",
-                      "TopSolid TCP port (8090 default):\nApplied immediately."),
-                    currentPort.ToString(CultureInfo.InvariantCulture));
-                if (string.IsNullOrWhiteSpace(input)) return;
-                int newPort;
-                if (!int.TryParse(input.Trim(), out newPort) || newPort < 1 || newPort > 65535)
-                {
-                    ShowBalloon(L("Paramètres", "Settings"),
-                        L("Port invalide (1-65535 attendu), valeur conservée.", "Invalid port (1-65535 expected), value kept."),
-                        ToolTipIcon.Warning, 3000);
-                    return;
-                }
-                int stored = newPort == 8090 ? 0 : newPort;   // 8090 = default, do not store
-                TraySettings.Save(stored, _readOnly);
-                _port = newPort;
-                _portItem.Text = string.Format(
-                    L("Port TopSolid : {0} (cliquer pour changer)", "TopSolid port: {0} (click to change)"), newPort);
-
-                var retarget = _retarget;
-                if (retarget != null)
-                {
-                    PostState(TrayState.Connecting);
-                    ThreadPool.QueueUserWorkItem(_ =>
-                    {
-                        bool ok = false;
-                        try { ok = retarget(newPort); }
-                        catch { ok = false; }
-                        finally
-                        {
-                            PostState(ok ? TrayState.Connected : TrayState.Disconnected);
-                            ShowBalloonSafe("TopSolid MCP",
-                                ok
-                                    ? string.Format(L("Connecté à TopSolid sur le port {0}.", "Connected to TopSolid on port {0}."), newPort)
-                                    : string.Format(L("Port {0} enregistré, mais TopSolid ne répond pas sur ce port.", "Port {0} saved, but TopSolid is not responding on this port."), newPort),
-                                ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
-                        }
-                    });
-                }
-                else
-                {
-                    ShowBalloon(L("Paramètres", "Settings"),
-                        string.Format(L("Port {0} enregistré.", "Port {0} saved."), newPort),
-                        ToolTipIcon.Info, 3000);
-                }
-            };
-            settingsMenu.DropDownItems.Add(_portItem);
-
-            // Read-only: click to toggle. Persisted, applied on next start.
-            _readOnlyItem = new ToolStripMenuItem(_readOnly
-                ? L("Mode lecture seule : oui (cliquer pour désactiver)", "Read-only mode: yes (click to turn off)")
-                : L("Mode lecture seule : non (cliquer pour activer)", "Read-only mode: no (click to turn on)"));
-            _readOnlyItem.Click += (s, ev) =>
-            {
-                _readOnly = !_readOnly;
-                TraySettings.Save(_port > 0 ? _port : 0, _readOnly);
-                _readOnlyItem.Text = _readOnly
-                    ? L("Mode lecture seule : oui (cliquer pour désactiver)", "Read-only mode: yes (click to turn off)")
-                    : L("Mode lecture seule : non (cliquer pour activer)", "Read-only mode: no (click to turn on)");
-                ShowBalloon(L("Paramètres", "Settings"),
-                    _readOnly
-                        ? L("Lecture seule activée. Appliqué au prochain démarrage du serveur.", "Read-only enabled. Applied next time the server starts.")
-                        : L("Lecture seule désactivée. Appliqué au prochain démarrage du serveur.", "Read-only disabled. Applied next time the server starts."),
-                    ToolTipIcon.Info, 3000);
-            };
-            settingsMenu.DropDownItems.Add(_readOnlyItem);
-
-            settingsMenu.DropDownItems.Add(new ToolStripSeparator());
-
-            var folderItem = new ToolStripMenuItem(L("Ouvrir le dossier d'installation", "Open installation folder"));
-            folderItem.Click += (s, e) => OpenUrl(AppDomain.CurrentDomain.BaseDirectory);
-            settingsMenu.DropDownItems.Add(folderItem);
-
-            menu.Items.Add(settingsMenu);
-
-            // v1.8.3: TopSolid instance picker (running instances + "Manage…").
-            BuildInstancePicker(settingsMenu);
-
-            // v1.8.0: API key, auto-connect toggle, What's new, feedback items.
-            BuildV18MenuItems(menu, settingsMenu);
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            // Update
-            var updateItem = new ToolStripMenuItem(L("Vérifier les mises à jour…", "Check for updates…"));
-            updateItem.Click += OnUpdateClick;
-            menu.Items.Add(updateItem);
-
-            // GitHub
-            var githubItem = new ToolStripMenuItem("GitHub");
-            githubItem.Click += (s, e) => OpenUrl(GitHubUrl);
-            menu.Items.Add(githubItem);
-
-            // Documentation
-            var docsItem = new ToolStripMenuItem(L("Documentation", "Documentation"));
-            docsItem.Click += (s, e) => OpenUrl(DocsUrl);
-            menu.Items.Add(docsItem);
-
-            menu.Items.Add(new ToolStripSeparator());
-
-            // Quit
-            var quitItem = new ToolStripMenuItem(L("Arrêter le serveur", "Stop server"));
-            quitItem.Click += OnQuitClick;
-            menu.Items.Add(quitItem);
-
-            _notifyIcon.ContextMenuStrip = menu;
-
-            // Show startup balloon
-            ShowBalloon(
-                "TopSolid MCP",
-                L($"Serveur MCP v{version} démarré. Connexion à TopSolid…", $"MCP server v{version} started. Connecting to TopSolid…"),
-                ToolTipIcon.Info, 3000);
-
-            // Automatic update check at startup: GitHub API in background; when a newer
-            // release exists, a balloon notifies the user and a "Download update…"
-            // item appears in the menu (visible until installed).
-            ThreadPool.QueueUserWorkItem(_ => CheckForUpdate(false));
+            if (item == null) return;
+            item.Padding = new Padding(6, 4, 6, 4);
+            item.ForeColor = Color.FromArgb(15, 23, 42);
         }
 
-        private void OnReconnectClick(object sender, EventArgs e)
+        /// <summary>
+        /// Modern flat Windows 11 style renderer for the system tray ContextMenuStrip.
+        /// Eliminates legacy WinForms gradients and 3D bevels.
+        /// </summary>
+        private sealed class ModernTrayMenuRenderer : ToolStripProfessionalRenderer
         {
-            if (_onReconnectRequested == null)
+            public ModernTrayMenuRenderer() : base(new ModernColorTable())
             {
-                ShowBalloon(L("Reconnexion", "Reconnection"),
-                    L("Le serveur n'est pas encore initialisé.", "The server is not initialized yet."),
-                    ToolTipIcon.Warning, 2000);
+                RoundedEdges = true;
+            }
+
+            protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+            {
+                if (!e.Item.Enabled)
+                {
+                    bool isHeader = e.Item.Font != null && e.Item.Font.Bold;
+                    e.TextColor = isHeader
+                        ? Color.FromArgb(15, 23, 42)
+                        : Color.FromArgb(71, 85, 105);
+                }
+                else if (e.Item.Selected)
+                {
+                    e.TextColor = Color.FromArgb(29, 78, 216);
+                }
+                base.OnRenderItemText(e);
+            }
+
+            protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
+            {
+                int y = e.Item.ContentRectangle.Top + (e.Item.ContentRectangle.Height / 2);
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1))
+                {
+                    e.Graphics.DrawLine(pen, 8, y, e.Item.Width - 8, y);
+                }
+            }
+
+            private sealed class ModernColorTable : ProfessionalColorTable
+            {
+                public override Color ToolStripDropDownBackground => Color.White;
+                public override Color MenuBorder => Color.FromArgb(203, 213, 225);
+                public override Color MenuItemSelected => Color.FromArgb(239, 246, 255);
+                public override Color MenuItemBorder => Color.FromArgb(191, 219, 254);
+                public override Color MenuItemSelectedGradientBegin => Color.FromArgb(239, 246, 255);
+                public override Color MenuItemSelectedGradientEnd => Color.FromArgb(239, 246, 255);
+                public override Color MenuItemPressedGradientBegin => Color.FromArgb(219, 234, 254);
+                public override Color MenuItemPressedGradientEnd => Color.FromArgb(219, 234, 254);
+                public override Color ImageMarginGradientBegin => Color.White;
+                public override Color ImageMarginGradientMiddle => Color.White;
+                public override Color ImageMarginGradientEnd => Color.White;
+                public override Color SeparatorDark => Color.FromArgb(226, 232, 240);
+                public override Color SeparatorLight => Color.Transparent;
+            }
+        }
+
+        /// <summary>
+        /// Queries GitHub Releases API (releases/latest) in a background thread.
+        /// Never blocks or throws.
+        /// </summary>
+        private void CheckForUpdatesAsync(bool manual)
+        {
+            if (Interlocked.CompareExchange(ref _checkInProgress, 1, 0) != 0)
+            {
+                if (manual)
+                {
+                    ShowBalloon(
+                        "Vérification en cours",
+                        "Une vérification des mises à jour est déjà en cours…",
+                        ToolTipIcon.Info);
+                }
                 return;
             }
 
-            // Issue #13: Switch to orange (Connecting) while probing, and ALWAYS
-            // restore Connected (green) or Disconnected (red) in finally: when
-            // wasConnected == false && nowConnected == false, ConnectionChanged
-            // does not fire, which previously left the tray stuck in orange forever.
-            PostState(TrayState.Connecting);
-            ShowBalloon("TopSolid MCP",
-                L("Tentative de reconnexion…", "Attempting to reconnect…"),
-                ToolTipIcon.Info, 2000);
+            SetCheckMenuText("Recherche de mise à jour…", enabled: false);
+            if (manual)
+            {
+                ShowBalloon("Recherche de mise à jour…", "Interrogation de GitHub…", ToolTipIcon.Info);
+            }
 
-            // Run reconnect on a background thread (avoid blocking the UI)
             ThreadPool.QueueUserWorkItem(_ =>
             {
                 try
                 {
-                    _onReconnectRequested.Invoke();
+                    ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+                    string remoteVersion;
+                    using (var client = new WebClient())
+                    {
+                        client.Headers["User-Agent"] = "TopSolidMcpServer-Updater";
+                        client.Headers["Accept"] = "application/vnd.github+json";
+                        client.Proxy = null;
+                        client.Encoding = System.Text.Encoding.UTF8;
+                        string json = DownloadStringWithTimeout(client, LatestReleaseApiUrl, TimeSpan.FromSeconds(10));
+                        var release = JObject.Parse(json);
+                        remoteVersion = release.Value<string>("tag_name")?.Trim();
+                    }
+
+                    if (string.IsNullOrEmpty(remoteVersion))
+                    {
+                        if (manual)
+                        {
+                            ShowModalBox(
+                                "Mise à jour",
+                                "Impossible de lire les informations de version distante sur GitHub.",
+                                MessageBoxIcon.Warning);
+                        }
+                        return;
+                    }
+
+                    if (CompareVersions(_currentVersion, remoteVersion) < 0)
+                    {
+                        string cleanVer = remoteVersion.TrimStart('v', 'V');
+                        _latestVersion = cleanVer;
+                        _updateUrl = GitHubFeedbackLogic.BuildReleaseUrl(cleanVer);
+                        ShowUpdateAvailable(cleanVer, manual);
+                    }
+                    else if (manual)
+                    {
+                        ShowModalBox(
+                            "Mise à jour",
+                            $"Vous êtes déjà à jour (v{_currentVersion}).",
+                            MessageBoxIcon.Information);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.Error.WriteLine("[TrayIcon] Reconnect error: " + ex.Message);
+                    Console.Error.WriteLine($"[TrayIcon] Update check failed: {ex.Message}");
+                    if (manual)
+                    {
+                        ShowModalBox(
+                            "Mise à jour",
+                            "Impossible de contacter GitHub (connexion ?).\r\n\r\nDétail : " + ex.Message,
+                            MessageBoxIcon.Warning);
+                    }
                 }
                 finally
                 {
-                    bool ok = false;
-                    try { if (_isConnected != null) ok = _isConnected(); } catch { }
-                    PostState(ok ? TrayState.Connected : TrayState.Disconnected);
-                    int p = _port > 0 ? _port : 8090;
-                    ShowBalloonSafe("TopSolid MCP",
-                        ok
-                            ? string.Format(L("Connecté à TopSolid (port {0}).", "Connected to TopSolid (port {0})."), p)
-                            : string.Format(L("Impossible de se connecter à TopSolid (port {0}). Vérifiez que TopSolid est lancé avec Automation activé.", "Could not connect to TopSolid (port {0}). Check that TopSolid is running with Automation enabled."), p),
-                        ok ? ToolTipIcon.Info : ToolTipIcon.Warning, 3000);
+                    SetCheckMenuText("Vérifier les mises à jour…", enabled: true);
+                    Interlocked.Exchange(ref _checkInProgress, 0);
                 }
             });
         }
 
-        private void OnUpdateClick(object sender, EventArgs e)
-        {
-            // Feedback directly in the menu: balloons can be disabled per-app in Windows
-            // notification settings, which made the button look dead ("ne fait rien").
-            var item = sender as ToolStripMenuItem;
-            string originalText = item != null ? item.Text : null;
-            if (item != null)
-            {
-                item.Enabled = false;
-                item.Text = L("Recherche de mise à jour…", "Checking for updates…");
-            }
-            ShowBalloon(L("Recherche de mise à jour…", "Checking for updates…"),
-                L("Interrogation de GitHub…", "Querying GitHub…"),
-                ToolTipIcon.Info, 2000);
-            ThreadPool.QueueUserWorkItem(_ =>
-            {
-                try { CheckForUpdate(true); }
-                finally
-                {
-                    var context = _uiContext;
-                    if (item != null && context != null)
-                        context.Post(s =>
-                        {
-                            try
-                            {
-                                var it = (ToolStripMenuItem)s;
-                                it.Enabled = true;
-                                if (originalText != null) it.Text = originalText;
-                            }
-                            catch { /* menu gone */ }
-                        }, item);
-                }
-            });
-        }
-
-        /// <summary>
-        /// Queries the GitHub API for the latest release and compares it to the running
-        /// version. Manual check (userClicked): balloon reports both outcomes. Startup
-        /// check: balloon + menu item only when a newer version exists — silence means
-        /// up to date. Runs on a thread-pool thread; UI mutations are marshalled.
-        /// </summary>
-        private void CheckForUpdate(bool userClicked)
-        {
-            string latest;
-            try
-            {
-                using (var client = new System.Net.WebClient())
-                {
-                    client.Headers["User-Agent"] = "TopSolidMcpServer-Updater";
-                    client.Headers["Accept"] = "application/vnd.github+json";
-                    // 10s hard timeout: WebClient's default (100s) made a stalled DNS or
-                    // network lookup freeze the check silently for minutes.
-                    client.Proxy = null; // bypass IE proxy auto-detection, another silent stall
-                    var json = DownloadStringWithTimeout(client,
-                        "https://api.github.com/repos/Julien38300/topsolid-automation-mcp/releases/latest",
-                        TimeSpan.FromSeconds(10));
-                    var release = Newtonsoft.Json.Linq.JObject.Parse(json);
-                    latest = release.Value<string>("tag_name");
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine("[TrayIcon] Update check failed: " + ex.Message);
-                if (userClicked)
-                {
-                    // MessageBox, not a balloon: balloons are suppressed when the user
-                    // has disabled notifications for this app, which made the result
-                    // invisible ("the button does nothing"). A modal box always shows.
-                    ShowResultBox(L("Mise à jour", "Update"),
-                        L("Impossible de contacter GitHub (connexion ?).", "Could not reach GitHub (network?).") +
-                        Environment.NewLine + Environment.NewLine +
-                        string.Format(L("Détail : {0}", "Detail: {0}"), ex.Message),
-                        MessageBoxIcon.Warning);
-                }
-                return;
-            }
-
-            string current = GetVersion();
-            if (CompareVersions(latest, current) <= 0)
-            {
-                if (userClicked)
-                    ShowResultBox(L("Mise à jour", "Update"),
-                        string.Format(L("Vous êtes déjà à jour (v{0}).", "You are already up to date (v{0})."), current),
-                        MessageBoxIcon.Information);
-                return;
-            }
-
-            // Newer version available: offer to download it.
-            ShowBalloonSafe("TopSolid MCP",
-                string.Format(L("Mise à jour v{0} disponible ! Clic droit sur l'icône pour l'installer.", "Update v{0} available! Right-click the icon to install it."), latest),
-                ToolTipIcon.Info, 5000);
-            if (userClicked)
-                ShowResultBox("TopSolid MCP",
-                    string.Format(L("Mise à jour v{0} disponible ! Un bouton « Télécharger la mise à jour » a été ajouté au menu.", "Update v{0} available! A 'Download update' button was added to the menu."), latest),
-                    MessageBoxIcon.Information);
-
-            var context = _uiContext;
-            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
-                context.Post(_ => ShowUpdateAvailableItem(latest), null);
-            else
-                ShowUpdateAvailableItem(latest);
-        }
-
-        /// <summary>Thread-safe balloon (posts to the tray thread when needed).</summary>
-        private void ShowBalloonSafe(string title, string text, ToolTipIcon icon, int timeoutMs)
-        {
-            var context = _uiContext;
-            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
-                context.Post(_ => ShowBalloon(title, text, icon, timeoutMs), null);
-            else
-                ShowBalloon(title, text, icon, timeoutMs);
-        }
-
-        /// <summary>
-        /// Thread-safe modal result box. Always visible — unlike balloons, a MessageBox
-        /// cannot be suppressed by Windows notification settings, so a manual update
-        /// check can never look like the button did nothing.
-        /// </summary>
-        private void ShowResultBox(string title, string text, MessageBoxIcon icon)
-        {
-            var context = _uiContext;
-            if (context != null && !ReferenceEquals(Thread.CurrentThread, _thread))
-                context.Post(_ => MessageBox.Show(text, title, MessageBoxButtons.OK, icon), null);
-            else
-                MessageBox.Show(text, title, MessageBoxButtons.OK, icon);
-        }
-
-        /// <summary>Shows (or refreshes) the "Download update…" menu item. Tray thread only.</summary>
-        private void ShowUpdateAvailableItem(string latest)
+        private void ShowModalBox(string title, string text, MessageBoxIcon icon)
         {
             try
             {
-                string text = string.Format(L("Télécharger la mise à jour v{0}…", "Download update v{0}…"), latest);
-                if (_updateAvailableItem == null)
-                {
-                    _updateAvailableItem = new ToolStripMenuItem(text);
-                    // One click = remove the item + launch update.ps1 directly.
-                    _updateAvailableItem.Click += (s, ev) =>
-                    {
-                        var item = (ToolStripMenuItem)s;
-                        var parent = item.GetCurrentParent();
-                        if (parent != null) parent.Items.Remove(item);
-                        _updateAvailableItem = null;
-                        LaunchUpdater();
-                    };
-                    // Insert right after the "Check for updates…" item's separator zone:
-                    // find the menu and insert before "GitHub" so the update block stays together.
-                    var notifyIcon = _notifyIcon;
-                    var menu = notifyIcon != null ? notifyIcon.ContextMenuStrip : null;
-                    if (menu != null)
-                    {
-                        int idx = 0;
-                        foreach (ToolStripItem it in menu.Items)
-                        {
-                            var tsmi = it as ToolStripMenuItem;
-                            if (tsmi != null && tsmi.Text == "GitHub") break;
-                            idx++;
-                        }
-                        menu.Items.Insert(idx, _updateAvailableItem);
-                    }
-                    else
-                    {
-                        _updateAvailableItem = null;
-                    }
-                }
+                var menu = _notifyIcon?.ContextMenuStrip;
+                if (menu != null && menu.IsHandleCreated)
+                    menu.BeginInvoke((Action)(() => MessageBox.Show(text, title, MessageBoxButtons.OK, icon)));
                 else
-                {
-                    _updateAvailableItem.Text = text;
-                }
+                    MessageBox.Show(text, title, MessageBoxButtons.OK, icon);
             }
-            catch { /* menu gone */ }
+            catch { }
         }
 
         /// <summary>Launches update.ps1 next to the executable in a visible console.</summary>
@@ -628,9 +504,12 @@ namespace TopSolidMcpServer.Utils
 
                 if (!File.Exists(updateScript))
                 {
-                    ShowBalloon(L("Mise à jour", "Update"),
-                        L("update.ps1 est introuvable à côté de l'exécutable.", "update.ps1 was not found next to the executable."),
-                        ToolTipIcon.Warning, 3000);
+                    if (!string.IsNullOrEmpty(_updateUrl))
+                    {
+                        OpenUrl(_updateUrl);
+                        return;
+                    }
+                    ShowBalloon("Mise à jour", "update.ps1 est introuvable à côté de l'exécutable.", ToolTipIcon.Warning);
                     return;
                 }
 
@@ -642,277 +521,230 @@ namespace TopSolidMcpServer.Utils
                 };
                 Process.Start(psi);
 
-                // v1.8.0: after launching the updater, open the release notes so the
-                // user sees what the update brings (fixes + new features) while it installs.
                 try { OpenUrl(GitHubFeedbackLogic.BuildReleaseUrl(null)); } catch { }
             }
             catch (Exception ex)
             {
-                ShowBalloon(L("Erreur", "Error"),
-                    string.Format(L("Impossible de lancer la mise à jour : {0}", "Could not start the update: {0}"), ex.Message),
-                    ToolTipIcon.Error, 3000);
+                ShowBalloon("Erreur", $"Impossible de lancer la mise à jour : {ex.Message}", ToolTipIcon.Error);
             }
         }
 
-        /// <summary>
-        /// WebClient has no usable per-call timeout (the 100s default made a stalled
-        /// DNS lookup freeze the check silently). Delegates to
-        /// TopSolidMcp.UpdateCheck.UpdateCheckLogic so the exact same code is
-        /// unit-tested on CI (see server/tests/TopSolidMcpServer.Tests).
-        /// </summary>
-        internal static string DownloadStringWithTimeout(System.Net.WebClient client, string url, TimeSpan timeout)
+        private void SetCheckMenuText(string text, bool enabled)
         {
-            return TopSolidMcp.UpdateCheck.UpdateCheckLogic.DownloadStringWithTimeout(client, url, timeout);
-        }
-
-        /// <summary>
-        /// Semver comparison: 1.7.2-beta is older than 1.7.2; build metadata ignored.
-        /// Non-numeric segments are tolerated and compared as 0.
-        /// Delegates to TopSolidMcp.UpdateCheck.UpdateCheckLogic (unit-tested on CI).
-        /// </summary>
-        internal static int CompareVersions(string a, string b)
-        {
-            return TopSolidMcp.UpdateCheck.UpdateCheckLogic.CompareVersions(a, b);
-        }
-
-        private void OnQuitClick(object sender, EventArgs e)
-        {
-            ShowBalloon("TopSolid MCP",
-                L("Arrêt du serveur…", "Stopping the server…"),
-                ToolTipIcon.Info, 1000);
-
-            // Give the balloon time to show, then shut down
-            var timer = new System.Windows.Forms.Timer { Interval = 500 };
-            timer.Tick += (s, ev) =>
-            {
-                timer.Stop();
-                timer.Dispose();
-                var shutdown = _onShutdownRequested;
-                if (shutdown != null) shutdown();
-            };
-            timer.Start();
-        }
-
-        /// <summary>
-        /// Shows a balloon tip, ignoring the call when the icon is already gone.
-        /// </summary>
-        private void ShowBalloon(string title, string text, ToolTipIcon icon, int timeoutMs)
-        {
-            var notifyIcon = _notifyIcon;
-            if (notifyIcon == null) return;
-
             try
             {
-                notifyIcon.BalloonTipTitle = title;
-                notifyIcon.BalloonTipText = text;
-                notifyIcon.BalloonTipIcon = icon;
-                notifyIcon.ShowBalloonTip(timeoutMs);
+                var menu = _notifyIcon?.ContextMenuStrip;
+                if (menu != null && menu.IsHandleCreated)
+                {
+                    menu.BeginInvoke((Action)(() =>
+                    {
+                        if (_checkUpdateItem != null)
+                        {
+                            _checkUpdateItem.Text = text;
+                            _checkUpdateItem.Enabled = enabled;
+                        }
+                    }));
+                }
             }
-            catch { /* tray already disposed */ }
+            catch { }
+        }
+
+        private void ShowBalloon(string title, string text, ToolTipIcon icon)
+        {
+            try
+            {
+                if (_notifyIcon == null) return;
+                var menu = _notifyIcon.ContextMenuStrip;
+                Action show = () =>
+                {
+                    try
+                    {
+                        _notifyIcon.BalloonTipTitle = title;
+                        _notifyIcon.BalloonTipText = text;
+                        _notifyIcon.BalloonTipIcon = icon;
+                        _notifyIcon.ShowBalloonTip(5000);
+                    }
+                    catch { }
+                };
+
+                if (menu != null && menu.IsHandleCreated)
+                    menu.BeginInvoke(show);
+                else
+                    show();
+            }
+            catch { }
+        }
+
+        private void ShowUpdateAvailable(string remoteVersion, bool manual)
+        {
+            try
+            {
+                if (_notifyIcon == null) return;
+
+                UpdateStatusDisplay();
+
+                var menu = _notifyIcon.ContextMenuStrip;
+                Action apply = () =>
+                {
+                    if (_updateItem != null)
+                    {
+                        _updateItem.Text = $"Télécharger la mise à jour v{remoteVersion}…";
+                        _updateItem.Visible = true;
+                    }
+                    try
+                    {
+                        _notifyIcon.BalloonTipTitle = $"TopSolid MCP v{remoteVersion} disponible";
+                        _notifyIcon.BalloonTipText = $"Mise à jour v{remoteVersion} disponible ! Clic droit sur l'icône pour l'installer.";
+                        _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
+                        _notifyIcon.ShowBalloonTip(5000);
+                    }
+                    catch { }
+                    if (manual)
+                    {
+                        MessageBox.Show(
+                            $"Mise à jour v{remoteVersion} disponible ! Un bouton « Télécharger la mise à jour » a été ajouté au menu.",
+                            "TopSolid MCP",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
+                };
+
+                if (menu != null && menu.IsHandleCreated)
+                    menu.BeginInvoke(apply);
+                else
+                    apply();
+            }
+            catch { }
+        }
+
+        internal static int CompareVersions(string current, string remote)
+        {
+            return UpdateCheckLogic.CompareVersions(current, remote);
+        }
+
+        internal static string DownloadStringWithTimeout(WebClient client, string url, TimeSpan timeout)
+        {
+            return UpdateCheckLogic.DownloadStringWithTimeout(client, url, timeout);
         }
 
         private static void OpenUrl(string url)
         {
             try
             {
-                Process.Start(new ProcessStartInfo { FileName = url, UseShellExecute = true });
-            }
-            catch { /* ignore */ }
-        }
-
-        /// <summary>
-        /// Small modal input dialog (no designer form needed). Returns the typed text,
-        /// or null when the user cancelled.
-        /// </summary>
-        private static string PromptInput(string title, string label, string initialValue)
-        {
-            var form = new Form
-            {
-                Width = 420,
-                Height = 170,
-                Text = title,
-                FormBorderStyle = FormBorderStyle.FixedDialog,
-                StartPosition = FormStartPosition.CenterScreen,
-                MaximizeBox = false,
-                MinimizeBox = false
-            };
-            var lbl = new Label
-            {
-                Left = 12,
-                Top = 12,
-                Width = 380,
-                Height = 44,
-                Text = label
-            };
-            var box = new TextBox
-            {
-                Left = 12,
-                Top = 62,
-                Width = 380,
-                Text = initialValue ?? ""
-            };
-            var ok = new Button { Text = "OK", Left = 220, Width = 80, Top = 100, DialogResult = DialogResult.OK };
-            var cancel = new Button { Text = "Annuler", Left = 310, Width = 80, Top = 100, DialogResult = DialogResult.Cancel };
-            form.Controls.Add(lbl);
-            form.Controls.Add(box);
-            form.Controls.Add(ok);
-            form.Controls.Add(cancel);
-            form.AcceptButton = ok;
-            form.CancelButton = cancel;
-
-            return form.ShowDialog() == DialogResult.OK ? box.Text : null;
-        }
-
-        private static Icon LoadIcon()
-        {
-            try
-            {
-                // Try embedded resource first
-                string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string icoPath = Path.Combine(baseDir, "topsolid-mcp.ico");
-                if (File.Exists(icoPath))
-                    return new Icon(icoPath);
-            }
-            catch { /* fall through */ }
-
-            // Fallback: use default application icon
-            return SystemIcons.Application;
-        }
-
-        /// <summary>
-        /// Draws the base icon with a TeamViewer-style status badge: a colored dot in
-        /// the lower-right corner — green connected, orange connecting, red disconnected.
-        /// Must run on the tray thread. The previous composed handle is destroyed so a
-        /// session-long reconnect loop cannot leak icons.
-        /// </summary>
-        private Icon ComposeIcon(TrayState state)
-        {
-            if (_baseIcon == null) return null;
-
-            try
-            {
-                using (var bmp = new Bitmap(32, 32))
+                Process.Start(new ProcessStartInfo
                 {
-                    using (var g = Graphics.FromImage(bmp))
-                    {
-                        g.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                        g.SmoothingMode = SmoothingMode.AntiAlias;
-                        g.DrawIcon(_baseIcon, new Rectangle(0, 0, 32, 32));
-
-                        Color dot;
-                        switch (state)
-                        {
-                            case TrayState.Connected: dot = Color.FromArgb(46, 204, 64); break;
-                            case TrayState.Disconnected: dot = Color.FromArgb(232, 65, 66); break;
-                            default: dot = Color.FromArgb(255, 165, 0); break;
-                        }
-
-                        using (var brush = new SolidBrush(dot))
-                        {
-                            g.FillEllipse(brush, 19, 19, 11, 11);
-                        }
-                        using (var pen = new Pen(Color.White, 2f))
-                        {
-                            g.DrawEllipse(pen, 18, 18, 13, 13);
-                        }
-                    }
-
-                    IntPtr handle = bmp.GetHicon();
-                    var composed = Icon.FromHandle(handle);
-
-                    DestroyComposedHandle();
-                    _iconHandle = handle;
-                    return composed;
-                }
+                    FileName = url,
+                    UseShellExecute = true
+                });
             }
-            catch
+            catch (Exception ex)
             {
-                return _baseIcon;
+                Console.Error.WriteLine($"[MCP-WARN] Could not open URL {url}: {ex.Message}");
             }
         }
 
-        private void DestroyComposedHandle()
-        {
-            if (_iconHandle != IntPtr.Zero)
-            {
-                try { DestroyIcon(_iconHandle); } catch { }
-                _iconHandle = IntPtr.Zero;
-            }
-        }
-
-        [DllImport("user32.dll", SetLastError = true)]
+        [System.Runtime.InteropServices.DllImport("user32.dll", SetLastError = true)]
         private static extern bool DestroyIcon(IntPtr hIcon);
 
-        public static string GetVersion()
+        private static Icon CreateBadgedIcon(bool connected, bool readOnly)
         {
-            try
+            const int size = 32;
+            using (var bmp = new Bitmap(size, size))
+            using (var g = Graphics.FromImage(bmp))
             {
-                var asm = Assembly.GetExecutingAssembly();
-                var ver = asm.GetName().Version;
-                return $"{ver.Major}.{ver.Minor}.{ver.Build}";
-            }
-            catch
-            {
-                return "0.0.0";
-            }
-        }
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                g.Clear(Color.Transparent);
 
-        /// <summary>
-        /// Removes the icon from the notification area. Must run on the tray thread.
-        /// </summary>
-        private void DisposeNotifyIcon()
-        {
-            try
-            {
-                var notifyIcon = _notifyIcon;
-                if (notifyIcon != null)
+                bool drewBase = false;
+                try
                 {
-                    _notifyIcon = null;
-                    notifyIcon.Visible = false;
-                    notifyIcon.Icon = null;
-                    notifyIcon.Dispose();
+                    string icoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "topsolid-mcp.ico");
+                    if (File.Exists(icoPath))
+                    {
+                        using (var baseIcon = new Icon(icoPath, size, size))
+                        {
+                            g.DrawIcon(baseIcon, new Rectangle(0, 0, size, size));
+                            drewBase = true;
+                        }
+                    }
+                    else
+                    {
+                        string exePath = Assembly.GetExecutingAssembly().Location;
+                        if (!string.IsNullOrEmpty(exePath) && File.Exists(exePath))
+                        {
+                            using (var exeIcon = Icon.ExtractAssociatedIcon(exePath))
+                            {
+                                if (exeIcon != null)
+                                {
+                                    g.DrawIcon(exeIcon, new Rectangle(0, 0, size, size));
+                                    drewBase = true;
+                                }
+                            }
+                        }
+                    }
                 }
-                DestroyComposedHandle();
+                catch { }
+
+                if (!drewBase)
+                {
+                    using (var bgBrush = new SolidBrush(Color.FromArgb(200, 16, 46)))
+                        g.FillEllipse(bgBrush, 1, 1, size - 2, size - 2);
+                    using (var font = new Font("Segoe UI", 11f, FontStyle.Bold, GraphicsUnit.Pixel))
+                    using (var fgBrush = new SolidBrush(Color.White))
+                    {
+                        var sf = new StringFormat
+                        {
+                            Alignment = StringAlignment.Center,
+                            LineAlignment = StringAlignment.Center
+                        };
+                        g.DrawString("TS", font, fgBrush, new RectangleF(0, 0, size, size), sf);
+                    }
+                }
+
+                Color badgeColor = !connected
+                    ? Color.FromArgb(220, 38, 38)
+                    : (readOnly ? Color.FromArgb(245, 158, 11) : Color.FromArgb(34, 197, 94));
+
+                const int badgeSize = 11;
+                int bx = size - badgeSize - 1;
+                int by = size - badgeSize - 1;
+
+                using (var ringBrush = new SolidBrush(Color.FromArgb(15, 23, 42)))
+                    g.FillEllipse(ringBrush, bx - 2, by - 2, badgeSize + 4, badgeSize + 4);
+                using (var dotBrush = new SolidBrush(badgeColor))
+                    g.FillEllipse(dotBrush, bx, by, badgeSize, badgeSize);
+
+                IntPtr hIcon = bmp.GetHicon();
+                try
+                {
+                    using (var temp = Icon.FromHandle(hIcon))
+                    {
+                        return (Icon)temp.Clone();
+                    }
+                }
+                finally
+                {
+                    DestroyIcon(hIcon);
+                }
             }
-            catch { /* shutting down */ }
         }
 
-        /// <summary>
-        /// Stops the tray: the icon is removed and the message loop is ended on the STA
-        /// thread that owns it. Safe to call from any thread, and more than once.
-        /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
-
-            var context = _uiContext;
-            var thread = _thread;
-
-            // Never started, or called from the tray thread itself: act inline.
-            if (context == null || thread == null || ReferenceEquals(Thread.CurrentThread, thread))
-            {
-                DisposeNotifyIcon();
-                try { if (context != null) Application.ExitThread(); } catch { }
-                return;
-            }
+            StopAutoReconnect();
 
             try
             {
-                context.Post(_ =>
+                if (_notifyIcon != null)
                 {
-                    DisposeNotifyIcon();
-                    try { Application.ExitThread(); } catch { }
-                }, null);
-
-                // Give the STA thread a moment to unwind so the icon really disappears.
-                thread.Join(2000);
+                    _notifyIcon.Visible = false;
+                    _notifyIcon.Dispose();
+                }
             }
-            catch (Exception ex)
-            {
-                Console.Error.WriteLine("[TrayIcon] Shutdown error: " + ex.Message);
-                DisposeNotifyIcon();
-            }
+            catch { }
         }
     }
 }

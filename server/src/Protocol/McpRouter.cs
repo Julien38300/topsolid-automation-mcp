@@ -136,7 +136,13 @@ namespace TopSolidMcpServer.Protocol
                     {
                         ["name"] = "TopSolid-MCP-Server",
                         ["version"] = ServerVersion
-                    }
+                    },
+                    ["instructions"] =
+                        "TopSolid 7 CAD/PDM MCP Server (Recipe-First workflow). " +
+                        "1. ALWAYS prefer pre-built recipes via topsolid_run_recipe (200+ recipes for PDM, parameters, exports, BOM, drafting, extruded bars, sheet metal plates, assemblies, collisions). " +
+                        "2. If you do not know the exact recipe name, call topsolid_list_recipes(category/search) first. " +
+                        "3. For UI/ribbon commands, search with topsolid_search_commands(query) and run via topsolid_run_recipe(recipe=\"invoke_command\", value=fullName_or_commandName). " +
+                        "4. Small/local models MUST NEVER call topsolid_execute_script or topsolid_modify_script (raw C# 5 compilation); use ONLY topsolid_run_recipe."
                 }
             };
         }

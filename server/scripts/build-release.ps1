@@ -1,12 +1,14 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    Build TopSolid MCP Server and package for release.
+    Build TopSolid MCP Server, scrub build-machine paths, leak-scan, and package for release.
 .DESCRIPTION
-    Compile le projet, copie dans release-staging/, genere le zip pret a upload sur GitHub Releases.
+    Compile le projet en Release, copie dans release-staging/, nettoie les chemins PDB RSDS
+    et settings.json, verifie l'absence de fuite de chemins locaux, et genere le zip
+    + SHA256SUMS.txt (LF ASCII) prets a publier sur GitHub Releases.
 .EXAMPLE
-    .\scripts\build-release.ps1                # Build + package
-    .\scripts\build-release.ps1 -Version 1.1.0 # Avec un numero de version specifique
+    .\scripts\build-release.ps1
+    .\scripts\build-release.ps1 -Version 1.8.10
 #>
 param(
     [string]$Version
@@ -21,7 +23,6 @@ $dataDir = Join-Path $projectRoot "data"
 
 # --- Determine version ---
 if (-not $Version) {
-    # Read from .csproj
     [xml]$proj = Get-Content $csproj
     $Version = $proj.Project.PropertyGroup.Version
     if (-not $Version) { $Version = "1.0.0" }
@@ -55,15 +56,9 @@ Write-Host "Build OK" -ForegroundColor Green
 
 # --- Prepare release-staging ---
 Write-Host "Preparation de release-staging/..."
-
-# Wipe the staging folder first. Everything below is regenerated from the build
-# output and from server/data/, so a leftover from a previous build is pure
-# noise: a file dropped from $dataFiles (api-index.json) or renamed in the
-# build output would otherwise survive here and be zipped again.
 if (Test-Path $releaseDir) { Remove-Item $releaseDir -Recurse -Force }
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 
-# Core files from build output
 $coreFiles = @(
     "TopSolidMcpServer.exe",
     "TopSolidMcpServer.exe.config",
@@ -82,14 +77,12 @@ foreach ($file in $coreFiles) {
     }
 }
 
-# Copy update.ps1
 $updateScript = Join-Path $projectRoot "scripts\update.ps1"
 if (Test-Path $updateScript) {
     Copy-Item $updateScript (Join-Path $releaseDir "update.ps1") -Force
     Write-Host "  + update.ps1" -ForegroundColor Gray
 }
 
-# Copy ico file from src if not in build output
 $icoSrc = Join-Path $srcDir "topsolid-mcp.ico"
 $icoDst = Join-Path $releaseDir "topsolid-mcp.ico"
 if (-not (Test-Path $icoDst) -and (Test-Path $icoSrc)) {
@@ -103,11 +96,11 @@ if (-not (Test-Path $relDataDir)) { New-Item -ItemType Directory -Path $relDataD
 
 $dataFiles = @(
     "graph.json",
-    "help.db",                  # v1.6.0+ — SQLite FTS5 help index (5809 pages)
-    "help-index-meta.json",     # v1.6.0+ — meta
-    "commands-catalog.json",    # v1.6.3+ — UI commands catalog (2428 cmds)
-    "commands-api-links.json",  # v1.6.5+ - UI command -> API links, read by SearchCommandsTool
-    "recipe-list.txt"           # recipe manifest (reference)
+    "help.db",
+    "help-index-meta.json",
+    "commands-catalog.json",
+    "commands-api-links.json",
+    "recipe-list.txt"
 )
 foreach ($file in $dataFiles) {
     $src = Join-Path $dataDir $file
@@ -119,7 +112,8 @@ foreach ($file in $dataFiles) {
         Write-Host "  - data/$file skipped (not found)" -ForegroundColor DarkGray
     }
 }
-# Also ship Microsoft.Data.Sqlite + SQLitePCLRaw DLLs (required at runtime for help.db)
+
+# Ship Microsoft.Data.Sqlite + SQLitePCLRaw DLLs
 $binDir = Join-Path $srcDir "bin\Release\net48"
 $sqliteDlls = @(Get-ChildItem $binDir -EA SilentlyContinue | Where-Object {
     $_.Name -like "*Sqlite*.dll" -or $_.Name -like "*SQLite*.dll"
@@ -129,7 +123,6 @@ foreach ($dll in $sqliteDlls) {
     Write-Host "  + $($dll.Name)" -ForegroundColor Gray
 }
 
-# System.* support DLLs required by Microsoft.Data.Sqlite on net48
 $systemDlls = @("System.Buffers.dll","System.Memory.dll","System.Numerics.Vectors.dll","System.Runtime.CompilerServices.Unsafe.dll")
 foreach ($name in $systemDlls) {
     $src = Join-Path $binDir $name
@@ -139,7 +132,6 @@ foreach ($name in $systemDlls) {
     }
 }
 
-# runtimes/ subtree (native e_sqlite3.dll per OS/arch)
 $runtimesSrc = Join-Path $binDir "runtimes"
 if (Test-Path $runtimesSrc) {
     $runtimesDst = Join-Path $releaseDir "runtimes"
@@ -149,39 +141,76 @@ if (Test-Path $runtimesSrc) {
     Write-Host "  + runtimes/ ($archCount OS/arch - native e_sqlite3)" -ForegroundColor Gray
 }
 
-# version.txt
 Set-Content -Path (Join-Path $releaseDir "version.txt") -Value $Version -NoNewline
 Write-Host "  + version.txt ($Version)" -ForegroundColor Gray
 
-# --- Noob install: ship install/ (one-click installer + systray app) ---
-# The one-click experience lives in install/: Installer_TopSolidMCP.bat sets up
-# Node.js (winget), runs npm install in bridge/, asks for the API key in a GUI
-# dialog and registers TrayTopSolidMCP.ps1 at login. Without these two folders
-# in the zip a fresh user has no way to get the tray-managed bridge at all.
-$projectRootAll = Split-Path -Parent $projectRoot   # repo root (install/ and bridge/ live there)
-foreach ($dir in @("install", "bridge")) {
+# --- Noob install: ship install/ ---
+$projectRootAll = Split-Path -Parent $projectRoot
+foreach ($dir in @("install")) {
     $srcDirShip = Join-Path $projectRootAll $dir
     if (Test-Path $srcDirShip) {
         Copy-Item $srcDirShip (Join-Path $releaseDir $dir) -Recurse -Force
-        # node_modules must NOT ship (user runs npm install on their machine; keeps zip small)
-        $nm = Join-Path $releaseDir "$dir\node_modules"
-        if (Test-Path $nm) { Remove-Item $nm -Recurse -Force }
         Write-Host "  + $dir/ (noob install)" -ForegroundColor Gray
     }
 }
-# README for the install folder, first thing a user sees
+
+# Ensure no build-machine settings.json (DPAPI key blob) is shipped
+$stagingSettings = Join-Path $releaseDir "settings.json"
+if (Test-Path $stagingSettings) { Remove-Item $stagingSettings -Force }
+
+# --- Scrub build-machine PDB paths (RSDS) in staged binaries ---
+$needleStr = $projectRootAll
+$replacementStr = ("C:\topsolid-automation-mcp").PadRight($needleStr.Length, ' ')
+$needleBytes = [System.Text.Encoding]::ASCII.GetBytes($needleStr)
+$replacementBytes = [System.Text.Encoding]::ASCII.GetBytes($replacementStr)
+if ($needleBytes.Length -ne $replacementBytes.Length) {
+    throw "PDB scrub byte length mismatch ($($needleBytes.Length) vs $($replacementBytes.Length))"
+}
+foreach ($binName in @("TopSolidMcpServer.exe", "TopSolidApiGraph.Core.dll")) {
+    $binPath = Join-Path $releaseDir $binName
+    if (Test-Path $binPath) {
+        $bytes = [System.IO.File]::ReadAllBytes($binPath)
+        $patched = 0
+        for ($i = 0; $i -le $bytes.Length - $needleBytes.Length; $i++) {
+            $match = $true
+            for ($j = 0; $j -lt $needleBytes.Length; $j++) {
+                if ($bytes[$i + $j] -ne $needleBytes[$j]) { $match = $false; break }
+            }
+            if ($match) {
+                [System.Array]::Copy($replacementBytes, 0, $bytes, $i, $replacementBytes.Length)
+                $patched++
+                $i += $needleBytes.Length - 1
+            }
+        }
+        if ($patched -gt 0) {
+            [System.IO.File]::WriteAllBytes($binPath, $bytes)
+            Write-Host "  ~ Scrubbed $patched PDB path(s) in $binName" -ForegroundColor Gray
+        }
+    }
+}
+
+# --- Leak scan on release-staging ---
+$rootFolder = Split-Path -Leaf (Split-Path -Parent (Split-Path -Parent $projectRootAll))
+$leakPatterns = @($rootFolder, $projectRootAll, $env:USERNAME) | Where-Object { $_ }
+foreach ($fileObj in Get-ChildItem $releaseDir -Recurse -File) {
+    $rawText = [System.IO.File]::ReadAllText($fileObj.FullName, [System.Text.Encoding]::GetEncoding("ISO-8859-1"))
+    foreach ($pat in $leakPatterns) {
+        if ($rawText.IndexOf($pat, [System.StringComparison]::OrdinalIgnoreCase) -ge 0) {
+            Write-Host "ERREUR: Fuite detectee ('$pat') dans $($fileObj.FullName)" -ForegroundColor Red
+            exit 1
+        }
+    }
+}
+Write-Host "  OK Leak scan staging (0 fuite)" -ForegroundColor Green
+
 $installReadme = Join-Path $projectRootAll "install\README.md"
 if (-not (Test-Path $installReadme)) {
     Write-Host "  ! install/README.md manquant - a rediger avant release" -ForegroundColor Yellow
 }
 
-# --- Recipe count summary (informational) ---
 Write-Host ""
 $recipeFile = Join-Path $srcDir "Tools\RecipeTool.cs"
 if (Test-Path $recipeFile) {
-    # Recipe keys may contain digits (read_3d_points, select_3d_point), so the
-    # character class must include 0-9. Anchoring on the R/RW/RD factory call
-    # also keeps unrelated dictionary literals out of the count.
     $mcpRecipes = [regex]::Matches((Get-Content $recipeFile -Raw), '\{ "([a-z0-9_]+)", R') | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
     Write-Host "Packaged recipes: $($mcpRecipes.Count)" -ForegroundColor Gray
 }
@@ -198,18 +227,12 @@ Compress-Archive -Path "$releaseDir\*" -DestinationPath $zipPath -Force
 
 $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
 
-# --- SHA256SUMS.txt, published next to the zip as a release asset ---
-# Format is the one sha256sum(1) writes and reads back: "<lowercase hash>  <file name>".
-# scripts/update.ps1 downloads this asset and refuses to install a zip whose hash
-# does not match, so the file must ship with every release.
+# --- SHA256SUMS.txt, published next to the zip as a release asset (LF ASCII) ---
 $zipHash = (Get-FileHash $zipPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $sumsName = "SHA256SUMS.txt"
 $sumsPath = Join-Path $projectRoot $sumsName
-# Written with a single LF, not CRLF: "sha256sum -c SHA256SUMS.txt" on Linux takes
-# everything up to the line terminator as the file name, so a CR would make it look
-# for a name ending in a carriage return and report the file as missing. Get-Content in update.ps1 splits on
-# LF as well as CRLF, so the Windows side is unaffected.
 [System.IO.File]::WriteAllText($sumsPath, $zipHash + "  " + $zipName + "`n", [System.Text.Encoding]::ASCII)
+
 Write-Host ""
 Write-Host "=== Release prete ===" -ForegroundColor Green
 Write-Host "  Zip    : $zipPath ($zipSize Mo)"
@@ -217,5 +240,5 @@ Write-Host "  SHA256 : $zipHash"
 Write-Host "  Sums   : $sumsPath"
 Write-Host "  Staging: $releaseDir\"
 Write-Host ""
-Write-Host "Pour publier sur GitHub :" -ForegroundColor Cyan
-Write-Host "  gh release create v$Version `"$zipPath`" `"$sumsPath`" --title `"v$Version`" --notes `"Release v$Version`""
+Write-Host "Pour publier sur GitHub Releases :" -ForegroundColor Cyan
+Write-Host "  python server\scripts\publish-release.py --version $Version --title `"v$Version`" --notes-file release-notes.md"

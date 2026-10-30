@@ -50,6 +50,12 @@ namespace TopSolidMcpServer.Utils
         public static List<DeclaredTopSolidInstance> DeclaredInstances =
             new List<DeclaredTopSolidInstance>();
 
+        /// <summary>
+        /// v1.8.10: HTTP port of the native MCP endpoint, chosen in the "Manage"
+        /// dialog. 0 = not set (default 8080 / TOPSOLID_MCP_HTTP_PORT env wins).
+        /// </summary>
+        public static int HttpPort;
+
         /// <summary>Test hook: overrides where settings.json is read/written. Null = BaseDirectory.</summary>
         private static string _baseDirectoryOverride;
 
@@ -78,6 +84,7 @@ namespace TopSolidMcpServer.Utils
                 var obj = JObject.Parse(File.ReadAllText(path));
                 Port = obj.Value<int?>("port") ?? 0;
                 ReadOnly = obj.Value<bool?>("read_only") ?? false;
+                HttpPort = obj.Value<int?>("http_port") ?? 0;
 
                 string mode = obj.Value<string>("instance_mode");
                 InstanceMode = (mode == "manual") ? "manual" : "auto";
@@ -131,6 +138,7 @@ namespace TopSolidMcpServer.Utils
 
                 obj["port"] = port;
                 obj["read_only"] = readOnly;
+                obj["http_port"] = HttpPort;
                 obj["instance_mode"] = InstanceMode;
                 obj["declared_instances"] = new JArray(
                     DeclaredInstances.Select(d => new JObject
@@ -170,6 +178,18 @@ namespace TopSolidMcpServer.Utils
         public static void SaveDeclaredInstances(List<DeclaredTopSolidInstance> instances)
         {
             DeclaredInstances = instances ?? new List<DeclaredTopSolidInstance>();
+            Save(Port, ReadOnly);
+        }
+
+        /// <summary>
+        /// v1.8.10: saves the HTTP port of the native MCP endpoint ("Manage" dialog),
+        /// keeping every other field. 0 = default (8080).
+        /// </summary>
+        public static void SaveHttpPort(int httpPort)
+        {
+            if (httpPort < 0) httpPort = 0;
+            if (httpPort > 65535) httpPort = 65535;
+            HttpPort = httpPort;
             Save(Port, ReadOnly);
         }
     }
