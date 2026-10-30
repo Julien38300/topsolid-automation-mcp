@@ -195,6 +195,9 @@ add_draft_to_bundle
 get_page_count
 create_project_tree
 create_part_document
+create_revolved_part
+revolve_active_part
+replace_revolved_profile
 create_assembly_document
 set_material
 set_coating

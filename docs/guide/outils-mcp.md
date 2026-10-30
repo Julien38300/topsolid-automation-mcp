@@ -26,7 +26,7 @@ Lance avec `--read-only` (ou `TOPSOLID_MCP_READ_ONLY=1`) et `topsolid_modify_scr
 
 **L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.
 
-**208 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles, creation de geometrie (parametres Smart, esquisses, extrusions, inclusions).
+**214 recettes** disponibles couvrant : PDM, parametres, masse/volume, assemblages, export (6 formats), mise en plan, nomenclature, mise a plat, comparaison de documents, report de modifications, audit batch, familles, creation de geometrie (parametres Smart, esquisses, extrusions, inclusions).
 
 Le catalogue complet se consulte avec l'outil `topsolid_list_recipes` (section ci-dessous) — il n'est plus inline dans le descripteur de cet outil.
 
@@ -182,7 +182,7 @@ Retourne le code C# d'une recette par nom, sans l'executer. Utile pour apprendre
 { "name": "topsolid_get_recipe", "arguments": { "recipe": "read_mass_volume" } }
 ```
 
-Sans `recipe` : retourne la liste des 208 recettes avec leur mode uniquement (nom + `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]`), sans description — pour les descriptions et les filtres, passez par `topsolid_list_recipes`.
+Sans `recipe` : retourne la liste des 214 recettes avec leur mode uniquement (nom + `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]`), sans description — pour les descriptions et les filtres, passez par `topsolid_list_recipes`.
 
 ## topsolid_compile (v1.5.1+)
 

@@ -9,7 +9,7 @@ Agent IA (OpenClaw / Claude / tout client MCP)
   |
   v
 TopSolidMcpServer.exe (stdio JSON-RPC)
-  |  - run_recipe : execute une des 208 recettes pre-construites
+  |  - run_recipe : execute une des 214 recettes pre-construites
   |  - list_recipes : catalogue des recettes (filtre categorie / mot-cle)
   |  - api_help : cherche les bonnes methodes API (72 synonymes FR/EN)
   |  - execute_script : compile et execute du C# contre TopSolid
@@ -43,11 +43,11 @@ Les 1193 champs `Examples` du `graph.json` livre sont des tableaux **vides**. Le
 ### Serveur MCP (`TopSolidMcpServer.exe`)
 Executable .NET Framework 4.8, communique en stdio JSON-RPC. **13 outils** exposes a l'agent.
 
-### RecipeTool — 208 recettes
+### RecipeTool — 214 recettes
 L'outil principal. Le LLM choisit une recette par nom, aucune generation de code necessaire.
 
 Les categories ci-dessous sont celles exposees par `topsolid_list_recipes`. Les **comptes** de ce
-tableau sont recopies a la main depuis `RecipeTool.cs` (etat verifie : 208 recettes) et derivent
+tableau sont recopies a la main depuis `RecipeTool.cs` (etat verifie : 214 recettes) et derivent
 des qu'une recette est ajoutee — la seule source a jour reste `topsolid_list_recipes` :
 
 | Categorie | Recettes | Exemples |
@@ -70,10 +70,10 @@ des qu'une recette est ajoutee — la seule source a jour reste `topsolid_list_r
 | `UNFOLDING` | 3 | detection, plis, dimensions de depliage |
 | `USER PROPERTIES` | 2 | lecture et ecriture des proprietes utilisateur |
 
-**Total : 208 recettes.**
+**Total : 214 recettes.**
 
 ### Dataset LoRA
-2164 entrees d'entrainement au format ShareGPT (v7 conversational) pour fine-tuner le sous-agent 3B. Couvre les 208 recettes + patterns multi-turn + error-handling + acknowledgments. Eval : **96%** (50 questions, 5 tiers). Deploye en PROD comme `ministral-topsolid` via Ollama.
+2164 entrees d'entrainement au format ShareGPT (v7 conversational) pour fine-tuner le sous-agent 3B. Couvre les 214 recettes + patterns multi-turn + error-handling + acknowledgments. Eval : **96%** (50 questions, 5 tiers). Deploye en PROD comme `ministral-topsolid` via Ollama.
 
 ### Tests
 Suite de tests automatises contre une instance TopSolid vivante. Scripts PowerShell executables en batch.
@@ -85,7 +85,7 @@ OpenClaw Main (cloud, leger — routing + conversation)
   |
   ├── topsolid-recipes (3B LoRA, local)
   |     → topsolid_run_recipe
-  |     208 recettes pre-construites
+  |     214 recettes pre-construites
   |     Classification : intent → nom de recette
   |     Latence : ~2-4 secondes
   |

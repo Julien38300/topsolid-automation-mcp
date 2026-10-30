@@ -1,13 +1,13 @@
 ---
 name: topsolid-mcp-modeling
-version: 2.7.0
+version: 2.8.0
 author: TopSolid-MCP-Contributors
 license: internal
 metadata:
   hermes:
     tags: [topsolid, mcp, cad, assemblage, stl, verification-perceptive, recipes, extruded-bar, profiles-721, sheet-metal, collisions, where-used, circuit-breaker]
     related_skills: [topsolid-mcp, topsolid-railing-design, topsolid-api-knowledge, topsolid-cage-from-image]
-description: Use when modeling TopSolid via the MCP bridge (TopSolid 7.21 native library profiles CreateProfileByTwoPoints, 100% MCP Recipe-First workflow for Extruded Bars, Sheet Metal Plates & Assemblies, Chronology & IsInvalid discipline, Circuit-Breaker & Token Discipline, CoT Reasoning Budget, Compile-First C# Rules, Generic <500ms Material Lookup, Where-Used update before save, Native B-Rep Collision Check).
+description: Use when modeling TopSolid via the MCP bridge — turned parts (create_revolved_part, revolve_active_part, replace_revolved_profile), 7.21 native library profiles (CreateProfileByTwoPoints), extruded bars, sheet metal plates, assemblies, Chronology & IsInvalid discipline, Circuit-Breaker & Token Discipline, Compile-First C# rules, generic <500ms material lookup, Where-Used update before save, native B-Rep collision checks.
 ---
 
 # Modélisation & Bonnes Pratiques Utilisateur TopSolid via MCP (TopSolid 7.20 / 7.21)
@@ -22,7 +22,11 @@ description: Use when modeling TopSolid via the MCP bridge (TopSolid 7.21 native
 Use when creating, modifying, or inspecting TopSolid geometry through the JSON-RPC MCP bridge
 — metalwork extruded bars (`create_extruded_bar`), sheet metal / drilled plates (`create_sheet_metal_plate`),
 part/assembly creation (`create_part_document`, `create_assembly_document`), positioned inclusions (`batch_add_inclusions`),
-Where-Used (`cas d'emploi`) propagation (`update_where_used_and_save`), native TopSolid B-Rep collision checks (`check_collisions`), and visual verification gates.
+turned parts (`create_revolved_part`, `revolve_active_part`), Where-Used (`cas d'emploi`) propagation (`update_where_used_and_save`), native TopSolid B-Rep collision checks (`check_collisions`), and visual verification gates.
+
+## Reference-image modeling intake
+
+Before changing an existing model, inspect its active document, shape count, and feature tree. Decide which features must be preserved, replaced, or removed before writing to PDM. For an image without dimensions, state the estimated overall height, maximum diameter, opening, wall thickness, and any assumptions; ask for source dimensions when they materially affect fit or function. Distinguish smooth surfaces from ribs or other texture rather than inferring that detail from a document name.
 
 Classe de travail : analyser finement le besoin/photo (avec le skill métier spécialisé), ne poser de question que sur les vrais choix ou doutes, puis **privilégier en priorité absolue les Recettes MCP de création (`topsolid_run_recipe`)** — ou un script One-Shot C# uniquement si une géométrie complexe sort du cadre des recettes — avec vérification native des collisions B-Rep TopSolid (`check_collisions`). Cible : **< 90 secondes et < 20 000 tokens**.
 
@@ -70,8 +74,11 @@ Classe de travail : analyser finement le besoin/photo (avec le skill métier sp�
      5. **`create_part_document`** / **`create_assembly_document`** : crée un `.TopPrt` ou `.TopAsm` avec ses propriétés PDM.
      6. **`batch_add_inclusions`** : assemble en une seule transaction toutes les pièces (ex: platines) ou sous-assemblages (`Troncon_Droit_1`, `Troncon_Droit_2`, `Troncon_Retour_G`).
      7. **`update_where_used_and_save`** : reconstruit et sauvegarde en bottom-up (`Pièces .TopPrt -> Sous-Assemblages .TopAsm -> Assemblage Général .TopAsm`).
-     8. **`check_collisions`** + **`audit_assembly`** : vérifie **0 collision B-Rep** (`ShapeShapeCollisionEntity`) et **0 élément invalide** (`Invalid elements: 0`).
-   - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 211 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
+     8. **`check_collisions`** + **`audit_assembly`** : vérifie **0 collision B-Rep** (`ShapeShapeCollisionEntity`) et **0 élément invalide** (`Invalid elements: 0`), puis restaure `ModelingStage`.
+     9. **`create_revolved_part`** : crée un `.TopPrt` depuis un profil ordonné `radius_mm,axial_mm`, avec angle, désignation et référence optionnels.
+     10. **`revolve_active_part`** : même opération sur le `.TopPrt` actif vide ; refuse de s'exécuter s'il contient déjà un solide.
+     11. **`replace_revolved_profile`** : remplace une révolution unique par des segments de droite et d'arc explicites ; refuse les solides additionnels pour ne pas détruire la géométrie dépendante.
+   - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 214 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
 
 5. **COUPE-CIRCUIT (CIRCUIT-BREAKER) & 5 INTERDICTIONS ABSOLUES** :
    - **COUPE-CIRCUIT IMMÉDIAT SUR PANNE INFRASTRUCTURE / SERVEUR MCP** : Si `topsolid_compile` ou `topsolid_execute_script` renvoie une erreur système interne, **ARRÊT IMMÉDIAT** (interdiction de lire le code source du serveur MCP, de bricoler un exécutable ou d'ouvrir WinRM).

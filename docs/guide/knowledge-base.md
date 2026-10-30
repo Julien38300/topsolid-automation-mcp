@@ -25,7 +25,7 @@ Le serveur MCP expose **13 outils**. Neuf d'entre eux sont utilisables **sans To
 | `topsolid_find_path(sourceType, targetType)` | Trouve la chaîne de méthodes exacte entre deux types (ex : `IPdm` → `String`) |
 | `topsolid_explore_paths(...)` | Plusieurs variantes de chemins rankées |
 | `topsolid_list_recipes(...)` | Catalogue des recettes, filtrable par catégorie ou mot-clé |
-| `topsolid_get_recipe(name)` | Code C# d'une des 208 recettes production |
+| `topsolid_get_recipe(name)` | Code C# d'une des 214 recettes production |
 | `topsolid_compile(code)` | Dry-run compile check sans exécuter (`CSharpCodeProvider`, C# 5) |
 | `topsolid_search_examples(query)` | Cherche dans les corpora prives locaux de l'utilisateur (non livres avec le serveur) |
 | `topsolid_search_help(query)` | Full-text search sur 5809 pages de l'aide en ligne (FR + EN) |

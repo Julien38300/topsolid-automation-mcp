@@ -1,6 +1,6 @@
 # Tests
 
-Le projet inclut une suite de tests automatises qui verifie le serveur MCP et une partie des 208 recettes contre une instance TopSolid vivante. Attention : la couverture est partielle — `TestSuite.json` contient 85 tests et `test_recipes_live.ps1` couvre 39 recettes (RA-01 a RA-39), pas les 208.
+Le projet inclut une suite de tests automatises qui verifie le serveur MCP et une partie des 214 recettes contre une instance TopSolid vivante. Attention : la couverture est partielle — `TestSuite.json` contient 85 tests et `test_recipes_live.ps1` couvre 39 recettes (RA-01 a RA-39), pas les 208.
 
 ## Architecture de test
 
