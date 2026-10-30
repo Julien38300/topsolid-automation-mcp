@@ -1,7 +1,7 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.6.0
+version: 5.8.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation, extruded-bar, sheet-metal]
@@ -11,6 +11,9 @@ metadata:
 # TopSolid MCP — Skill de pilotage
 
 ## CHANGELOG
+
+- **v5.8.0 (2026-10-23)** — Added `replace_revolved_profile` for guarded edits to a single-revolve Part, including line/arc profile input.
+- **v5.7.0 (2026-10-23)** — Added `create_revolved_part` for one-shot axisymmetric `.TopPrt` creation and `revolve_active_part` for revolving a profile in an empty active Part.
 
 - **v5.6.0 (2026-10-20)** — Catalogue passe a **208 recettes** : ajout de la suite complete de **Recettes de Creation CAO, Metallerie (`Extruded Bar` & Toles/Platines), Assemblage Positionne (`BETWEEN`) et Cas d'Emploi (`Where-Used`)** permettant de modeliser un ouvrage complet **100 % via `topsolid_run_recipe`** sans script C# custom :
   - `create_project_tree` (creation projet PDM + arborescence de dossiers),

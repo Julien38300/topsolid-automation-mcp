@@ -4231,6 +4231,206 @@ namespace TopSolidMcpServer.Tools
                 "if (invCount > 0) return \"Error: \" + invCount + \" invalid element(s) on '\" + docName + \"': \" + string.Join(\", \", invNames);\n" +
                 "return \"OK: Extruded Bar part '\" + docName + \"' (\" + profType + \", L=\" + (lengthM * 1000.0) + \"mm, holes=\" + (string.IsNullOrEmpty(holesSpec) ? \"0\" : holesSpec) + \") created with Extruded Bar function (Frame XY/X/Z, 0 invalid elements) and saved.\";") },
 
+            { "create_revolved_part", RW("GEOMETRY", "Creates a revolved Part (.TopPrt) from an ordered radial/axial polygon profile in millimeters. The profile is closed automatically and revolved around the absolute Y axis. Param: value=doc_name;profile_points(radius_mm,axial_mm|...)[;angle_deg[;designation[;reference]]]",
+                "string[] parts = \"{value}\".Trim().Split(';');\n" +
+                "if (parts.Length < 2 || parts.Length > 5) return \"Error: Use doc_name;profile_points(radius_mm,axial_mm|...)[;angle_deg[;designation[;reference]]].\";\n" +
+                "string docName = parts[0].Trim(), profileSpec = parts[1].Trim();\n" +
+                "if (string.IsNullOrWhiteSpace(docName) || string.IsNullOrWhiteSpace(profileSpec)) return \"Error: document name and profile are required.\";\n" +
+                "double angleDeg = 360.0;\n" +
+                "if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]) && (!double.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angleDeg) || double.IsNaN(angleDeg) || double.IsInfinity(angleDeg))) return \"Error: invalid angle_deg.\";\n" +
+                "if (angleDeg <= 0.0 || angleDeg > 360.0) return \"Error: angle_deg must be greater than 0 and at most 360.\";\n" +
+                "string designation = parts.Length > 3 ? parts[3].Trim() : \"\", reference = parts.Length > 4 ? parts[4].Trim() : \"\";\n" +
+                "string[] points = profileSpec.Split('|');\n" +
+                "if (points.Length > 1 && points[0].Trim() == points[points.Length - 1].Trim()) Array.Resize(ref points, points.Length - 1);\n" +
+                "if (points.Length < 3) return \"Error: profile needs at least three points.\";\n" +
+                "List<double[]> profile = new List<double[]>();\n" +
+                "double maxRadiusMm = 0.0, minAxialMm = double.MaxValue, maxAxialMm = double.MinValue, twiceArea = 0.0;\n" +
+                "for (int i = 0; i < points.Length; i++)\n" +
+                "{\n" +
+                "    string[] xy = points[i].Split(','); double radiusMm, axialMm;\n" +
+                "    if (xy.Length != 2 || !double.TryParse(xy[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out radiusMm) || !double.TryParse(xy[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out axialMm)) return \"Error: each profile point must be radius_mm,axial_mm.\";\n" +
+                "    if (double.IsNaN(radiusMm) || double.IsInfinity(radiusMm) || double.IsNaN(axialMm) || double.IsInfinity(axialMm) || radiusMm < 0.0) return \"Error: coordinates must be finite and radius_mm cannot be negative.\";\n" +
+                "    if (profile.Count > 0 && Math.Abs(profile[profile.Count - 1][0] - radiusMm) < 1e-9 && Math.Abs(profile[profile.Count - 1][1] - axialMm) < 1e-9) return \"Error: adjacent profile points must differ.\";\n" +
+                "    profile.Add(new double[] { radiusMm, axialMm }); maxRadiusMm = Math.Max(maxRadiusMm, radiusMm); minAxialMm = Math.Min(minAxialMm, axialMm); maxAxialMm = Math.Max(maxAxialMm, axialMm);\n" +
+                "}\n" +
+                "for (int i = 0; i < profile.Count; i++) { double[] a = profile[i], b = profile[(i + 1) % profile.Count]; twiceArea += a[0] * b[1] - b[0] * a[1]; }\n" +
+                "if (Math.Abs(twiceArea) < 1e-8) return \"Error: profile area must be non-zero.\";\n" +
+                "PdmObjectId projectId = TopSolidHost.Pdm.GetCurrentProject(); if (projectId.IsEmpty) return \"Error: no current project.\";\n" +
+                "foreach (PdmObjectId existing in TopSolidHost.Pdm.SearchDocumentByName(projectId, docName)) if (string.Equals(TopSolidHost.Pdm.GetName(existing), docName, StringComparison.OrdinalIgnoreCase)) return \"Error: a document with this exact name already exists in the current project.\";\n" +
+                "PdmObjectId partPdm = TopSolidHost.Pdm.CreateDocument(projectId, \".TopPrt\", true); if (partPdm.IsEmpty) return \"Error: could not create Part document.\";\n" +
+                "TopSolidHost.Pdm.SetName(partPdm, docName); if (!string.IsNullOrEmpty(designation)) TopSolidHost.Pdm.SetDescription(partPdm, designation); if (!string.IsNullOrEmpty(reference)) TopSolidHost.Pdm.SetPartNumber(partPdm, reference);\n" +
+                "DocumentId docId = TopSolidHost.Documents.GetDocument(partPdm); TopSolidHost.Documents.Open(ref docId);\n" +
+                "bool started = false;\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Application.StartModification(\"CreateRevolvedPart_\" + docName, false); started = true; TopSolidHost.Documents.EnsureIsDirty(ref docId);\n" +
+                "    Point3D origin = new Point3D(0, 0, 0); Plane3D planeXY = new Plane3D(origin, Direction3D.DX, Direction3D.DY); double margin = Math.Max(0.05, maxRadiusMm / 5000.0);\n" +
+                "    ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(planeXY, -margin, maxRadiusMm / 1000.0 + margin, minAxialMm / 1000.0 - margin, maxAxialMm / 1000.0 + margin), new SmartPoint3D(origin), true, SmartDirection3D.DX);\n" +
+                "    TopSolidHost.Elements.SetName(sketchId, \"RevolveProfile\"); TopSolidHost.Sketches2D.StartModification(sketchId); List<ElementItemId> vertices = new List<ElementItemId>();\n" +
+                "    foreach (double[] point in profile) vertices.Add(TopSolidHost.Sketches2D.CreateVertex(new Point2D(point[0] / 1000.0, point[1] / 1000.0)));\n" +
+                "    for (int i = 0; i < vertices.Count; i++) TopSolidHost.Sketches2D.CreateLineSegment(vertices[i], vertices[(i + 1) % vertices.Count]);\n" +
+                "    TopSolidHost.Sketches2D.CleanSketch(); TopSolidHost.Sketches2D.EndModification();\n" +
+                "    ElementId axisId = TopSolidHost.Geometries3D.GetAbsoluteYAxis(docId); if (axisId.IsEmpty) throw new Exception(\"Absolute Y axis not found.\");\n" +
+                "    ElementId shapeId = TopSolidHost.Shapes.CreateRevolvedShape(docId, new SmartSection3D(sketchId), new SmartAxis3D(axisId, true), new SmartReal(UnitType.Angle, angleDeg * Math.PI / 180.0), false, false);\n" +
+                "    if (shapeId.IsEmpty) throw new Exception(\"TopSolid did not create the revolved shape.\");\n" +
+                "    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId)) { var constituents = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep); if (!constituents.Contains(shapeId)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, shapeId); }\n" +
+                "    TopSolidHost.Application.EndModification(true, true); started = false;\n" +
+                "}\n" +
+                "catch (Exception ex) { if (started) try { TopSolidHost.Application.EndModification(false, false); } catch { } return \"Error creating revolved part: \" + ex.Message + \". The new PDM document may remain empty.\"; }\n" +
+                "TopSolidHost.Pdm.Save(TopSolidHost.Documents.GetPdmObject(docId), true);\n" +
+                "return \"OK: Revolved Part '\" + docName + \"' (.TopPrt) created with \" + profile.Count + \" profile points at \" + angleDeg + \" degrees and saved.\";") },
+
+            { "revolve_active_part", RW("GEOMETRY", "Adds a revolved solid to the active empty Part (.TopPrt). Refuses if the active document already contains a solid. Profile points are ordered radius_mm,axial_mm pairs in the XY sketch plane and are revolved around the absolute Y axis. Param: value=profile_points(radius_mm,axial_mm|...)[;angle_deg]",
+                "string[] parts = \"{value}\".Trim().Split(';');\n" +
+                "if (parts.Length < 1 || parts.Length > 2 || string.IsNullOrWhiteSpace(parts[0])) return \"Error: Use profile_points(radius_mm,axial_mm|...)[;angle_deg].\";\n" +
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument; if (docId.IsEmpty) return \"Error: open an empty Part document first.\";\n" +
+                "PdmObjectId partPdm = TopSolidHost.Documents.GetPdmObject(docId); if (partPdm.IsEmpty) return \"Error: active document has no PDM object.\";\n" +
+                "string extension; TopSolidHost.Pdm.GetType(partPdm, out extension); if (!string.Equals(extension, \".TopPrt\", StringComparison.OrdinalIgnoreCase)) return \"Error: active document must be a Part (.TopPrt).\";\n" +
+                "List<ElementId> existingShapes = TopSolidHost.Shapes.GetShapes(docId); if (existingShapes != null && existingShapes.Count > 0) return \"Error: active Part already contains a solid; no changes made.\";\n" +
+                "string[] points = parts[0].Split('|'); if (points.Length > 1 && points[0].Trim() == points[points.Length - 1].Trim()) Array.Resize(ref points, points.Length - 1);\n" +
+                "if (points.Length < 3) return \"Error: profile needs at least three points.\";\n" +
+                "double angleDeg = 360.0; if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) && (!double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angleDeg) || double.IsNaN(angleDeg) || double.IsInfinity(angleDeg))) return \"Error: invalid angle_deg.\";\n" +
+                "if (angleDeg <= 0.0 || angleDeg > 360.0) return \"Error: angle_deg must be greater than 0 and at most 360.\";\n" +
+                "List<double[]> profile = new List<double[]>(); double maxRadiusMm = 0.0, minAxialMm = double.MaxValue, maxAxialMm = double.MinValue, twiceArea = 0.0;\n" +
+                "for (int i = 0; i < points.Length; i++)\n" +
+                "{\n" +
+                "    string[] xy = points[i].Split(','); double radiusMm, axialMm;\n" +
+                "    if (xy.Length != 2 || !double.TryParse(xy[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out radiusMm) || !double.TryParse(xy[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out axialMm)) return \"Error: each profile point must be radius_mm,axial_mm.\";\n" +
+                "    if (double.IsNaN(radiusMm) || double.IsInfinity(radiusMm) || double.IsNaN(axialMm) || double.IsInfinity(axialMm) || radiusMm < 0.0) return \"Error: coordinates must be finite and radius_mm cannot be negative.\";\n" +
+                "    if (profile.Count > 0 && Math.Abs(profile[profile.Count - 1][0] - radiusMm) < 1e-9 && Math.Abs(profile[profile.Count - 1][1] - axialMm) < 1e-9) return \"Error: adjacent profile points must differ.\";\n" +
+                "    profile.Add(new double[] { radiusMm, axialMm }); maxRadiusMm = Math.Max(maxRadiusMm, radiusMm); minAxialMm = Math.Min(minAxialMm, axialMm); maxAxialMm = Math.Max(maxAxialMm, axialMm);\n" +
+                "}\n" +
+                "for (int i = 0; i < profile.Count; i++) { double[] a = profile[i], b = profile[(i + 1) % profile.Count]; twiceArea += a[0] * b[1] - b[0] * a[1]; }\n" +
+                "if (Math.Abs(twiceArea) < 1e-8) return \"Error: profile area must be non-zero.\";\n" +
+                "bool started = false;\n" +
+                "try\n" +
+                "{\n" +
+                "    TopSolidHost.Application.StartModification(\"RevolveActivePart\", false); started = true; TopSolidHost.Documents.EnsureIsDirty(ref docId);\n" +
+                "    Point3D origin = new Point3D(0, 0, 0); Plane3D planeXY = new Plane3D(origin, Direction3D.DX, Direction3D.DY); double margin = Math.Max(0.05, maxRadiusMm / 5000.0);\n" +
+                "    ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(planeXY, -margin, maxRadiusMm / 1000.0 + margin, minAxialMm / 1000.0 - margin, maxAxialMm / 1000.0 + margin), new SmartPoint3D(origin), true, SmartDirection3D.DX);\n" +
+                "    TopSolidHost.Elements.SetName(sketchId, \"RevolveProfile\"); TopSolidHost.Sketches2D.StartModification(sketchId); List<ElementItemId> vertices = new List<ElementItemId>();\n" +
+                "    foreach (double[] point in profile) vertices.Add(TopSolidHost.Sketches2D.CreateVertex(new Point2D(point[0] / 1000.0, point[1] / 1000.0)));\n" +
+                "    for (int i = 0; i < vertices.Count; i++) TopSolidHost.Sketches2D.CreateLineSegment(vertices[i], vertices[(i + 1) % vertices.Count]);\n" +
+                "    TopSolidHost.Sketches2D.CleanSketch(); TopSolidHost.Sketches2D.EndModification();\n" +
+                "    ElementId axisId = TopSolidHost.Geometries3D.GetAbsoluteYAxis(docId); if (axisId.IsEmpty) throw new Exception(\"Absolute Y axis not found.\");\n" +
+                "    ElementId shapeId = TopSolidHost.Shapes.CreateRevolvedShape(docId, new SmartSection3D(sketchId), new SmartAxis3D(axisId, true), new SmartReal(UnitType.Angle, angleDeg * Math.PI / 180.0), false, false);\n" +
+                "    if (shapeId.IsEmpty) throw new Exception(\"TopSolid did not create the revolved shape.\");\n" +
+                "    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId)) { var constituents = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep); if (!constituents.Contains(shapeId)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, shapeId); }\n" +
+                "    TopSolidHost.Application.EndModification(true, true); started = false;\n" +
+                "}\n" +
+                "catch (Exception ex) { if (started) try { TopSolidHost.Application.EndModification(false, false); } catch { } return \"Error revolving active Part: \" + ex.Message; }\n" +
+                "TopSolidHost.Pdm.Save(TopSolidHost.Documents.GetPdmObject(docId), true);\n" +
+                "return \"OK: Revolved solid created in active Part with \" + profile.Count + \" profile points at \" + angleDeg + \" degrees and saved.\";") },
+
+            { "replace_revolved_profile", RW("GEOMETRY", "Replaces the profile of the single revolved solid in the active Part. Refuses Parts with additional solid features. The profile uses XY-plane coordinates in millimeters and the absolute Y axis. Param: value=old_sketch_name;segments(P,r,z|L,r,z|A,r,z,cx,cz,CW_or_CCW|...)[;angle_deg]",
+                @"string[] parts = ""{value}"".Trim().Split(';');
+if (parts.Length < 2 || parts.Length > 3) return ""Error: Use old_sketch_name;segments(P,r,z|L,r,z|A,r,z,cx,cz,CW_or_CCW|...)[;angle_deg]."";
+string oldSketchName = parts[0].Trim();
+string segmentSpec = parts[1].Trim();
+if (string.IsNullOrWhiteSpace(oldSketchName) || string.IsNullOrWhiteSpace(segmentSpec)) return ""Error: sketch name and profile segments are required."";
+double angleDeg = 360.0;
+if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]) && (!double.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angleDeg) || double.IsNaN(angleDeg) || double.IsInfinity(angleDeg))) return ""Error: invalid angle_deg."";
+if (angleDeg <= 0.0 || angleDeg > 360.0) return ""Error: angle_deg must be greater than 0 and at most 360."";
+string[] encodedSegments = segmentSpec.Split('|');
+if (encodedSegments.Length < 4) return ""Error: provide P plus at least three line/arc segments."";
+string[] start = encodedSegments[0].Split(',');
+double startRadiusMm, startAxialMm;
+if (start.Length != 3 || !string.Equals(start[0].Trim(), ""P"", StringComparison.OrdinalIgnoreCase) || !double.TryParse(start[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out startRadiusMm) || !double.TryParse(start[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out startAxialMm)) return ""Error: first token must be P,radius_mm,axial_mm."";
+if (startRadiusMm < 0.0 || double.IsNaN(startRadiusMm) || double.IsInfinity(startRadiusMm) || double.IsNaN(startAxialMm) || double.IsInfinity(startAxialMm)) return ""Error: profile coordinates must be finite and radius cannot be negative."";
+List<string[]> segments = new List<string[]>();
+double currentRadiusMm = startRadiusMm, currentAxialMm = startAxialMm;
+double minX = startRadiusMm, maxX = startRadiusMm, minY = startAxialMm, maxY = startAxialMm;
+for (int i = 1; i < encodedSegments.Length; i++)
+{
+    string[] item = encodedSegments[i].Split(',');
+    string kind = item[0].Trim().ToUpperInvariant();
+    double endRadiusMm, endAxialMm;
+    if (item.Length < 3 || (kind != ""L"" && kind != ""A"") || !double.TryParse(item[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out endRadiusMm) || !double.TryParse(item[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out endAxialMm)) return ""Error: each segment must start with L or A and include an endpoint radius_mm,axial_mm."";
+    if (endRadiusMm < 0.0 || double.IsNaN(endRadiusMm) || double.IsInfinity(endRadiusMm) || double.IsNaN(endAxialMm) || double.IsInfinity(endAxialMm)) return ""Error: profile coordinates must be finite and radius cannot be negative."";
+    if (kind == ""L"" && item.Length != 3) return ""Error: line segment syntax is L,radius_mm,axial_mm."";
+    if (kind == ""A"")
+    {
+        double centerRadiusMm, centerAxialMm;
+        if (item.Length != 6 || !double.TryParse(item[3].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out centerRadiusMm) || !double.TryParse(item[4].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out centerAxialMm) || (item[5].Trim().ToUpperInvariant() != ""CW"" && item[5].Trim().ToUpperInvariant() != ""CCW"")) return ""Error: arc syntax is A,radius_mm,axial_mm,center_radius_mm,center_axial_mm,CW|CCW."";
+        double startArcRadius = Math.Sqrt((currentRadiusMm-centerRadiusMm)*(currentRadiusMm-centerRadiusMm) + (currentAxialMm-centerAxialMm)*(currentAxialMm-centerAxialMm));
+        double endArcRadius = Math.Sqrt((endRadiusMm-centerRadiusMm)*(endRadiusMm-centerRadiusMm) + (endAxialMm-centerAxialMm)*(endAxialMm-centerAxialMm));
+        if (Math.Abs(startArcRadius-endArcRadius) > 0.05) return ""Error: arc start and end must lie on the same circle (tolerance 0.05 mm)."";
+        minX = Math.Min(minX, centerRadiusMm-startArcRadius); maxX = Math.Max(maxX, centerRadiusMm+startArcRadius);
+        minY = Math.Min(minY, centerAxialMm-startArcRadius); maxY = Math.Max(maxY, centerAxialMm+startArcRadius);
+    }
+    minX = Math.Min(minX, endRadiusMm); maxX = Math.Max(maxX, endRadiusMm); minY = Math.Min(minY, endAxialMm); maxY = Math.Max(maxY, endAxialMm);
+    segments.Add(item); currentRadiusMm = endRadiusMm; currentAxialMm = endAxialMm;
+}
+if (Math.Abs(currentRadiusMm-startRadiusMm) > 0.01 || Math.Abs(currentAxialMm-startAxialMm) > 0.01) return ""Error: final segment must close back to the starting point (tolerance 0.01 mm)."";
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return ""Error: no active document."";
+PdmObjectId activePdm = TopSolidHost.Documents.GetPdmObject(docId);
+string extension;
+TopSolidHost.Pdm.GetType(activePdm, out extension);
+if (!string.Equals(extension, "".TopPrt"", StringComparison.OrdinalIgnoreCase)) return ""Error: active document must be a Part (.TopPrt)."";
+List<ElementId> shapes = TopSolidHost.Shapes.GetShapes(docId);
+if (shapes == null || shapes.Count != 1) return ""Error: active Part must contain exactly one solid."";
+List<ElementId> sketches = TopSolidHost.Sketches2D.GetSketches(docId);
+ElementId oldSketch = ElementId.Empty;
+foreach (ElementId sketch in sketches) if (string.Equals(TopSolidHost.Elements.GetFriendlyName(sketch), oldSketchName, StringComparison.OrdinalIgnoreCase)) oldSketch = sketch;
+if (oldSketch.IsEmpty) return ""Error: named profile sketch not found."";
+List<ElementId> operations = TopSolidHost.Operations.GetOperations(docId);
+int revolveCount = 0;
+int extraSolidFeatureCount = 0;
+foreach (ElementId operation in operations)
+{
+    string typeName = TopSolidHost.Elements.GetTypeFullName(operation);
+    if (typeName.IndexOf(""RevolvedCreation"", StringComparison.Ordinal) >= 0) revolveCount++;
+    else if (typeName.IndexOf(""ExtrudedCreation"", StringComparison.Ordinal) >= 0 || typeName.IndexOf(""PatternCreation"", StringComparison.Ordinal) >= 0 || typeName.IndexOf(""Drilling"", StringComparison.Ordinal) >= 0 || typeName.IndexOf(""Fillet"", StringComparison.Ordinal) >= 0 || typeName.IndexOf(""Chamfer"", StringComparison.Ordinal) >= 0 || typeName.IndexOf(""Boolean"", StringComparison.Ordinal) >= 0) extraSolidFeatureCount++;
+}
+if (revolveCount != 1 || extraSolidFeatureCount != 0) return ""Error: active Part must have one revolve and no additional solid features."";
+bool started = false;
+try
+{
+    TopSolidHost.Application.StartModification(""Replace revolved profile"", false); started = true;
+    TopSolidHost.Documents.EnsureIsDirty(ref docId);
+    operations = TopSolidHost.Operations.GetOperations(docId);
+    ElementId oldRevolve = ElementId.Empty;
+    foreach (ElementId operation in operations) if (TopSolidHost.Elements.GetTypeFullName(operation).IndexOf(""RevolvedCreation"", StringComparison.Ordinal) >= 0) oldRevolve = operation;
+    sketches = TopSolidHost.Sketches2D.GetSketches(docId); oldSketch = ElementId.Empty;
+    foreach (ElementId sketch in sketches) if (string.Equals(TopSolidHost.Elements.GetFriendlyName(sketch), oldSketchName, StringComparison.OrdinalIgnoreCase)) oldSketch = sketch;
+    if (oldRevolve.IsEmpty || oldSketch.IsEmpty) throw new Exception(""Target revolve or profile changed after transaction start."");
+    TopSolidHost.Elements.Delete(oldRevolve);
+    TopSolidHost.Elements.Delete(oldSketch);
+    Point3D origin = new Point3D(0, 0, 0); Plane3D planeXY = new Plane3D(origin, Direction3D.DX, Direction3D.DY);
+    double margin = 0.02;
+    ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(planeXY, minX/1000.0-margin, maxX/1000.0+margin, minY/1000.0-margin, maxY/1000.0+margin), new SmartPoint3D(origin), true, SmartDirection3D.DX);
+    TopSolidHost.Elements.SetName(sketchId, oldSketchName);
+    TopSolidHost.Sketches2D.StartModification(sketchId);
+    ElementItemId firstVertex = TopSolidHost.Sketches2D.CreateVertex(new Point2D(startRadiusMm/1000.0, startAxialMm/1000.0));
+    ElementItemId currentVertex = firstVertex; currentRadiusMm = startRadiusMm; currentAxialMm = startAxialMm;
+    for (int i = 0; i < segments.Count; i++)
+    {
+        string[] item = segments[i]; string kind = item[0].Trim().ToUpperInvariant();
+        double endRadiusMm = double.Parse(item[1].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+        double endAxialMm = double.Parse(item[2].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+        bool closes = i == segments.Count-1;
+        ElementItemId endVertex = closes ? firstVertex : TopSolidHost.Sketches2D.CreateVertex(new Point2D(endRadiusMm/1000.0, endAxialMm/1000.0));
+        if (kind == ""L"") TopSolidHost.Sketches2D.CreateLineSegment(currentVertex, endVertex);
+        else
+        {
+            double centerRadiusMm = double.Parse(item[3].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            double centerAxialMm = double.Parse(item[4].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            bool clockwise = string.Equals(item[5].Trim(), ""CW"", StringComparison.OrdinalIgnoreCase);
+            TopSolidHost.Sketches2D.CreateArcSegment(currentVertex, endVertex, new Point2D(centerRadiusMm/1000.0, centerAxialMm/1000.0), clockwise);
+        }
+        currentVertex = endVertex; currentRadiusMm = endRadiusMm; currentAxialMm = endAxialMm;
+    }
+    TopSolidHost.Sketches2D.CleanSketch(); TopSolidHost.Sketches2D.EndModification();
+    ElementId axisId = TopSolidHost.Geometries3D.GetAbsoluteYAxis(docId);
+    ElementId newShape = TopSolidHost.Shapes.CreateRevolvedShape(docId, new SmartSection3D(sketchId), new SmartAxis3D(axisId, true), new SmartReal(UnitType.Angle, angleDeg*Math.PI/180.0), false, false);
+    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId)) { var constituents = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep); if (!constituents.Contains(newShape)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, newShape); }
+    TopSolidHost.Application.EndModification(true, true); started = false;
+}
+catch (Exception ex) { if (started) try { TopSolidHost.Application.EndModification(false, false); } catch { } return ""Error replacing revolved profile: "" + ex.Message; }
+TopSolidHost.Pdm.Save(TopSolidHost.Documents.GetPdmObject(docId), true);
+return ""Replaced the active Part's single revolve profile and saved."";") },
+
             { "create_sheet_metal_plate", RW("GEOMETRY", "One-shot creation of a metalwork sheet/baseplate (.TopPrt) in XY extruded along +Z, with optional circular through-holes in the same sketch, named parameter Epaisseur, Minimal EnclosingBox, material, and coating. Param: value=doc_name;designation;reference;folder_name;length_x_mm;width_y_mm;thickness_z_mm[;holes_x_y_diam_mm[;material[;coating_or_rgb[;ORIGIN|CENTER]]]]",
                 "string raw = \"{value}\".Trim();\n" +
                 "string[] parts = raw.Split(';');\n" +

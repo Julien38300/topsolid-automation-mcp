@@ -5255,6 +5255,32 @@ return "OK: Function 'Extruded Bar' + Frame (XY section, X horizontal, Z longitu
 
 ---
 
+## create_revolved_part
+Pattern: RW
+Description: Creates a saved `.TopPrt` from an ordered polygonal radial/axial profile. Input coordinates use millimeters; the profile is closed automatically and revolved around the absolute Y axis. Example: `Shaft;8,0|20,0|20,50|8,50;360;Shaft;SH-001`
+
+The canonical C# body is available through `topsolid_get_recipe` (`create_revolved_part`) and is maintained in `server/src/Tools/RecipeTool.cs`.
+
+---
+
+## revolve_active_part
+Pattern: RW
+Description: Adds a revolved solid to the active empty Part (.TopPrt). Refuses to modify a document that already contains a solid.
+Input example: `8,0|20,0|20,50|8,50;360` (radius_mm,axial_mm pairs; angle in degrees).
+
+The canonical C# body is available through `topsolid_get_recipe` (`revolve_active_part`) and is maintained in `server/src/Tools/RecipeTool.cs`.
+
+---
+
+## replace_revolved_profile
+Pattern: RW
+Description: Replaces the named sketch and single revolve in an active single-solid Part using a closed profile made of lines and circular arcs. Refuses additional solid features.
+Input example: `VaseProfile;P,0,0|L,50,0|A,60,200,-97.08,107.60,CCW|L,57.8,198.8|A,50.5,5,-97.08,107.60,CW|L,0,5|L,0,0;360`
+
+The canonical C# body is available through `topsolid_get_recipe` (`replace_revolved_profile`) and is maintained in `server/src/Tools/RecipeTool.cs`.
+
+---
+
 ## create_extruded_bar
 Pattern: RW
 Description: One-shot creation of a metalwork Extruded Bar part (.TopPrt) with XY section (X horizontal), +Z extrusion (Length parameter L), 'Extruded Bar' function + Frame (XY/X/Z), optional transverse through-holes, material, and coating. Param: value=doc_name;designation;reference;folder_name;section_type(PLAT|TUBE_RECT|ROND|TUBE_ROND|CORNIERE);dims_csv_mm;length_mm[;holes_spec[;material[;coating_or_rgb]]]

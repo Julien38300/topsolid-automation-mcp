@@ -1676,6 +1676,48 @@
             }
         },
         "assertions": { "contains": ["Drafting"] }
+      },
+      {
+        "id": "T-100",
+        "name": "get revolved part recipe source",
+        "tool": "topsolid_get_recipe",
+        "request": {
+          "jsonrpc": "2.0", "id": 200,
+          "method": "tools/call",
+          "params": {
+            "name": "topsolid_get_recipe",
+            "arguments": { "recipe": "create_revolved_part" }
+          }
+        },
+        "assertions": { "contains": ["CreateRevolvedShape", "SmartAxis3D"] }
+      },
+      {
+        "id": "T-101",
+        "name": "get active-part revolve recipe source",
+        "tool": "topsolid_get_recipe",
+        "request": {
+          "jsonrpc": "2.0", "id": 201,
+          "method": "tools/call",
+          "params": {
+            "name": "topsolid_get_recipe",
+            "arguments": { "recipe": "revolve_active_part" }
+          }
+        },
+        "assertions": { "contains": ["already contains a solid", "CreateRevolvedShape", "GetShapes"] }
+      },
+      {
+        "id": "T-102",
+        "name": "get guarded revolve profile replacement recipe",
+        "tool": "topsolid_get_recipe",
+        "request": {
+          "jsonrpc": "2.0", "id": 202,
+          "method": "tools/call",
+          "params": {
+            "name": "topsolid_get_recipe",
+            "arguments": { "recipe": "replace_revolved_profile" }
+          }
+        },
+        "assertions": { "contains": ["additional solid features", "CreateArcSegment", "CreateRevolvedShape"] }
     }
   ]
 }

@@ -13,7 +13,8 @@
 
 An MCP server written in C# (.NET Framework 4.8) that exposes the TopSolid 7 Automation API as a set of 13 tools any MCP client can call. On top of the raw API, it ships with:
 
-- **208 pre-built recipes** — curated C# snippets for the most common CAD/PDM operations (read mass/volume, set designation, export STEP/DXF/PDF, activate BOM rows, detect drafting scale, ...), browsable with `topsolid_list_recipes`.
+
+- **211 pre-built recipes** — curated C# snippets for the most common CAD/PDM operations (create and replace revolved profiles, read mass/volume, set designation, export STEP/DXF/PDF, activate BOM rows, detect drafting scale, ...), browsable with `topsolid_list_recipes`.
 - A **4119-edge type graph** of the API (1728 methods, 242 types), queryable by Dijkstra / BFS to discover method chains between any two types.
 - A **5809-page help index** (EN + FR) in SQLite FTS5 — ask your agent *"how does the sheet-metal unfolding command work?"* and get the official help excerpt.
 - A **2428-command catalog** — look up any ribbon/menu command by keyword, get its FullName ready to invoke.

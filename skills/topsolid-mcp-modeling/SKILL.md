@@ -1,13 +1,13 @@
 ---
 name: topsolid-mcp-modeling
-version: 2.6.0
+version: 2.8.0
 author: Noemid-H
 license: internal
 metadata:
   hermes:
     tags: [topsolid, mcp, cad, assemblage, stl, verification-perceptive, recipes, extruded-bar, sheet-metal, collisions, where-used, circuit-breaker]
     related_skills: [topsolid-mcp, topsolid-railing-design, topsolid-api-knowledge, topsolid-cage-from-image]
-description: Use when modeling TopSolid via the MCP bridge (TopSolid user best practices, 100% MCP Recipe-First workflow for Extruded Bars, Sheet Metal Plates & Assemblies, Circuit-Breaker & Token Discipline, CoT Reasoning Budget, Compile-First C# Rules, Generic <500ms Material Lookup, Where-Used update before save, Native B-Rep Collision Check).
+description: Use when modeling TopSolid via the MCP bridge, including creating or replacing turned-part profiles, extruded bars, sheet metal, assemblies, and native B-Rep collision checks.
 ---
 
 # Modélisation & Bonnes Pratiques Utilisateur TopSolid via MCP (LY458 :8080)
@@ -22,7 +22,11 @@ description: Use when modeling TopSolid via the MCP bridge (TopSolid user best p
 Use when creating, modifying, or inspecting TopSolid geometry through the JSON-RPC bridge on LY458
 (port 8080) — metalwork extruded bars (`create_extruded_bar`), sheet metal / drilled plates (`create_sheet_metal_plate`),
 part/assembly creation (`create_part_document`, `create_assembly_document`), positioned inclusions (`batch_add_inclusions`),
-Where-Used (`cas d'emploi`) propagation (`update_where_used_and_save`), native TopSolid B-Rep collision checks (`check_collisions`), and visual verification gates.
+turned parts (`create_revolved_part`, `revolve_active_part`), Where-Used (`cas d'emploi`) propagation (`update_where_used_and_save`), native TopSolid B-Rep collision checks (`check_collisions`), and visual verification gates.
+
+## Reference-image modeling intake
+
+Before changing an existing model, inspect its active document, shape count, and feature tree. Decide which features must be preserved, replaced, or removed before writing to PDM. For an image without dimensions, state the estimated overall height, maximum diameter, opening, wall thickness, and any assumptions; ask for source dimensions when they materially affect fit or function. Distinguish smooth surfaces from ribs or other texture rather than inferring that detail from a document name.
 
 Classe de travail : analyser finement le besoin/photo (avec le skill métier spécialisé), ne poser de question que sur les vrais choix ou doutes, puis **privilégier en priorité absolue les Recettes MCP de création (`topsolid_run_recipe`)** — ou un script One-Shot C# uniquement si une géométrie complexe sort du cadre des recettes — avec vérification native des collisions B-Rep TopSolid (`check_collisions`). Cible : **< 90 secondes et < 20 000 tokens**.
 
@@ -65,6 +69,9 @@ Classe de travail : analyser finement le besoin/photo (avec le skill métier sp�
      5. **`batch_add_inclusions`** : assemble en une seule transaction toutes les pièces d'un sous-assemblage soudé (`GC_Troncon_*`) ou de l'assemblage général, soit par coordonnées `(tx,ty,tz,rx,ry,rz,nomOcc)`, soit par vecteur directeur **`BETWEEN,x1,y1,z1,x2,y2,z2,ux,uy,uz,nomOcc`** (qui aligne automatiquement le `+Z` longitudinal du profilé `Extruded Bar` de `P1` vers `P2` et l'axe `X` de sa section selon `uX`).
      6. **`update_where_used_and_save`** : reconstruit et sauvegarde en bottom-up (`Pièces .TopPrt -> Sous-Assemblages .TopAsm -> Assemblage Général .TopAsm`).
      7. **`check_collisions`** : active `SetCollisionsManagement`, compte les `ShapeShapeCollisionEntity` B-Rep et restaure `ModelingStage`.
+   8. **`create_revolved_part`** : creates a new `.TopPrt` from an ordered `radius_mm,axial_mm` profile, with an optional angle, designation, and reference.
+   9. **`revolve_active_part`** : adds the same feature to the active empty `.TopPrt` and refuses to proceed when it already contains a solid.
+   10. **`replace_revolved_profile`** : replaces a single revolve using explicit line and circular-arc segments; refuses additional solid features to avoid deleting dependent geometry.
    - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 208 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
 
 5. **COUPE-CIRCUIT (CIRCUIT-BREAKER) & 5 INTERDICTIONS ABSOLUES** :
