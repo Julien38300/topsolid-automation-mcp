@@ -113,7 +113,7 @@ namespace TopSolidMcpServer.Utils
         }
 
         /// <summary>Prefixes the line with a UTC timestamp: log correlation across
-        /// machines (LY458 is UTC+2, a client machine may be elsewhere).</summary>
+        /// machines (the CAD workstation may be in UTC+2 while a client machine is elsewhere).</summary>
         public static string FormatLine(string line)
         {
             return DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss.fff") + " " + (line ?? "") + "\r\n";

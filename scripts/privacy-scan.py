@@ -116,6 +116,7 @@ BAD_MARKERS = [
     "Copyright " + chr(169) + " To" + "pSolid",
     "Assembly" + "Copyright",
     "REDACTED-" + "USER",   # residue from a filter-repo pass (should be gone)
+    "Noe" + "mid", "noe" + "mid", "NOE" + "MID", "LY" + "458", "ly" + "458", "LY" + "631", "ly" + "631", "jp" + "oir", "DOM" + "SQF", "dom" + "sqf",
 ]
 
 # Files exempt from the whole scan. Keep this list at exactly one entry:

@@ -138,7 +138,7 @@ namespace TopSolidMcpServer.Tests
         [Test]
         public void DownloadStringWithTimeout_DnsFailure_ThrowsQuickly()
         {
-            // Root cause seen on LY458: unresolvable host. Must throw (WebException),
+            // Root cause seen in production: unresolvable host. Must throw (WebException),
             // quickly — never hang, never silently swallow.
             using (var client = new WebClient())
             {

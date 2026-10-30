@@ -206,3 +206,6 @@ add_inclusion_positioned
 batch_add_inclusions
 check_collisions
 update_where_used_and_save
+list_profile_families_and_codes
+create_profile_by_two_points
+batch_create_profiles_by_two_points

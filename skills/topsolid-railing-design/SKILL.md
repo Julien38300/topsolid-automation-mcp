@@ -1,7 +1,7 @@
 ---
 name: topsolid-railing-design
 version: 1.3.0
-author: Noemid-H
+author: TopSolid-MCP-Contributors
 license: internal
 metadata:
   hermes:
@@ -90,7 +90,7 @@ Un garde-corps de métallerie comporte **obligatoirement une platine de fixation
   - La largeur ($50\text{ mm}$) est **toujours perpendiculaire à la lisse** (inertie maximale $I_y = \frac{10 \times 50^3}{12}$ face à la poussée horizontale NF P01-013).
   - L'épaisseur ($10\text{ mm}$) est orientée dans le sens du linéaire du garde-corps.
 - **Cas type du barreaudage horizontal « 7 barres basses + 2 barres hautes » (sans tôle ni verre)** :
-  - **Zone basse de sécurité ($0\text{ à }450\text{ mm}$)** : **7 barres rondes pleines Inox $\varnothing 12\text{ mm}$** (`NF A 45-003`), centres à **$Z = 60, 125, 190, 255, 320, 385, 450\text{ mm}$** (pas régulier de $65\text{ mm}$ → vide libre entre barres $= 53\text{ mm} \le 50\text{–}55\text{ mm}$ anti-escalade ; vide sous la 1re barre par rapport au platelage $Z=0$ : $60 - 6 = 54\text{ mm} \le 110\text{ mm}$, et $44\text{ mm}$ au-dessus de la platine $Z=10\text{ mm}$).
+  - **Zone basse de sécurité ($0\text{ à }450\text{ mm}$)** : **7 barres rondes pleines Inox $\varnothing 12\text{ mm}$** (`NF A 45-003`), centres à **$Z = 60, 125, 190, 255, 320, 385, 450\text{ mm}$** (pas régulier de $65\text{ mm}$ → vide libre entre barres $= 53\text{ mm}$ ; ⚠️ **cote à faire valider par Julien contre l'édition en vigueur de NF P01-012 avant toute livraison client** — ce skill s'interdisant la recherche Web, la valeur n'est pas vérifiable ici, et `modern-cad-ux` prescrit de son côté un vide $\le 110\text{ mm}$ : les deux seuils ne peuvent pas être vrais en même temps ; vide sous la 1re barre par rapport au platelage $Z=0$ : $60 - 6 = 54\text{ mm} \le 110\text{ mm}$, et $44\text{ mm}$ au-dessus de la platine $Z=10\text{ mm}$).
   - **Zone haute ($450\text{ à }1000\text{ mm}$)** : **2 barres rondes pleines Inox $\varnothing 12\text{ mm}$**, centres à **$Z = 630\text{ mm}$** et **$Z = 815\text{ mm}$** (vides libres de $168\text{ mm}$, $173\text{ mm}$ et $169\text{ mm} \le 180\text{ mm}$ réglementaires).
   - **Alésages traversants dans les montants** : les 9 trous **$\varnothing 13\text{ mm}$** (jeu radial de $0{,}5\text{ mm}$ autour des barres $\varnothing 12\text{ mm}$) sont dessinés directement via `CreateCircleSegment` dans l'esquisse 2D latérale du montant ($50 \times 980\text{ mm}$, de $Z=10$ à $Z=990\text{ mm}$) avant `CreateExtrudedShape` !
 - **Gestion propre de l'angle à 90° (Garde-corps en L)** :
@@ -101,10 +101,12 @@ Un garde-corps de métallerie comporte **obligatoirement une platine de fixation
 - **Découpage en Tronçons Soudés (`GC_Troncon_*.TopAsm`) & Poteaux de Raccord Boulonnés** :
   - Un garde-corps réel est fabriqué en atelier par **tronçons soudés transportables** (longueur typique $1{,}5\text{ à }2{,}5\text{ m}$), chaque tronçon étant un **sous-assemblage TopSolid (`.TopAsm`)** regroupant ses platines, montants, main courante, lisses et barreaux soudés ensemble.
   - Dans 99 % des cas, la jonction entre deux tronçons adjacents se fait par un **poteau de raccord (jonction)** constitué de **2 fers plats boulonnés dos à dos** ($2 \times 50 \times 10\text{ mm}$ percés de $3 \times \varnothing 12\text{ mm}$ pour boulons M10, avec un jeu de pose de $2\text{ mm}$ entre les deux plats et chacune sa demi-platine `GC_Platine_Jonction_70x100x12`) : chaque fer plat et sa demi-platine appartiennent à leur sous-assemblage de tronçon respectif !
-- **Modélisation 100 % via Recettes MCP (`topsolid_run_recipe`)** :
-  - Toujours utiliser **`create_extruded_bar`** pour tous les profilés (`PLAT`, `TUBE_RECT`, `ROND`, `TUBE_ROND`, `CORNIERE`) : la recette câble automatiquement la fonction système TopSolid **`Extruded Bar.TopPrtFct`**, son repère **`Repere_ExtrudedBar_XY_Z`** (section dans `XY` avec `X` horizontal, extrusion longitudinale suivant `+Z`) et la propriété système **`Length` = `L`** visible en nomenclature BOM.
-  - Toujours utiliser **`create_sheet_metal_plate`** pour toutes les tôles et platines percées (contour extérieur + cercles des trous dans la même esquisse 2D + paramètre `Epaisseur`).
-  - Toujours utiliser **`create_assembly_document`** + **`batch_add_inclusions`** (mode `BETWEEN,x1,y1,z1,x2,y2,z2,ux,uy,uz,nomOcc` pour orienter automatiquement le `+Z` des profilés de `P1` vers `P2` et leur section `X` selon `uX`) + **`update_where_used_and_save`** + **`check_collisions`**.
+- **Modélisation 100 % via Recettes MCP (`topsolid_run_recipe`) en TopSolid 7.21** :
+  - **En TopSolid 7.21 (`port 8091`)**, privilégier **`batch_create_profiles_by_two_points`** (qui utilise l'API native 7.21 `TopSolidDesignHost.Assemblies.CreateProfileByTwoPoints` et les familles standards de bibliothèque `Composants Mécanique TopSolid` -> `Profilés` : `Plat`, `Tube rectangle`, `Tube carré`, `Tube rond`, `Rond`, `Carré` pilotées par leurs codes `50x10`, `50x8`, `50x20x2`, `12`). Chaque barre génère automatiquement sa pièce synchronisée avec `Acier S235 EN 10025`, la propriété système `Longueur`, le `Code` et la `Désignation` !
+    - *Orientation de la section* : pour `Plat` (`50x10`, `50x8`), `dir` oriente l'épaisseur (`10 mm`, `8 mm`). Pour `Tube rectangle` (`50x20x2`), `dir` oriente la grande dimension (`50 mm`) : passer `DY,0` sur un tronçon le long de `X` et `DX,0` sur un tronçon le long de `Y` pour poser la main courante `50x20x2` à plat.
+  - Pour des pièces profilées autonomes `.TopPrt` avec perçages transversaux, utiliser **`create_extruded_bar`** (`PLAT`, `TUBE_RECT`, `ROND`, `TUBE_ROND`, `CORNIERE`) qui respecte strictement la chronologie (`Esquisse` -> `Extrusion` -> `Perçages` -> `Repère` -> `ProvideFunction("Extruded Bar")` en dernier) et vérifie `IsInvalid == false`.
+  - Toujours utiliser **`create_sheet_metal_plate`** pour toutes les tôles et platines percées (contour extérieur + cercles des trous dans la même esquisse 2D + conversion tôlerie + `IsInvalid == false`).
+  - Toujours utiliser **`create_assembly_document`** + **`batch_add_inclusions`** (chaque nom d'occurrence dans un même document `.TopAsm` **doit être unique** !) + **`update_where_used_and_save`** + **`check_collisions`** + **`audit_assembly`** (`Invalid elements: 0`, `Collisions: 0`).
 
 ---
 

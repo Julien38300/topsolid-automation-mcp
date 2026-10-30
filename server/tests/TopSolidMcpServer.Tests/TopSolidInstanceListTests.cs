@@ -53,7 +53,7 @@ namespace TopSolidMcpServer.Tests
         [Test]
         public void Merge_TwoTopSolidWithPorts_BothListedWithPorts()
         {
-            // Real LY458 situation (07/10/2026): 7.21 on 8091 and 7.20 on 8090.
+            // Real multi-instance situation: 7.21 on 8091 and 7.20 on 8090.
             var procs = new List<ProcessSnapshot>
             {
                 new ProcessSnapshot(8428, @"C:\Program Files\TOPSOLID\TopSolid 7.21\bin\TopSolid.exe"),

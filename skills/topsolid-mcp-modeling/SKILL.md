@@ -1,16 +1,16 @@
 ---
 name: topsolid-mcp-modeling
-version: 2.6.0
-author: Noemid-H
+version: 2.7.0
+author: TopSolid-MCP-Contributors
 license: internal
 metadata:
   hermes:
-    tags: [topsolid, mcp, cad, assemblage, stl, verification-perceptive, recipes, extruded-bar, sheet-metal, collisions, where-used, circuit-breaker]
+    tags: [topsolid, mcp, cad, assemblage, stl, verification-perceptive, recipes, extruded-bar, profiles-721, sheet-metal, collisions, where-used, circuit-breaker]
     related_skills: [topsolid-mcp, topsolid-railing-design, topsolid-api-knowledge, topsolid-cage-from-image]
-description: Use when modeling TopSolid via the MCP bridge (TopSolid user best practices, 100% MCP Recipe-First workflow for Extruded Bars, Sheet Metal Plates & Assemblies, Circuit-Breaker & Token Discipline, CoT Reasoning Budget, Compile-First C# Rules, Generic <500ms Material Lookup, Where-Used update before save, Native B-Rep Collision Check).
+description: Use when modeling TopSolid via the MCP bridge (TopSolid 7.21 native library profiles CreateProfileByTwoPoints, 100% MCP Recipe-First workflow for Extruded Bars, Sheet Metal Plates & Assemblies, Chronology & IsInvalid discipline, Circuit-Breaker & Token Discipline, CoT Reasoning Budget, Compile-First C# Rules, Generic <500ms Material Lookup, Where-Used update before save, Native B-Rep Collision Check).
 ---
 
-# Modélisation & Bonnes Pratiques Utilisateur TopSolid via MCP (LY458 :8080)
+# Modélisation & Bonnes Pratiques Utilisateur TopSolid via MCP (TopSolid 7.20 / 7.21)
 
 > **Skill vivant** : Ce skill centralise les pratiques utilisateur TopSolid et la modélisation via le pont MCP. Chaque nouveau piège ou apprentissage issu des tests MCP doit y être immédiatement ajouté et synchronisé.
 > **Skills métiers spécialisés à charger en parallèle selon l'ouvrage** :
@@ -19,8 +19,8 @@ description: Use when modeling TopSolid via the MCP bridge (TopSolid user best p
 
 ## When to Use
 
-Use when creating, modifying, or inspecting TopSolid geometry through the JSON-RPC bridge on LY458
-(port 8080) — metalwork extruded bars (`create_extruded_bar`), sheet metal / drilled plates (`create_sheet_metal_plate`),
+Use when creating, modifying, or inspecting TopSolid geometry through the JSON-RPC MCP bridge
+— metalwork extruded bars (`create_extruded_bar`), sheet metal / drilled plates (`create_sheet_metal_plate`),
 part/assembly creation (`create_part_document`, `create_assembly_document`), positioned inclusions (`batch_add_inclusions`),
 Where-Used (`cas d'emploi`) propagation (`update_where_used_and_save`), native TopSolid B-Rep collision checks (`check_collisions`), and visual verification gates.
 
@@ -44,7 +44,7 @@ Classe de travail : analyser finement le besoin/photo (avec le skill métier sp�
 
 2. **Discipline de Raisonnement (Anti-Monologue CoT) & Client CLI Prêt à l'Emploi** :
    - **ZÉRO TABLEAU DE COORDONNÉES DANS LE `reasoning` (CoT)** : Il est **STRICTEMENT INTERDIT** de calculer à la main les coordonnées $(X, Y, Z)$ de chaque poteau, lame ou barre dans ta réflexion interne (ce qui gaspille 4 à 5 minutes de génération de texte !). Pose uniquement les équations paramétriques (origine, pas, nombre) en moins de 15 lignes de réflexion et laisse les boucles `for` du script C# calculer les coordonnées !
-   - **ZÉRO RÉÉCRITURE DE `mcp_client.py`** : Utilise directement l'utilitaire permanent `python N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py compile mon_script.cs` et `python N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py exec mon_script.cs` (ou `state`, `recipe <nom> [val]`) sans jamais perdre 1 minute à réécrire un client HTTP JSON-RPC.
+   - **ZÉRO RÉÉCRITURE DE `mcp_client.py`** : Utilise directement les outils MCP (`topsolid_compile`, `topsolid_execute_script`, `topsolid_get_state`, `topsolid_run_recipe`) ou l'utilitaire CLI `topsolid_mcp_cli.py` sans jamais perdre 1 minute à réécrire un client HTTP JSON-RPC.
 
 3. **Les 4 Règles « Compile-First » C# (Zéro erreur `CS0029`, `CS0019`, `CS1503` au 1er essai)** :
    1. **`CreateSketchIn3D` retourne `ElementId` (JAMAIS `ElementItemId` !)** : Seuls les éléments internes d'esquisse (`CreateVertex`, `CreateLineSegment`, `CreateCircleSegment`) retournent un `ElementItemId`. L'esquisse elle-même est un `ElementId sk = TopSolidHost.Sketches2D.CreateSketchIn3D(...)`.
@@ -54,18 +54,24 @@ Classe de travail : analyser finement le besoin/photo (avec le skill métier sp�
       - Ne **JAMAIS** appeler `SearchProjectByName("Mécanique CEN TopSolid")` (une requête multi-mots retourne 0 résultat), et ne **JAMAIS** parcourir les 55 bibliothèques de `GetProjects(false, true)` sans filtre (les bibliothèques de visserie font 60 s de timeout).
       - Filtrer `GetProjects(false, true)` uniquement sur les bibliothèques dont le nom contient `"CEN"`, `"Metal"`, `"Mat"`, `"Bois"`, `"Wood"`, vérifier que `TopSolidHost.Pdm.GetType(h, out ext)` vaut **`".TopMat"`** (sinon un `.TopLam` stratifié bois lève `InvalidCastException: LaminateMaterialDocument`), et activer `SetMassPropertyManagement(dId, true, new SmartReal(UnitType.Mass, 0))` + `SetPhysicalPropertiesManagementRefreshAuto(dId, true)`.
 
-4. **Workflow Prioritaire « 100 % Recettes MCP » (`topsolid_run_recipe`) pour la Métallerie & l'Assemblage** :
+4. **Workflow Prioritaire « 100 % Recettes MCP » (`topsolid_run_recipe`) pour la Métallerie & l'Assemblage (TopSolid 7.21)** :
    - **Toujours utiliser les recettes MCP natives avant d'écrire du C# sur mesure** :
-     1. **`create_project_tree`** : `nom_projet;01_Environnement,02_Composants_GC,03_Assemblages`
+     1. **`create_project_tree`** : `nom_projet;01_Composants,02_Sous_Assemblages,03_Assemblage_General`
      2. **`create_sheet_metal_plate`** (tôles, platines percées, dalles/murs) :
-        `nom_doc;designation;reference;dossier;Lx_mm;Wy_mm;Ep_mm;x1,y1,d1|x2,y2,d2;S235JR;RAL 7016,56,62,66;CENTER`
-     3. **`create_extruded_bar`** (profilés de métallerie : `PLAT`, `TUBE_RECT`, `ROND`, `TUBE_ROND`, `CORNIERE` avec fonction système **`Extruded Bar.TopPrtFct`**, repère **`XY` section / `X` horizontal / `+Z` longitudinal**, paramètre système **`Length` = `L`**, alésages transversaux optionnels `zPos,offX,diam`, matériau `.TopMat` et revêtement `.TopCot`) :
-        `nom_doc;designation;reference;dossier;PLAT;50,10;988;98,0,17|528,0,17;S235JR;RAL 7016,56,62,66`
-     4. **`create_part_document`** / **`create_assembly_document`** : crée un `.TopPrt` ou `.TopAsm` avec ses propriétés PDM.
-     5. **`batch_add_inclusions`** : assemble en une seule transaction toutes les pièces d'un sous-assemblage soudé (`GC_Troncon_*`) ou de l'assemblage général, soit par coordonnées `(tx,ty,tz,rx,ry,rz,nomOcc)`, soit par vecteur directeur **`BETWEEN,x1,y1,z1,x2,y2,z2,ux,uy,uz,nomOcc`** (qui aligne automatiquement le `+Z` longitudinal du profilé `Extruded Bar` de `P1` vers `P2` et l'axe `X` de sa section selon `uX`).
-     6. **`update_where_used_and_save`** : reconstruit et sauvegarde en bottom-up (`Pièces .TopPrt -> Sous-Assemblages .TopAsm -> Assemblage Général .TopAsm`).
-     7. **`check_collisions`** : active `SetCollisionsManagement`, compte les `ShapeShapeCollisionEntity` B-Rep et restaure `ModelingStage`.
-   - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 208 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
+        `nom_doc;designation;reference;dossier;Lx_mm;Wy_mm;Ep_mm;x1,y1,d1|x2,y2,d2;S235;9005;CENTER`
+     3. **`batch_create_profiles_by_two_points`** & **`create_profile_by_two_points`** (**Recommandé en TopSolid 7.21**) :
+        Pose directement les profilés standards de la bibliothèque TopSolid (`Composants Mécanique TopSolid` -> `Profilés` : `Plat`, `Tube rectangle`, `Tube carré`, `Tube rond`, `Rond`, `Carré`) pilotés par leurs codes de famille (`50x10`, `50x8`, `50x20x2`, `12` — normalisés automatiquement en Unicode `\u00d7` `50 × 10`) via l'API native 7.21 `TopSolidDesignHost.Assemblies.CreateProfileByTwoPoints`.
+        - Génère automatiquement les pièces synchronisées avec matériau `Acier S235 EN 10025`, propriété système `Longueur` (`$TopSolid.Kernel.TX.Properties.Length`), `Code`, `Désignation` et `Angle de coupe 1/2`.
+        - **Orientation de la section (`dir`)** :
+          - `Plat` (`50x10`, `50x8`) place son **épaisseur** (`10 mm` ou `8 mm`) selon `dir` (`DX` pour un poteau vertical sur garde-corps en `X`, `DY` pour un poteau sur garde-corps en `Y`, `DZ` pour une lisse plate horizontale).
+          - `Tube rectangle` (`50x20x2`) place sa **grande dimension** (`50 mm`) selon `dir` : pour poser une main courante `50x20x2` à plat (`50 mm` horizontal, `20 mm` vertical), passer **`DY,0`** sur un tronçon le long de `X` et **`DX,0`** sur un tronçon le long de `Y`.
+     4. **`create_extruded_bar`** (pièce profilée `.TopPrt` autonome avec perçages transversaux ou géométrie spécifique) :
+        Respecte strictement la **chronologie de l'arbre d'opérations** (`Esquisse` -> `Extrusion` -> `Perçages` -> `Repère` -> `ProvideFunction("Extruded Bar")` en tout dernier dans `ModelingStage`) et vérifie `TopSolidHost.Elements.IsInvalid(el) == false`.
+     5. **`create_part_document`** / **`create_assembly_document`** : crée un `.TopPrt` ou `.TopAsm` avec ses propriétés PDM.
+     6. **`batch_add_inclusions`** : assemble en une seule transaction toutes les pièces (ex: platines) ou sous-assemblages (`Troncon_Droit_1`, `Troncon_Droit_2`, `Troncon_Retour_G`).
+     7. **`update_where_used_and_save`** : reconstruit et sauvegarde en bottom-up (`Pièces .TopPrt -> Sous-Assemblages .TopAsm -> Assemblage Général .TopAsm`).
+     8. **`check_collisions`** + **`audit_assembly`** : vérifie **0 collision B-Rep** (`ShapeShapeCollisionEntity`) et **0 élément invalide** (`Invalid elements: 0`).
+   - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 211 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
 
 5. **COUPE-CIRCUIT (CIRCUIT-BREAKER) & 5 INTERDICTIONS ABSOLUES** :
    - **COUPE-CIRCUIT IMMÉDIAT SUR PANNE INFRASTRUCTURE / SERVEUR MCP** : Si `topsolid_compile` ou `topsolid_execute_script` renvoie une erreur système interne, **ARRÊT IMMÉDIAT** (interdiction de lire le code source du serveur MCP, de bricoler un exécutable ou d'ouvrir WinRM).

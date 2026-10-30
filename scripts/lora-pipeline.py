@@ -150,7 +150,7 @@ def step_train(config, dry_run=False):
         # Windows — need to call into WSL2
         log("  Detected Windows — launching training via WSL2")
         # Any drive letter, not just C: -- the repo also lives on network drives.
-        # "N:\Noemid_System\x" -> "/mnt/n/Noemid_System/x"
+        # "D:\Work\x" -> "/mnt/d/Work/x"
         _win = str(PROJECT_DIR).replace("\\", "/")
         _m = re.match(r"^([A-Za-z]):/(.*)$", _win)
         wsl_project = f"/mnt/{_m.group(1).lower()}/{_m.group(2)}" if _m else _win

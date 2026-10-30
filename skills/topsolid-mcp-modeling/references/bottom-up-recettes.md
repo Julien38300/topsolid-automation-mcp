@@ -9,19 +9,19 @@ Toutes les signatures ci-dessous sont vérifiées contre l'API TopSolid Automati
 
 ## 1. Exécution Rapide via le CLI permanent `topsolid_mcp_cli.py` (Zéro réécriture de client !)
 
-**Ne perds JAMAIS un tour d'outil à écrire un fichier `mcp_client.py` !** Utilise directement le script CLI permanent déjà installé :
+**Ne perds JAMAIS un tour d'outil à écrire un fichier `mcp_client.py` !** Utilise directement les outils MCP ou le script CLI `topsolid_mcp_cli.py` :
 ```bash
 # 1. Vérifier l'état de TopSolid :
-python "N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py" state
+python topsolid_mcp_cli.py state
 
 # 2. Compiler un fichier C# hors-ligne (< 0.5 s) :
-python "N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py" compile build_project.cs
+python topsolid_mcp_cli.py compile build_project.cs
 
 # 3. Exécuter le script C# One-Shot (< 15 s) :
-python "N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py" exec build_project.cs
+python topsolid_mcp_cli.py exec build_project.cs
 
 # 4. Lancer une recette unitaire :
-python "N:\Noemid_System\hermes\scripts\topsolid_mcp_cli.py" recipe check_collisions
+python topsolid_mcp_cli.py recipe check_collisions
 ```
 
 > [!CAUTION]
