@@ -1,7 +1,7 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.8.0
+version: 5.8.1
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation, extruded-bar, sheet-metal]
@@ -12,6 +12,7 @@ metadata:
 
 ## CHANGELOG
 
+- **v5.8.1 (2026-11-01)** — **Regle de performance du cache de compilation** (verifiee dans `ScriptExecutor.cs`) : les assemblies compilees sont cachees par **SHA-256 du source wrappé** (`CompiledCache`, 200 entrées max, éviction FIFO) ; la valeur `value` étant substituée **dans le source avant le hash**, **chaque nouvelle valeur de paramètre = recompilation `csc.exe` complète**, alors que recette + valeur identiques = appel sans compilation (exécution seule). Le cache vit dans le processus serveur : **un client stdio qui respawne le serveur à chaque conversation démarre toujours à cache froid** — pour des sessions répétées, privilégier l'endpoint HTTP `http://<host>:8080/mcp` (serveur unique, cache chaud). Sous Wine (TopSolid sur Linux via topsolinux), chaque spawn `csc.exe` et JIT .NET passe par la couche de traduction : la lenteur per-call y est attendue, ce n'est pas un bug du pont.
 - **v5.8.0 (2026-10-23)** — Added `replace_revolved_profile` for guarded edits to a single-revolve Part, including line/arc profile input.
 - **v5.7.0 (2026-10-23)** — Added `create_revolved_part` for one-shot axisymmetric `.TopPrt` creation and `revolve_active_part` for revolving a profile in an empty active Part.
 
@@ -82,6 +83,7 @@ metadata:
 ### C. Regles d'appel des recettes (`topsolid_run_recipe`) — Priorite Absolue aux Recettes MCP
 - **Priorite n°1 (`topsolid_run_recipe`)** : Utiliser systematiquement `topsolid_run_recipe` aussi bien pour les actions unitaires que pour la **creation complete de projets, pieces de metallerie (`create_extruded_bar`, `create_sheet_metal_plate`), sous-assemblages et assemblages (`create_part_document`, `create_assembly_document`, `batch_add_inclusions`), mise a jour Where-Used (`update_where_used_and_save`) et verification des collisions B-Rep (`check_collisions`)**.
 - Ne recourir a `topsolid_execute_script` / `topsolid_modify_script` qu'en dernier ressort pour des geometries complexes hors catalogue de recettes.
+- **Performance & cache de compilation** : les scripts et recettes sont caches par **SHA-256 du source wrappé** (`ScriptExecutor.CompiledCache`, 200 entrees max). La valeur `value` etant substituee DANS le source avant le hachage, **chaque nouvelle valeur de parametre declenche une recompilation `csc.exe` complete** ; recette + valeur identiques = appel cache (execution seule, rapide). Le cache vit dans le processus serveur : un client stdio qui respawne le serveur a chaque conversation paie un **cache froid** a chaque fois — pour des sessions repetees, privilegier l'endpoint **HTTP `http://<host>:8080/mcp`** (serveur unique, cache chaud).
 
 **Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type` (note : `check_collisions` active l'analyse de collisions dans une transaction mais ne modifie pas la geometrie). Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
 
