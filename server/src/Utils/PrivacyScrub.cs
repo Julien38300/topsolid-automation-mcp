@@ -11,7 +11,7 @@ namespace TopSolidMcpServer.Utils
     ///
     /// The API key is redacted by GitHubFeedbackLogic.ScrubKey and
     /// ServerLog.ScrubLine; this class closes the other half (issue #15): the
-    /// Windows user profile directory (C:\Users\&lt;account&gt;) must never reach a
+    /// Windows user profile directory (C:\Users\%ACCOUNT%) must never reach a
     /// public repository, since it discloses the reporter's account name. Every
     /// occurrence is replaced by %USERPROFILE%, case-insensitively and with both
     /// "\" and "/" separators.
@@ -50,7 +50,7 @@ namespace TopSolidMcpServer.Utils
             // "%USERPROFILE%\Program Files").
             if (path.Length < 3 || (path.IndexOf('\\') < 0 && path.IndexOf('/') < 0)) return text;
             // Regex.Escape maps every "\" to "\\" — fold each escaped backslash
-            // into a [\\/] class so C:\Users\jd and C:/Users/jd both match.
+            // into a [\\/] class so C:\Users\username and C:/Users/username both match.
             string pattern = Regex.Escape(path).Replace("\\\\", "[\\\\/]");
             return Regex.Replace(text, pattern, ProfilePlaceholder,
                 RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);

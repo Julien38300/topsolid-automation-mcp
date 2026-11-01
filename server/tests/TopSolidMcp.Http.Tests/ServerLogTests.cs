@@ -160,7 +160,9 @@ namespace TopSolidMcpServer.Tests
         [Test]
         public void BuildCrashReport_ScrubsUserProfilePath_MessageAndLogLines()
         {
-            const string profile = @"C:\Users\LeakMcGee";
+            // "username" is a manifestly fictional account: the CI privacy scan
+            // rejects any literal C:\Users\... path whose name is not a placeholder.
+            const string profile = @"C:\Users\username";
             const string key = "TOPSOLID_secret_KEY_0123456789abcdef";
             var ex = new InvalidOperationException("cannot read " + profile + @"\AppData\Local\TopSolidMcp\settings.json");
             var log = new List<string> { "[MCP-LOG] redirect " + profile + @"\logs key=" + key };
@@ -168,7 +170,7 @@ namespace TopSolidMcpServer.Tests
 
             StringAssert.Contains("cannot read %USERPROFILE%", report); // exception message
             StringAssert.Contains(@"%USERPROFILE%\logs key=***", report); // log line: both scrubs
-            StringAssert.DoesNotContain("LeakMcGee", report);
+            StringAssert.DoesNotContain(@"C:\Users\username", report);
             StringAssert.DoesNotContain(key, report);
         }
 

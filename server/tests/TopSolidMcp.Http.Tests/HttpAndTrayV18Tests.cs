@@ -212,7 +212,9 @@ namespace TopSolidMcpServer.Tests
         [Test]
         public void BuildBody_ScrubsUserProfilePath_DescriptionAndLogs()
         {
-            const string profile = @"C:\Users\LeakMcGee";
+            // "username" is a manifestly fictional account: the CI privacy scan
+            // rejects any literal C:\Users\... path whose name is not a placeholder.
+            const string profile = @"C:\Users\username";
             string key = "tsmcp_secretsecretsecretsecretsecret1";
             string body = GitHubFeedbackLogic.BuildBody(
                 "plantage en ouvrant " + profile + @"\Downloads\model.TopPrt",
@@ -220,12 +222,12 @@ namespace TopSolidMcpServer.Tests
                 new[]
                 {
                     "[MCP-LOG] redirect " + profile + @"\logs key=" + key,
-                    @"lowercase: c:\users\leakmcgee\AppData\Local",
-                    "forward: C:/Users/LeakMcGee/source",
+                    @"lowercase: c:\users\username\AppData\Local",
+                    "forward: C:/Users/username/source",
                 },
                 key, profile);
-            StringAssert.DoesNotContain("LeakMcGee", body);
-            StringAssert.DoesNotContain("leakmcgee", body);
+            StringAssert.DoesNotContain(@"C:\Users\username", body);
+            StringAssert.DoesNotContain(@"c:\users\username", body);
             StringAssert.Contains("%USERPROFILE%", body);
             StringAssert.Contains(@"%USERPROFILE%\Downloads\model.TopPrt", body);
             StringAssert.Contains(@"%USERPROFILE%\logs key=***", body); // key + profile scrubs compose

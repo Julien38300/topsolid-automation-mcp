@@ -14,7 +14,7 @@ namespace TopSolidMcpServer.Tests
     [TestFixture]
     public class PrivacyScrubTests
     {
-        private const string Profile = @"C:\Users\LeakMcGee";
+        private const string Profile = @"C:\Users\username";
 
         [Test]
         public void ScrubUserProfile_BackslashPath_Replaced()
@@ -29,28 +29,28 @@ namespace TopSolidMcpServer.Tests
         public void ScrubUserProfile_ForwardSlashes_Matched_RemainderPreserved()
         {
             Assert.AreEqual("script at %USERPROFILE%/source/recipe.cs",
-                PrivacyScrub.ScrubUserProfile("script at C:/Users/LeakMcGee/source/recipe.cs", Profile));
+                PrivacyScrub.ScrubUserProfile("script at C:/Users/username/source/recipe.cs", Profile));
         }
 
         [Test]
         public void ScrubUserProfile_CaseInsensitive()
         {
             Assert.AreEqual("open %USERPROFILE%",
-                PrivacyScrub.ScrubUserProfile("open c:/users/leakmcgee", Profile));
+                PrivacyScrub.ScrubUserProfile("open c:/users/username", Profile));
         }
 
         [Test]
         public void ScrubUserProfile_MixedSeparators()
         {
             Assert.AreEqual("mixed %USERPROFILE%\\Local/file ok",
-                PrivacyScrub.ScrubUserProfile(@"mixed C:\Users/LeakMcGee\Local/file ok", Profile));
+                PrivacyScrub.ScrubUserProfile(@"mixed C:\Users/username\Local/file ok", Profile));
         }
 
         [Test]
         public void ScrubUserProfile_TrailingSeparatorInProfile_StillMatches()
         {
             Assert.AreEqual("in %USERPROFILE%\\Documents",
-                PrivacyScrub.ScrubUserProfile(@"in C:\Users\LeakMcGee\Documents", Profile + @"\"));
+                PrivacyScrub.ScrubUserProfile(@"in C:\Users\username\Documents", Profile + @"\"));
         }
 
         [Test]
@@ -87,8 +87,8 @@ namespace TopSolidMcpServer.Tests
         [TestCase("C:\\")]   // drive root
         public void ScrubUserProfile_UnusableProfile_NoChange(string profile)
         {
-            Assert.AreEqual(@"C:\Users\other\file.txt",
-                PrivacyScrub.ScrubUserProfile(@"C:\Users\other\file.txt", profile));
+            Assert.AreEqual(@"C:\Users\public\file.txt",
+                PrivacyScrub.ScrubUserProfile(@"C:\Users\public\file.txt", profile));
         }
 
         [Test]
