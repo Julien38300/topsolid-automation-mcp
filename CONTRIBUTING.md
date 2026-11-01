@@ -65,7 +65,7 @@ Les tests necessitent **TopSolid 7 actif** avec le document de test ouvert (voir
 3. Automation active (Outils > Options > General > Automation, port 8090)
 4. Le serveur MCP doit etre compile (`cd server && dotnet build`)
 
-#### Lancer toute la suite (72 tests)
+#### Lancer toute la suite (88 tests)
 
 ```powershell
 cd tests
@@ -74,14 +74,14 @@ cd tests
 
 Le script lance `TopSolidMcpServer.exe` en arriere-plan, envoie les requetes JSON-RPC depuis `TestSuite.json`, et verifie les assertions (contains / not_contains).
 
-#### Tester les recettes en LIVE (113 recettes)
+#### Tester les recettes en LIVE (39 recettes)
 
 ```powershell
 cd tests
 .\test_recipes_live.ps1
 ```
 
-Ce script appelle chaque recette via `topsolid_run_recipe` et verifie que le resultat ne contient pas d'erreur. Resultat attendu : 59/61+ PASS (certaines recettes contextuelles necessitent un document specifique).
+Ce script appelle chaque recette via `topsolid_run_recipe` et verifie que le resultat ne contient pas d'erreur. Resultat attendu : la plupart des 39 en PASS (certaines recettes contextuelles necessitent un document specifique).
 
 #### Ajouter un test pour une nouvelle recette
 

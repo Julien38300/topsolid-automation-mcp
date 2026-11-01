@@ -47,7 +47,7 @@ Surface: 115447.61 mm2
 ```
 
 ::: tip Quand utiliser run_recipe vs execute_script ?
-- `run_recipe` : pour les 208 operations pre-definies (rapide, fiable, pas besoin de C#)
+- `run_recipe` : pour les 214 operations pre-definies (rapide, fiable, pas besoin de C#)
 - `execute_script` : pour du C# custom que le LLM genere a la volee (plus flexible, plus risque)
 
 Un modele 3B (ex: `ministral-topsolid`) peut utiliser `run_recipe`. Seul un modele 24B+ (ex: `codestral:22b`) peut utiliser `execute_script` correctement.

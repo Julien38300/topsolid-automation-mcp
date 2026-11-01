@@ -16,11 +16,11 @@ sources:
 
 ## 1. Architecture du catalogue (vérifiée dans RecipeTool.cs)
 
-- 132 recipes, 3 modes : R (Read, 88), RW (WritePdm, 37), RD (WriteDisk, 7), réparties en 17 categorie
+- 214 recipes, 3 modes : R (Read, 108), RW (WritePdm, 99), RD (WriteDisk, 7), réparties en 19 categorie
   (PDM PROPERTIES, PROJECTS, DOCUMENT, PARAMETERS, GEOMETRY, ASSEMBLIES, FAMILIES, DRAFTING, BOM,
-  UNFOLDING, EXPORT, USER PROPERTIES, AUDIT, MEASUREMENTS, MATERIALS, BATCH, ATTRIBUTES) stocké dans
+  UNFOLDING, EXPORT, USER PROPERTIES, AUDIT, MEASUREMENTS, MATERIALS, BATCH, ATTRIBUTES, PROFILES 7.21, SKETCH) stocké dans
   un Dictionary<string, RecipeEntry>. `[REC]`
-- Wrappers (l.2617-2630 verbatim) :
+- Wrappers (l.5255-5265 verbatim) :
   - `R(category, description, code)` → `RecipeEntry(category, description, code, RecipeEntry.RecipeMode.Read)`
   - `RW(category, description, code)` → `RecipeEntry.RecipeMode.WritePdm` (transactionnel : passe par
     le pipeline StartModification/EndModification + EnsureIsDirty)

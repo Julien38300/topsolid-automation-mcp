@@ -1,6 +1,6 @@
 # Tests
 
-Le projet inclut une suite de tests automatises qui verifie le serveur MCP et une partie des 214 recettes contre une instance TopSolid vivante. Attention : la couverture est partielle — `TestSuite.json` contient 85 tests et `test_recipes_live.ps1` couvre 39 recettes (RA-01 a RA-39), pas les 208.
+Le projet inclut une suite de tests automatises qui verifie le serveur MCP et une partie des 214 recettes contre une instance TopSolid vivante. Attention : la couverture est partielle — `TestSuite.json` contient 88 tests et `test_recipes_live.ps1` couvre 39 recettes (RA-01 a RA-39), pas les 214.
 
 ## Architecture de test
 
@@ -72,7 +72,7 @@ cd tests
 .\test_recipes_live.ps1
 ```
 
-Ce script appelle les 39 recettes listees en tete du script (RA-01 a RA-39) via `topsolid_run_recipe` et verifie que le resultat ne contient pas d'erreur. C'est le test d'execution le plus large du depot, mais il ne couvre pas le catalogue entier : les 93 autres recettes ne sont pas exercees automatiquement.
+Ce script appelle les 39 recettes listees en tete du script (RA-01 a RA-39) via `topsolid_run_recipe` et verifie que le resultat ne contient pas d'erreur. C'est le test d'execution le plus large du depot, mais il ne couvre pas le catalogue entier : les 175 autres recettes ne sont pas exercees automatiquement.
 
 Certaines recettes sont contextuelles et echouent si le document de test n'est pas du bon type (piece, mise en plan, famille) : lisez la sortie du script plutot qu'un ratio fige.
 

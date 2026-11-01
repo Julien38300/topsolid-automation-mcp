@@ -6,7 +6,7 @@ version: 1.0.0
 created: 2026-09-30
 task: T-1206 (Couche 3 — pipeline design-to-gabarits)
 sources:
-  - server/src/Tools/RecipeTool.cs (catalogue 132 recipes, verbatim ; wrappers R/RW/RD l.2615-2630)
+  - server/src/Tools/RecipeTool.cs (catalogue 214 recipes, verbatim ; wrappers R/RW/RD l.5255-5265)
   - server/src/Tools/ExecuteScriptTool.cs (contrat de script, verbatim l.31-48)
   - skills/topsolid-mcp/SKILL.md v5.1.0
   - skills/topsolid-mcp/references/ (concepts-core.md, tolerie.md, assemblages-pilotes.md, gabarits-recipes.md)
@@ -34,7 +34,7 @@ reference tier-2 (non reduplique ici) ; `[API-7.21]` = methods.json 7.21.304.0 /
   (`[REF:assemblages-pilotes]`) ; le patron C# d'une recipe et son processus d'ajout
   (`[REF:gabarits-recipes §2 et §5]`). Quand ces pages suffisent, ce document renvoie et s'arrete.
 - Contrat d'entree : serveur MCP lance, TopSolid connecte (verifie par `topsolid_get_state`),
-  catalogue = 132 recipes en 3 modes R/RW/RD et 17 categories (`[REC]`, `[REF:gabarits-recipes §1]`).
+  catalogue = 214 recipes en 3 modes R/RW/RD et 19 categories (`[REC]`, `[REF:gabarits-recipes §1]`).
 - Rappel fondamental (borne le probleme ENTIER) : l'API Automation ne cree PAS la geometrie A-Z ;
   on pilote des GABARITS par parametres. La conception = decider du gabarit et de ses parametres,
   pas modeliser a distance (`[REF:concepts-core §6 et §9]`, `[REF:gabarits-recipes §3]`).

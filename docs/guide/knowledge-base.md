@@ -188,7 +188,7 @@ L'app tourne **sans serveur MCP** en production, tout en ayant bénéficié du M
 │         TopSolidMcpServer (MCP)             │
 │  ┌─────────────────────────────────────┐    │
 │  │  graph.json (4119 edges enrichis)   │    │
-│  │  recipes (208 scripts validés)      │    │
+│  │  recipes (214 scripts validés)      │    │
 │  │  corpora privés (local only)        │    │
 │  │  help.db (5809 pages, FTS5)         │    │
 │  └─────────────────────────────────────┘    │

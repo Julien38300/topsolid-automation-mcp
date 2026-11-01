@@ -112,7 +112,7 @@ Le LoRA 3B v7 est en PROD (eval 96%, 2164 paires ShareGPT EN). Le fine-tuning Lo
 - Graphe API (4119 edges, 1728 methodes) : extrait par reflexion des DLL `TopSolid.*.Automating.dll` livrees avec chaque installation TopSolid, croise avec la reference API officielle sur [help.topsolid.com](https://help.topsolid.com/).
 - Index de l'aide (5809 pages EN+FR) : converti en Markdown depuis l'aide en ligne publique [help.topsolid.com](https://help.topsolid.com/).
 - Catalogue de commandes UI (2428 commandes) : parse depuis ces memes pages d'aide (fichiers `*Command.md`).
-- Recettes (208 snippets C#) : ecrites specifiquement pour ce projet, en reference a l'aide publique + graphe.
+- Recettes (214 snippets C#) : ecrites specifiquement pour ce projet, en reference a l'aide publique + graphe.
 
 **Aucun** exemple SDK proprietaire, code client, ou code prive identifie n'est inclus dans ce qui est distribue. L'acces aux corpora prives (`topsolid_search_examples`) est opt-in via des variables d'environnement pointant vers le disque local du contributeur — rien n'est bundle.
 
