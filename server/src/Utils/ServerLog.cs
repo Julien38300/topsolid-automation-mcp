@@ -175,8 +175,12 @@ namespace TopSolidMcpServer.Utils
     public static class CrashReport
     {
         /// <summary>Formats the crash report: header, exception chain, then the tail
-        /// of the log for context. Key is scrubbed from every line.</summary>
-        public static string BuildCrashReport(Exception ex, string version, IList<string> recentLogLines, string keyToScrub)
+        /// of the log for context. Key is scrubbed from log lines, and the whole
+        /// report (exception messages, stack traces, log lines) has the user
+        /// profile directory replaced by %USERPROFILE%: crash reports are later
+        /// attached to public issues and must not disclose the reporter's
+        /// account name (issue #15).</summary>
+        public static string BuildCrashReport(Exception ex, string version, IList<string> recentLogLines, string keyToScrub, string userProfilePath = null)
         {
             var sb = new StringBuilder();
             sb.AppendLine("TopSolidMcpServer crash report");
@@ -204,7 +208,9 @@ namespace TopSolidMcpServer.Utils
                     if (!string.IsNullOrEmpty(safe)) sb.AppendLine("  " + safe);
                 }
             }
-            return sb.ToString();
+            // Whole-report redaction (issue #15): exception messages, stack traces
+            // and log lines can all embed paths under the profile directory.
+            return PrivacyScrub.ScrubUserProfile(sb.ToString(), PrivacyScrub.ResolveProfile(userProfilePath));
         }
 
         /// <summary>Crash file path for a given instant (next to server.log).</summary>

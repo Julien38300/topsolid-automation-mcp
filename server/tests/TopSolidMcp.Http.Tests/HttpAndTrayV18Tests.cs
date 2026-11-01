@@ -195,6 +195,44 @@ namespace TopSolidMcpServer.Tests
         }
 
         [Test]
+        public void BuildBody_DefaultProfile_ScrubsRealUserProfile()
+        {
+            // Issue #15: an absolute path under the profile directory discloses the
+            // Windows account name in a public issue — it must leave the machine as
+            // %USERPROFILE% (in addition to the API key scrub).
+            string profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(profile)) Assert.Ignore("no user profile on this host");
+            string body = GitHubFeedbackLogic.BuildBody(
+                "voir " + profile + @"\logs\server.log",
+                "1.8.0", "Win11", false, 8090, null, "tsmcp_irrelevant_key_00000000000000");
+            StringAssert.DoesNotContain(profile, body);
+            StringAssert.Contains("%USERPROFILE%", body);
+        }
+
+        [Test]
+        public void BuildBody_ScrubsUserProfilePath_DescriptionAndLogs()
+        {
+            const string profile = @"C:\Users\LeakMcGee";
+            string key = "tsmcp_secretsecretsecretsecretsecret1";
+            string body = GitHubFeedbackLogic.BuildBody(
+                "plantage en ouvrant " + profile + @"\Downloads\model.TopPrt",
+                "1.8.0", "Win11", true, 8090,
+                new[]
+                {
+                    "[MCP-LOG] redirect " + profile + @"\logs key=" + key,
+                    @"lowercase: c:\users\leakmcgee\AppData\Local",
+                    "forward: C:/Users/LeakMcGee/source",
+                },
+                key, profile);
+            StringAssert.DoesNotContain("LeakMcGee", body);
+            StringAssert.DoesNotContain("leakmcgee", body);
+            StringAssert.Contains("%USERPROFILE%", body);
+            StringAssert.Contains(@"%USERPROFILE%\Downloads\model.TopPrt", body);
+            StringAssert.Contains(@"%USERPROFILE%\logs key=***", body); // key + profile scrubs compose
+            StringAssert.Contains("%USERPROFILE%/source", body);
+        }
+
+        [Test]
         public void BuildBody_ContainsEnvironmentBlock()
         {
             string body = GitHubFeedbackLogic.BuildBody("d", "1.8.0", "Microsoft Windows NT 10.2", false, 8090, null, null);

@@ -34,15 +34,19 @@ namespace TopSolidMcpServer.Utils
         /// <summary>
         /// Issue body: user description + an environment block with version, OS,
         /// connection state and recent log lines. Never includes the API key
-        /// (logs are scrubbed) — defense in depth against leaking secrets.
+        /// (logs are scrubbed) — defense in depth against leaking secrets — nor
+        /// the user's profile directory: every path under it is replaced by
+        /// %USERPROFILE% before the body can leave the machine (issue #15).
         /// </summary>
         public static string BuildBody(string userText, string serverVersion, string osVersion,
-            bool topsolidConnected, int topsolidPort, IList<string> recentLogLines, string keyToScrub)
+            bool topsolidConnected, int topsolidPort, IList<string> recentLogLines, string keyToScrub,
+            string userProfilePath = null)
         {
+            string profile = PrivacyScrub.ResolveProfile(userProfilePath);
             var sb = new StringBuilder();
             sb.AppendLine("## Description");
             sb.AppendLine();
-            sb.AppendLine(string.IsNullOrWhiteSpace(userText) ? "_(pas de description)_" : ScrubKey(userText.Trim(), keyToScrub));
+            sb.AppendLine(string.IsNullOrWhiteSpace(userText) ? "_(pas de description)_" : PrivacyScrub.ScrubUserProfile(ScrubKey(userText.Trim(), keyToScrub), profile));
             sb.AppendLine();
             sb.AppendLine("## Environnement (auto)");
             sb.AppendLine();
@@ -59,7 +63,7 @@ namespace TopSolidMcpServer.Utils
                 sb.AppendLine("```");
                 foreach (string line in recentLogLines)
                 {
-                    string safe = ScrubKey(line, keyToScrub);
+                    string safe = PrivacyScrub.ScrubUserProfile(ScrubKey(line, keyToScrub), profile);
                     if (!string.IsNullOrEmpty(safe)) sb.AppendLine(safe);
                 }
                 sb.AppendLine("```");

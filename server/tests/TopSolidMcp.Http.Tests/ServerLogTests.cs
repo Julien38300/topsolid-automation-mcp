@@ -144,6 +144,35 @@ namespace TopSolidMcpServer.Tests
         }
 
         [Test]
+        public void BuildCrashReport_DefaultProfile_ScrubsRealUserProfile()
+        {
+            // Issue #15: exception messages, stack traces and log lines can all
+            // embed paths under the profile directory — the crash report must
+            // leave the machine with %USERPROFILE% instead of the account name.
+            string profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (string.IsNullOrEmpty(profile)) Assert.Ignore("no user profile on this host");
+            var ex = new Exception("boom while reading " + profile + @"\AppData\Local\TopSolidMcp\settings.json");
+            string report = CrashReport.BuildCrashReport(ex, "1.8.1", null, "TOPSOLID_irrelevant_key");
+            StringAssert.DoesNotContain(profile, report);
+            StringAssert.Contains("%USERPROFILE%", report);
+        }
+
+        [Test]
+        public void BuildCrashReport_ScrubsUserProfilePath_MessageAndLogLines()
+        {
+            const string profile = @"C:\Users\LeakMcGee";
+            const string key = "TOPSOLID_secret_KEY_0123456789abcdef";
+            var ex = new InvalidOperationException("cannot read " + profile + @"\AppData\Local\TopSolidMcp\settings.json");
+            var log = new List<string> { "[MCP-LOG] redirect " + profile + @"\logs key=" + key };
+            string report = CrashReport.BuildCrashReport(ex, "1.8.1", log, key, profile);
+
+            StringAssert.Contains("cannot read %USERPROFILE%", report); // exception message
+            StringAssert.Contains(@"%USERPROFILE%\logs key=***", report); // log line: both scrubs
+            StringAssert.DoesNotContain("LeakMcGee", report);
+            StringAssert.DoesNotContain(key, report);
+        }
+
+        [Test]
         public void GetCrashPath_NextToServerLog_WithTimestamp()
         {
             string p = CrashReport.GetCrashPath(new DateTime(2026, 10, 6, 16, 5, 42));
