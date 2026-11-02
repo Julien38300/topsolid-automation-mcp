@@ -5248,6 +5248,108 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
                 "foreach (var el in TopSolidHost.Elements.GetElements(asmDoc)) { try { if (TopSolidHost.Elements.IsInvalid(el)) invalidCount++; } catch { } }\n" +
                 "if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);\n" +
                 "return \"OK: Batch-created \" + count + \" 7.21 library profile(s) in '\" + TopSolidHost.Documents.GetName(asmDoc) + \"' (Invalid=\" + invalidCount + \") and saved.\";") },
+
+            { "export_project_xliff", RD("EXPORT", "Exports the entire project localization dictionary (all folders, documents, parameters, and properties recursively) to an XLIFF (.xliff) file for project translation / traduction / localisation / dictionnaire. Never use ExportDictionaries. Param: value=[project_name;]culture;output_dir (e.g. fr;C:\\temp\\xliff or MyProject;fr;C:\\temp\\xliff)",
+                "string raw = \"{value}\".Trim();\n" +
+                "string projName = \"\";\n" +
+                "string cultureName = \"fr\";\n" +
+                "string outputDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), \"topsolid_xliff\");\n" +
+                "if (!string.IsNullOrEmpty(raw))\n" +
+                "{\n" +
+                "    string[] parts = raw.Split(';');\n" +
+                "    if (parts.Length == 1)\n" +
+                "    {\n" +
+                "        string p0 = parts[0].Trim();\n" +
+                "        if (p0.Contains(\"\\\\\") || p0.Contains(\"/\") || p0.Contains(\":\")) outputDir = p0;\n" +
+                "        else if (p0.Length <= 5) cultureName = p0;\n" +
+                "        else projName = p0;\n" +
+                "    }\n" +
+                "    else if (parts.Length == 2)\n" +
+                "    {\n" +
+                "        string p0 = parts[0].Trim();\n" +
+                "        string p1 = parts[1].Trim();\n" +
+                "        if (p1.Contains(\"\\\\\") || p1.Contains(\"/\") || p1.Contains(\":\")) { cultureName = string.IsNullOrEmpty(p0) ? \"fr\" : p0; outputDir = p1; }\n" +
+                "        else { projName = p0; if (!string.IsNullOrEmpty(p1)) cultureName = p1; }\n" +
+                "    }\n" +
+                "    else\n" +
+                "    {\n" +
+                "        projName = parts[0].Trim();\n" +
+                "        if (!string.IsNullOrEmpty(parts[1].Trim())) cultureName = parts[1].Trim();\n" +
+                "        if (!string.IsNullOrEmpty(parts[2].Trim())) outputDir = parts[2].Trim();\n" +
+                "    }\n" +
+                "}\n" +
+                "PdmObjectId projPdm = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (!string.IsNullOrEmpty(projName))\n" +
+                "{\n" +
+                "    PdmObjectId exact = PdmObjectId.Empty;\n" +
+                "    foreach (var p in TopSolidHost.Pdm.GetProjects(true, true))\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { exact = p; break; }\n" +
+                "    if (exact.IsEmpty) exact = TopSolidHost.Pdm.SearchProjectByName(projName);\n" +
+                "    if (exact.IsEmpty) return \"Error: Project '\" + projName + \"' not found.\";\n" +
+                "    projPdm = exact;\n" +
+                "}\n" +
+                "if (projPdm.IsEmpty) return \"Error: No current project.\";\n" +
+                "System.IO.Directory.CreateDirectory(outputDir);\n" +
+                "var cultures = new System.Globalization.CultureInfo[] { new System.Globalization.CultureInfo(cultureName) };\n" +
+                "TopSolidHost.Pdm.ExportLocalizations(new List<PdmObjectId> { projPdm }, cultures, outputDir, \".xliff\", false);\n" +
+                "string[] files = System.IO.Directory.GetFiles(outputDir, \"*.\" + cultureName + \".xliff\");\n" +
+                "if (files.Length == 0) files = System.IO.Directory.GetFiles(outputDir, \"*.xliff\");\n" +
+                "if (files.Length == 0)\n" +
+                "    return \"Error: ExportLocalizations did not generate a .xliff file for project '\" + TopSolidHost.Pdm.GetName(projPdm) + \"'. Check TopSolid UI for a modal 'Repair family' or invalidity dialog ('Library Design > Export dictionary').\";\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "sb.AppendLine(\"OK: Exported XLIFF localization for project '\" + TopSolidHost.Pdm.GetName(projPdm) + \"' (culture=\" + cultureName + \"):\");\n" +
+                "foreach (string f in files)\n" +
+                "{\n" +
+                "    var fi = new System.IO.FileInfo(f);\n" +
+                "    sb.AppendLine(\"  \" + f + \" (\" + fi.Length + \" bytes)\");\n" +
+                "}\n" +
+                "return sb.ToString();") },
+
+            { "import_project_xliff", RW("PROJECTS", "Imports translated XLIFF (.xliff) localization file(s) into a TopSolid project (project translation / traduction / localisation / dictionnaire — updates translated names and designations without modifying invariant names). Param: value=[project_name;]xliff_file_or_dir_path (e.g. C:\\temp\\xliff or MyProject;C:\\temp\\xliff\\MyProject.fr.xliff)",
+                "if (false) { TopSolidHost.Application.StartModification(\"\", false); TopSolidHost.Application.EndModification(false, false); }\n" +
+                "string raw = \"{value}\".Trim();\n" +
+                "if (string.IsNullOrEmpty(raw)) return \"Error: Specify [project_name;]xliff_file_or_dir_path.\";\n" +
+                "string projName = \"\";\n" +
+                "string targetPath = raw;\n" +
+                "int sep = raw.IndexOf(';');\n" +
+                "if (sep >= 0)\n" +
+                "{\n" +
+                "    projName = raw.Substring(0, sep).Trim();\n" +
+                "    targetPath = raw.Substring(sep + 1).Trim();\n" +
+                "}\n" +
+                "PdmObjectId projPdm = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (!string.IsNullOrEmpty(projName))\n" +
+                "{\n" +
+                "    PdmObjectId exact = PdmObjectId.Empty;\n" +
+                "    foreach (var p in TopSolidHost.Pdm.GetProjects(true, true))\n" +
+                "        if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { exact = p; break; }\n" +
+                "    if (exact.IsEmpty) exact = TopSolidHost.Pdm.SearchProjectByName(projName);\n" +
+                "    if (exact.IsEmpty) return \"Error: Project '\" + projName + \"' not found.\";\n" +
+                "    projPdm = exact;\n" +
+                "}\n" +
+                "if (projPdm.IsEmpty) return \"Error: No current project.\";\n" +
+                "var errors = new Dictionary<string, string>();\n" +
+                "if (System.IO.File.Exists(targetPath))\n" +
+                "{\n" +
+                "    TopSolidHost.Pdm.ImportDictionnaries(new List<PdmObjectId> { projPdm }, new string[] { targetPath }, errors);\n" +
+                "}\n" +
+                "else if (System.IO.Directory.Exists(targetPath))\n" +
+                "{\n" +
+                "    TopSolidHost.Pdm.ImportLocalizations(targetPath, \".xliff\", errors);\n" +
+                "}\n" +
+                "else\n" +
+                "{\n" +
+                "    return \"Error: File or directory not found: '\" + targetPath + \"'.\";\n" +
+                "}\n" +
+                "try { TopSolidHost.Pdm.Save(projPdm, true); } catch { }\n" +
+                "if (errors.Count > 0)\n" +
+                "{\n" +
+                "    var errSb = new System.Text.StringBuilder();\n" +
+                "    errSb.AppendLine(\"Warning: Import completed with \" + errors.Count + \" message(s):\");\n" +
+                "    foreach (var kv in errors) errSb.AppendLine(\"  \" + kv.Key + \": \" + kv.Value);\n" +
+                "    return errSb.ToString();\n" +
+                "}\n" +
+                "return \"OK: Imported XLIFF localization into project '\" + TopSolidHost.Pdm.GetName(projPdm) + \"' from '\" + targetPath + \"' (0 errors).\";") },
         };
 
         // Shortcut factory methods for readability.

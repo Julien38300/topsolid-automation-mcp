@@ -1,17 +1,18 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.8.1
+version: 5.9.0
 metadata:
   hermes:
-    tags: [topsolid, cao, cad, pdm, mcp, automation, extruded-bar, sheet-metal]
-    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "transparence", "calque", "attribut", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges", "famille", "driver", "selectionner", "face", "shape", "usinage", "cam", "cone", "tore", "bi-arc", "tolerance geometrique", "profile", "profilé", "extruded bar", "tole", "tôle", "platine"]
+    tags: [topsolid, cao, cad, pdm, mcp, automation, extruded-bar, sheet-metal, xliff, localization]
+    trigger_phrases: ["topsolid", "piece", "pièce", "pieces", "pièces", "assemblage", "esquisse", "parametre", "paramètre", "parametres", "paramètres", "designation", "désignation", "reference", "référence", "fabricant", "export", "step", "dxf", "pdf", "nomenclature", "mise en plan", "mise a plat", "couleur", "transparence", "calque", "attribut", "masse", "poids", "volume", "dimensions", "audit", "materiau", "matériau", "densite", "densité", "surface", "inertie", "stl", "iges", "famille", "driver", "selectionner", "face", "shape", "usinage", "cam", "cone", "tore", "bi-arc", "tolerance geometrique", "profile", "profilé", "extruded bar", "tole", "tôle", "platine", "traduction", "traduire", "xliff", "dictionnaire", "localisation"]
 ---
 
 # TopSolid MCP — Skill de pilotage
 
 ## CHANGELOG
 
+- **v5.9.0 (2026-11-02)** — Catalogue passe a **216 recettes** (`108 R` + `100 RW` + `8 RD` dans `server/src/Tools/RecipeTool.cs`) : ajout du workflow complet de **Traduction / Localisation globale de projet via `.xliff`** (`export_project_xliff` en `RD` et `import_project_xliff` en `RW`) et enrichissement de `topsolid_api_help` (synonymes FR/EN `traduction`, `traduire`, `translation`, `xliff`, `localisation`, `dictionnaire`, `dictionary`, `topdic` pointant vers `IPdm.ExportLocalizations` / `ImportLocalizations` / `ImportDictionnaries` avec `UsageTip` complet). Documente l'export recursif sur le `PdmObjectId` du projet, l'interdiction d'utiliser `IPdm.ExportDictionaries` (`FaultException: Sequence contains no matching element`), la troncature du nom de fichier `.xliff` au dernier point `.` par `AnalyzeLocalizationFileName`, et le piege du dialogue modal `Repair family` lorsque le projet contient une famille en etat `Design` avec des instances obsoletes.
 - **v5.8.1 (2026-11-01)** — **Regle de performance du cache de compilation** (verifiee dans `ScriptExecutor.cs`) : les assemblies compilees sont cachees par **SHA-256 du source wrappé** (`CompiledCache`, 200 entrées max, éviction FIFO) ; la valeur `value` étant substituée **dans le source avant le hash**, **chaque nouvelle valeur de paramètre = recompilation `csc.exe` complète**, alors que recette + valeur identiques = appel sans compilation (exécution seule). Le cache vit dans le processus serveur : **un client stdio qui respawne le serveur à chaque conversation démarre toujours à cache froid** — pour des sessions répétées, privilégier l'endpoint HTTP `http://<host>:8080/mcp` (serveur unique, cache chaud). Sous Wine (TopSolid sur Linux via topsolinux), chaque spawn `csc.exe` et JIT .NET passe par la couche de traduction : la lenteur per-call y est attendue, ce n'est pas un bug du pont.
 - **v5.8.0 (2026-10-23)** — Added `replace_revolved_profile` for guarded edits to a single-revolve Part, including line/arc profile input.
 - **v5.7.0 (2026-10-23)** — Added `create_revolved_part` for one-shot axisymmetric `.TopPrt` creation and `revolve_active_part` for revolving a profile in an empty active Part.
@@ -60,6 +61,15 @@ metadata:
 6. **Architecture d'Assemblage reelle (ZERO multi-corps fourre-tout)** :
    - **Interdiction absolue** de modeliser un ouvrage complet en creant des dizaines ou centaines d'esquisses/extrusions dans des fichiers `.TopPrt` multi-corps fourre-tout (ex: 16 poteaux extrudes dans 1 seul fichier).
    - Toujours creer **1 document `.TopPrt` par composant reel unique** (avec son `.TopMat` et `.TopCot`), puis l'instancier $N$ fois par inclusion (`Assemblies.CreateInclusion`) dans un document d'assemblage `.TopAsm`.
+7. **Traduction / Localisation globale d'un projet PDM via `.xliff` (ZERO renommage direct)** :
+   - **Interdiction absolue** de renommer ou modifier directement les noms invariants ou designations (`IPdm.SetName` / `SetDescription`) pour traduire un projet TopSolid.
+   - **Workflow 100 % `.xliff` recursif au niveau Projet** :
+     1. Appeler la recette **`export_project_xliff`** (`value="[nom_projet;]culture;dossier_sortie"`, ex: `fr;C:\temp\xliff`) qui invoque `TopSolidHost.Pdm.ExportLocalizations(new List<PdmObjectId> { projPdm }, new[] { new CultureInfo("fr") }, outputDir, ".xliff", false)`. Passer le `PdmObjectId` du document projet exporte **recursivement tous ses enfants** (dossiers, sous-dossiers, documents, parametres, proprietes) dans un seul fichier `.xliff`.
+     2. **Ne jamais utiliser `IPdm.ExportDictionaries`** (bug interne TopSolid `Enumerable.First` qui leve `FaultException: Sequence contains no matching element`).
+     3. **Attention aux points `.` dans le nom du projet** : `Session.AnalyzeLocalizationFileName` tronque le nom du fichier sur disque au dernier `.` avant d'ajouter `.<culture>.xliff` (ex: `Mon Projet 7.21` -> `Mon Projet 7.fr.xliff`), tout en conservant le nom et l'ID complets du projet dans le XML `.xliff`.
+     4. Traduire les balises `<target>` des `<trans-unit>` dans le fichier `.xliff` (sans toucher aux `<source>` ni aux identifiants).
+     5. Appeler la recette **`import_project_xliff`** (`value="[nom_projet;]chemin_xliff_ou_dossier"`) qui invoque `TopSolidHost.Pdm.ImportDictionnaries` (sur un fichier `.xliff`) ou `TopSolidHost.Pdm.ImportLocalizations` (sur un dossier) sans ouvrir de boite de dialogue.
+     6. **Piege `Repair family` (instances de famille invalides)** : si le projet contient une instance pointant sur une ancienne revision de famille (`RepairInvalidInstanceGenericDatas`), TopSolid ouvre une boite de dialogue modale `Repair family`. Si la famille concernee est encore en etat `Design` (non validee au coffre), le bouton `Repair` ne cree qu'une revision mineure au lieu d'une revision majeure obsolete et echoue avec `"Following projects contain invalidities..."` : il faut d'abord valider/reparer la famille dans TopSolid (`Library Design > Export dictionary`).
 
 ### B. Coupe-Circuit (Circuit Breaker) & Discipline de Tokens (CRITIQUE)
 1. **Coupe-Circuit immediat en cas de panne systeme MCP (Max 2 essais / < 15 secondes)** :
@@ -87,7 +97,7 @@ metadata:
 
 **Recettes de LECTURE** - `read_*`, `list_*`, `count_*`, `detect_*`, `search_*`, `compare_*`, `audit_*`, `check_*`, `summarize_*`, `document_type` (note : `check_collisions` active l'analyse de collisions dans une transaction mais ne modifie pas la geometrie). Elles ne modifient rien. Tu agis directement : pas d'annonce, pas de demande de permission.
 
-**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `create_*`, `provide_*`, `add_*`, `update_*`, `creer_*`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`, `set_drafting_*`, `set_projection_quality`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque.
+**Recettes d'ECRITURE** - `set_*`, `rename_*`, `fix_*`, `copy_*`, `enable_*`, `clear_*`, `save_*`, `rebuild_*`, `export_*`, `import_*`, `batch_*`, `attr_set_*`, `attr_replace_*`, `attr_assign_*`, `invoke_command`, plus `create_*`, `provide_*`, `add_*`, `update_*`, `creer_*`, `ajouter_inclusion`, `extruder_esquisse`, `activate_bom_row`, `deactivate_bom_row`, `print_drafting`, `set_drafting_*`, `set_projection_quality`. Elles modifient le modele, les donnees PDM, ou ecrivent des fichiers sur le disque.
 
 **Regle de secours (celle qui tranche)** : si une recette ne commence PAS par un des prefixes de LECTURE ci-dessus, tu la traites comme une ECRITURE et tu demandes confirmation. Le doute va toujours vers la confirmation.
 
@@ -299,6 +309,8 @@ User: "non, laisse tomber"
 | IGES | export_iges | chemin (opt) |
 | formats dispo | list_exporters | |
 | nomenclature CSV | export_bom_csv | |
+| exporter dictionnaire traduction projet (.xliff) | export_project_xliff | [nom_projet;]culture;dossier (ex: fr;C:\temp\xliff) |
+| importer dictionnaire traduction projet (.xliff) | import_project_xliff | [nom_projet;]chemin_xliff_ou_dossier |
 
 ### Audit
 | Demande | recipe | value |

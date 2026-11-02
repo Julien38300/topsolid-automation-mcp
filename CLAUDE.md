@@ -20,7 +20,7 @@ If a user gave you this repository and said *"set this up"* or *"use this to con
 
 ### Path B — The user wants you to **pilot TopSolid (CAD / PDM / Drafting / BOM)**
 **STOP and read the bundled skills in [`skills/`](./skills/) before calling tools:**
-1. **[`skills/topsolid-mcp/SKILL.md`](./skills/topsolid-mcp/SKILL.md)** — **Mandatory for all TopSolid tasks**: 214+ pre-built recipes (`topsolid_run_recipe`), Read (`R`) vs Write (`RW`/`RD`) confirmation rules, PDM properties, parameters, STEP/DXF/PDF exports, and UI commands (`invoke_command`).
+1. **[`skills/topsolid-mcp/SKILL.md`](./skills/topsolid-mcp/SKILL.md)** — **Mandatory for all TopSolid tasks**: 216+ pre-built recipes (`topsolid_run_recipe`), Read (`R`) vs Write (`RW`/`RD`) confirmation rules, PDM properties, parameters, STEP/DXF/PDF exports, and UI commands (`invoke_command`).
 2. **[`skills/topsolid-mcp-modeling/SKILL.md`](./skills/topsolid-mcp-modeling/SKILL.md)** — **Mandatory for 3D modeling & assemblies**: 100% Recipe-First workflow (`create_project_tree`, `create_extruded_bar`, `create_sheet_metal_plate`, `create_profile_by_two_points`, `batch_add_inclusions`, `update_where_used_and_save`, `check_collisions`).
 3. **[`skills/topsolid-api-knowledge/SKILL.md`](./skills/topsolid-api-knowledge/SKILL.md)** — **Mandatory before writing any C# script**: C# 5 compiler constraints (`CSharpCodeProvider`, no `$"..."` string interpolation), SI units (meters/radians/kg), transaction rules (`StartModification` / `EndModification`), and 3D sketch orientation.
 4. **[`skills/topsolid-railing-design/SKILL.md`](./skills/topsolid-railing-design/SKILL.md)** — Specialized trade rules for guardrails / railings (NF P01-012 / NF P01-013, TopSolid'Steel practices).
@@ -62,7 +62,7 @@ top-level `data/`. The top-level `data/` holds the artefacts produced by the Pyt
 
 The recipe catalogue is the single source of truth in `server/src/Tools/RecipeTool.cs`
 
-(**214 recipes** today). Several generated files repeat it — `server/data/recipe-list.txt`,
+(**216 recipes** today). Several generated files repeat it — `server/data/recipe-list.txt`,
 `server/data/recipes.md`, `data/recipes.md`, the docs pages, the skill package and the LoRA
 dataset — so they drift the moment a recipe is added by hand.
 

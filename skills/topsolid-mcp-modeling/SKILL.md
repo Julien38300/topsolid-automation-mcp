@@ -78,7 +78,7 @@ Classe de travail : analyser finement le besoin/photo (avec le skill métier sp�
      9. **`create_revolved_part`** : crée un `.TopPrt` depuis un profil ordonné `radius_mm,axial_mm`, avec angle, désignation et référence optionnels.
      10. **`revolve_active_part`** : même opération sur le `.TopPrt` actif vide ; refuse de s'exécuter s'il contient déjà un solide.
      11. **`replace_revolved_profile`** : remplace une révolution unique par des segments de droite et d'arc explicites ; refuse les solides additionnels pour ne pas détruire la géométrie dépendante.
-   - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 214 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
+   - **Fallback « One-Shot C# Builder »** : uniquement si une géométrie gauche ou opération spéciale n'est pas couverte par les 216 recettes. Dans ce cas, écrire 1 seul script C# complet compilé via `topsolid_compile` et exécuté via `topsolid_execute_script`.
 
 5. **COUPE-CIRCUIT (CIRCUIT-BREAKER) & 5 INTERDICTIONS ABSOLUES** :
    - **COUPE-CIRCUIT IMMÉDIAT SUR PANNE INFRASTRUCTURE / SERVEUR MCP** : Si `topsolid_compile` ou `topsolid_execute_script` renvoie une erreur système interne, **ARRÊT IMMÉDIAT** (interdiction de lire le code source du serveur MCP, de bricoler un exécutable ou d'ouvrir WinRM).

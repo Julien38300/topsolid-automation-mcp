@@ -7,7 +7,7 @@ created: 2026-09-30
 sources:
   - data/chm-7.21/extracted-text/TopSolidDesign_Automation_Guide.txt (CHM 7.21 Design Automation, complet)
   - server/data/api/7.21.304.0/methods.json (1978 methodes)
-  - server/src/Tools/RecipeTool.cs (214 recipes)
+  - server/src/Tools/RecipeTool.cs (216 recipes)
   - vault 01_TopSolid/ (T-1206, Transverse/, V8/Docs/, Guide_Utilisateur/)
 ---
 

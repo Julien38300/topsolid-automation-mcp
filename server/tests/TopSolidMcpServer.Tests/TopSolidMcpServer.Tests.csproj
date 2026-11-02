@@ -31,6 +31,17 @@
     <Compile Include="..\..\src\Protocol\HttpKeepalivePolicy.cs" Link="HttpKeepalivePolicy.cs" />
     <Compile Include="..\..\src\Utils\TopSolidInstanceList.cs" Link="TopSolidInstanceList.cs" />
     <Compile Include="..\..\src\Utils\TraySettings.cs" Link="TraySettings.cs" />
+    <Compile Include="..\..\src\Protocol\McpToolRegistry.cs" Link="McpToolRegistry.cs" />
+    <Compile Include="..\..\src\Protocol\Models\McpToolDescriptor.cs" Link="McpToolDescriptor.cs" />
+    <Compile Include="..\..\src\Tools\ApiHelpTool.cs" Link="ApiHelpTool.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\TypeGraph.cs" Link="Graph\TypeGraph.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Models\ExtractedMethod.cs" Link="Graph\ExtractedMethod.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Models\GraphEdge.cs" Link="Graph\GraphEdge.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Models\TypeNode.cs" Link="Graph\TypeNode.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Semantics\SemanticRule.cs" Link="Graph\SemanticRule.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Semantics\SemanticRuleSet.cs" Link="Graph\SemanticRuleSet.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Utils\GraphLoader.cs" Link="Graph\GraphLoader.cs" />
+    <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Utils\JsonHelper.cs" Link="Graph\JsonHelper.cs" />
   </ItemGroup>
 
 </Project>

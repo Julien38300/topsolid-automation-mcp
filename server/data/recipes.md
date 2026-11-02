@@ -6024,3 +6024,119 @@ return "OK: Where-Used bottom-up update & save complete on '" + TopSolidHost.Pdm
 ```
 
 ---
+
+## export_project_xliff
+Pattern: RD
+Description: Exports the entire project localization dictionary (all folders, documents, parameters, and properties recursively) to an XLIFF (.xliff) file for project translation / traduction / localisation / dictionnaire. Never use ExportDictionaries. Param: value=[project_name;]culture;output_dir (e.g. fr;C:\temp\xliff or MyProject;fr;C:\temp\xliff)
+
+```csharp
+string raw = "{value}".Trim();
+string projName = "";
+string cultureName = "fr";
+string outputDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "topsolid_xliff");
+if (!string.IsNullOrEmpty(raw))
+{
+    string[] parts = raw.Split(';');
+    if (parts.Length == 1)
+    {
+        string p0 = parts[0].Trim();
+        if (p0.Contains("\\") || p0.Contains("/") || p0.Contains(":")) outputDir = p0;
+        else if (p0.Length <= 5) cultureName = p0;
+        else projName = p0;
+    }
+    else if (parts.Length == 2)
+    {
+        string p0 = parts[0].Trim();
+        string p1 = parts[1].Trim();
+        if (p1.Contains("\\") || p1.Contains("/") || p1.Contains(":")) { cultureName = string.IsNullOrEmpty(p0) ? "fr" : p0; outputDir = p1; }
+        else { projName = p0; if (!string.IsNullOrEmpty(p1)) cultureName = p1; }
+    }
+    else
+    {
+        projName = parts[0].Trim();
+        if (!string.IsNullOrEmpty(parts[1].Trim())) cultureName = parts[1].Trim();
+        if (!string.IsNullOrEmpty(parts[2].Trim())) outputDir = parts[2].Trim();
+    }
+}
+PdmObjectId projPdm = TopSolidHost.Pdm.GetCurrentProject();
+if (!string.IsNullOrEmpty(projName))
+{
+    PdmObjectId exact = PdmObjectId.Empty;
+    foreach (var p in TopSolidHost.Pdm.GetProjects(true, true))
+        if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { exact = p; break; }
+    if (exact.IsEmpty) exact = TopSolidHost.Pdm.SearchProjectByName(projName);
+    if (exact.IsEmpty) return "Error: Project '" + projName + "' not found.";
+    projPdm = exact;
+}
+if (projPdm.IsEmpty) return "Error: No current project.";
+System.IO.Directory.CreateDirectory(outputDir);
+var cultures = new System.Globalization.CultureInfo[] { new System.Globalization.CultureInfo(cultureName) };
+TopSolidHost.Pdm.ExportLocalizations(new List<PdmObjectId> { projPdm }, cultures, outputDir, ".xliff", false);
+string[] files = System.IO.Directory.GetFiles(outputDir, "*." + cultureName + ".xliff");
+if (files.Length == 0) files = System.IO.Directory.GetFiles(outputDir, "*.xliff");
+if (files.Length == 0)
+    return "Error: ExportLocalizations did not generate a .xliff file for project '" + TopSolidHost.Pdm.GetName(projPdm) + "'. Check TopSolid UI for a modal 'Repair family' or invalidity dialog ('Library Design > Export dictionary').";
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("OK: Exported XLIFF localization for project '" + TopSolidHost.Pdm.GetName(projPdm) + "' (culture=" + cultureName + "):");
+foreach (string f in files)
+{
+    var fi = new System.IO.FileInfo(f);
+    sb.AppendLine("  " + f + " (" + fi.Length + " bytes)");
+}
+return sb.ToString();
+```
+
+---
+
+## import_project_xliff
+Pattern: RW
+Description: Imports translated XLIFF (.xliff) localization file(s) into a TopSolid project (project translation / traduction / localisation / dictionnaire — updates translated names and designations without modifying invariant names). Param: value=[project_name;]xliff_file_or_dir_path (e.g. C:\temp\xliff or MyProject;C:\temp\xliff\MyProject.fr.xliff)
+
+```csharp
+if (false) { TopSolidHost.Application.StartModification("", false); TopSolidHost.Application.EndModification(false, false); }
+string raw = "{value}".Trim();
+if (string.IsNullOrEmpty(raw)) return "Error: Specify [project_name;]xliff_file_or_dir_path.";
+string projName = "";
+string targetPath = raw;
+int sep = raw.IndexOf(';');
+if (sep >= 0)
+{
+    projName = raw.Substring(0, sep).Trim();
+    targetPath = raw.Substring(sep + 1).Trim();
+}
+PdmObjectId projPdm = TopSolidHost.Pdm.GetCurrentProject();
+if (!string.IsNullOrEmpty(projName))
+{
+    PdmObjectId exact = PdmObjectId.Empty;
+    foreach (var p in TopSolidHost.Pdm.GetProjects(true, true))
+        if (string.Equals(TopSolidHost.Pdm.GetName(p), projName, StringComparison.OrdinalIgnoreCase)) { exact = p; break; }
+    if (exact.IsEmpty) exact = TopSolidHost.Pdm.SearchProjectByName(projName);
+    if (exact.IsEmpty) return "Error: Project '" + projName + "' not found.";
+    projPdm = exact;
+}
+if (projPdm.IsEmpty) return "Error: No current project.";
+var errors = new Dictionary<string, string>();
+if (System.IO.File.Exists(targetPath))
+{
+    TopSolidHost.Pdm.ImportDictionnaries(new List<PdmObjectId> { projPdm }, new string[] { targetPath }, errors);
+}
+else if (System.IO.Directory.Exists(targetPath))
+{
+    TopSolidHost.Pdm.ImportLocalizations(targetPath, ".xliff", errors);
+}
+else
+{
+    return "Error: File or directory not found: '" + targetPath + "'.";
+}
+try { TopSolidHost.Pdm.Save(projPdm, true); } catch { }
+if (errors.Count > 0)
+{
+    var errSb = new System.Text.StringBuilder();
+    errSb.AppendLine("Warning: Import completed with " + errors.Count + " message(s):");
+    foreach (var kv in errors) errSb.AppendLine("  " + kv.Key + ": " + kv.Value);
+    return errSb.ToString();
+}
+return "OK: Imported XLIFF localization into project '" + TopSolidHost.Pdm.GetName(projPdm) + "' from '" + targetPath + "' (0 errors).";
+```
+
+---
