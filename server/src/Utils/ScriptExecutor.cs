@@ -191,9 +191,14 @@ namespace TopSolidMcpServer.Utils
                 string wrappedCode = WrapCode(preprocessed, isModification, blockReturn, out headerLineCount);
 
                 // Compiled scripts are cached: recipes have a frozen body and are compiled once.
+                bool isLongRunningLocalization = preprocessed.IndexOf("ExportLocalizations", StringComparison.Ordinal) >= 0 ||
+                    preprocessed.IndexOf("ImportDictionnaries", StringComparison.Ordinal) >= 0 ||
+                    preprocessed.IndexOf("ImportLocalizations", StringComparison.Ordinal) >= 0;
+                int minTimeoutSec = isLongRunningLocalization ? 1800 : 0;
+
                 string cacheKey = ComputeSourceHash(wrappedCode);
                 MethodInfo cachedMethod = TryGetCachedMethod(cacheKey);
-                if (cachedMethod != null) return InvokeWithTimeout(cachedMethod);
+                if (cachedMethod != null) return InvokeWithTimeout(cachedMethod, minTimeoutSec);
 
                 string parameterError;
                 CompilerParameters parameters = BuildCompilerParameters(out parameterError);
@@ -226,7 +231,7 @@ namespace TopSolidMcpServer.Utils
                         "TopSolidMcpServer.Dynamic.DynamicScript.Run().";
 
                 StoreCachedMethod(cacheKey, method);
-                return InvokeWithTimeout(method);
+                return InvokeWithTimeout(method, minTimeoutSec);
             }
             catch (InvalidOperationException ex)
             {
@@ -253,9 +258,9 @@ namespace TopSolidMcpServer.Utils
         /// process alive) and keeps running — possibly still holding a TopSolid transaction —
         /// until it finishes on its own.
         /// </summary>
-        private static string InvokeWithTimeout(MethodInfo method)
+        private static string InvokeWithTimeout(MethodInfo method, int minTimeoutSeconds = 0)
         {
-            int timeoutSeconds = GetTimeoutSeconds();
+            int timeoutSeconds = Math.Max(GetTimeoutSeconds(), minTimeoutSeconds);
             string result = null;
             Exception failure = null;
 

@@ -185,6 +185,8 @@ namespace TopSolidMcpServer.Utils
 
             if (ok)
             {
+                ExtendWcfOperationTimeouts(TimeSpan.FromMinutes(30));
+
                 // Optional modules: never fatal.
                 _hasDesignModule = TryLoadModule("Design", DesignDll, ConnectDesignModule);
                 _hasDraftingModule = TryLoadModule("Drafting", DraftingDll, ConnectDraftingModule);
@@ -599,6 +601,41 @@ namespace TopSolidMcpServer.Utils
         private static void DisconnectDraftingModule()
         {
             TopSolidDraftingHost.Disconnect();
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ExtendWcfOperationTimeouts(TimeSpan timeout)
+        {
+            try
+            {
+                var _ = TopSolidHost.Pdm;
+                var __ = TopSolidHost.Documents;
+                var ___ = TopSolidHost.Application;
+                var hiField = typeof(TopSolidHost).GetField("hostInstance", BindingFlags.NonPublic | BindingFlags.Static);
+                if (hiField == null) return;
+                object hi = hiField.GetValue(null);
+                if (hi == null) return;
+                foreach (string fname in new[] { "pdm", "documents", "application" })
+                {
+                    var hcField = hi.GetType().GetField(fname, BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (hcField == null) continue;
+                    object hc = hcField.GetValue(hi);
+                    if (hc == null) continue;
+                    var svcField = hc.GetType().GetField("service", BindingFlags.NonPublic | BindingFlags.Instance);
+                    var cfField = hc.GetType().GetField("channelFactory", BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (svcField == null || cfField == null) continue;
+                    object svc = svcField.GetValue(hc);
+                    object cf = cfField.GetValue(hc);
+                    if (svc == null || cf == null) continue;
+                    Type icc = cf.GetType().Assembly.GetType("System.ServiceModel.IContextChannel");
+                    if (icc != null)
+                    {
+                        var prop = icc.GetProperty("OperationTimeout");
+                        if (prop != null) prop.SetValue(svc, timeout, null);
+                    }
+                }
+            }
+            catch { }
         }
     }
 }
