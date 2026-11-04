@@ -14,8 +14,10 @@ name: Build
 # server/scripts/build-release.ps1.
 #
 # What CI can check without TopSolid:
+#   - the Python utilities under scripts/ byte-compile (ci_gate.py py-compile);
 #   - the recipe catalogue passes scripts/check-recipes.py;
 #   - nothing private leaked, via scripts/privacy-scan.py;
+#   - the three source-linked unit-test projects pass (pure logic, no TopSolid);
 #   - graph/ compiles (it only needs Newtonsoft.Json; it loads the TopSolid
 #     assemblies by reflection at run time, never at compile time).
 #
@@ -23,14 +25,17 @@ name: Build
 # mandatory gate before RecipeTool.cs is committed, so they run first and always
 # produce a verdict, even while a build step below them is broken.
 #
-# KNOWN FAILURE, not caused by this workflow: graph/src/TopSolidApiGraph.csproj
-# declares <None Include="..\data\semantic-rules.json"> with CopyToOutputDirectory,
-# and graph/data/semantic-rules.json is not in the repository. MSBuild fails the
-# copy (MSB3030) so "Build graph/" is red until that item is made conditional on
-# Exists() or the file is committed.
+# (fixed) graph/src/TopSolidApiGraph.csproj now guards the optional
+# ..\data\semantic-rules.json None item with Condition="Exists(...)", so
+# "Build graph/" is green even though that data file is not committed — the
+# earlier MSB3030 known failure described here is gone.
 #
 # privacy-scan.py also runs in privacy-scan.yml on Linux. Running it here too is
 # cheap and keeps this workflow a single self-contained gate.
+#
+# Local mirror: `make ci-local` — or `python scripts/ci_gate.py` on machines
+# without make — runs the same suites (py-compile, recipes, privacy, the three
+# unit-test projects, graph build) so "green on CI" stays reproducible locally.
 
 on:
   push:
@@ -53,6 +58,13 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Byte-compile Python utilities
+        # scripts/ holds ~18 Python files; a syntax error or an OneDrive
+        # dehydrated placeholder must fail CI, not the release pipeline.
+        # Delegates to scripts/ci_gate.py — the same runner `make ci-local`
+        # uses locally.
+        run: python scripts/ci_gate.py --only py-compile
+
       - name: Check recipe catalogue
         run: python scripts/check-recipes.py
 
@@ -71,8 +83,44 @@ jobs:
         # the contract behind the "dead update button" regression (v1.7.2 era).
         run: dotnet test server/tests/TopSolidMcp.UpdateCheck.Tests/TopSolidMcp.UpdateCheck.Tests.csproj -c Release
 
+      - name: Unit tests (native HTTP / API key / tray v1.8 / feedback)
+        # Same source-link pattern (no ProjectReference to the exe): the v1.8
+        # native HTTP server, ApiKeyStore, GitHub feedback and privacy-scrub
+        # logic are pure and CI-runnable. They used to be local-only, which let
+        # environment-sensitive tests drift unnoticed (T-1205/T-1175 audit,
+        # 2026-11-05: a DNS-quirk test was red on dev machines for weeks).
+        run: dotnet test server/tests/TopSolidMcp.Http.Tests/TopSolidMcp.Http.Tests.csproj -c Release
+
+      - name: Unit tests (server + tray wiring logic)
+        run: dotnet test server/tests/TopSolidMcpServer.Tests/TopSolidMcpServer.Tests.csproj -c Release
+
       - name: Restore graph/
         run: dotnet restore graph/TopSolidApiGraph.sln
 
       - name: Build graph/
         run: dotnet build graph/TopSolidApiGraph.sln -c Release --no-restore
+
+  sast:
+    # SAST for the Python utilities (T-1175). semgrep does not run natively on
+    # Windows, so it gets a Linux job while the main build stays on Windows
+    # (.NET Framework 4.8). Scoped to scripts/ — the C# side is covered by the
+    # build job and the repo's own privacy-scan.py.
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install semgrep
+        run: pip install semgrep
+
+      - name: Semgrep scan (scripts/)
+        # p/secrets  — credential patterns (complements privacy-scan.py)
+        # p/python   — language correctness for the pipeline scripts
+        # --error    — findings fail the job; this is a gate, not a report
+        run: semgrep scan --config p/secrets --config p/python --error scripts/

@@ -48,7 +48,7 @@ lora-clean:
 #   make check-recipes    # scripts/check-recipes.py only
 #   make sync-ecosystem   # NOT implemented - prints what still has to be done
 
-.PHONY: check check-privacy check-recipes sync-ecosystem
+.PHONY: check check-privacy check-recipes sync-ecosystem ci-local
 
 check: check-privacy check-recipes
 
@@ -57,6 +57,13 @@ check-privacy:
 
 check-recipes:
 	$(PYTHON) $(SCRIPTS)/check-recipes.py
+
+# ci-local — full local gate mirroring .github/workflows/build.yml:
+# py-compile of scripts/, recipe + privacy checks, the three source-linked
+# unit-test projects and the graph/ build. Also usable without make:
+#   python scripts/ci_gate.py [--only suites] [--skip suites]
+ci-local:
+	$(PYTHON) $(SCRIPTS)/ci_gate.py
 
 # NOT IMPLEMENTED. CLAUDE.md tells contributors to run this after every recipe
 # change, but no script has ever stood behind the name. It prints the steps that
