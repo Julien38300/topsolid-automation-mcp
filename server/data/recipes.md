@@ -3944,9 +3944,9 @@ catch (Exception ex)
 
 ---
 
-## set_angular_scale
+## set_material_angular_scale
 Pattern: RW
-Description: Sets the angular scale factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the angular scale factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -3956,15 +3956,15 @@ Description: Sets the angular scale factor of the material applied to the edited
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_anisotropy_angle_factor
+## set_material_anisotropy_angle_factor
 Pattern: RW
-Description: Sets the anisotropy angle factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the anisotropy angle factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -3974,15 +3974,15 @@ Description: Sets the anisotropy angle factor of the material applied to the edi
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_brinell_hardness_factor
+## set_material_brinell_hardness_factor
 Pattern: RW
-Description: Sets the Brinell hardness factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the Brinell hardness factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -3992,15 +3992,15 @@ Description: Sets the Brinell hardness factor of the material applied to the edi
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_bulk_modulus
+## set_material_bulk_modulus
 Pattern: RW
-Description: Sets the bulk modulus of the material applied to the edited document. Param: value=<number>
+Description: Sets the bulk modulus of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4010,15 +4010,15 @@ Description: Sets the bulk modulus of the material applied to the edited documen
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_bump_rotation
+## set_material_bump_rotation
 Pattern: RW
-Description: Sets the bump texture rotation angle of the material applied to the edited document. Param: value=<number>
+Description: Sets the bump texture rotation angle of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4028,15 +4028,15 @@ Description: Sets the bump texture rotation angle of the material applied to the
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_bump_scale
+## set_material_bump_scale
 Pattern: RW
-Description: Sets the bump texture scale factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the bump texture scale factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4046,15 +4046,15 @@ Description: Sets the bump texture scale factor of the material applied to the e
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_cutting_force
+## set_material_cutting_force
 Pattern: RW
-Description: Sets the cutting force of the material applied to the edited document. Param: value=<number>
+Description: Sets the cutting force of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4064,15 +4064,15 @@ Description: Sets the cutting force of the material applied to the edited docume
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_cutting_force_increment
+## set_material_cutting_force_increment
 Pattern: RW
-Description: Sets the cutting force increment of the material applied to the edited document. Param: value=<number>
+Description: Sets the cutting force increment of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4082,15 +4082,15 @@ Description: Sets the cutting force increment of the material applied to the edi
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_elastic_limit
+## set_material_elastic_limit
 Pattern: RW
-Description: Sets the elastic limit of the material applied to the edited document. Param: value=<number>
+Description: Sets the elastic limit of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4100,15 +4100,15 @@ Description: Sets the elastic limit of the material applied to the edited docume
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_elongation_at_break
+## set_material_elongation_at_break
 Pattern: RW
-Description: Sets the elongation at break of the material applied to the edited document. Param: value=<number>
+Description: Sets the elongation at break of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4118,15 +4118,15 @@ Description: Sets the elongation at break of the material applied to the edited 
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_glossiness_factor
+## set_material_glossiness_factor
 Pattern: RW
-Description: Sets the glossiness factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the glossiness factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4136,15 +4136,15 @@ Description: Sets the glossiness factor of the material applied to the edited do
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_melting_temperature
+## set_material_melting_temperature
 Pattern: RW
-Description: Sets the melting temperature of the material applied to the edited document. Param: value=<number>
+Description: Sets the melting temperature of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4154,15 +4154,15 @@ Description: Sets the melting temperature of the material applied to the edited 
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_plastic_strain_ratio
+## set_material_plastic_strain_ratio
 Pattern: RW
-Description: Sets the plastic strain ratio of the material applied to the edited document. Param: value=<number>
+Description: Sets the plastic strain ratio of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4172,15 +4172,15 @@ Description: Sets the plastic strain ratio of the material applied to the edited
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_poisson_ratio
+## set_material_poisson_ratio
 Pattern: RW
-Description: Sets the Poisson ratio of the material applied to the edited document. Param: value=<number>
+Description: Sets the Poisson ratio of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4190,15 +4190,15 @@ Description: Sets the Poisson ratio of the material applied to the edited docume
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_section_reduction_at_break
+## set_material_section_reduction_at_break
 Pattern: RW
-Description: Sets the section reduction at break of the material applied to the edited document. Param: value=<number>
+Description: Sets the section reduction at break of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4208,15 +4208,15 @@ Description: Sets the section reduction at break of the material applied to the 
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_shear_modulus
+## set_material_shear_modulus
 Pattern: RW
-Description: Sets the shear modulus of the material applied to the edited document. Param: value=<number>
+Description: Sets the shear modulus of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4226,15 +4226,15 @@ Description: Sets the shear modulus of the material applied to the edited docume
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_shrinkage_factor
+## set_material_shrinkage_factor
 Pattern: RW
-Description: Sets the shrinkage factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the shrinkage factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4244,15 +4244,15 @@ Description: Sets the shrinkage factor of the material applied to the edited doc
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_specific_heat_capacity
+## set_material_specific_heat_capacity
 Pattern: RW
-Description: Sets the specific heat capacity of the material applied to the edited document. Param: value=<number>
+Description: Sets the specific heat capacity of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4262,15 +4262,15 @@ Description: Sets the specific heat capacity of the material applied to the edit
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_thermal_conductivity
+## set_material_thermal_conductivity
 Pattern: RW
-Description: Sets the thermal conductivity of the material applied to the edited document. Param: value=<number>
+Description: Sets the thermal conductivity of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4280,15 +4280,15 @@ Description: Sets the thermal conductivity of the material applied to the edited
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_thermal_expansion_coefficient
+## set_material_thermal_expansion_coefficient
 Pattern: RW
-Description: Sets the thermal expansion coefficient of the material applied to the edited document. Param: value=<number>
+Description: Sets the thermal expansion coefficient of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4298,15 +4298,15 @@ Description: Sets the thermal expansion coefficient of the material applied to t
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_ultimate_stress
+## set_material_ultimate_stress
 Pattern: RW
-Description: Sets the ultimate stress of the material applied to the edited document. Param: value=<number>
+Description: Sets the ultimate stress of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4316,15 +4316,15 @@ Description: Sets the ultimate stress of the material applied to the edited docu
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_vertical_angular_scale
+## set_material_vertical_angular_scale
 Pattern: RW
-Description: Sets the vertical angular scale factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the vertical angular scale factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4334,15 +4334,15 @@ Description: Sets the vertical angular scale factor of the material applied to t
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_vickers_hardness_factor
+## set_material_vickers_hardness_factor
 Pattern: RW
-Description: Sets the Vickers hardness factor of the material applied to the edited document. Param: value=<number>
+Description: Sets the Vickers hardness factor of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4352,15 +4352,15 @@ Description: Sets the Vickers hardness factor of the material applied to the edi
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_young_modulus
+## set_material_young_modulus
 Pattern: RW
-Description: Sets the Young modulus of the material applied to the edited document. Param: value=<number>
+Description: Sets the Young modulus of the active material. Param: value=<number>
 
 ```csharp
 {
@@ -4370,13 +4370,13 @@ Description: Sets the Young modulus of the material applied to the edited docume
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_homogeneous_parameter_value
+## set_material_homogeneous_parameter_value
 Pattern: RW
 Description: Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false
 
@@ -4394,13 +4394,13 @@ try
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_isotropic_parameter_value
+## set_material_isotropic_parameter_value
 Pattern: RW
 Description: Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false
 
@@ -4418,15 +4418,15 @@ try
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_rockwell_factors
+## set_material_rockwell_factors
 Pattern: RW
-Description: Sets the Rockwell factors (A,B,C) of the material applied to the edited document. Param: value=A,B,C (double or 'null')
+Description: Sets the Rockwell factors (A,B,C) of the active material. Param: value=A,B,C (double or 'null')
 
 ```csharp
     string[] parts = raw.Split(',');
@@ -4453,15 +4453,15 @@ try
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
 ---
 
-## set_specular_color
+## set_material_specular_color
 Pattern: RW
-Description: Sets the specular color (R,G,B) of the material applied to the edited document. Param: value=R,G,B (0-255)
+Description: Sets the specular color (R,G,B) of the active material. Param: value=R,G,B (0-255)
 
 ```csharp
     string[] parts = raw.Split(',');
@@ -4481,7 +4481,7 @@ try
 }
 catch (Exception ex)
 {
-    __message = "Error (no material applied to this document?): " + ex.Message;
+    __message = "Error (no material set on this document?): " + ex.Message;
 }
 ```
 
@@ -5099,7 +5099,7 @@ return "OK: Material '" + matRealName + "' applied to '" + TopSolidHost.Document
 
 ## set_coating
 Pattern: RW
-Description: Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries and applies it (or RGB color) to all shapes of a part. Param: value=[doc_name;]coating_keyword[;R,G,B]
+Description: Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries, applies it as the ACTIVE coating (Coatings.SetCoating) and tints all shapes with its albedo color - or applies a plain RGB color when no coating is found. Param: value=[doc_name;]coating_keyword[;R,G,B]
 
 ```csharp
 string raw = "{value}".Trim();
@@ -5153,13 +5153,19 @@ try
     string status = "";
     if (!cotDoc.IsEmpty)
     {
+        bool activeSet = false;
+        try
+        {
+            TopSolidDesignHost.Coatings.SetCoating(targetDoc, cotDoc);
+            activeSet = true;
+        } catch { }
         try
         {
             Color alb = TopSolidDesignHost.Coatings.GetAlbedoColor(cotDoc);
             foreach (var s in TopSolidHost.Shapes.GetShapes(targetDoc))
                 TopSolidHost.Elements.SetColor(s, alb);
         } catch { }
-        status = "Coating '" + TopSolidHost.Pdm.GetName(cotPdm) + "'";
+        status = "Coating '" + TopSolidHost.Pdm.GetName(cotPdm) + "'" + (activeSet ? " (active coating set)" : " (color tint only)");
     }
     if (!string.IsNullOrEmpty(rgbSpec))
     {
