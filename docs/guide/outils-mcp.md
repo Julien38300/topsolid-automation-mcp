@@ -55,7 +55,7 @@ Un modele 3B (ex: `ministral-topsolid`) peut utiliser `run_recipe`. Seul un mode
 
 ## topsolid_list_recipes
 
-Catalogue des recettes : retourne une ligne par recette (mode `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]`, categorie, nom, description), filtrable par categorie et/ou mot-cle. C'est l'outil a appeler pour trouver le nom exact a passer a `topsolid_run_recipe`.
+Catalogue des recettes : retourne une ligne par recette (mode `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]` / `[WRITE-PDM-NO-TRX]`, categorie, nom, description), filtrable par categorie et/ou mot-cle. C'est l'outil a appeler pour trouver le nom exact a passer a `topsolid_run_recipe`.
 
 La liste n'est plus inlinee dans le descripteur de `topsolid_run_recipe` (elle coutait ~1300 tokens a chaque demarrage de session) : elle est servie a la demande par cet outil.
 
@@ -182,7 +182,7 @@ Retourne le code C# d'une recette par nom, sans l'executer. Utile pour apprendre
 { "name": "topsolid_get_recipe", "arguments": { "recipe": "read_mass_volume" } }
 ```
 
-Sans `recipe` : retourne la liste des 216 recettes avec leur mode uniquement (nom + `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]`), sans description — pour les descriptions et les filtres, passez par `topsolid_list_recipes`.
+Sans `recipe` : retourne la liste des 217 recettes avec leur mode uniquement (nom + `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]` / `[WRITE-PDM-NO-TRX]`), sans description — pour les descriptions et les filtres, passez par `topsolid_list_recipes`.
 
 ## topsolid_compile (v1.5.1+)
 

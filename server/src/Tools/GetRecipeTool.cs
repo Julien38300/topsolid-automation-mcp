@@ -94,6 +94,8 @@ namespace TopSolidMcpServer.Tools
                     return "modifies the document or the PDM (transactional — Pattern D applied by runtime)";
                 case RecipeTool.RecipeEntry.RecipeMode.WriteDisk:
                     return "writes outside TopSolid (file on disk or print job), no PDM transaction";
+                case RecipeTool.RecipeEntry.RecipeMode.WritePdmNoTransaction:
+                    return "writes to the PDM but runs OUTSIDE any modification transaction (TopSolid refuses document creation between StartModification and EndModification)";
                 default:
                     return "reads only, nothing is written";
             }

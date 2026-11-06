@@ -115,6 +115,26 @@ if (badDocs.Count > 0) Console.WriteLine("WARN: " + badDocs.Count + " documents 
 
 Pour `ImportWithOptions`, la logique est identique : `GetImporterOptions(idx)` puis passer la liste modifiee.
 
+## Importer dans un modele precis (Wooden Part, etc.)
+
+`Documents.Import` ne prend **pas** de modele en parametre : chaque fichier importe devient un nouveau document construit avec le modele par defaut du type de document dans le projet cible (cf. `Pdm.CreateDocument(inOwnerId, inExtension, inUseDefaultTemplate)`). Impossible donc de garantir via `Import` seul qu'un STEP donne sera un "Wooden Part".
+
+Par ailleurs, l'API TopSolid refuse la creation de document dans une transaction de modification — remarque officielle des pages `IPdm.CreateDocument` et `IPdm.CreateDocumentWithTemplate` :
+
+> This method must not be called between StartModification(String, Boolean) and EndModification(Boolean, Boolean).
+
+Le serveur MCP enveloppe automatiquement dans une transaction StartModification/EndModification tout code detecte comme ecriture : `topsolid_execute_script` (auto-detection), `topsolid_modify_script`, et toutes les recettes declarees `RW` (Pattern D). Consequence pratique : un script qui appelle `CreateDocumentWithTemplate` via ces entrees est rejete par TopSolid — aucun document n'est cree, et rien d'existant n'est modifie (l'import lui-meme reste valable : le document importe utilise le modele par defaut du projet).
+
+Deux solutions :
+
+1. **Recette `create_document_with_template`** (mode `[WRITE-PDM-NO-TRX]` — hors transaction par design) : cree dans le projet courant un document a partir d'un modele nomme, cherche dans les projets de modeles utilisateur et societe (`Pdm.GetTemplates` + `SearchDocumentByName`).
+
+   `topsolid_run_recipe` avec `recipe=create_document_with_template`, `value=Wooden Part`
+
+   Limites a connaitre : `Documents.Import` ne peut PAS viser ce document (il importe dans un dossier PDM et cree ses propres documents) ; pour y reporter la geometrie d'un STEP, ouvrir le document et importer depuis l'interface TopSolid, ou copier les elements depuis le document importe. La creation est la seule operation faite par la recette.
+
+2. **Modele `.TopPrt` par defaut du projet** : definir "Wooden Part" comme modele par defaut du type `.TopPrt` dans les proprietes du projet (interface TopSolid). `Documents.Import` produit alors directement des documents bases sur ce modele — c'est la voie naturelle quand tous les documents `.TopPrt` du projet doivent suivre ce modele, et elle rend la question de la transaction sans objet pour l'import.
+
 ## Recettes MCP disponibles
 
 Les recettes actuelles couvrent les 5 formats les plus demandes :
@@ -128,6 +148,7 @@ Les recettes actuelles couvrent les 5 formats les plus demandes :
 | `export_stl` | STL | R | chemin de sortie |
 | `export_iges` | IGES | R | chemin de sortie |
 | `export_bom_csv` | CSV (nomenclature) | R | chemin de sortie |
+| `create_document_with_template` | — (modele de document) | RN | nom du modele (ex: `Wooden Part`) |
 
 Ces recettes encapsulent la boucle `FindExporterIndex()` et verifient `CanExport()` avant d'appeler `Export()`. Pour un format absent de la liste (FBX, glTF, IFC...), utiliser `topsolid_execute_script` avec le pattern ci-dessus, ou demander l'ajout d'une recette dediee.
 
@@ -175,6 +196,7 @@ TopSolidHost.Documents.Export(idx, docId, @"C:\exports\plan.pdf");
 | Export d'assemblage sans les parts | Fichier vide ou incomplet | Verifier `CanExport` + que les inclusions sont a jour (`Rebuild` avant export) |
 | Caracteres non-ASCII dans le chemin | Exception ou fichier corrompu selon l'exporteur | Prefixer avec `\\?\` sur Windows, ou migrer vers un chemin ASCII sur (C:\temp) |
 | Export depuis un doc dirty | Le fichier contient la version SAUVEGARDEE, pas la version en cours | `Pdm.Save(pdmId, true)` avant l'export |
+| Creation de document dans une transaction | `CreateDocument` / `CreateDocumentWithTemplate` rejetes par TopSolid, aucun document cree | Recette `create_document_with_template` (mode RN, hors transaction), ou definir le modele par defaut du projet |
 
 ## Utilisation standalone (hors MCP)
 

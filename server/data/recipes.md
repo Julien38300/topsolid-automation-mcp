@@ -269,6 +269,34 @@ __message = "OK: Document rebuilt.";
 
 ---
 
+## create_document_with_template
+Pattern: RN
+Description: Creates a new document in the current project from a named document template (e.g. 'Wooden Part'). Runs outside any modification transaction because TopSolid refuses document creation between StartModification and EndModification. Param: value=template_name (ex: Wooden Part)
+
+```csharp
+string wanted = "{value}";
+PdmObjectId userDocT; PdmObjectId companyDocT; PdmObjectId userProjT; PdmObjectId companyProjT;
+TopSolidHost.Pdm.GetTemplates(out userDocT, out companyDocT, out userProjT, out companyProjT);
+PdmObjectId tmplId = new PdmObjectId();
+string projLabel = "";
+PdmObjectId[] sources = new PdmObjectId[] { userDocT, companyDocT };
+string[] labels = new string[] { "user", "company" };
+for (int s = 0; s < sources.Length; s++)
+{
+    if (sources[s].IsEmpty) continue;
+    var hits = TopSolidHost.Pdm.SearchDocumentByName(sources[s], wanted);
+    foreach (var h in hits) { tmplId = h; projLabel = labels[s]; break; }
+    if (!tmplId.IsEmpty) break;
+}
+if (tmplId.IsEmpty) return "Template '" + wanted + "' not found in user or company document template projects.";
+PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();
+if (proj.IsEmpty) return "No current project open.";
+PdmObjectId created = TopSolidHost.Pdm.CreateDocumentWithTemplate(proj, tmplId);
+return "OK: Document '" + TopSolidHost.Pdm.GetName(created) + "' created from template '" + wanted + "' (" + projLabel + ") in project '" + TopSolidHost.Pdm.GetName(proj) + "'.";
+```
+
+---
+
 ## read_parameters
 Pattern: R
 Description: Lists all parameters of the active document

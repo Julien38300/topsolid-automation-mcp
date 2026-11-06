@@ -1,6 +1,6 @@
 # Recettes
 
-216 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
+217 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
 
 ::: warning Source de verite
 La seule source de verite est `server/src/Tools/RecipeTool.cs`. Le tableau detaille « Par categorie » plus bas est maintenu a la main et **derive** : au dernier controle il documentait 6 recettes qui n'existent plus (`count_occurrences`, `find_occurrence`, `list_inclusions_with_reference`, `list_user_properties`, `list_document_properties`, `read_document_property`) et en omettait 11 (`ajouter_inclusion`, `creer_esquisse_rectangle`, `creer_parametre_formule`, `creer_parametre_reel`, `extruder_esquisse`, `get_face_cone_length`, `get_face_cone_radius`, `get_face_cone_semi_angle`, `get_face_torus_major_radius`, `get_face_torus_minor_radius`, `get_item_last_operation_name`).

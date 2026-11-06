@@ -12,13 +12,16 @@ Checks, in order:
 
 1. The catalogue is found and parsed. A zero-entry parse is a failure, not a pass:
    it means the file drifted away from the shape this script understands.
-2. Every dictionary key in the catalogue uses one of the R() / RW() / RD()
+2. Every dictionary key in the catalogue uses one of the R() / RW() / RD() / RN()
    factories. An entry built any other way is not classified and is reported.
 3. Recipe names are unique (a duplicate key throws at static-initialisation time
    and takes the whole server down on the first tool call).
 4. A recipe whose C# body calls a TopSolid write API is declared WritePdm
    (R() -> RW()) or WriteDisk (R() -> RD()), never Read. A Read recipe that
    writes bypasses both the read-only guard and the modification transaction.
+   WritePdmNoTransaction (RN) is the declared exception: PDM writes that
+   TopSolid refuses to run inside a modification transaction (document
+   creation APIs such as IPdm.CreateDocumentWithTemplate).
 5. Recipe bodies use no C# 6 string interpolation. Recipe code is compiled by
    CSharpCodeProvider as C# 5, where $"..." is a syntax error at run time. This
    one is a heuristic, so it is reported as a warning and never blocks.
@@ -44,13 +47,13 @@ CATALOGUE_END = re.compile(r"^[ \t]*private static RecipeEntry\b", re.M)
 
 # A catalogue entry: { "recipe_name", R(...) / RW(...) / RD(...)
 # Names may contain digits (read_3d_points, select_3d_point).
-ENTRY = re.compile(r'\{\s*"([a-z][a-z0-9_]*)"\s*,\s*(R|RW|RD)\(')
+ENTRY = re.compile(r'\{\s*"([a-z][a-z0-9_]*)"\s*,\s*(R|RW|RD|RN)\(')
 
 # Anything shaped like a dictionary entry, whatever it is built from. Used to
 # catch entries that do not go through the three factories.
 ANY_ENTRY = re.compile(r'^[ \t]*\{\s*"([A-Za-z0-9_]+)"\s*,', re.M)
 
-FACTORY_MODE = {"R": "Read", "RW": "WritePdm", "RD": "WriteDisk"}
+FACTORY_MODE = {"R": "Read", "RW": "WritePdm", "RD": "WriteDisk", "RN": "WritePdmNoTransaction"}
 
 # Verbs that mean "this recipe changes something". Matched on the TopSolid
 # facades only (TopSolidHost, TopSolidDesignHost, TopSolidDraftingHost), so
@@ -152,7 +155,7 @@ def main(argv):
         if name not in known:
             failures.append(
                 "L" + str(line_of(source, offset + match.start())) + "  '" + name +
-                "' is a catalogue entry but does not use R() / RW() / RD().")
+                "' is a catalogue entry but does not use R() / RW() / RD() / RN().")
 
     # 3. Duplicate names.
     seen = {}
@@ -172,8 +175,9 @@ def main(argv):
                 "L" + str(entry.line) + "  '" + entry.name + "' is declared Read (R) but "
                 "calls " + ", ".join(hits[:3]) +
                 ("..." if len(hits) > 3 else "") +
-                " - use RW() for a PDM write or RD() for a disk write.")
-        elif entry.factory in ("RW", "RD") and not hits:
+                " - use RW() for a PDM write, RD() for a disk write, " +
+                "or RN() for a PDM write that must run outside a transaction.")
+        elif entry.factory in ("RW", "RD", "RN") and not hits:
             warnings.append(
                 "L" + str(entry.line) + "  '" + entry.name + "' is declared " +
                 entry.mode + " but no TopSolid write call was detected.")
@@ -186,13 +190,14 @@ def main(argv):
                 "$\"...\" interpolation; recipe code is compiled as C# 5.")
 
     # --- Report -------------------------------------------------------------
-    counts = {"Read": 0, "WritePdm": 0, "WriteDisk": 0}
+    counts = {"Read": 0, "WritePdm": 0, "WriteDisk": 0, "WritePdmNoTransaction": 0}
     for entry in entries:
         counts[entry.mode] += 1
     print("  recipes    : " + str(len(entries)))
     print("  Read       : " + str(counts["Read"]))
     print("  WritePdm   : " + str(counts["WritePdm"]))
     print("  WriteDisk  : " + str(counts["WriteDisk"]))
+    print("  WritePdmNT : " + str(counts["WritePdmNoTransaction"]))
 
     # ASCII-safe output, so a cp1252 console in CI cannot turn a report into a
     # UnicodeEncodeError traceback.

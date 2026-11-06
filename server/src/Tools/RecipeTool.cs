@@ -166,6 +166,26 @@ namespace TopSolidMcpServer.Tools
             { "rebuild_document", RW("DOCUMENT", "Rebuilds the active document",
                 "TopSolidHost.Documents.Rebuild(docId);\n" +
                 "__message = \"OK: Document rebuilt.\";") },
+            { "create_document_with_template", RN("DOCUMENT", "Creates a new document in the current project from a named document template (e.g. 'Wooden Part'). Runs outside any modification transaction because TopSolid refuses document creation between StartModification and EndModification. Param: value=template_name (ex: Wooden Part)",
+                "string wanted = \"{value}\";\n" +
+                "PdmObjectId userDocT; PdmObjectId companyDocT; PdmObjectId userProjT; PdmObjectId companyProjT;\n" +
+                "TopSolidHost.Pdm.GetTemplates(out userDocT, out companyDocT, out userProjT, out companyProjT);\n" +
+                "PdmObjectId tmplId = new PdmObjectId();\n" +
+                "string projLabel = \"\";\n" +
+                "PdmObjectId[] sources = new PdmObjectId[] { userDocT, companyDocT };\n" +
+                "string[] labels = new string[] { \"user\", \"company\" };\n" +
+                "for (int s = 0; s < sources.Length; s++)\n" +
+                "{\n" +
+                "    if (sources[s].IsEmpty) continue;\n" +
+                "    var hits = TopSolidHost.Pdm.SearchDocumentByName(sources[s], wanted);\n" +
+                "    foreach (var h in hits) { tmplId = h; projLabel = labels[s]; break; }\n" +
+                "    if (!tmplId.IsEmpty) break;\n" +
+                "}\n" +
+                "if (tmplId.IsEmpty) return \"Template '\" + wanted + \"' not found in user or company document template projects.\";\n" +
+                "PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();\n" +
+                "if (proj.IsEmpty) return \"No current project open.\";\n" +
+                "PdmObjectId created = TopSolidHost.Pdm.CreateDocumentWithTemplate(proj, tmplId);\n" +
+                "return \"OK: Document '\" + TopSolidHost.Pdm.GetName(created) + \"' created from template '\" + wanted + \"' (\" + projLabel + \") in project '\" + TopSolidHost.Pdm.GetName(proj) + \"'.\";") },
 
             // =====================================================================
             // PARAMETERS — Read
@@ -5369,6 +5389,15 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
             return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WriteDisk);
         }
 
+        // RN = writes to the PDM but runs OUTSIDE any modification transaction:
+        // TopSolid refuses document creation (IPdm.CreateDocument,
+        // IPdm.CreateDocumentWithTemplate) between StartModification and
+        // EndModification, so the runtime must not wrap these recipes.
+        private static RecipeEntry RN(string category, string description, string code)
+        {
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WritePdmNoTransaction);
+        }
+
         /// <summary>
         /// Creates the tool.
         /// </summary>
@@ -5462,7 +5491,9 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
             if (recipe.Mode == RecipeEntry.RecipeMode.WritePdm)
                 return ScriptExecutor.Execute(code, true, false, false);
 
-            // Read and WriteDisk: no PDM transaction, and auto-detection disabled.
+            // Read, WriteDisk and WritePdmNoTransaction: no PDM transaction, and
+            // auto-detection disabled. WritePdmNoTransaction needs this on purpose:
+            // TopSolid refuses document creation inside a modification transaction.
             return ScriptExecutor.Execute(code, false, false, false);
         }
 
@@ -5491,6 +5522,7 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
             {
                 case RecipeEntry.RecipeMode.WritePdm: return "[WRITE-PDM]";
                 case RecipeEntry.RecipeMode.WriteDisk: return "[WRITE-DISK]";
+                case RecipeEntry.RecipeMode.WritePdmNoTransaction: return "[WRITE-PDM-NO-TRX]";
                 default: return "[READ]";
             }
         }
@@ -5550,7 +5582,15 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
                 WritePdm,
 
                 /// <summary>Writes outside TopSolid (file on disk, print job). No PDM transaction.</summary>
-                WriteDisk
+                WriteDisk,
+
+                /// <summary>
+                /// Writes to the PDM but must run OUTSIDE any modification transaction:
+                /// TopSolid refuses document creation APIs (IPdm.CreateDocument,
+                /// IPdm.CreateDocumentWithTemplate) between StartModification and
+                /// EndModification, so the runtime must not wrap recipes of this kind.
+                /// </summary>
+                WritePdmNoTransaction
             }
 
             public string Category { get; }

@@ -14,6 +14,7 @@ search_folder
 document_type
 save_document
 rebuild_document
+create_document_with_template
 read_parameters
 read_real_parameter
 read_text_parameter
