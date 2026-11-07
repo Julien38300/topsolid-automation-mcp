@@ -25,8 +25,35 @@ Checks, in order:
 5. Recipe bodies use no C# 6 string interpolation. Recipe code is compiled by
    CSharpCodeProvider as C# 5, where $"..." is a syntax error at run time. This
    one is a heuristic, so it is reported as a warning and never blocks.
+6. Materials / Coatings consistency. TopSolid exposes Materials.* (the active
+   material of the target document - the "Steel Material") and Coatings.* (the
+   active coating - the "coating parameter") with 13 IDENTICAL method names
+   (GetBumpScale, SetBrinellHardnessFactor, SetRockwellFactors, ...). A recipe
+   that calls the wrong interface - or hides which one it calls behind a name
+   that does not say it - produces the coating-vs-material type errors this
+   section is here to catch:
+   6a. A recipe named *material* must not call Coatings.<M> on the target
+       document, and a recipe named *coating* must not call Materials.<M>
+       (hard family confusion).
+   6b. One recipe must not call Materials.* AND Coatings.* on the target
+       document in the same body.
+   6c. Any Materials.<M>/<Coatings.<M> call on the target document requires
+       'material'/'coating' in the recipe name. Reading the .TopCot definition
+       itself (GetAlbedoColor(cotDoc)) is exempt: first argument is not the
+       acted-on document.
+   6d. Legacy alias registrations (Recipes["old"] = Recipes["new"]) must point
+       at an existing catalogue entry, must not collide with a catalogue name
+       and must not be registered twice.
+   6e. A recipe that reads or modifies the active object (anything but the
+       Coatings.SetCoating poser) must report the standard family hint in its
+       catch ("no material set on this document?" / "no coating set on this
+       document?") so real type errors stay diagnosable.
+   6f. Each API that exists on BOTH interfaces is expected to have its twin
+       recipe in both families (get_material_X / get_coating_X, set_material_X
+       / set_coating_X). A missing twin is reported as a warning: the
+       asymmetry can be deliberate.
 
-Checks 1 to 4 are failures. Warnings are printed but do not change the exit code.
+Checks 1 to 4 and 6a to 6e are failures. Warnings are printed but do not change the exit code.
 Exit code 0 = clean. Non-zero = at least one FAIL; CI and `make check` block.
 """
 from __future__ import annotations
@@ -78,6 +105,48 @@ WRITE_CALL = re.compile(
 # which reads as \"$\". A literal $ at the very end of a recipe string would
 # still match, which is why this one is reported as a warning, not a failure.
 INTERPOLATION = re.compile(r'(?<!\\")\$\\"')
+
+# Materials / Coatings consistency ---------------------------------------------
+# TopSolid exposes Materials.* (the active material of the target document,
+# e.g. a steel) and Coatings.* (the active coating) with 13 IDENTICAL method
+# names (GetBumpScale, SetBrinellHardnessFactor, SetRockwellFactors, ...).
+# A "target document" call passes the acted-on document as first argument
+# (docId / targetDoc). Reading the .TopCot definition itself
+# (GetAlbedoColor(cotDoc)) is NOT a target call and is exempt from the rules.
+TARGET_DOC = re.compile(r"(Materials|Coatings)\.(\w+)\(\s*(?:docId|targetDoc)\b")
+
+# Recipes that POSE the active object. Their failure means something else
+# than "none is set", so check 6e does not apply to them.
+ACTIVE_POSET = {"Coatings.SetCoating"}
+
+# The standard diagnostic hint each family must report in its catch, so a
+# type error stays diagnosable instead of being guessed from a generic message.
+STANDARD_MSG = {
+    "Materials": "no material set on this document?",
+    "Coatings": "no coating set on this document?",
+}
+
+# APIs that exist on BOTH interfaces (server/data/graph.json). The catalogue
+# is expected to expose the twin recipe of each, in both families.
+TWIN_APIS = {
+    "GetAnisotropyAngleFactor": "anisotropy_angle_factor",
+    "GetBrinellHardnessFactor": "brinell_hardness_factor",
+    "GetBumpRotation": "bump_rotation",
+    "GetBumpScale": "bump_scale",
+    "GetGlossinessFactor": "glossiness_factor",
+    "GetVickersHardnessFactor": "vickers_hardness_factor",
+    "SetBrinellHardnessFactor": "brinell_hardness_factor",
+    "SetBumpRotation": "bump_rotation",
+    "SetBumpScale": "bump_scale",
+    "SetHomogeneousParameterValue": "homogeneous_parameter_value",
+    "SetIsotropicParameterValue": "isotropic_parameter_value",
+    "SetRockwellFactors": "rockwell_factors",
+    "SetVickersHardnessFactor": "vickers_hardness_factor",
+}
+
+# Legacy alias registration (static constructor of RecipeTool):
+#   Recipes["old_name"] = Recipes["set_material_new_name"];
+ALIAS = re.compile(r'Recipes\["([a-z0-9_]+)"\]\s*=\s*Recipes\["([a-z0-9_]+)"\]')
 
 
 class Entry(object):
@@ -188,6 +257,86 @@ def main(argv):
             warnings.append(
                 "L" + str(entry.line) + "  '" + entry.name + "' looks like it uses "
                 "$\"...\" interpolation; recipe code is compiled as C# 5.")
+
+    # 6. Materials / Coatings consistency (coating parameter vs Steel Material).
+    for entry in entries:
+        calls = TARGET_DOC.findall(entry.body)
+        if not calls:
+            continue
+        interfaces = sorted(set(i for i, m in calls))
+        non_poser_ifaces = set()
+        for iface, meth in calls:
+            if iface + "." + meth not in ACTIVE_POSET:
+                non_poser_ifaces.add(iface)
+        named_material = "material" in entry.name
+        named_coating = "coating" in entry.name
+
+        # 6a. Name says one family, code calls the other: hard confusion.
+        for iface, meth in calls:
+            if iface == "Materials" and named_coating:
+                failures.append(
+                    "L" + str(entry.line) + "  '" + entry.name + "' is named coating "
+                    "but calls Materials." + meth + " on the target document.")
+            if iface == "Coatings" and named_material:
+                failures.append(
+                    "L" + str(entry.line) + "  '" + entry.name + "' is named material "
+                    "but calls Coatings." + meth + " on the target document.")
+
+        # 6b. Both interfaces on the target document in one body.
+        if "Materials" in interfaces and "Coatings" in interfaces:
+            failures.append(
+                "L" + str(entry.line) + "  '" + entry.name + "' calls Materials.* and "
+                "Coatings.* on the target document in the same body - split it.")
+
+        # 6c. The name must state which family it acts on.
+        if "Materials" in interfaces and not named_material:
+            failures.append(
+                "L" + str(entry.line) + "  '" + entry.name + "' calls Materials.* on "
+                "the target document but its name does not say 'material' "
+                "(coating-vs-material confusion risk).")
+        if "Coatings" in interfaces and not named_coating:
+            failures.append(
+                "L" + str(entry.line) + "  '" + entry.name + "' calls Coatings.* on "
+                "the target document but its name does not say 'coating' "
+                "(coating-vs-material confusion risk).")
+
+        # 6e. Standard diagnostic hint per family, so a real type error stays
+        # diagnosable instead of hiding behind a generic catch.
+        if "catch" in entry.body:
+            for iface in sorted(non_poser_ifaces):
+                if STANDARD_MSG[iface] not in entry.body:
+                    failures.append(
+                        "L" + str(entry.line) + "  '" + entry.name + "' calls " + iface +
+                        ".* on the target document but its catch does not report the "
+                        "standard \"" + STANDARD_MSG[iface] + "\" hint.")
+
+    # 6d. Legacy aliases (Recipes["old"] = Recipes["new"]) must resolve. The
+    # registrations live in the static constructor, i.e. outside the catalogue
+    # region, so they are scanned on the whole source.
+    alias_seen = {}
+    for match in ALIAS.finditer(source):
+        old, new = match.group(1), match.group(2)
+        where = "L" + str(line_of(source, match.start()))
+        if old in known:
+            failures.append(where + "  legacy alias '" + old + "' collides with a "
+                            "catalogue entry of the same name.")
+        elif new not in known:
+            failures.append(where + "  legacy alias '" + old + "' points at '" + new +
+                            "' which is not in the catalogue.")
+        elif old in alias_seen:
+            failures.append(where + "  legacy alias '" + old + "' is registered twice.")
+        else:
+            alias_seen[old] = new
+
+    # 6f. Twin recipes across both families for the APIs shared by the two
+    # interfaces (an asymmetry can be deliberate, hence a warning).
+    for api, suffix in sorted(TWIN_APIS.items()):
+        prefix = "get_" if api.startswith("Get") else "set_"
+        for family in ("material", "coating"):
+            expected = prefix + family + "_" + suffix
+            if expected not in known:
+                warnings.append("twin recipe '" + expected + "' (shared API " + api +
+                                ") is missing from the catalogue.")
 
     # --- Report -------------------------------------------------------------
     counts = {"Read": 0, "WritePdm": 0, "WriteDisk": 0, "WritePdmNoTransaction": 0}
