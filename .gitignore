@@ -66,3 +66,6 @@ unsloth_compiled_cache/
 /server/release-staging/
 /TopSolidMcpServer-v*.zip
 /server/SHA256SUMS.txt
+/.localzip_check/
+/.rel182/
+/.rel182_check/
