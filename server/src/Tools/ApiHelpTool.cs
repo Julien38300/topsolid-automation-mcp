@@ -505,12 +505,13 @@ namespace TopSolidMcpServer.Tools
             string header = isFiltered ? $"=== {name} (filtered) - {total} method(s) ===" : $"=== {name} - {total} method(s) ===";
             lines.Add(header + "\n");
 
+            bool withRemarks = displayEdges.Count <= FullRemarksMaxMethods;
             foreach (var group in groups)
             {
                 lines.Add($"--- {group.Key} ({group.Count()} methods) ---");
                 foreach (var edge in group)
                 {
-                    lines.Add(FormatEdge(edge));
+                    lines.Add(FormatEdge(edge, withRemarks));
                 }
                 lines.Add("");
             }
@@ -541,12 +542,13 @@ namespace TopSolidMcpServer.Tools
             // Interfaces in order of their best-ranked method.
             var groups = edges.GroupBy(e => e.Interface ?? "Other");
 
+            bool withRemarks = edges.Count <= FullRemarksMaxMethods;
             foreach (var group in groups)
             {
                 lines.Add($"{group.Key} ({group.Count()} method(s)):");
                 foreach (var edge in group)
                 {
-                    lines.Add("  " + FormatEdge(edge));
+                    lines.Add("  " + FormatEdge(edge, withRemarks));
                 }
                 lines.Add("");
             }
@@ -590,16 +592,78 @@ namespace TopSolidMcpServer.Tools
             return "Other";
         }
 
-        private string FormatEdge(GraphEdge edge)
+        private string FormatEdge(GraphEdge edge, bool withRemarks = false)
         {
-            string signature = !string.IsNullOrEmpty(edge.MethodSignature) 
-                ? edge.MethodSignature 
+            string signature = !string.IsNullOrEmpty(edge.MethodSignature)
+                ? edge.MethodSignature
                 : $"{edge.Interface ?? "Unknown"}.{edge.MethodName}(...)";
 
-            if (!string.IsNullOrEmpty(edge.Description))
-                return string.Format("{0} — {1}", signature, edge.Description);
+            string line = string.IsNullOrEmpty(edge.Description)
+                ? signature
+                : string.Format("{0} — {1}", signature, edge.Description);
 
-            return signature;
+            string tags = RemarkTags(edge);
+            if (tags.Length > 0) line += " " + tags;
+
+            if (withRemarks && !string.IsNullOrWhiteSpace(edge.Remarks))
+                line += "\n      Remarks: " + edge.Remarks.Trim();
+
+            return line;
+        }
+
+        // Official remark sentences (API reference), as counted in graph.json: 63 methods "must not be
+        // called between StartModification and EndModification", 376 need StartModification AND
+        // EnsureIsDirty, 42 need StartModification only. "may be called before" is optional: no tag.
+        private static readonly Regex OutsideTransactionRemark = new Regex(
+            @"must not be called between\s+StartModification", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex InsideWithEnsureIsDirtyRemark = new Regex(
+            @"StartModification\s*\([^)]*\)\s*and\s+EnsureIsDirty\s*\([^)]*\)\s*must be called", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex InsideTransactionRemark = new Regex(
+            @"StartModification\s*\([^)]*\)\s*must be called before|must be called after the\s+StartModification", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        /// <summary>Full remarks are printed under each method when a result lists at most this many.</summary>
+        private const int FullRemarksMaxMethods = 3;
+
+        /// <summary>
+        /// Short tags from the official remarks: transaction rule, obsolescence, and the version for
+        /// methods recent enough (7.20+) to be missing from an older TopSolid.
+        /// </summary>
+        private static string RemarkTags(GraphEdge edge)
+        {
+            var tags = new List<string>();
+            string remarks = edge.Remarks ?? "";
+
+            if (OutsideTransactionRemark.IsMatch(remarks))
+                tags.Add("[outside StartModification]");
+            else if (InsideWithEnsureIsDirtyRemark.IsMatch(remarks))
+                tags.Add("[inside StartModification + EnsureIsDirty]");
+            else if (InsideTransactionRemark.IsMatch(remarks))
+                tags.Add("[inside StartModification]");
+
+            // The signature may already carry [ObsoleteAttribute("...")]: do not repeat the message.
+            bool signatureSaysObsolete = (edge.MethodSignature ?? "").IndexOf("Obsolete", StringComparison.Ordinal) >= 0;
+            if (!string.IsNullOrWhiteSpace(edge.ObsoleteMessage) && !signatureSaysObsolete)
+                tags.Add("[OBSOLETE: " + edge.ObsoleteMessage.Trim() + "]");
+            else if (edge.Deprecated || !string.IsNullOrWhiteSpace(edge.ObsoleteMessage))
+                tags.Add("[OBSOLETE]");
+
+            string since = RecentVersion(edge.Since);
+            if (since != null) tags.Add("[since " + since + "]");
+
+            return string.Join(" ", tags);
+        }
+
+        /// <summary>"7.21.100" gives "7.21"; versions before 7.20 give null.</summary>
+        private static string RecentVersion(string since)
+        {
+            if (string.IsNullOrWhiteSpace(since)) return null;
+            Match m = Regex.Match(since, @"^\s*v?(\d+)\.(\d+)");
+            if (!m.Success) return null;
+
+            int major = int.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture);
+            int minor = int.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture);
+            if (major < 7 || (major == 7 && minor < 20)) return null;
+            return major + "." + minor;
         }
 
         /// <summary>

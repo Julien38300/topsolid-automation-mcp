@@ -145,6 +145,18 @@ Recherche dans les 1728 methodes API. Supporte les noms d'interface, mots-cles F
 Les methodes qui contiennent tous les mots passent en premier. La liste est completee par les methodes qui en contiennent une partie, classees par la rarete des mots trouves (« Move » pese plus que « Document ») dans les noms, interfaces, hints semantiques et descriptions. Chaque methode n'apparait qu'une fois (30 au plus), suivie de 3 astuces d'usage au plus.
 :::
 
+**Etiquettes tirees des remarques officielles** (v1.8.17+), en fin de ligne :
+
+| Etiquette | Sens |
+|---|---|
+| `[outside StartModification]` | TopSolid refuse l'appel dans une transaction (`Pdm.DeleteSeveral`, `Pdm.Save`, `Documents.Open`...) |
+| `[inside StartModification + EnsureIsDirty]` | Appeler `StartModification` puis `EnsureIsDirty(ref docId)` avant |
+| `[inside StartModification]` | Appeler `StartModification` avant |
+| `[OBSOLETE: ...]` | Methode obsolete, avec la methode de remplacement |
+| `[since 7.21]` | Methode apparue en 7.20 ou apres : absente d'un TopSolid plus ancien |
+
+Quand le resultat liste 3 methodes au plus, la remarque officielle complete suit chaque methode (`Remarks: ...`).
+
 ## topsolid_execute_script
 
 Compile et execute du C# 5 **hors transaction de modification** TopSolid.

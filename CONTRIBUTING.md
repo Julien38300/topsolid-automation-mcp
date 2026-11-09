@@ -54,6 +54,17 @@ Ajouter une entree dans le tableau `recipes` :
 
 Categories existantes : PDM, Navigation, Parametres, Geometrie, Esquisse, Assemblage, Materiau, Physique, Attribut, Mise en plan, Export, Comparaison, Audit, Famille, Etat
 
+### 2b. Regenerer les catalogues
+
+Ajouter le nom de la recette a `server/data/recipe-list.txt` (a sa place dans l'ordre de `RecipeTool.cs`), compiler le serveur, puis regenerer `server/data/recipes.md` a partir du code reellement servi :
+
+```powershell
+dotnet build server/src/TopSolidMcpServer.csproj
+python server/scripts/gen-recipes-catalog.py server/src/bin/Debug/net48/TopSolidMcpServer.exe
+```
+
+Ne jamais editer `recipes.md` a la main : `--check` signale un catalogue qui ne correspond plus au code. Une recette dont les seules ecritures sont des appels PDM (`Pdm.SetDescription`, `Pdm.Save`...) tourne sans transaction ; voir [Outils MCP](docs/guide/outils-mcp.md#topsolid-modify-script).
+
 ### 3. Tester
 
 Les tests necessitent **TopSolid 7 actif** avec le document de test ouvert (voir `tests/TestDocument.md`).

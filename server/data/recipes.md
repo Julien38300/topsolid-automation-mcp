@@ -12,8 +12,6 @@ string val = TopSolidHost.Pdm.GetDescription(pdmId);
 return string.IsNullOrEmpty(val) ? "Designation: (empty)" : "Designation: " + val;
 ```
 
----
-
 ## read_name
 Pattern: R
 Description: Reads the name of the active document
@@ -24,8 +22,6 @@ if (docId.IsEmpty) return "No document open.";
 PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
 return "Name: " + TopSolidHost.Pdm.GetName(pdmId);
 ```
-
----
 
 ## read_reference
 Pattern: R
@@ -39,8 +35,6 @@ string val = TopSolidHost.Pdm.GetPartNumber(pdmId);
 return string.IsNullOrEmpty(val) ? "Reference: (empty)" : "Reference: " + val;
 ```
 
----
-
 ## read_manufacturer
 Pattern: R
 Description: Reads the manufacturer of the active document
@@ -52,8 +46,6 @@ PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
 string val = TopSolidHost.Pdm.GetManufacturer(pdmId);
 return string.IsNullOrEmpty(val) ? "Manufacturer: (empty)" : "Manufacturer: " + val;
 ```
-
----
 
 ## read_pdm_properties
 Pattern: R
@@ -74,66 +66,45 @@ sb.AppendLine("Manufacturer: " + (string.IsNullOrEmpty(mfr) ? "(empty)" : mfr));
 return sb.ToString();
 ```
 
----
-
 ## set_designation
-Pattern: R
+Pattern: RW
 Description: Sets the designation. Param: value
 
 ```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
-PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
+if (docId.IsEmpty) { __message = "No document open."; return; }
 TopSolidHost.Pdm.SetDescription(pdmId, "{value}");
-TopSolidHost.Pdm.Save(pdmId, true);
-return "OK: Designation → {value}";
+__message = "OK: Designation → {value}";
 ```
 
----
-
 ## set_name
-Pattern: R
+Pattern: RW
 Description: Sets the name. Param: value
 
 ```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
-PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
+if (docId.IsEmpty) { __message = "No document open."; return; }
 TopSolidHost.Pdm.SetName(pdmId, "{value}");
-return "OK: Name → {value}";
+__message = "OK: Name → {value}";
 ```
 
----
-
 ## set_reference
-Pattern: R
+Pattern: RW
 Description: Sets the reference. Param: value
 
 ```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
-PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
+if (docId.IsEmpty) { __message = "No document open."; return; }
 TopSolidHost.Pdm.SetPartNumber(pdmId, "{value}");
-TopSolidHost.Pdm.Save(pdmId, true);
-return "OK: Reference → {value}";
+__message = "OK: Reference → {value}";
 ```
 
----
-
 ## set_manufacturer
-Pattern: R
+Pattern: RW
 Description: Sets the manufacturer. Param: value
 
 ```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
-PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
+if (docId.IsEmpty) { __message = "No document open."; return; }
 TopSolidHost.Pdm.SetManufacturer(pdmId, "{value}");
-TopSolidHost.Pdm.Save(pdmId, true);
-return "OK: Manufacturer → {value}";
+__message = "OK: Manufacturer → {value}";
 ```
-
----
 
 ## read_current_project
 Pattern: R
@@ -144,8 +115,6 @@ PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();
 if (projId.IsEmpty) return "No current project.";
 return "Project: " + TopSolidHost.Pdm.GetName(projId);
 ```
-
----
 
 ## read_project_contents
 Pattern: R
@@ -172,13 +141,9 @@ listRecursive = (parentId, indent) => {
     }
 };
 listRecursive(projId, "  ");
-sb.Insert(sb.ToString().IndexOf('\
-') + 1, "(" + totalFolders + " folders, " + totalDocs + " documents)\
-");
+sb.Insert(sb.ToString().IndexOf('\n') + 1, "(" + totalFolders + " folders, " + totalDocs + " documents)\n");
 return sb.ToString();
 ```
-
----
 
 ## search_document
 Pattern: R
@@ -198,8 +163,6 @@ foreach (var r in results)
 return sb.ToString();
 ```
 
----
-
 ## search_folder
 Pattern: R
 Description: Searches for a folder by name (CONTAINS). Param: value
@@ -214,8 +177,6 @@ foreach (var r in results)
     sb.AppendLine("  " + TopSolidHost.Pdm.GetName(r));
 return sb.ToString();
 ```
-
----
 
 ## document_type
 Pattern: R
@@ -242,21 +203,14 @@ else sb.AppendLine("→ Part");
 return sb.ToString();
 ```
 
----
-
 ## save_document
-Pattern: R
+Pattern: RW
 Description: Saves the active document
 
 ```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
-PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
-TopSolidHost.Pdm.Save(pdmId, true);
-return "OK: Document saved.";
+if (docId.IsEmpty) { __message = "No document open."; return; }
+__message = "OK: Document saved.";
 ```
-
----
 
 ## rebuild_document
 Pattern: RW
@@ -266,8 +220,6 @@ Description: Rebuilds the active document
 TopSolidHost.Documents.Rebuild(docId);
 __message = "OK: Document rebuilt.";
 ```
-
----
 
 ## create_document_with_template
 Pattern: RN
@@ -295,8 +247,6 @@ PdmObjectId created = TopSolidHost.Pdm.CreateDocumentWithTemplate(proj, tmplId);
 return "OK: Document '" + TopSolidHost.Pdm.GetName(created) + "' created from template '" + wanted + "' (" + projLabel + ") in project '" + TopSolidHost.Pdm.GetName(proj) + "'.";
 ```
 
----
-
 ## read_parameters
 Pattern: R
 Description: Lists all parameters of the active document
@@ -321,8 +271,6 @@ foreach (var p in pList)
 return sb.ToString();
 ```
 
----
-
 ## read_real_parameter
 Pattern: R
 Description: Reads a real parameter by name. Param: value=name
@@ -343,8 +291,6 @@ foreach (var p in pList)
 return "Parameter '{value}' not found.";
 ```
 
----
-
 ## read_text_parameter
 Pattern: R
 Description: Reads a text parameter by name. Param: value=name
@@ -362,19 +308,17 @@ foreach (var p in pList)
 return "Parameter '{value}' not found.";
 ```
 
----
-
 ## set_real_parameter
 Pattern: RW
 Description: Sets a real parameter. Param: value=name:SIvalue (e.g. Length:0.15)
 
 ```csharp
 string[] parts = "{value}".Split(':');
-if (parts.Length != 2) return "Format: name:SIvalue (e.g. Length:0.15)";
+if (parts.Length != 2) { __message = "Format: name:SIvalue (e.g. Length:0.15)"; return; }
 string pName = parts[0].Trim();
 double newVal;
 if (!double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out newVal))
-    return "Invalid value: " + parts[1];
+    { __message = "Invalid value: " + parts[1]; return; }
 var pList = TopSolidHost.Parameters.GetParameters(docId);
 foreach (var p in pList)
 {
@@ -388,8 +332,6 @@ foreach (var p in pList)
 }
 __message = "Parameter '" + pName + "' not found.";
 ```
-
----
 
 ## set_text_parameter
 Pattern: RW
@@ -413,8 +355,6 @@ foreach (var p in pList)
 }
 __message = "Parameter '" + pName + "' not found.";
 ```
-
----
 
 ## creer_parametre_reel
 Pattern: RW
@@ -442,8 +382,6 @@ TopSolidHost.Elements.SetName(paramId, paramName);
 __message = "OK: parameter '" + paramName + "' created (" + unit + ", value=" + siVal.ToString("F6") + ")";
 ```
 
----
-
 ## creer_parametre_formule
 Pattern: RW
 Description: Creates a new formula-driven real parameter in the active document. Param: value=name:unit:formula (e.g. DiagBolt:Length:Longueur * 1.414). The formula uses TopSolid expression syntax (parameter names, operators, SI units). Supported units: Length, Mass, Angle, NoUnit.
@@ -470,11 +408,9 @@ TopSolidHost.Elements.SetName(paramId, paramName);
 __message = "OK: formula parameter '" + paramName + "' created (" + unit + ", formula='" + formula + "')";
 ```
 
----
-
 ## creer_esquisse_rectangle
 Pattern: RW
-Description: Cree une esquisse 2D rectangulaire dans le document actif. Param: value=largeur:hauteur (mm)
+Description: Creates a 2D rectangular sketch in the active document. Param: value=width:height (mm)
 
 ```csharp
 string[] parts = "{value}".Split(':');
@@ -503,11 +439,9 @@ TopSolidHost.Sketches2D.EndModification();
 __message = "OK: sketch Esquisse_Rectangle created (" + widthMm + "x" + heightMm + " mm)";
 ```
 
----
-
 ## extruder_esquisse
 Pattern: RW
-Description: Extrude la derniere esquisse 2D du document actif en solide 3D. Param: value=hauteur_mm
+Description: Extrudes the last 2D sketch of the active document into a 3D solid. Param: value=height_mm
 
 ```csharp
 double heightMm;
@@ -527,15 +461,13 @@ foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(
 __message = "OK: extrusion of " + heightMm + "mm created (added to all representations)";
 ```
 
----
-
 ## ajouter_inclusion
 Pattern: RW
-Description: Ajoute une inclusion d'un document piece dans le document assemblage actif. Param: value=nom_document_piece
+Description: Adds an inclusion of a part document into the active assembly document. Param: value=part_document_name
 
 ```csharp
 if (!TopSolidDesignHost.Assemblies.IsAssembly(docId))
-    { __message = "ERROR: le document actif n'est pas un assemblage"; return; }
+    { __message = "ERROR: the active document is not an assembly"; return; }
 DocumentId partDoc = DocumentId.Empty;
 string targetName = "{value}".Trim();
 var allDocs = TopSolidHost.Documents.GetOpenDocuments();
@@ -548,13 +480,11 @@ foreach (DocumentId d in allDocs) {
     }
 }
 if (partDoc.IsEmpty)
-    { __message = "ERROR: document '" + targetName + "' introuvable (ouvrir le document d'abord)"; return; }
+    { __message = "ERROR: document '" + targetName + "' not found (open the document first)"; return; }
 ElementId positioningId = TopSolidDesignHost.Assemblies.CreatePositioning(docId);
 TopSolidDesignHost.Assemblies.CreateInclusion(docId, positioningId, null, partDoc, null, null, null, true, ElementId.Empty, ElementId.Empty, false, false, false, false, Transform3D.Identity, false);
-__message = "OK: document '" + targetName + "' inclus dans l'assemblage";
+__message = "OK: document '" + targetName + "' included in the assembly";
 ```
-
----
 
 ## read_3d_points
 Pattern: R
@@ -575,8 +505,6 @@ foreach (var pt in points)
 return sb.ToString();
 ```
 
----
-
 ## read_3d_frames
 Pattern: R
 Description: Lists 3D frames of the document
@@ -592,8 +520,6 @@ foreach (var f in frames)
 return sb.ToString();
 ```
 
----
-
 ## list_sketches
 Pattern: R
 Description: Lists sketches of the document
@@ -608,8 +534,6 @@ foreach (var s in sketches)
     sb.AppendLine("  " + TopSolidHost.Elements.GetFriendlyName(s));
 return sb.ToString();
 ```
-
----
 
 ## read_shapes
 Pattern: R
@@ -629,8 +553,6 @@ foreach (var s in shapes)
 }
 return sb.ToString();
 ```
-
----
 
 ## read_operations
 Pattern: R
@@ -652,8 +574,6 @@ foreach (var op in ops)
 return sb.ToString();
 ```
 
----
-
 ## detect_assembly
 Pattern: R
 Description: Detects if the document is an assembly and lists parts
@@ -666,13 +586,11 @@ try { isAsm = TopSolidDesignHost.Assemblies.IsAssembly(docId); } catch { return 
 if (!isAsm) return "This document is NOT an assembly.";
 var parts = TopSolidDesignHost.Assemblies.GetParts(docId);
 var sb = new System.Text.StringBuilder();
-sb.AppendLine("Assembly: " + parts.Count + " pieces");
+sb.AppendLine("Assembly: " + parts.Count + " parts");
 foreach (var p in parts)
     sb.AppendLine("  " + TopSolidHost.Elements.GetFriendlyName(p));
 return sb.ToString();
 ```
-
----
 
 ## list_inclusions
 Pattern: R
@@ -698,12 +616,9 @@ foreach (var op in ops)
         count++;
     }
 }
-sb.Insert(0, "Inclusions: " + count + "\
-");
+sb.Insert(0, "Inclusions: " + count + "\n");
 return sb.ToString();
 ```
-
----
 
 ## detect_family
 Pattern: R
@@ -717,8 +632,6 @@ if (!isFamily) return "This document is NOT a family.";
 bool isExplicit = TopSolidHost.Families.IsExplicit(docId);
 return "Family detected (" + (isExplicit ? "explicit" : "implicit") + ").";
 ```
-
----
 
 ## read_family_codes
 Pattern: R
@@ -735,8 +648,6 @@ foreach (var c in codes)
     sb.AppendLine("  " + c);
 return sb.ToString();
 ```
-
----
 
 ## open_drafting
 Pattern: R
@@ -766,8 +677,6 @@ foreach (var backRef in backRefs)
 return "No drafting found for this document.";
 ```
 
----
-
 ## detect_drafting
 Pattern: R
 Description: Detects if the document is a drafting and provides info
@@ -786,8 +695,6 @@ string format = TopSolidDraftingHost.Draftings.GetDraftingFormatName(docId);
 sb.AppendLine("Format: " + format);
 return sb.ToString();
 ```
-
----
 
 ## list_drafting_views
 Pattern: R
@@ -811,8 +718,6 @@ foreach (var v in views)
 return sb.ToString();
 ```
 
----
-
 ## detect_bom
 Pattern: R
 Description: Detects if the document is a BOM
@@ -826,8 +731,6 @@ if (!isBom) return "This document is NOT a BOM.";
 int cols = TopSolidDesignHost.Boms.GetColumnCount(docId);
 return "BOM detected (" + cols + " columns).";
 ```
-
----
 
 ## read_bom_columns
 Pattern: R
@@ -850,8 +753,6 @@ for (int i = 0; i < colCount; i++)
 }
 return sb.ToString();
 ```
-
----
 
 ## read_drafting_scale
 Pattern: R
@@ -877,8 +778,6 @@ foreach (var v in views)
 return sb.ToString();
 ```
 
----
-
 ## read_drafting_format
 Pattern: R
 Description: Reads the format (size, margins) of a drafting
@@ -901,8 +800,6 @@ var mode = TopSolidDraftingHost.Draftings.GetProjectionMode(docId);
 sb.AppendLine("Projection mode: " + mode);
 return sb.ToString();
 ```
-
----
 
 ## read_main_projection
 Pattern: R
@@ -936,8 +833,6 @@ foreach (var v in views)
 return sb.ToString();
 ```
 
----
-
 ## read_bom_contents
 Pattern: R
 Description: Reads the full BOM contents (rows and cells)
@@ -966,8 +861,6 @@ foreach (int rowId in children)
 return sb.ToString();
 ```
 
----
-
 ## count_bom_rows
 Pattern: R
 Description: Counts active BOM rows
@@ -988,8 +881,6 @@ foreach (int rowId in children)
 }
 return "Active rows: " + active + ", inactive: " + inactive + ", total: " + (active+inactive);
 ```
-
----
 
 ## detect_unfolding
 Pattern: R
@@ -1013,8 +904,6 @@ if (!partDoc.IsEmpty)
 return sb.ToString();
 ```
 
----
-
 ## read_bend_features
 Pattern: R
 Description: Lists bends of an unfolding (angles, radii, lengths)
@@ -1033,8 +922,6 @@ foreach (var b in bends)
     sb.AppendLine("  Pli: angle=" + (b.Angle*180/3.14159).ToString("F1") + "deg, radius=" + (b.Radius*1000).ToString("F2") + "mm, length=" + (b.Length*1000).ToString("F2") + "mm");
 return sb.ToString();
 ```
-
----
 
 ## read_unfolding_dimensions
 Pattern: R
@@ -1071,8 +958,6 @@ if (sb.Length <= 18) return "No unfolding properties found.";
 return sb.ToString();
 ```
 
----
-
 ## set_drafting_scale
 Pattern: RW
 Description: Sets the global scale of a drafting. Param: value=denominator (e.g. '10' for 1:10)
@@ -1090,8 +975,6 @@ TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);
 __message = "OK: drafting scale set to 1:" + denom;
 ```
 
----
-
 ## set_drafting_format
 Pattern: RW
 Description: Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')
@@ -1106,8 +989,6 @@ if (string.IsNullOrWhiteSpace(fmt)) { __message = "ERROR: value required (e.g. '
 TopSolidDraftingHost.Draftings.SetDraftingFormatName(docId, fmt);
 __message = "OK: drafting format set to " + fmt;
 ```
-
----
 
 ## set_projection_quality
 Pattern: RW
@@ -1127,10 +1008,8 @@ TopSolidDraftingHost.Draftings.SetProjectionMode(docId, pm);
 __message = "OK: projection quality set to " + pm;
 ```
 
----
-
 ## print_drafting
-Pattern: R
+Pattern: RD
 Description: Prints the current drafting (all pages, black & white, 300 DPI, printed to scale)
 
 ```csharp
@@ -1151,8 +1030,6 @@ try {
 }
 ```
 
----
-
 ## activate_bom_row
 Pattern: RW
 Description: Activates a BOM row by its index (0-based, among root-children). Param: value=row_index
@@ -1171,8 +1048,6 @@ int rowId = children[idx];
 TopSolidDesignHost.Boms.ActivateRow(docId, rowId);
 __message = "OK: BOM row " + idx + " activated.";
 ```
-
----
 
 ## deactivate_bom_row
 Pattern: RW
@@ -1193,8 +1068,6 @@ TopSolidDesignHost.Boms.DeactivateRow(docId, rowId);
 __message = "OK: BOM row " + idx + " deactivated.";
 ```
 
----
-
 ## list_exporters
 Pattern: R
 Description: Lists all available exporters
@@ -1212,8 +1085,6 @@ for (int i = 0; i < count; i++)
 }
 return sb.ToString();
 ```
-
----
 
 ## export_step
 Pattern: RD
@@ -1255,7 +1126,7 @@ return "OK: Exported to STEP → " + path;
 ```
 
 ## export_dxf
-Pattern: R
+Pattern: RD
 Description: Exports to DXF. Param: value=path
 
 ```csharp
@@ -1278,10 +1149,8 @@ TopSolidHost.Documents.Export(idx, docId, path);
 return "OK: Exported to DXF → " + path;
 ```
 
----
-
 ## export_pdf
-Pattern: R
+Pattern: RD
 Description: Exports to PDF. Param: value=path
 
 ```csharp
@@ -1303,8 +1172,6 @@ if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.Get
 TopSolidHost.Documents.Export(idx, docId, path);
 return "OK: Exported to PDF → " + path;
 ```
-
----
 
 ## export_file
 Pattern: RD
@@ -1439,8 +1306,6 @@ string val = TopSolidHost.Pdm.GetTextUserProperty(pdmId, "{value}");
 return string.IsNullOrEmpty(val) ? "Propriete '{value}': (empty)" : "Propriete '{value}': " + val;
 ```
 
----
-
 ## audit_part
 Pattern: R
 Description: Full part audit: properties, parameters, shapes, mass, volume
@@ -1459,8 +1324,7 @@ sb.AppendLine("Reference: " + (string.IsNullOrEmpty(pn) ? "(EMPTY!)" : pn));
 sb.AppendLine("Type: " + TopSolidHost.Documents.GetTypeFullName(docId));
 // Parametres
 var pList = TopSolidHost.Parameters.GetParameters(docId);
-sb.AppendLine("\
-Parameters: " + pList.Count);
+sb.AppendLine("\nParameters: " + pList.Count);
 foreach (var p in pList)
 {
     string name = TopSolidHost.Elements.GetFriendlyName(p);
@@ -1474,8 +1338,7 @@ foreach (var p in pList)
 }
 // Shapes
 var shapes = TopSolidHost.Shapes.GetShapes(docId);
-sb.AppendLine("\
-Shapes: " + shapes.Count);
+sb.AppendLine("\nShapes: " + shapes.Count);
 foreach (var s in shapes)
 {
     string sName = TopSolidHost.Elements.GetFriendlyName(s);
@@ -1483,14 +1346,19 @@ foreach (var s in shapes)
     int faces = TopSolidHost.Shapes.GetFaceCount(s);
     sb.AppendLine("  " + sName + " : " + faces + " faces, volume=" + (vol * 1e9).ToString("F1") + " cm3");
 }
+int invCount = 0;
+foreach (var el in TopSolidHost.Elements.GetElements(docId))
+{
+    bool inv = false; try { inv = TopSolidHost.Elements.IsInvalid(el); } catch { }
+    if (inv) { if (invCount == 0) sb.AppendLine("\nINVALID ELEMENTS (ERRORS):"); sb.AppendLine("  [INVALID!] " + TopSolidHost.Elements.GetFriendlyName(el) + " (" + TopSolidHost.Elements.GetTypeFullName(el) + ")"); invCount++; }
+}
+sb.AppendLine("\nInvalid elements: " + invCount);
 return sb.ToString();
 ```
 
----
-
 ## audit_assembly
 Pattern: R
-Description: Full assembly audit: parts, inclusions, mass
+Description: Full assembly audit: parts, inclusions, mass, invalid elements
 
 ```csharp
 DocumentId docId = TopSolidHost.Documents.EditedDocument;
@@ -1506,8 +1374,7 @@ string desc = TopSolidHost.Pdm.GetDescription(pdmId);
 sb.AppendLine("Designation: " + (string.IsNullOrEmpty(desc) ? "(EMPTY!)" : desc));
 // Pieces
 var parts = TopSolidDesignHost.Assemblies.GetParts(docId);
-sb.AppendLine("\
-Parts: " + parts.Count);
+sb.AppendLine("\nParts: " + parts.Count);
 // Inclusions
 var ops = TopSolidHost.Operations.GetOperations(docId);
 int inclCount = 0;
@@ -1518,24 +1385,29 @@ foreach (var op in ops)
     if (isInclusion)
     {
         string opName = TopSolidHost.Elements.GetFriendlyName(op);
+        bool isInv = false; try { isInv = TopSolidHost.Elements.IsInvalid(op); } catch { }
         DocumentId defDoc = TopSolidDesignHost.Assemblies.GetInclusionDefinitionDocument(op);
         string defName = "?";
         if (!defDoc.IsEmpty) { PdmObjectId defPdm = TopSolidHost.Documents.GetPdmObject(defDoc); defName = TopSolidHost.Pdm.GetName(defPdm); }
-        sb.AppendLine("  " + opName + " -> " + defName);
+        sb.AppendLine("  " + (isInv ? "[INVALID!] " : "") + opName + " -> " + defName);
         inclCount++;
     }
 }
-sb.Insert(sb.ToString().IndexOf("\
-Pieces"), "Inclusions: " + inclCount + "\
-");
+int invCount = 0;
+foreach (var el in TopSolidHost.Elements.GetElements(docId))
+{
+    bool inv = false; try { inv = TopSolidHost.Elements.IsInvalid(el); } catch { }
+    if (inv) { if (invCount == 0) sb.AppendLine("\nINVALID ELEMENTS (ERRORS):"); sb.AppendLine("  [INVALID!] " + TopSolidHost.Elements.GetFriendlyName(el) + " (" + TopSolidHost.Elements.GetTypeFullName(el) + ")"); invCount++; }
+}
+sb.AppendLine("\nInvalid elements: " + invCount);
+int idxParts = sb.ToString().IndexOf("\nParts:");
+if (idxParts >= 0) sb.Insert(idxParts, "Inclusions: " + inclCount + "\n"); else sb.AppendLine("Inclusions: " + inclCount);
 return sb.ToString();
 ```
 
----
-
 ## check_part
 Pattern: R
-Description: Quality check: designation, reference, material filled?
+Description: Quality check: designation, reference, material filled, and 0 invalid elements?
 
 ```csharp
 DocumentId docId = TopSolidHost.Documents.EditedDocument;
@@ -1557,12 +1429,16 @@ if (pList.Count == 0) { sb.AppendLine("WARNING: No parameters"); warnings++; }
 // Shapes
 var shapes = TopSolidHost.Shapes.GetShapes(docId);
 if (shapes.Count == 0) { sb.AppendLine("WARNING: No shape (empty part?)"); warnings++; } else sb.AppendLine("OK: " + shapes.Count + " shape(s)");
-sb.AppendLine("\
-" + (warnings == 0 ? "RESULT: Part OK" : "RESULT: " + warnings + " warning(s)"));
+int invCount = 0;
+foreach (var el in TopSolidHost.Elements.GetElements(docId))
+{
+    bool inv = false; try { inv = TopSolidHost.Elements.IsInvalid(el); } catch { }
+    if (inv) { sb.AppendLine("ERROR: [INVALID ELEMENT] " + TopSolidHost.Elements.GetFriendlyName(el) + " (" + TopSolidHost.Elements.GetTypeFullName(el) + ")"); invCount++; warnings++; }
+}
+if (invCount == 0) sb.AppendLine("OK: 0 invalid elements");
+sb.AppendLine("\n" + (warnings == 0 ? "RESULT: Part OK" : "RESULT: " + warnings + " warning(s)/error(s)"));
 return sb.ToString();
 ```
-
----
 
 ## read_mass_volume
 Pattern: R
@@ -1588,8 +1464,6 @@ if (sb.Length == 0) return "No physical properties found.";
 return sb.ToString();
 ```
 
----
-
 ## read_material_density
 Pattern: R
 Description: Calculates density from document mass/volume
@@ -1609,18 +1483,28 @@ if (vol > 0 && mass > 0) return "Density: " + (mass / vol).ToString("F0") + " kg
 return "Mass or volume not available.";
 ```
 
----
-
 ## invoke_command
-Pattern: R
-Description: Executes a TopSolid menu command by name. Param: value=command_name
+Pattern: RW
+Description: Executes a TopSolid menu command by name (case-insensitive FullName or short class name). Param: value=command_name
 
 ```csharp
-bool result = TopSolidHost.Application.InvokeCommand("{value}");
-return result ? "OK: Command '{value}' executee." : "ERREUR: Commande '{value}' non trouvee ou echec.";
+string __raw = "{value}";
+string[] __cands = __raw.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
+bool result = false;
+string __used = __raw;
+foreach (string __c in __cands)
+{
+    string __t = __c.Trim();
+    if (string.IsNullOrEmpty(__t)) continue;
+    if (TopSolidHost.Application.InvokeCommand(__t))
+    {
+        result = true;
+        __used = __t;
+        break;
+    }
+}
+__message = result ? "OK: Command '" + __used + "' executed." : "ERROR: Command '" + (__cands.Length > 0 ? __cands[0] : __raw) + "' not found or failed.";
 ```
-
----
 
 ## read_occurrences
 Pattern: R
@@ -1645,12 +1529,10 @@ foreach (var p in parts)
     try { defDoc = TopSolidDesignHost.Assemblies.GetOccurrenceDefinition(p); } catch {}
     string defName = "";
     if (!defDoc.IsEmpty) { PdmObjectId defPdm = TopSolidHost.Documents.GetPdmObject(defDoc); defName = TopSolidHost.Pdm.GetName(defPdm); }
-    sb.AppendLine("  " + name + (isOcc ? " [occ]" : "") + (!string.IsNullOrEmpty(occName) ? " nom=" + occName : "") + (!string.IsNullOrEmpty(defName) ? " -> " + defName : ""));
+    sb.AppendLine("  " + name + (isOcc ? " [occ]" : "") + (!string.IsNullOrEmpty(occName) ? " name=" + occName : "") + (!string.IsNullOrEmpty(defName) ? " -> " + defName : ""));
 }
 return sb.ToString();
 ```
-
----
 
 ## rename_occurrence
 Pattern: RW
@@ -1675,26 +1557,19 @@ foreach (var p in parts)
 __message = "Occurrence '" + oldName + "' not found.";
 ```
 
----
-
 ## set_user_property
-Pattern: R
+Pattern: RW
 Description: Sets a text user property. Param: value=property_name:value
 
 ```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
+if (docId.IsEmpty) { __message = "No document open."; return; }
 int idx = "{value}".IndexOf(':');
-if (idx < 0) return "Format: property_name:value";
+if (idx < 0) { __message = "Format: property_name:value"; return; }
 string propName = "{value}".Substring(0, idx).Trim();
 string propVal = "{value}".Substring(idx + 1).Trim();
-PdmObjectId pdmId = TopSolidHost.Documents.GetPdmObject(docId);
 TopSolidHost.Pdm.SetTextUserProperty(pdmId, propName, propVal);
-TopSolidHost.Pdm.Save(pdmId, true);
-return "OK: Property '" + propName + "' = '" + propVal + "'";
+__message = "OK: Property '" + propName + "' = '" + propVal + "'";
 ```
-
----
 
 ## read_bounding_box
 Pattern: R
@@ -1731,8 +1606,6 @@ if (sb.Length <= 22) return "No bounding box dimensions found.";
 return sb.ToString();
 ```
 
----
-
 ## read_part_dimensions
 Pattern: R
 Description: Reads dimensions (Height, Width, Length, Box Size) from system properties
@@ -1759,8 +1632,6 @@ if (sb.Length <= 22) return "No dimensions found (not a part?)";
 return sb.ToString();
 ```
 
----
-
 ## read_inertia_moments
 Pattern: R
 Description: Reads principal inertia moments from system properties
@@ -1784,8 +1655,6 @@ if (sb.Length <= 28) return "No inertia moments found.";
 return sb.ToString();
 ```
 
----
-
 ## list_project_documents
 Pattern: R
 Description: Lists ALL project documents with designation and reference
@@ -1807,12 +1676,9 @@ foreach (var item in items)
     sb.AppendLine("  " + name + " | Designation: " + (string.IsNullOrEmpty(desc) ? "-" : desc) + " | Ref: " + (string.IsNullOrEmpty(pn) ? "-" : pn));
     docCount++;
 }
-sb.Insert(0, "Documents: " + docCount + "\
-");
+sb.Insert(0, "Documents: " + docCount + "\n");
 return sb.ToString();
 ```
-
----
 
 ## check_project
 Pattern: R
@@ -1840,13 +1706,10 @@ foreach (var item in items)
         alertes++;
     }
 }
-sb.AppendLine("\
-Total: " + total + " documents, " + alertes + " warning(s)");
+sb.AppendLine("\nTotal: " + total + " documents, " + alertes + " warning(s)");
 sb.AppendLine(alertes == 0 ? "RESULTAT: Projet OK" : "RESULT: " + alertes + " document(s) to complete");
 return sb.ToString();
 ```
-
----
 
 ## compare_parameters
 Pattern: R
@@ -1897,12 +1760,9 @@ foreach (var p in paramsA)
 }
 foreach (var kvp in dictB)
     { sb.AppendLine("  ONLY B: " + kvp.Key + " = " + kvp.Value); diffs++; }
-sb.AppendLine("\
-" + diffs + " difference(s)");
+sb.AppendLine("\n" + diffs + " difference(s)");
 return sb.ToString();
 ```
-
----
 
 ## compare_document_operations
 Pattern: R
@@ -1933,8 +1793,6 @@ for (int i = 0; i < max; i++)
 return sb.ToString();
 ```
 
----
-
 ## compare_document_entities
 Pattern: R
 Description: Compares entities (shapes, sketches, points, frames) between the current and another document. Param: value=other_doc_name
@@ -1955,10 +1813,10 @@ sb.AppendLine(nameA + " vs " + nameB);
 int shA = TopSolidHost.Shapes.GetShapes(docIdA).Count;
 int shB = TopSolidHost.Shapes.GetShapes(docIdB).Count;
 sb.AppendLine((shA==shB?"  =":"  *") + " Shapes: " + shA + " vs " + shB);
-// Esquisses
+// Sketches
 int skA = TopSolidHost.Sketches2D.GetSketches(docIdA).Count;
 int skB = TopSolidHost.Sketches2D.GetSketches(docIdB).Count;
-sb.AppendLine((skA==skB?"  =":"  *") + " Esquisses: " + skA + " vs " + skB);
+sb.AppendLine((skA==skB?"  =":"  *") + " Sketches: " + skA + " vs " + skB);
 // Points 3D
 int ptA = TopSolidHost.Geometries3D.GetPoints(docIdA).Count;
 int ptB = TopSolidHost.Geometries3D.GetPoints(docIdB).Count;
@@ -1978,8 +1836,6 @@ sb.AppendLine((paA==paB?"  =":"  *") + " Parameters: " + paA + " vs " + paB);
 return sb.ToString();
 ```
 
----
-
 ## copy_parameters_to
 Pattern: RW
 Description: Copies parameter values from the current document to another. Param: value=target_doc_name
@@ -1990,7 +1846,7 @@ DocumentId srcDocId = TopSolidHost.Documents.EditedDocument;
 if (srcDocId.IsEmpty) { __message = "No document open."; return; }
 var results = TopSolidHost.Pdm.SearchDocumentByName(projId, "{value}");
 if (results.Count == 0) { __message = "Document '{value}' not found."; return; }
-// Lire les params source
+// Read the source parameters
 var srcParams = TopSolidHost.Parameters.GetParameters(srcDocId);
 var srcDict = new System.Collections.Generic.Dictionary<string, object[]>();
 foreach (var p in srcParams)
@@ -2007,7 +1863,7 @@ foreach (var p in srcParams)
     else if (t == ParameterType.Boolean)
         srcDict[name] = new object[] { t, TopSolidHost.Parameters.GetBooleanValue(p) };
 }
-// Appliquer sur le doc cible
+// Apply to the target document
 DocumentId tgtDocId = TopSolidHost.Documents.GetDocument(results[0]);
 TopSolidHost.Documents.EnsureIsDirty(ref tgtDocId);
 var tgtParams = TopSolidHost.Parameters.GetParameters(tgtDocId);
@@ -2032,8 +1888,6 @@ string tgtName = TopSolidHost.Pdm.GetName(results[0]);
 __message = "OK: " + applied + " parameters copied to '" + tgtName + "' (" + skipped + " skipped).";
 ```
 
----
-
 ## copy_pdm_properties_to
 Pattern: RW
 Description: Copies designation/reference/manufacturer from current to another document. Param: value=target_doc_name
@@ -2046,12 +1900,12 @@ PdmObjectId srcPdmId = TopSolidHost.Documents.GetPdmObject(srcDocId);
 var results = TopSolidHost.Pdm.SearchDocumentByName(projId, "{value}");
 if (results.Count == 0) { __message = "Document '{value}' not found."; return; }
 PdmObjectId tgtPdmId = results[0];
-// Lire source
+// Read source
 string desc = TopSolidHost.Pdm.GetDescription(srcPdmId);
 string pn = TopSolidHost.Pdm.GetPartNumber(srcPdmId);
 string mfr = TopSolidHost.Pdm.GetManufacturer(srcPdmId);
 string mfrPn = TopSolidHost.Pdm.GetManufacturerPartNumber(srcPdmId);
-// Ecrire cible
+// Write target
 TopSolidHost.Pdm.SetDescription(tgtPdmId, desc);
 TopSolidHost.Pdm.SetPartNumber(tgtPdmId, pn);
 TopSolidHost.Pdm.SetManufacturer(tgtPdmId, mfr);
@@ -2060,10 +1914,8 @@ string tgtName = TopSolidHost.Pdm.GetName(tgtPdmId);
 __message = "OK: PDM properties copied to '" + tgtName + "' (designation=" + desc + ", ref=" + pn + ", manufacturer=" + mfr + ").";
 ```
 
----
-
 ## batch_export_step
-Pattern: R
+Pattern: RD
 Description: Exports ALL project parts to STEP in a folder. Param: value=folder_path
 
 ```csharp
@@ -2104,8 +1956,6 @@ foreach (var d in docs)
 return "Batch STEP export: " + exported + " exported, " + skipped + " skipped. Folder: " + outputDir;
 ```
 
----
-
 ## batch_read_property
 Pattern: R
 Description: Reads a specific property across all project documents. Param: value=property_name
@@ -2145,8 +1995,6 @@ foreach (var d in docs)
 return sb.ToString();
 ```
 
----
-
 ## find_modified_documents
 Pattern: R
 Description: Lists unsaved (dirty) documents of the project
@@ -2170,12 +2018,9 @@ foreach (var d in docs)
     }
     catch { continue; }
 }
-sb.Insert(0, "Modified documents (unsaved): " + dirty + "/" + docs.Count + "\
-");
+sb.Insert(0, "Modified documents (unsaved): " + dirty + "/" + docs.Count + "\n");
 return sb.ToString();
 ```
-
----
 
 ## batch_clear_author
 Pattern: RW
@@ -2199,8 +2044,6 @@ foreach (var d in docs)
 __message = "OK: Author cleared on " + cleared + "/" + docs.Count + " documents.";
 ```
 
----
-
 ## batch_set_designation
 Pattern: RW
 Description: Sets Designation (Description) on ALL documents of the current project. Param: value=new_designation
@@ -2219,8 +2062,6 @@ foreach (var d in docs)
 }
 __message = "OK: Designation set to '{value}' on " + updated + " document(s).";
 ```
-
----
 
 ## batch_set_reference
 Pattern: RW
@@ -2241,8 +2082,6 @@ foreach (var d in docs)
 __message = "OK: Reference set to '{value}' on " + updated + " document(s).";
 ```
 
----
-
 ## batch_set_manufacturer
 Pattern: RW
 Description: Sets Manufacturer on ALL documents of the current project. Param: value=new_manufacturer
@@ -2262,8 +2101,6 @@ foreach (var d in docs)
 __message = "OK: Manufacturer set to '{value}' on " + updated + " document(s).";
 ```
 
----
-
 ## clear_document_author
 Pattern: RW
 Description: Clears the Author field on the current document
@@ -2272,8 +2109,6 @@ Description: Clears the Author field on the current document
 TopSolidHost.Pdm.SetAuthor(pdmId, "");
 __message = "OK: Author cleared on current document.";
 ```
-
----
 
 ## batch_check_virtual
 Pattern: R
@@ -2298,12 +2133,9 @@ foreach (var d in docs)
     }
     catch { continue; }
 }
-sb.Insert(0, "Virtual: " + virtuel + ", Non-virtual: " + nonVirtuel + "/" + docs.Count + "\
-");
+sb.Insert(0, "Virtual: " + virtuel + ", Non-virtual: " + nonVirtuel + "/" + docs.Count + "\n");
 return sb.ToString();
 ```
-
----
 
 ## batch_enable_virtual
 Pattern: RW
@@ -2331,8 +2163,6 @@ foreach (var d in docs)
 __message = "OK: Virtual mode enabled on " + activated + " document(s).";
 ```
 
----
-
 ## enable_virtual_document
 Pattern: RW
 Description: Enables virtual mode on the current document
@@ -2341,8 +2171,6 @@ Description: Enables virtual mode on the current document
 TopSolidHost.Documents.SetVirtualDocumentMode(docId, true);
 __message = "OK: Virtual mode enabled on current document.";
 ```
-
----
 
 ## check_family_drivers
 Pattern: R
@@ -2375,12 +2203,9 @@ foreach (var d in drivers)
         withDesc++;
     }
 }
-sb.AppendLine("\
-" + withDesc + " with designation, " + withoutDesc + " without.");
+sb.AppendLine("\n" + withDesc + " with designation, " + withoutDesc + " without.");
 return sb.ToString();
 ```
-
----
 
 ## fix_family_drivers
 Pattern: RW
@@ -2402,7 +2227,7 @@ foreach (var d in drivers)
     if (string.IsNullOrEmpty(desc))
     {
         string name = TopSolidHost.Elements.GetFriendlyName(d);
-        // Deduire designation du nom: CamelCase split + espaces
+        // Derive the designation from the name: CamelCase split + spaces
         var result = new System.Text.StringBuilder();
         for (int i = 0; i < name.Length; i++)
         {
@@ -2422,8 +2247,6 @@ foreach (var d in drivers)
 }
 __message = "OK: " + fixed_ + " drivers fixed with designation inferred from name.";
 ```
-
----
 
 ## batch_check_family_drivers
 Pattern: R
@@ -2462,12 +2285,9 @@ foreach (var d in docs)
     }
     catch { continue; }
 }
-sb.Insert(0, "Families: " + famCount + ", Drivers without designation: " + totalMissing + "\
-");
+sb.Insert(0, "Families: " + famCount + ", Drivers without designation: " + totalMissing + "\n");
 return sb.ToString();
 ```
-
----
 
 ## audit_parameter_names
 Pattern: R
@@ -2510,22 +2330,18 @@ int conventions = (camel>0?1:0) + (under>0?1:0) + (space>0?1:0) + (upper>0?1:0) 
 if (conventions > 1) sb.AppendLine("  *** ATTENTION: " + conventions + " mixed conventions! ***");
 else sb.AppendLine("  Single convention: OK");
 // Doublons proches (Levenshtein simple)
-sb.AppendLine("\
-Doublons potentiels (casse differente):");
+sb.AppendLine("\nDoublons potentiels (casse differente):");
 int dupes = 0;
 for (int i = 0; i < names.Count; i++)
     for (int j = i + 1; j < names.Count; j++)
         if (names[i].ToLower() == names[j].ToLower())
         { sb.AppendLine("  '" + names[i] + "' vs '" + names[j] + "'"); dupes++; }
 if (dupes == 0) sb.AppendLine("  No duplicates.");
-// Liste tous les noms pour inspection visuelle par le LLM
-sb.AppendLine("\
-Liste complete:");
+// List every name for visual inspection by the LLM
+sb.AppendLine("\nListe complete:");
 foreach (var n in names) sb.AppendLine("  " + n);
 return sb.ToString();
 ```
-
----
 
 ## batch_audit_parameter_names
 Pattern: R
@@ -2557,10 +2373,9 @@ foreach (var d in docs)
     }
     catch { continue; }
 }
-// Trouver les variantes (meme nom, casse differente)
+// Find the variants (same name, different casing)
 sb.AppendLine("Unique names (excl. system): " + allNames.Count);
-sb.AppendLine("\
-Variantes de casse detectees:");
+sb.AppendLine("\nVariantes de casse detectees:");
 int variants = 0;
 foreach (var kvp in allNames)
 {
@@ -2571,15 +2386,12 @@ foreach (var kvp in allNames)
     }
 }
 if (variants == 0) sb.AppendLine("  No variants.");
-// Lister tous les noms pour inspection par le LLM (fautes de frappe)
-sb.AppendLine("\
-Tous les noms de parametres du projet:");
+// List every name for LLM inspection (typos)
+sb.AppendLine("\nAll parameter names in the project:");
 foreach (var kvp in allNames)
     sb.AppendLine("  " + kvp.Value[0]);
 return sb.ToString();
 ```
-
----
 
 ## batch_audit_driver_designations
 Pattern: R
@@ -2599,8 +2411,7 @@ foreach (var d in docs)
         DocumentId dId = TopSolidHost.Documents.GetDocument(d);
         if (!TopSolidHost.Families.IsFamily(dId)) continue;
         string famName = TopSolidHost.Pdm.GetName(d);
-        sb.AppendLine("\
-" + famName + ":");
+        sb.AppendLine("\n" + famName + ":");
         var drivers = TopSolidHost.Families.GetCatalogColumnParameters(dId);
         foreach (var drv in drivers)
         {
@@ -2614,8 +2425,6 @@ foreach (var d in docs)
 }
 return sb.ToString();
 ```
-
----
 
 ## read_revision_history
 Pattern: R
@@ -2645,8 +2454,6 @@ foreach (var maj in majors)
 return sb.ToString();
 ```
 
----
-
 ## compare_revisions
 Pattern: R
 Description: Compares parameters of the current revision with the previous one
@@ -2655,7 +2462,7 @@ Description: Compares parameters of the current revision with the previous one
 DocumentId curDocId = TopSolidHost.Documents.EditedDocument;
 if (curDocId.IsEmpty) return "No document open.";
 PdmObjectId curPdmId = TopSolidHost.Documents.GetPdmObject(curDocId);
-// Lire les parametres du document courant
+// Read the parameters of the current document
 var paramsNow = TopSolidHost.Parameters.GetParameters(curDocId);
 var dictNow = new System.Collections.Generic.Dictionary<string, string>();
 foreach (var p in paramsNow)
@@ -2669,14 +2476,14 @@ foreach (var p in paramsNow)
     else if (t == ParameterType.Boolean) v = TopSolidHost.Parameters.GetBooleanValue(p).ToString();
     dictNow[n] = v;
 }
-// Trouver la revision precedente
+// Find the previous revision
 var majors = TopSolidHost.Pdm.GetMajorRevisions(curPdmId);
 if (majors.Count == 0) return "No revision found.";
 var lastMajor = majors[majors.Count - 1];
 var minors = TopSolidHost.Pdm.GetMinorRevisions(lastMajor);
 if (minors.Count < 2) return "Only one revision, nothing to compare.";
 var prevMinor = minors[minors.Count - 2];
-// Ouvrir la revision precedente en lecture seule
+// Open the previous revision read-only
 DocumentId prevDocId = TopSolidHost.Documents.GetMinorRevisionDocument(prevMinor);
 var paramsPrev = TopSolidHost.Parameters.GetParameters(prevDocId);
 var dictPrev = new System.Collections.Generic.Dictionary<string, string>();
@@ -2711,12 +2518,9 @@ foreach (var kvp in dictNow)
 foreach (var kvp in dictPrev)
     { sb.AppendLine("  SUPPRIME: " + kvp.Key + " = " + kvp.Value); diffs++; }
 if (diffs == 0) sb.AppendLine("  No parameter differences.");
-else sb.AppendLine("\
-" + diffs + " difference(s)");
+else sb.AppendLine("\n" + diffs + " difference(s)");
 return sb.ToString();
 ```
-
----
 
 ## export_bom_csv
 Pattern: R
@@ -2731,12 +2535,12 @@ if (!isBom) return "This document is not a BOM.";
 int colCount = TopSolidDesignHost.Boms.GetColumnCount(docId);
 int rootRow = TopSolidDesignHost.Boms.GetRootRow(docId);
 var sb = new System.Text.StringBuilder();
-// En-tetes
+// Headers
 var headers = new System.Collections.Generic.List<string>();
 for (int i = 0; i < colCount; i++)
     headers.Add(TopSolidDesignHost.Boms.GetColumnTitle(docId, i));
 sb.AppendLine(string.Join(";", headers));
-// Lignes
+// Rows
 var children = TopSolidDesignHost.Boms.GetRowChildrenRows(docId, rootRow);
 foreach (int rowId in children)
 {
@@ -2749,8 +2553,6 @@ foreach (int rowId in children)
 return sb.ToString();
 ```
 
----
-
 ## check_missing_materials
 Pattern: R
 Description: Lists project parts without assigned material
@@ -2758,37 +2560,38 @@ Description: Lists project parts without assigned material
 ```csharp
 PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();
 if (projId.IsEmpty) return "No current project.";
-List<PdmObjectId> folders; List<PdmObjectId> docs;
-TopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);
-var items = docs;
+List<PdmObjectId> allDocs = new List<PdmObjectId>();
+Action<PdmObjectId> collectDocs = null;
+collectDocs = (parentId) => {
+    List<PdmObjectId> folders; List<PdmObjectId> docs;
+    TopSolidHost.Pdm.GetConstituents(parentId, out folders, out docs);
+    if (docs != null) allDocs.AddRange(docs);
+    if (folders != null) foreach (var f in folders) collectDocs(f);
+};
+collectDocs(projId);
 var sb = new System.Text.StringBuilder();
 sb.AppendLine("=== VERIFICATION MATERIALS ===");
 int missing = 0; int total = 0;
-foreach (var item in items)
+foreach (var item in allDocs)
 {
+    string ext = "";
+    TopSolidHost.Pdm.GetType(item, out ext);
+    if (!string.Equals(ext, ".TopPrt", StringComparison.OrdinalIgnoreCase)) continue;
     string name = TopSolidHost.Pdm.GetName(item);
     try
     {
         DocumentId dId = TopSolidHost.Documents.GetDocument(item);
         if (dId.IsEmpty) continue;
         total++;
-        var pList = TopSolidHost.Parameters.GetParameters(dId);
-        double mass = 0;
-        foreach (var p in pList)
-        {
-            if (TopSolidHost.Elements.GetFriendlyName(p) == "Mass")
-            { mass = TopSolidHost.Parameters.GetRealValue(p); break; }
-        }
-        if (mass <= 0) { sb.AppendLine("  SANS MATERIAU: " + name); missing++; }
+        DocumentId matId = TopSolidDesignHost.Parts.GetMaterial(dId);
+        if (matId.IsEmpty) { sb.AppendLine("  SANS MATERIAU: " + name); missing++; }
+        else { sb.AppendLine("  OK: " + name + " -> " + TopSolidHost.Documents.GetName(matId)); }
     }
     catch { continue; }
 }
-sb.AppendLine("\
-" + missing + "/" + total + " part(s) without material.");
+sb.AppendLine("\n" + missing + "/" + total + " part(s) without material.");
 return sb.ToString();
 ```
-
----
 
 ## assembly_mass_report
 Pattern: R
@@ -2822,8 +2625,6 @@ foreach (var p in pList)
 return sb.ToString();
 ```
 
----
-
 ## read_material
 Pattern: R
 Description: Reads part material (mass and calculated density)
@@ -2849,8 +2650,6 @@ if (mass > 0)
 else sb.AppendLine("No material assigned (mass = 0).");
 return sb.ToString();
 ```
-
----
 
 ## export_stl
 Pattern: RD
@@ -2964,15 +2763,13 @@ sb.AppendLine("Total: " + total + " parts (" + counts.Count + " unique reference
 return sb.ToString();
 ```
 
----
-
 ## save_all_project
-Pattern: R
+Pattern: RW
 Description: Saves all documents of the current project
 
 ```csharp
 PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();
-if (projId.IsEmpty) return "No current project.";
+if (projId.IsEmpty) { __message = "No current project."; return; }
 List<PdmObjectId> folders; List<PdmObjectId> docs;
 TopSolidHost.Pdm.GetConstituents(projId, out folders, out docs);
 var items = docs;
@@ -2981,10 +2778,8 @@ foreach (var item in items)
 {
     try { TopSolidHost.Pdm.Save(item, true); saved++; } catch { continue; }
 }
-return "OK: " + saved + "/" + items.Count + " documents saved.";
+__message = "OK: " + saved + "/" + items.Count + " documents saved.";
 ```
-
----
 
 ## open_document_by_name
 Pattern: R
@@ -2999,8 +2794,6 @@ DocumentId dId = TopSolidHost.Documents.GetDocument(results[0]);
 TopSolidHost.Documents.Open(ref dId);
 return "OK: Document '" + TopSolidHost.Pdm.GetName(results[0]) + "' opened.";
 ```
-
----
 
 ## list_folder_documents
 Pattern: R
@@ -3034,8 +2827,6 @@ foreach (var d in subDocs)
 return sb.ToString();
 ```
 
----
-
 ## summarize_project
 Pattern: R
 Description: Project summary: document count by type, folders, size
@@ -3062,8 +2853,6 @@ foreach (var kv in types)
 return sb.ToString();
 ```
 
----
-
 ## list_documents_without_reference
 Pattern: R
 Description: Lists project documents without reference (empty part number)
@@ -3084,12 +2873,9 @@ foreach (var d in docs)
         missing++;
     }
 }
-sb.Insert(0, "Documents sans reference: " + missing + "/" + docs.Count + "\
-");
+sb.Insert(0, "Documents sans reference: " + missing + "/" + docs.Count + "\n");
 return sb.ToString();
 ```
-
----
 
 ## list_documents_without_designation
 Pattern: R
@@ -3111,12 +2897,9 @@ foreach (var d in docs)
         missing++;
     }
 }
-sb.Insert(0, "Documents sans designation: " + missing + "/" + docs.Count + "\
-");
+sb.Insert(0, "Documents sans designation: " + missing + "/" + docs.Count + "\n");
 return sb.ToString();
 ```
-
----
 
 ## count_documents_by_type
 Pattern: R
@@ -3141,8 +2924,6 @@ foreach (var kv in types)
     sb.AppendLine("  " + kv.Key + ": " + kv.Value);
 return sb.ToString();
 ```
-
----
 
 ## search_parts_by_material
 Pattern: R
@@ -3177,12 +2958,9 @@ foreach (var d in docs)
     }
     catch { continue; }
 }
-sb.Insert(0, "Parts found: " + count + "\
-");
+sb.Insert(0, "Parts found: " + count + "\n");
 return sb.ToString();
 ```
-
----
 
 ## read_where_used
 Pattern: R
@@ -3208,8 +2986,6 @@ foreach (var br in backRefs)
 }
 return sb.ToString();
 ```
-
----
 
 ## attr_read_all
 Pattern: R
@@ -3243,8 +3019,6 @@ foreach (var s in shapes)
 return sb.ToString();
 ```
 
----
-
 ## attr_set_color
 Pattern: RW
 Description: Sets color. If 1 shape: direct. If multiple: asks selection. Param: value=R,G,B (e.g. 0,0,255)
@@ -3269,8 +3043,6 @@ TopSolidHost.Elements.SetColor(target, new Color((byte)r, (byte)g, (byte)b));
 __message = "OK: " + TopSolidHost.Elements.GetFriendlyName(target) + " → RGB(" + r + "," + g + "," + b + ")";
 ```
 
----
-
 ## attr_set_color_all
 Pattern: RW
 Description: Sets color on ALL elements. Param: value=R,G,B
@@ -3291,8 +3063,6 @@ foreach (var s in shapes)
 __message = "OK: " + count + " element(s) → RGB(" + r + "," + g + "," + b + ")";
 ```
 
----
-
 ## attr_read_color
 Pattern: R
 Description: Reads element colors
@@ -3310,12 +3080,10 @@ foreach (var s in shapes)
         Color c = TopSolidHost.Elements.GetColor(s);
         sb.AppendLine(name + ": RGB(" + c.R + "," + c.G + "," + c.B + ")");
     }
-    else sb.AppendLine(name + ": (pas de couleur)");
+    else sb.AppendLine(name + ": (no colour)");
 }
 return sb.ToString();
 ```
-
----
 
 ## attr_set_transparency
 Pattern: RW
@@ -3336,10 +3104,8 @@ else if (shapes.Count > 1)
 }
 else { __message = "No shape."; return; }
 TopSolidHost.Elements.SetTransparency(target, transp);
-__message = "OK: transparence " + transp.ToString("F1") + " sur " + TopSolidHost.Elements.GetFriendlyName(target);
+__message = "OK: transparency " + transp.ToString("F1") + " on " + TopSolidHost.Elements.GetFriendlyName(target);
 ```
-
----
 
 ## attr_read_transparency
 Pattern: R
@@ -3355,12 +3121,10 @@ foreach (var s in shapes)
     string name = TopSolidHost.Elements.GetFriendlyName(s);
     if (TopSolidHost.Elements.HasTransparency(s))
         sb.AppendLine(name + ": " + TopSolidHost.Elements.GetTransparency(s).ToString("F2"));
-    else sb.AppendLine(name + ": (pas de transparence)");
+    else sb.AppendLine(name + ": (no transparency)");
 }
 return sb.ToString();
 ```
-
----
 
 ## attr_list_layers
 Pattern: R
@@ -3377,8 +3141,6 @@ foreach (var l in layers)
 return sb.ToString();
 ```
 
----
-
 ## attr_assign_layer
 Pattern: RW
 Description: Assigns an element to a layer. Param: value=element_name:layer_name
@@ -3388,7 +3150,7 @@ int idx = "{value}".IndexOf(':');
 if (idx < 0) { __message = "Format: element_name:layer_name"; return; }
 string elemName = "{value}".Substring(0, idx).Trim();
 string layerName = "{value}".Substring(idx + 1).Trim();
-// Trouver le calque
+// Find the layer
 var layers = TopSolidHost.Layers.GetLayers(docId);
 ElementId layerId = ElementId.Empty;
 foreach (var l in layers)
@@ -3397,21 +3159,19 @@ foreach (var l in layers)
     { layerId = l; break; }
 }
 if (layerId.IsEmpty) { __message = "Layer '" + layerName + "' not found."; return; }
-// Trouver l'element
+// Find the element
 var elems = TopSolidHost.Elements.GetElements(docId);
 foreach (var e in elems)
 {
     if (TopSolidHost.Elements.GetFriendlyName(e).IndexOf(elemName, StringComparison.OrdinalIgnoreCase) >= 0)
     {
         TopSolidHost.Layers.SetLayer(e, layerId);
-        __message = "OK: " + TopSolidHost.Elements.GetFriendlyName(e) + " -> calque " + layerName;
+        __message = "OK: " + TopSolidHost.Elements.GetFriendlyName(e) + " -> layer " + layerName;
         return;
     }
 }
 __message = "Element '" + elemName + "' not found.";
 ```
-
----
 
 ## attr_replace_color
 Pattern: RW
@@ -3427,7 +3187,7 @@ int sr, sg, sb2, dr, dg, db;
 if (!int.TryParse(src[0].Trim(), out sr) || !int.TryParse(src[1].Trim(), out sg) || !int.TryParse(src[2].Trim(), out sb2) ||
     !int.TryParse(dst[0].Trim(), out dr) || !int.TryParse(dst[1].Trim(), out dg) || !int.TryParse(dst[2].Trim(), out db))
 { __message = "Invalid RGB values."; return; }
-// Chercher dans les shapes du document
+// Search in the document shapes
 var shapes = TopSolidHost.Shapes.GetShapes(docId);
 int changed = 0;
 int tolerance = 50; // tolerance RGB
@@ -3444,7 +3204,7 @@ foreach (var s in shapes)
         }
     }
 }
-// Chercher aussi dans les operations (inclusions dans un assemblage)
+// Search the operations too (inclusions inside an assembly)
 var ops = TopSolidHost.Operations.GetOperations(docId);
 foreach (var op in ops)
 {
@@ -3461,8 +3221,6 @@ foreach (var op in ops)
 }
 __message = changed + " element(s) changed from RGB(" + sr + "," + sg + "," + sb2 + ") to RGB(" + dr + "," + dg + "," + db + ")";
 ```
-
----
 
 ## select_shape
 Pattern: R
@@ -3488,8 +3246,6 @@ sb.AppendLine("Type: " + TopSolidHost.Elements.GetTypeFullName(selected));
 return sb.ToString();
 ```
 
----
-
 ## select_face
 Pattern: R
 Description: Asks the user to select a face and returns its info
@@ -3509,8 +3265,6 @@ sb.AppendLine("Surface type: " + surfType);
 return sb.ToString();
 ```
 
----
-
 ## get_face_cone_length
 Pattern: R
 Description: Gets the length of a selected cone face (mm). Requires a cone face selection.
@@ -3528,8 +3282,6 @@ try {
 }
 ```
 
----
-
 ## get_face_cone_radius
 Pattern: R
 Description: Gets the base radius of a selected cone face (mm). Requires a cone face selection.
@@ -3546,8 +3298,6 @@ try {
     return "Error (is the selection a cone face?): " + ex.Message;
 }
 ```
-
----
 
 ## get_face_cone_semi_angle
 Pattern: R
@@ -3567,8 +3317,6 @@ try {
 }
 ```
 
----
-
 ## get_face_torus_major_radius
 Pattern: R
 Description: Gets the major radius of a selected torus face (mm). Requires a torus face selection.
@@ -3585,8 +3333,6 @@ try {
     return "Error (is the selection a torus face?): " + ex.Message;
 }
 ```
-
----
 
 ## get_face_torus_minor_radius
 Pattern: R
@@ -3605,8 +3351,6 @@ try {
 }
 ```
 
----
-
 ## get_item_last_operation_name
 Pattern: R
 Description: Gets the name of the last operation that produced a selected face.
@@ -3624,8 +3368,6 @@ try {
 }
 ```
 
----
-
 ## select_3d_point
 Pattern: R
 Description: Asks the user to click a 3D point and returns coordinates
@@ -3637,34 +3379,6 @@ UserAnswerType answer = TopSolidHost.User.AskPoint3D(q, default(SmartPoint3D), o
 if (answer != UserAnswerType.Ok) return "Selection cancelled.";
 return "Point: (" + (selected.X * 1000).ToString("F2") + ", " + (selected.Y * 1000).ToString("F2") + ", " + (selected.Z * 1000).ToString("F2") + ") mm";
 ```
-
----
-
-## attr_read_face_colors
-Pattern: R
-Description: Reads individual face colors
-
-```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
-var shapes = TopSolidHost.Shapes.GetShapes(docId);
-if (shapes.Count == 0) return "No shape.";
-var sb = new System.Text.StringBuilder();
-foreach (var s in shapes)
-{
-    string sName = TopSolidHost.Elements.GetFriendlyName(s);
-    var faces = TopSolidHost.Shapes.GetFaces(s);
-    sb.AppendLine(sName + " (" + faces.Count + " faces):");
-    foreach (var f in faces)
-    {
-        Color c = TopSolidHost.Shapes.GetFaceColor(f);
-        sb.AppendLine("  R=" + c.R + " G=" + c.G + " B=" + c.B);
-    }
-}
-return sb.ToString();
-```
-
----
 
 ## list_positionings
 Pattern: R
@@ -3694,8 +3408,6 @@ sb.Insert(0, "Positionings: " + count + " (" + underCount + " underconstrained)"
 return sb.ToString();
 ```
 
----
-
 ## is_positioning_underconstrained
 Pattern: R
 Description: Tells if a positioning is underconstrained. Param: value=positioning_name (exact or substring)
@@ -3720,8 +3432,6 @@ foreach (var op in ops)
 return "Positioning '" + target + "' not found (use list_positionings).";
 ```
 
----
-
 ## get_material_brinell_hardness_factor
 Pattern: R
 Description: Get the Brinell hardness factor of the active material (from its standards file). Reports (also) error when no material is set
@@ -3739,8 +3449,6 @@ catch (Exception ex)
     return "Error (no material set on this document?): " + ex.Message;
 }
 ```
-
----
 
 ## get_material_vickers_hardness_factor
 Pattern: R
@@ -3760,8 +3468,6 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_material_glossiness_factor
 Pattern: R
 Description: Get the glossiness factor of the active material. Reports (also) error when no material is set
@@ -3779,8 +3485,6 @@ catch (Exception ex)
     return "Error (no material set on this document?): " + ex.Message;
 }
 ```
-
----
 
 ## get_material_bump_scale
 Pattern: R
@@ -3800,8 +3504,6 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_material_bump_rotation
 Pattern: R
 Description: Get the bump texture rotation of the active material (radians). Reports (also) error when no material is set
@@ -3819,8 +3521,6 @@ catch (Exception ex)
     return "Error (no material set on this document?): " + ex.Message;
 }
 ```
-
----
 
 ## get_material_anisotropy_angle_factor
 Pattern: R
@@ -3840,8 +3540,6 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_coating_brinell_hardness_factor
 Pattern: R
 Description: Get the Brinell hardness factor of the active coating
@@ -3859,8 +3557,6 @@ catch (Exception ex)
     return "Error (no coating set on this document?): " + ex.Message;
 }
 ```
-
----
 
 ## get_coating_vickers_hardness_factor
 Pattern: R
@@ -3880,8 +3576,6 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_coating_glossiness_factor
 Pattern: R
 Description: Get the glossiness factor of the active coating
@@ -3899,8 +3593,6 @@ catch (Exception ex)
     return "Error (no coating set on this document?): " + ex.Message;
 }
 ```
-
----
 
 ## get_coating_bump_scale
 Pattern: R
@@ -3920,8 +3612,6 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_coating_bump_rotation
 Pattern: R
 Description: Get the bump texture rotation of the active coating (radians)
@@ -3940,8 +3630,6 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_coating_anisotropy_angle_factor
 Pattern: R
 Description: Get the anisotropy angle factor of the active coating
@@ -3959,8 +3647,6 @@ catch (Exception ex)
     return "Error (no coating set on this document?): " + ex.Message;
 }
 ```
-
----
 
 ## get_profiles_folder
 Pattern: R
@@ -3982,8 +3668,6 @@ catch (Exception ex)
     return "Error: " + ex.Message;
 }
 ```
-
----
 
 ## get_operation_version
 Pattern: R
@@ -4014,8 +3698,6 @@ foreach (var op in ops)
 }
 return "Operation '" + target + "' not found (use list_operations).";
 ```
-
----
 
 ## get_edge_faces
 Pattern: R
@@ -4052,8 +3734,6 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_edge_ellipse_curve
 Pattern: R
 Description: Gets the ellipse (plane + radii, mm) of a selected elliptical edge
@@ -4088,8 +3768,6 @@ catch (Exception ex)
     return "Error (is the selection an elliptical edge?): " + ex.Message;
 }
 ```
-
----
 
 ## smooth_sketch_profiles
 Pattern: RW
@@ -4130,13 +3808,36 @@ catch (Exception ex)
 }
 ```
 
----
+## attr_read_face_colors
+Pattern: R
+Description: Reads individual face colors
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "No document open.";
+var shapes = TopSolidHost.Shapes.GetShapes(docId);
+if (shapes.Count == 0) return "No shape.";
+var sb = new System.Text.StringBuilder();
+foreach (var s in shapes)
+{
+    string sName = TopSolidHost.Elements.GetFriendlyName(s);
+    var faces = TopSolidHost.Shapes.GetFaces(s);
+    sb.AppendLine(sName + " (" + faces.Count + " faces):");
+    foreach (var f in faces)
+    {
+        Color c = TopSolidHost.Shapes.GetFaceColor(f);
+        sb.AppendLine("  R=" + c.R + " G=" + c.G + " B=" + c.B);
+    }
+}
+return sb.ToString();
+```
 
 ## set_angular_scale
 Pattern: RW
 Description: Sets the angular scale factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetAngularScale(docId, value);
@@ -4148,13 +3849,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_anisotropy_angle_factor
 Pattern: RW
 Description: Sets the anisotropy angle factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetAnisotropyAngleFactor(docId, value);
@@ -4166,13 +3866,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_brinell_hardness_factor
 Pattern: RW
 Description: Sets the Brinell hardness factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetBrinellHardnessFactor(docId, value);
@@ -4184,13 +3883,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_bulk_modulus
 Pattern: RW
 Description: Sets the bulk modulus of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetBulkModulus(docId, value);
@@ -4202,13 +3900,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_bump_rotation
 Pattern: RW
 Description: Sets the bump texture rotation angle of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetBumpRotation(docId, value);
@@ -4220,13 +3917,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_bump_scale
 Pattern: RW
 Description: Sets the bump texture scale factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetBumpScale(docId, value);
@@ -4238,13 +3934,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_cutting_force
 Pattern: RW
 Description: Sets the cutting force of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetCuttingForce(docId, value);
@@ -4256,13 +3951,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_cutting_force_increment
 Pattern: RW
 Description: Sets the cutting force increment of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetCuttingForceIncrement(docId, value);
@@ -4274,13 +3968,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_elastic_limit
 Pattern: RW
 Description: Sets the elastic limit of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetElasticLimit(docId, value);
@@ -4292,13 +3985,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_elongation_at_break
 Pattern: RW
 Description: Sets the elongation at break of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetElongationAtBreak(docId, value);
@@ -4310,13 +4002,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_glossiness_factor
 Pattern: RW
 Description: Sets the glossiness factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetGlossinessFactor(docId, value);
@@ -4328,13 +4019,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_melting_temperature
 Pattern: RW
 Description: Sets the melting temperature of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetMeltingTemperature(docId, value);
@@ -4346,13 +4036,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_plastic_strain_ratio
 Pattern: RW
 Description: Sets the plastic strain ratio of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetPlasticStrainRatio(docId, value);
@@ -4364,13 +4053,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_poisson_ratio
 Pattern: RW
 Description: Sets the Poisson ratio of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetPoissonRatio(docId, value);
@@ -4382,13 +4070,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_section_reduction_at_break
 Pattern: RW
 Description: Sets the section reduction at break of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetSectionReductionAtBreak(docId, value);
@@ -4400,13 +4087,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_shear_modulus
 Pattern: RW
 Description: Sets the shear modulus of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetShearModulus(docId, value);
@@ -4418,13 +4104,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_shrinkage_factor
 Pattern: RW
 Description: Sets the shrinkage factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetShrinkageFactor(docId, value);
@@ -4436,13 +4121,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_specific_heat_capacity
 Pattern: RW
 Description: Sets the specific heat capacity of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetSpecificHeatCapacity(docId, value);
@@ -4454,13 +4138,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_thermal_conductivity
 Pattern: RW
 Description: Sets the thermal conductivity of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetThermalConductivity(docId, value);
@@ -4472,13 +4155,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_thermal_expansion_coefficient
 Pattern: RW
 Description: Sets the thermal expansion coefficient of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetThermalExpansionCoefficient(docId, value);
@@ -4490,13 +4172,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_ultimate_stress
 Pattern: RW
 Description: Sets the ultimate stress of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetUltimateStress(docId, value);
@@ -4508,13 +4189,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_vertical_angular_scale
 Pattern: RW
 Description: Sets the vertical angular scale factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetVerticalAngularScale(docId, value);
@@ -4526,13 +4206,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_vickers_hardness_factor
 Pattern: RW
 Description: Sets the Vickers hardness factor of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetVickersHardnessFactor(docId, value);
@@ -4544,13 +4223,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_young_modulus
 Pattern: RW
 Description: Sets the Young modulus of the material applied to the edited document. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Materials.SetYoungModulus(docId, value);
@@ -4562,13 +4240,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_homogeneous_parameter_value
 Pattern: RW
 Description: Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false
 
 ```csharp
+string raw = string.IsNullOrWhiteSpace("{value}") ? null : "{value}".Trim().ToLowerInvariant();
 bool parsed = false;
 if (raw != null) { bool.TryParse(raw, out parsed); }
 if (raw != null && !parsed && raw != "true" && raw != "false")
@@ -4586,13 +4263,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_isotropic_parameter_value
 Pattern: RW
 Description: Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false
 
 ```csharp
+string raw = string.IsNullOrWhiteSpace("{value}") ? null : "{value}".Trim().ToLowerInvariant();
 bool parsed = false;
 if (raw != null) { bool.TryParse(raw, out parsed); }
 if (raw != null && !parsed && raw != "true" && raw != "false")
@@ -4610,13 +4286,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_rockwell_factors
 Pattern: RW
 Description: Sets the Rockwell factors (A,B,C) of the material applied to the edited document. Param: value=A,B,C (double or 'null')
 
 ```csharp
+    string raw = "{value}".Trim();
     string[] parts = raw.Split(',');
     if (parts.Length != 3)
     {
@@ -4645,13 +4320,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_specular_color
 Pattern: RW
 Description: Sets the specular color (R,G,B) of the material applied to the edited document. Param: value=R,G,B (0-255)
 
 ```csharp
+    string raw = "{value}".Trim();
     string[] parts = raw.Split(',');
     if (parts.Length != 3)
     {
@@ -4673,13 +4347,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_coating_brinell_hardness_factor
 Pattern: RW
 Description: Sets the Brinell hardness factor of the active coating. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Coatings.SetBrinellHardnessFactor(docId, value);
@@ -4691,13 +4364,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_coating_bump_rotation
 Pattern: RW
 Description: Sets the bump texture rotation angle of the active coating. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Coatings.SetBumpRotation(docId, value);
@@ -4709,13 +4381,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_coating_bump_scale
 Pattern: RW
 Description: Sets the bump texture scale factor of the active coating. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Coatings.SetBumpScale(docId, value);
@@ -4727,13 +4398,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_coating_vickers_hardness_factor
 Pattern: RW
 Description: Sets the Vickers hardness factor of the active coating. Param: value=<number>
 
 ```csharp
+try
 {
     double value = double.Parse("{value}".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);
     TopSolidDesignHost.Coatings.SetVickersHardnessFactor(docId, value);
@@ -4745,13 +4415,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_coating_homogeneous_parameter_value
 Pattern: RW
 Description: Sets the homogeneous parameter value (bool) of the active coating. Param: value=empty(unset)/true/false
 
 ```csharp
+string raw = string.IsNullOrWhiteSpace("{value}") ? null : "{value}".Trim().ToLowerInvariant();
 bool parsed = false;
 if (raw != null) { bool.TryParse(raw, out parsed); }
 if (raw != null && !parsed && raw != "true" && raw != "false")
@@ -4769,13 +4438,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_coating_isotropic_parameter_value
 Pattern: RW
 Description: Sets the isotropic parameter value (bool) of the active coating. Param: value=empty(unset)/true/false
 
 ```csharp
+string raw = string.IsNullOrWhiteSpace("{value}") ? null : "{value}".Trim().ToLowerInvariant();
 bool parsed = false;
 if (raw != null) { bool.TryParse(raw, out parsed); }
 if (raw != null && !parsed && raw != "true" && raw != "false")
@@ -4793,13 +4461,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_coating_rockwell_factors
 Pattern: RW
 Description: Sets the Rockwell factors (A,B,C) of the active coating. Param: value=A,B,C (double or 'null')
 
 ```csharp
+    string raw = "{value}".Trim();
     string[] parts = raw.Split(',');
     if (parts.Length != 3)
     {
@@ -4828,13 +4495,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## add_page_to_bundle
 Pattern: RW
 Description: Adds a new page to the opened drafting bundle. No value expected.
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -4851,13 +4517,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_current_bundle_page
 Pattern: RW
 Description: Sets the current page of the opened drafting bundle. Param: value=page_number (e.g. 1)
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -4878,13 +4543,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_bundle_page_format_name
 Pattern: RW
 Description: Sets the format name of a bundle page to 'A3'. Param: value=page_number (e.g. 1)
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -4905,13 +4569,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_bundle_page_format
 Pattern: RW
 Description: Sets the format of a bundle page. Param: value=page;format_name (e.g. 1;A3 landscape)
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -4934,13 +4597,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## set_bundle_page_dimensions
 Pattern: RW
 Description: Sets the dimensions of a bundle page. Param: value=page;width;height (mm, e.g. 1;420;297)
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -4963,13 +4625,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## include_draft_in_bundle
 Pattern: RW
 Description: Includes a draft (all pages on the same bundle page) in the opened bundle. Param: value=draft_doc_name
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -4992,13 +4653,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## include_draft_page_in_bundle_current_page
 Pattern: RW
 Description: Includes a specific draft page in the current bundle page with offset. Param: value=draft_doc_name;page;offset (e.g. draft;1;0)
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -5028,13 +4688,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## add_draft_to_bundle
 Pattern: RW
 Description: Adds a draft to the opened bundle (its pages become separate bundle pages). Param: value=draft_doc_name
 
 ```csharp
+if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
     if (!TopSolidDraftingHost.Draftings.IsDraftingBundle(docId))
@@ -5057,13 +4716,12 @@ catch (Exception ex)
 }
 ```
 
----
-
 ## get_page_count
 Pattern: R
 Description: Returns the number of pages of the opened drafting bundle.
 
 ```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
 if (docId.IsEmpty) { __message = "No document open. Open the bundle in TopSolid first."; return; }
 try
 {
@@ -5076,9 +4734,8 @@ try
 catch (Exception ex)
 {
     __message = "Error: " + ex.Message;
+}
 ```
-
----
 
 ## create_project_tree
 Pattern: RW
@@ -5122,8 +4779,6 @@ if (parts.Length > 1 && !string.IsNullOrEmpty(parts[1].Trim()))
 }
 return "OK: Project '" + projName + "' (" + (createdProj ? "created" : "reused") + "), folders created: " + createdFolders + ".";
 ```
-
----
 
 ## create_part_document
 Pattern: RW
@@ -5170,7 +4825,220 @@ TopSolidHost.Pdm.Save(docPdm, true);
 return "OK: Part document '" + docName + "' (.TopPrt) ready and saved.";
 ```
 
----
+## create_revolved_part
+Pattern: RW
+Description: Creates a revolved Part (.TopPrt) from an ordered radial/axial polygon profile in millimeters. The profile is closed automatically and revolved around the absolute Y axis. Param: value=doc_name;profile_points(radius_mm,axial_mm|...)[;angle_deg[;designation[;reference]]]
+
+```csharp
+string[] parts = "{value}".Trim().Split(';');
+if (parts.Length < 2 || parts.Length > 5) return "Error: Use doc_name;profile_points(radius_mm,axial_mm|...)[;angle_deg[;designation[;reference]]].";
+string docName = parts[0].Trim(), profileSpec = parts[1].Trim();
+if (string.IsNullOrWhiteSpace(docName) || string.IsNullOrWhiteSpace(profileSpec)) return "Error: document name and profile are required.";
+double angleDeg = 360.0;
+if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]) && (!double.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angleDeg) || double.IsNaN(angleDeg) || double.IsInfinity(angleDeg))) return "Error: invalid angle_deg.";
+if (angleDeg <= 0.0 || angleDeg > 360.0) return "Error: angle_deg must be greater than 0 and at most 360.";
+string designation = parts.Length > 3 ? parts[3].Trim() : "", reference = parts.Length > 4 ? parts[4].Trim() : "";
+string[] points = profileSpec.Split('|');
+if (points.Length > 1 && points[0].Trim() == points[points.Length - 1].Trim()) Array.Resize(ref points, points.Length - 1);
+if (points.Length < 3) return "Error: profile needs at least three points.";
+List<double[]> profile = new List<double[]>();
+double maxRadiusMm = 0.0, minAxialMm = double.MaxValue, maxAxialMm = double.MinValue, twiceArea = 0.0;
+for (int i = 0; i < points.Length; i++)
+{
+    string[] xy = points[i].Split(','); double radiusMm, axialMm;
+    if (xy.Length != 2 || !double.TryParse(xy[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out radiusMm) || !double.TryParse(xy[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out axialMm)) return "Error: each profile point must be radius_mm,axial_mm.";
+    if (double.IsNaN(radiusMm) || double.IsInfinity(radiusMm) || double.IsNaN(axialMm) || double.IsInfinity(axialMm) || radiusMm < 0.0) return "Error: coordinates must be finite and radius_mm cannot be negative.";
+    if (profile.Count > 0 && Math.Abs(profile[profile.Count - 1][0] - radiusMm) < 1e-9 && Math.Abs(profile[profile.Count - 1][1] - axialMm) < 1e-9) return "Error: adjacent profile points must differ.";
+    profile.Add(new double[] { radiusMm, axialMm }); maxRadiusMm = Math.Max(maxRadiusMm, radiusMm); minAxialMm = Math.Min(minAxialMm, axialMm); maxAxialMm = Math.Max(maxAxialMm, axialMm);
+}
+for (int i = 0; i < profile.Count; i++) { double[] a = profile[i], b = profile[(i + 1) % profile.Count]; twiceArea += a[0] * b[1] - b[0] * a[1]; }
+if (Math.Abs(twiceArea) < 1e-8) return "Error: profile area must be non-zero.";
+PdmObjectId projectId = TopSolidHost.Pdm.GetCurrentProject(); if (projectId.IsEmpty) return "Error: no current project.";
+foreach (PdmObjectId existing in TopSolidHost.Pdm.SearchDocumentByName(projectId, docName)) if (string.Equals(TopSolidHost.Pdm.GetName(existing), docName, StringComparison.OrdinalIgnoreCase)) return "Error: a document with this exact name already exists in the current project.";
+PdmObjectId partPdm = TopSolidHost.Pdm.CreateDocument(projectId, ".TopPrt", true); if (partPdm.IsEmpty) return "Error: could not create Part document.";
+TopSolidHost.Pdm.SetName(partPdm, docName); if (!string.IsNullOrEmpty(designation)) TopSolidHost.Pdm.SetDescription(partPdm, designation); if (!string.IsNullOrEmpty(reference)) TopSolidHost.Pdm.SetPartNumber(partPdm, reference);
+DocumentId docId = TopSolidHost.Documents.GetDocument(partPdm); TopSolidHost.Documents.Open(ref docId);
+bool started = false;
+try
+{
+    TopSolidHost.Application.StartModification("CreateRevolvedPart_" + docName, false); started = true; TopSolidHost.Documents.EnsureIsDirty(ref docId);
+    Point3D origin = new Point3D(0, 0, 0); Plane3D planeXY = new Plane3D(origin, Direction3D.DX, Direction3D.DY); double margin = Math.Max(0.05, maxRadiusMm / 5000.0);
+    ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(planeXY, -margin, maxRadiusMm / 1000.0 + margin, minAxialMm / 1000.0 - margin, maxAxialMm / 1000.0 + margin), new SmartPoint3D(origin), true, SmartDirection3D.DX);
+    TopSolidHost.Elements.SetName(sketchId, "RevolveProfile"); TopSolidHost.Sketches2D.StartModification(sketchId); List<ElementItemId> vertices = new List<ElementItemId>();
+    foreach (double[] point in profile) vertices.Add(TopSolidHost.Sketches2D.CreateVertex(new Point2D(point[0] / 1000.0, point[1] / 1000.0)));
+    for (int i = 0; i < vertices.Count; i++) TopSolidHost.Sketches2D.CreateLineSegment(vertices[i], vertices[(i + 1) % vertices.Count]);
+    TopSolidHost.Sketches2D.CleanSketch(); TopSolidHost.Sketches2D.EndModification();
+    ElementId axisId = TopSolidHost.Geometries3D.GetAbsoluteYAxis(docId); if (axisId.IsEmpty) throw new Exception("Absolute Y axis not found.");
+    ElementId shapeId = TopSolidHost.Shapes.CreateRevolvedShape(docId, new SmartSection3D(sketchId), new SmartAxis3D(axisId, true), new SmartReal(UnitType.Angle, angleDeg * Math.PI / 180.0), false, false);
+    if (shapeId.IsEmpty) throw new Exception("TopSolid did not create the revolved shape.");
+    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId)) { var constituents = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep); if (!constituents.Contains(shapeId)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, shapeId); }
+    TopSolidHost.Application.EndModification(true, true); started = false;
+}
+catch (Exception ex) { if (started) try { TopSolidHost.Application.EndModification(false, false); } catch { } return "Error creating revolved part: " + ex.Message + ". The new PDM document may remain empty."; }
+TopSolidHost.Pdm.Save(TopSolidHost.Documents.GetPdmObject(docId), true);
+return "OK: Revolved Part '" + docName + "' (.TopPrt) created with " + profile.Count + " profile points at " + angleDeg + " degrees and saved.";
+```
+
+## revolve_active_part
+Pattern: RW
+Description: Adds a revolved solid to the active empty Part (.TopPrt). Refuses if the active document already contains a solid. Profile points are ordered radius_mm,axial_mm pairs in the XY sketch plane and are revolved around the absolute Y axis. Param: value=profile_points(radius_mm,axial_mm|...)[;angle_deg]
+
+```csharp
+string[] parts = "{value}".Trim().Split(';');
+if (parts.Length < 1 || parts.Length > 2 || string.IsNullOrWhiteSpace(parts[0])) return "Error: Use profile_points(radius_mm,axial_mm|...)[;angle_deg].";
+DocumentId docId = TopSolidHost.Documents.EditedDocument; if (docId.IsEmpty) return "Error: open an empty Part document first.";
+PdmObjectId partPdm = TopSolidHost.Documents.GetPdmObject(docId); if (partPdm.IsEmpty) return "Error: active document has no PDM object.";
+string extension; TopSolidHost.Pdm.GetType(partPdm, out extension); if (!string.Equals(extension, ".TopPrt", StringComparison.OrdinalIgnoreCase)) return "Error: active document must be a Part (.TopPrt).";
+List<ElementId> existingShapes = TopSolidHost.Shapes.GetShapes(docId); if (existingShapes != null && existingShapes.Count > 0) return "Error: active Part already contains a solid; no changes made.";
+string[] points = parts[0].Split('|'); if (points.Length > 1 && points[0].Trim() == points[points.Length - 1].Trim()) Array.Resize(ref points, points.Length - 1);
+if (points.Length < 3) return "Error: profile needs at least three points.";
+double angleDeg = 360.0; if (parts.Length > 1 && !string.IsNullOrWhiteSpace(parts[1]) && (!double.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angleDeg) || double.IsNaN(angleDeg) || double.IsInfinity(angleDeg))) return "Error: invalid angle_deg.";
+if (angleDeg <= 0.0 || angleDeg > 360.0) return "Error: angle_deg must be greater than 0 and at most 360.";
+List<double[]> profile = new List<double[]>(); double maxRadiusMm = 0.0, minAxialMm = double.MaxValue, maxAxialMm = double.MinValue, twiceArea = 0.0;
+for (int i = 0; i < points.Length; i++)
+{
+    string[] xy = points[i].Split(','); double radiusMm, axialMm;
+    if (xy.Length != 2 || !double.TryParse(xy[0].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out radiusMm) || !double.TryParse(xy[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out axialMm)) return "Error: each profile point must be radius_mm,axial_mm.";
+    if (double.IsNaN(radiusMm) || double.IsInfinity(radiusMm) || double.IsNaN(axialMm) || double.IsInfinity(axialMm) || radiusMm < 0.0) return "Error: coordinates must be finite and radius_mm cannot be negative.";
+    if (profile.Count > 0 && Math.Abs(profile[profile.Count - 1][0] - radiusMm) < 1e-9 && Math.Abs(profile[profile.Count - 1][1] - axialMm) < 1e-9) return "Error: adjacent profile points must differ.";
+    profile.Add(new double[] { radiusMm, axialMm }); maxRadiusMm = Math.Max(maxRadiusMm, radiusMm); minAxialMm = Math.Min(minAxialMm, axialMm); maxAxialMm = Math.Max(maxAxialMm, axialMm);
+}
+for (int i = 0; i < profile.Count; i++) { double[] a = profile[i], b = profile[(i + 1) % profile.Count]; twiceArea += a[0] * b[1] - b[0] * a[1]; }
+if (Math.Abs(twiceArea) < 1e-8) return "Error: profile area must be non-zero.";
+bool started = false;
+try
+{
+    TopSolidHost.Application.StartModification("RevolveActivePart", false); started = true; TopSolidHost.Documents.EnsureIsDirty(ref docId);
+    Point3D origin = new Point3D(0, 0, 0); Plane3D planeXY = new Plane3D(origin, Direction3D.DX, Direction3D.DY); double margin = Math.Max(0.05, maxRadiusMm / 5000.0);
+    ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(planeXY, -margin, maxRadiusMm / 1000.0 + margin, minAxialMm / 1000.0 - margin, maxAxialMm / 1000.0 + margin), new SmartPoint3D(origin), true, SmartDirection3D.DX);
+    TopSolidHost.Elements.SetName(sketchId, "RevolveProfile"); TopSolidHost.Sketches2D.StartModification(sketchId); List<ElementItemId> vertices = new List<ElementItemId>();
+    foreach (double[] point in profile) vertices.Add(TopSolidHost.Sketches2D.CreateVertex(new Point2D(point[0] / 1000.0, point[1] / 1000.0)));
+    for (int i = 0; i < vertices.Count; i++) TopSolidHost.Sketches2D.CreateLineSegment(vertices[i], vertices[(i + 1) % vertices.Count]);
+    TopSolidHost.Sketches2D.CleanSketch(); TopSolidHost.Sketches2D.EndModification();
+    ElementId axisId = TopSolidHost.Geometries3D.GetAbsoluteYAxis(docId); if (axisId.IsEmpty) throw new Exception("Absolute Y axis not found.");
+    ElementId shapeId = TopSolidHost.Shapes.CreateRevolvedShape(docId, new SmartSection3D(sketchId), new SmartAxis3D(axisId, true), new SmartReal(UnitType.Angle, angleDeg * Math.PI / 180.0), false, false);
+    if (shapeId.IsEmpty) throw new Exception("TopSolid did not create the revolved shape.");
+    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId)) { var constituents = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep); if (!constituents.Contains(shapeId)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, shapeId); }
+    TopSolidHost.Application.EndModification(true, true); started = false;
+}
+catch (Exception ex) { if (started) try { TopSolidHost.Application.EndModification(false, false); } catch { } return "Error revolving active Part: " + ex.Message; }
+TopSolidHost.Pdm.Save(TopSolidHost.Documents.GetPdmObject(docId), true);
+return "OK: Revolved solid created in active Part with " + profile.Count + " profile points at " + angleDeg + " degrees and saved.";
+```
+
+## replace_revolved_profile
+Pattern: RW
+Description: Replaces the profile of the single revolved solid in the active Part. Refuses Parts with additional solid features. The profile uses XY-plane coordinates in millimeters and the absolute Y axis. Param: value=old_sketch_name;segments(P,r,z|L,r,z|A,r,z,cx,cz,CW_or_CCW|...)[;angle_deg]
+
+```csharp
+string[] parts = "{value}".Trim().Split(';');
+if (parts.Length < 2 || parts.Length > 3) return "Error: Use old_sketch_name;segments(P,r,z|L,r,z|A,r,z,cx,cz,CW_or_CCW|...)[;angle_deg].";
+string oldSketchName = parts[0].Trim();
+string segmentSpec = parts[1].Trim();
+if (string.IsNullOrWhiteSpace(oldSketchName) || string.IsNullOrWhiteSpace(segmentSpec)) return "Error: sketch name and profile segments are required.";
+double angleDeg = 360.0;
+if (parts.Length > 2 && !string.IsNullOrWhiteSpace(parts[2]) && (!double.TryParse(parts[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out angleDeg) || double.IsNaN(angleDeg) || double.IsInfinity(angleDeg))) return "Error: invalid angle_deg.";
+if (angleDeg <= 0.0 || angleDeg > 360.0) return "Error: angle_deg must be greater than 0 and at most 360.";
+string[] encodedSegments = segmentSpec.Split('|');
+if (encodedSegments.Length < 4) return "Error: provide P plus at least three line/arc segments.";
+string[] start = encodedSegments[0].Split(',');
+double startRadiusMm, startAxialMm;
+if (start.Length != 3 || !string.Equals(start[0].Trim(), "P", StringComparison.OrdinalIgnoreCase) || !double.TryParse(start[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out startRadiusMm) || !double.TryParse(start[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out startAxialMm)) return "Error: first token must be P,radius_mm,axial_mm.";
+if (startRadiusMm < 0.0 || double.IsNaN(startRadiusMm) || double.IsInfinity(startRadiusMm) || double.IsNaN(startAxialMm) || double.IsInfinity(startAxialMm)) return "Error: profile coordinates must be finite and radius cannot be negative.";
+List<string[]> segments = new List<string[]>();
+double currentRadiusMm = startRadiusMm, currentAxialMm = startAxialMm;
+double minX = startRadiusMm, maxX = startRadiusMm, minY = startAxialMm, maxY = startAxialMm;
+for (int i = 1; i < encodedSegments.Length; i++)
+{
+    string[] item = encodedSegments[i].Split(',');
+    string kind = item[0].Trim().ToUpperInvariant();
+    double endRadiusMm, endAxialMm;
+    if (item.Length < 3 || (kind != "L" && kind != "A") || !double.TryParse(item[1].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out endRadiusMm) || !double.TryParse(item[2].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out endAxialMm)) return "Error: each segment must start with L or A and include an endpoint radius_mm,axial_mm.";
+    if (endRadiusMm < 0.0 || double.IsNaN(endRadiusMm) || double.IsInfinity(endRadiusMm) || double.IsNaN(endAxialMm) || double.IsInfinity(endAxialMm)) return "Error: profile coordinates must be finite and radius cannot be negative.";
+    if (kind == "L" && item.Length != 3) return "Error: line segment syntax is L,radius_mm,axial_mm.";
+    if (kind == "A")
+    {
+        double centerRadiusMm, centerAxialMm;
+        if (item.Length != 6 || !double.TryParse(item[3].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out centerRadiusMm) || !double.TryParse(item[4].Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out centerAxialMm) || (item[5].Trim().ToUpperInvariant() != "CW" && item[5].Trim().ToUpperInvariant() != "CCW")) return "Error: arc syntax is A,radius_mm,axial_mm,center_radius_mm,center_axial_mm,CW|CCW.";
+        double startArcRadius = Math.Sqrt((currentRadiusMm-centerRadiusMm)*(currentRadiusMm-centerRadiusMm) + (currentAxialMm-centerAxialMm)*(currentAxialMm-centerAxialMm));
+        double endArcRadius = Math.Sqrt((endRadiusMm-centerRadiusMm)*(endRadiusMm-centerRadiusMm) + (endAxialMm-centerAxialMm)*(endAxialMm-centerAxialMm));
+        if (Math.Abs(startArcRadius-endArcRadius) > 0.05) return "Error: arc start and end must lie on the same circle (tolerance 0.05 mm).";
+        minX = Math.Min(minX, centerRadiusMm-startArcRadius); maxX = Math.Max(maxX, centerRadiusMm+startArcRadius);
+        minY = Math.Min(minY, centerAxialMm-startArcRadius); maxY = Math.Max(maxY, centerAxialMm+startArcRadius);
+    }
+    minX = Math.Min(minX, endRadiusMm); maxX = Math.Max(maxX, endRadiusMm); minY = Math.Min(minY, endAxialMm); maxY = Math.Max(maxY, endAxialMm);
+    segments.Add(item); currentRadiusMm = endRadiusMm; currentAxialMm = endAxialMm;
+}
+if (Math.Abs(currentRadiusMm-startRadiusMm) > 0.01 || Math.Abs(currentAxialMm-startAxialMm) > 0.01) return "Error: final segment must close back to the starting point (tolerance 0.01 mm).";
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "Error: no active document.";
+PdmObjectId activePdm = TopSolidHost.Documents.GetPdmObject(docId);
+string extension;
+TopSolidHost.Pdm.GetType(activePdm, out extension);
+if (!string.Equals(extension, ".TopPrt", StringComparison.OrdinalIgnoreCase)) return "Error: active document must be a Part (.TopPrt).";
+List<ElementId> shapes = TopSolidHost.Shapes.GetShapes(docId);
+if (shapes == null || shapes.Count != 1) return "Error: active Part must contain exactly one solid.";
+List<ElementId> sketches = TopSolidHost.Sketches2D.GetSketches(docId);
+ElementId oldSketch = ElementId.Empty;
+foreach (ElementId sketch in sketches) if (string.Equals(TopSolidHost.Elements.GetFriendlyName(sketch), oldSketchName, StringComparison.OrdinalIgnoreCase)) oldSketch = sketch;
+if (oldSketch.IsEmpty) return "Error: named profile sketch not found.";
+List<ElementId> operations = TopSolidHost.Operations.GetOperations(docId);
+int revolveCount = 0;
+int extraSolidFeatureCount = 0;
+foreach (ElementId operation in operations)
+{
+    string typeName = TopSolidHost.Elements.GetTypeFullName(operation);
+    if (typeName.IndexOf("RevolvedCreation", StringComparison.Ordinal) >= 0) revolveCount++;
+    else if (typeName.IndexOf("ExtrudedCreation", StringComparison.Ordinal) >= 0 || typeName.IndexOf("PatternCreation", StringComparison.Ordinal) >= 0 || typeName.IndexOf("Drilling", StringComparison.Ordinal) >= 0 || typeName.IndexOf("Fillet", StringComparison.Ordinal) >= 0 || typeName.IndexOf("Chamfer", StringComparison.Ordinal) >= 0 || typeName.IndexOf("Boolean", StringComparison.Ordinal) >= 0) extraSolidFeatureCount++;
+}
+if (revolveCount != 1 || extraSolidFeatureCount != 0) return "Error: active Part must have one revolve and no additional solid features.";
+bool started = false;
+try
+{
+    TopSolidHost.Application.StartModification("Replace revolved profile", false); started = true;
+    TopSolidHost.Documents.EnsureIsDirty(ref docId);
+    operations = TopSolidHost.Operations.GetOperations(docId);
+    ElementId oldRevolve = ElementId.Empty;
+    foreach (ElementId operation in operations) if (TopSolidHost.Elements.GetTypeFullName(operation).IndexOf("RevolvedCreation", StringComparison.Ordinal) >= 0) oldRevolve = operation;
+    sketches = TopSolidHost.Sketches2D.GetSketches(docId); oldSketch = ElementId.Empty;
+    foreach (ElementId sketch in sketches) if (string.Equals(TopSolidHost.Elements.GetFriendlyName(sketch), oldSketchName, StringComparison.OrdinalIgnoreCase)) oldSketch = sketch;
+    if (oldRevolve.IsEmpty || oldSketch.IsEmpty) throw new Exception("Target revolve or profile changed after transaction start.");
+    TopSolidHost.Elements.Delete(oldRevolve);
+    TopSolidHost.Elements.Delete(oldSketch);
+    Point3D origin = new Point3D(0, 0, 0); Plane3D planeXY = new Plane3D(origin, Direction3D.DX, Direction3D.DY);
+    double margin = 0.02;
+    ElementId sketchId = TopSolidHost.Sketches2D.CreateSketchIn3D(docId, new SmartPlane3D(planeXY, minX/1000.0-margin, maxX/1000.0+margin, minY/1000.0-margin, maxY/1000.0+margin), new SmartPoint3D(origin), true, SmartDirection3D.DX);
+    TopSolidHost.Elements.SetName(sketchId, oldSketchName);
+    TopSolidHost.Sketches2D.StartModification(sketchId);
+    ElementItemId firstVertex = TopSolidHost.Sketches2D.CreateVertex(new Point2D(startRadiusMm/1000.0, startAxialMm/1000.0));
+    ElementItemId currentVertex = firstVertex; currentRadiusMm = startRadiusMm; currentAxialMm = startAxialMm;
+    for (int i = 0; i < segments.Count; i++)
+    {
+        string[] item = segments[i]; string kind = item[0].Trim().ToUpperInvariant();
+        double endRadiusMm = double.Parse(item[1].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+        double endAxialMm = double.Parse(item[2].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+        bool closes = i == segments.Count-1;
+        ElementItemId endVertex = closes ? firstVertex : TopSolidHost.Sketches2D.CreateVertex(new Point2D(endRadiusMm/1000.0, endAxialMm/1000.0));
+        if (kind == "L") TopSolidHost.Sketches2D.CreateLineSegment(currentVertex, endVertex);
+        else
+        {
+            double centerRadiusMm = double.Parse(item[3].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            double centerAxialMm = double.Parse(item[4].Trim(), System.Globalization.CultureInfo.InvariantCulture);
+            bool clockwise = string.Equals(item[5].Trim(), "CW", StringComparison.OrdinalIgnoreCase);
+            TopSolidHost.Sketches2D.CreateArcSegment(currentVertex, endVertex, new Point2D(centerRadiusMm/1000.0, centerAxialMm/1000.0), clockwise);
+        }
+        currentVertex = endVertex; currentRadiusMm = endRadiusMm; currentAxialMm = endAxialMm;
+    }
+    TopSolidHost.Sketches2D.CleanSketch(); TopSolidHost.Sketches2D.EndModification();
+    ElementId axisId = TopSolidHost.Geometries3D.GetAbsoluteYAxis(docId);
+    ElementId newShape = TopSolidHost.Shapes.CreateRevolvedShape(docId, new SmartSection3D(sketchId), new SmartAxis3D(axisId, true), new SmartReal(UnitType.Angle, angleDeg*Math.PI/180.0), false, false);
+    foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(docId)) { var constituents = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep); if (!constituents.Contains(newShape)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, newShape); }
+    TopSolidHost.Application.EndModification(true, true); started = false;
+}
+catch (Exception ex) { if (started) try { TopSolidHost.Application.EndModification(false, false); } catch { } return "Error replacing revolved profile: " + ex.Message; }
+TopSolidHost.Pdm.Save(TopSolidHost.Documents.GetPdmObject(docId), true);
+return "Replaced the active Part's single revolve profile and saved.";
+```
 
 ## create_assembly_document
 Pattern: RW
@@ -5181,6 +5049,8 @@ string raw = "{value}".Trim();
 if (string.IsNullOrEmpty(raw)) return "Error: Use value=doc_name[;designation[;reference[;folder_name[;project_name]]]]";
 string[] parts = raw.Split(';');
 string docName = parts[0].Trim();
+bool forceNew = false;
+if (docName.EndsWith("@new", StringComparison.OrdinalIgnoreCase)) { forceNew = true; docName = docName.Substring(0, docName.Length - 4).Trim(); }
 string desig = parts.Length > 1 ? parts[1].Trim() : "";
 string refer = parts.Length > 2 ? parts[2].Trim() : "";
 string folderName = parts.Length > 3 ? parts[3].Trim() : "";
@@ -5205,7 +5075,14 @@ if (!string.IsNullOrEmpty(folderName))
 List<PdmObjectId> subF; List<PdmObjectId> subD;
 TopSolidHost.Pdm.GetConstituents(ownerPdm, out subF, out subD);
 PdmObjectId docPdm = PdmObjectId.Empty;
-foreach (var d in subD) if (string.Equals(TopSolidHost.Pdm.GetName(d), docName, StringComparison.OrdinalIgnoreCase)) { docPdm = d; break; }
+foreach (var d in subD)
+{
+    if (string.Equals(TopSolidHost.Pdm.GetName(d), docName, StringComparison.OrdinalIgnoreCase))
+    {
+        if (forceNew) { TopSolidHost.Pdm.SetName(d, "_old_" + docName + "_" + DateTime.Now.ToString("HHmmss")); TopSolidHost.Pdm.Save(d, true); }
+        else { docPdm = d; break; }
+    }
+}
 if (docPdm.IsEmpty) docPdm = TopSolidHost.Pdm.CreateDocument(ownerPdm, ".TopAsm", true);
 TopSolidHost.Pdm.SetName(docPdm, docName);
 if (!string.IsNullOrEmpty(desig)) TopSolidHost.Pdm.SetDescription(docPdm, desig);
@@ -5216,8 +5093,6 @@ if (false) { TopSolidHost.Application.StartModification("", false); TopSolidHost
 TopSolidHost.Pdm.Save(docPdm, true);
 return "OK: Assembly document '" + docName + "' (.TopAsm) ready and saved.";
 ```
-
----
 
 ## set_material
 Pattern: RW
@@ -5247,23 +5122,27 @@ if (!string.IsNullOrEmpty(targetDocName))
 if (targetDoc.IsEmpty) return "Error: No active document and no doc_name specified.";
 PdmObjectId matPdm = PdmObjectId.Empty;
 string pattern = matQuery.Contains("*") ? matQuery : ("*" + matQuery + "*");
+var matLibs = new List<PdmObjectId>();
 foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
 {
     string lName = TopSolidHost.Pdm.GetName(lib);
-    bool matchLib = lName.IndexOf("CEN", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Mat", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Bois", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Wood", StringComparison.OrdinalIgnoreCase) >= 0;
-    if (!matchLib) continue;
-    var hits = TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, pattern);
-    foreach (var h in hits)
+    if (string.Equals(lName, "TopSolid MetalWork - Materials and Coatings", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Matériaux", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "Bois TopSolid", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Materials", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Wood", StringComparison.OrdinalIgnoreCase))
+        matLibs.Add(lib);
+}
+foreach (var lib in matLibs)
+{
+    foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, matQuery))
+    { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, ".TopMat", StringComparison.OrdinalIgnoreCase)) { matPdm = h; break; } }
+    if (!matPdm.IsEmpty) break;
+}
+if (matPdm.IsEmpty)
+{
+    foreach (var lib in matLibs)
     {
-        string ext;
-        TopSolidHost.Pdm.GetType(h, out ext);
-        if (string.Equals(ext, ".TopMat", StringComparison.OrdinalIgnoreCase))
-        {
-            matPdm = h;
-            if (string.Equals(TopSolidHost.Pdm.GetName(h), matQuery, StringComparison.OrdinalIgnoreCase)) break;
-        }
+        foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, pattern))
+        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, ".TopMat", StringComparison.OrdinalIgnoreCase)) { matPdm = h; break; } }
+        if (!matPdm.IsEmpty) break;
     }
-    if (!matPdm.IsEmpty && string.Equals(TopSolidHost.Pdm.GetName(matPdm), matQuery, StringComparison.OrdinalIgnoreCase)) break;
 }
 if (matPdm.IsEmpty) return "Error: Material matching '" + matQuery + "' (.TopMat) not found in standard libraries.";
 DocumentId matDoc = TopSolidHost.Documents.GetDocument(matPdm);
@@ -5282,8 +5161,6 @@ catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); r
 if (!targetPdm.IsEmpty) TopSolidHost.Pdm.Save(targetPdm, true);
 return "OK: Material '" + matRealName + "' applied to '" + TopSolidHost.Documents.GetName(targetDoc) + "' (Mass & CoG enabled).";
 ```
-
----
 
 ## set_coating
 Pattern: RW
@@ -5318,19 +5195,27 @@ PdmObjectId cotPdm = PdmObjectId.Empty;
 if (!string.IsNullOrEmpty(cotQuery))
 {
     string pattern = cotQuery.Contains("*") ? cotQuery : ("*" + cotQuery + "*");
+    var cotLibs = new List<PdmObjectId>();
     foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
     {
         string lName = TopSolidHost.Pdm.GetName(lib);
-        bool matchLib = lName.IndexOf("RAL", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Coating", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("MetalWork", StringComparison.OrdinalIgnoreCase) >= 0;
-        if (!matchLib) continue;
-        var hits = TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, pattern);
-        foreach (var h in hits)
-        {
-            string ext;
-            TopSolidHost.Pdm.GetType(h, out ext);
-            if (string.Equals(ext, ".TopCot", StringComparison.OrdinalIgnoreCase)) { cotPdm = h; break; }
-        }
+        if (string.Equals(lName, "TopSolid MetalWork - Materials and Coatings", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "RAL Classics, By TopSolidBlog", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Matériaux", StringComparison.OrdinalIgnoreCase))
+            cotLibs.Add(lib);
+    }
+    foreach (var lib in cotLibs)
+    {
+        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, cotQuery))
+        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, ".TopCot", StringComparison.OrdinalIgnoreCase)) { cotPdm = h; break; } }
         if (!cotPdm.IsEmpty) break;
+    }
+    if (cotPdm.IsEmpty)
+    {
+        foreach (var lib in cotLibs)
+        {
+            foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, pattern))
+            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (string.Equals(ext, ".TopCot", StringComparison.OrdinalIgnoreCase)) { cotPdm = h; break; } }
+            if (!cotPdm.IsEmpty) break;
+        }
     }
 }
 DocumentId cotDoc = cotPdm.IsEmpty ? DocumentId.Empty : TopSolidHost.Documents.GetDocument(cotPdm);
@@ -5367,8 +5252,6 @@ try
 catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
 ```
 
----
-
 ## provide_extruded_bar_function
 Pattern: RW
 Description: Provides the TopSolid 'Extruded Bar' (Profilé) function on a part with its 3D Frame (XY section, X horizontal, Z longitudinal), Section sketch, Length parameter L, BottomLeft/TopRight points, and Minimal EnclosingBox. Param: value=[doc_name;]width_x_mm;height_y_mm;length_z_mm
@@ -5396,7 +5279,7 @@ PdmObjectId fncPdm = PdmObjectId.Empty;
 foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
 {
     if (!string.Equals(TopSolidHost.Pdm.GetName(lib), "TopSolid", StringComparison.OrdinalIgnoreCase)) continue;
-    var hits = TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, "Extruded Bar*");
+    var hits = TopSolidHost.Pdm.SearchDocumentByName(lib, "Extruded Bar");
     foreach (var h in hits) { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopPrtFct") { fncPdm = h; break; } }
     if (!fncPdm.IsEmpty) break;
 }
@@ -5406,6 +5289,20 @@ TopSolidHost.Application.StartModification("ProvideExtrudedBarFunction", false);
 try
 {
     TopSolidHost.Documents.EnsureIsDirty(ref targetDoc);
+    // Delete any existing ProvidedFunctionCreation or Repere_ExtrudedBar_XY_Z so new Frame + Function are created chronologically AFTER the sketch
+    var oldOps = TopSolidHost.Operations.GetOperations(targetDoc);
+    for (int oi = oldOps.Count - 1; oi >= 0; oi--)
+    {
+        try
+        {
+            string tn = TopSolidHost.Elements.GetTypeFullName(oldOps[oi]);
+            if (tn.IndexOf("Function", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Frame", StringComparison.OrdinalIgnoreCase) >= 0)
+                TopSolidHost.Elements.Delete(oldOps[oi]);
+        } catch { }
+    }
+    foreach (var f in TopSolidHost.Entities.GetFunctions(targetDoc)) { try { TopSolidHost.Elements.Delete(f); } catch { } }
+    ElementId modStage = TopSolidHost.Operations.GetModelingStage(targetDoc);
+    if (!modStage.IsEmpty) { try { TopSolidHost.Operations.SetWorkingStage(modStage); TopSolidHost.Operations.ResetInsertionOperation(targetDoc); } catch { } }
     ElementId skId = ElementId.Empty;
     foreach (var e in TopSolidHost.Elements.GetElements(targetDoc))
         if (TopSolidHost.Elements.GetTypeFullName(e).IndexOf("Sketch", StringComparison.OrdinalIgnoreCase) >= 0) { skId = e; break; }
@@ -5419,9 +5316,7 @@ try
     }
     ElementId profFrame = TopSolidHost.Geometries3D.CreateFrame(targetDoc, new Frame3D(new Point3D(0, 0, 0), Direction3D.DX, Direction3D.DY, Direction3D.DZ));
     try { TopSolidHost.Elements.SetName(profFrame, "Repere_ExtrudedBar_XY_Z"); } catch { }
-    ElementId fnc = ElementId.Empty;
-    foreach (var f in TopSolidHost.Entities.GetFunctions(targetDoc)) { fnc = f; break; }
-    if (fnc.IsEmpty) fnc = TopSolidHost.Entities.ProvideFunction(targetDoc, fncDoc, "");
+    ElementId fnc = TopSolidHost.Entities.ProvideFunction(targetDoc, fncDoc, "");
     foreach (var pub in TopSolidHost.Entities.GetFunctionPublishings(fnc))
     {
         string pName = TopSolidHost.Elements.GetName(pub);
@@ -5437,37 +5332,12 @@ try
     TopSolidHost.Application.EndModification(true, true);
 }
 catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
+int invCount = 0; var invNames = new List<string>();
+foreach (var el in TopSolidHost.Elements.GetElements(targetDoc)) { bool inv = false; try { inv = TopSolidHost.Elements.IsInvalid(el); } catch { } if (inv) { invCount++; invNames.Add(TopSolidHost.Elements.GetFriendlyName(el)); } }
 if (!targetPdm.IsEmpty) TopSolidHost.Pdm.Save(targetPdm, true);
-return "OK: Function 'Extruded Bar' + Frame (XY section, X horizontal, Z longitudinal) + Length L wired on '" + TopSolidHost.Documents.GetName(targetDoc) + "'.";
+if (invCount > 0) return "Error: " + invCount + " invalid element(s) on '" + TopSolidHost.Documents.GetName(targetDoc) + "': " + string.Join(", ", invNames);
+return "OK: Function 'Extruded Bar' + Frame (XY section, X horizontal, Z longitudinal) + Length L wired on '" + TopSolidHost.Documents.GetName(targetDoc) + "' (0 invalid elements).";
 ```
-
----
-
-## create_revolved_part
-Pattern: RW
-Description: Creates a saved `.TopPrt` from an ordered polygonal radial/axial profile. Input coordinates use millimeters; the profile is closed automatically and revolved around the absolute Y axis. Example: `Shaft;8,0|20,0|20,50|8,50;360;Shaft;SH-001`
-
-The canonical C# body is available through `topsolid_get_recipe` (`create_revolved_part`) and is maintained in `server/src/Tools/RecipeTool.cs`.
-
----
-
-## revolve_active_part
-Pattern: RW
-Description: Adds a revolved solid to the active empty Part (.TopPrt). Refuses to modify a document that already contains a solid.
-Input example: `8,0|20,0|20,50|8,50;360` (radius_mm,axial_mm pairs; angle in degrees).
-
-The canonical C# body is available through `topsolid_get_recipe` (`revolve_active_part`) and is maintained in `server/src/Tools/RecipeTool.cs`.
-
----
-
-## replace_revolved_profile
-Pattern: RW
-Description: Replaces the named sketch and single revolve in an active single-solid Part using a closed profile made of lines and circular arcs. Refuses additional solid features.
-Input example: `VaseProfile;P,0,0|L,50,0|A,60,200,-97.08,107.60,CCW|L,57.8,198.8|A,50.5,5,-97.08,107.60,CW|L,0,5|L,0,0;360`
-
-The canonical C# body is available through `topsolid_get_recipe` (`replace_revolved_profile`) and is maintained in `server/src/Tools/RecipeTool.cs`.
-
----
 
 ## create_extruded_bar
 Pattern: RW
@@ -5519,30 +5389,54 @@ PdmObjectId fncPdm = PdmObjectId.Empty;
 PdmObjectId matPdm = PdmObjectId.Empty;
 PdmObjectId cotPdm = PdmObjectId.Empty;
 string cotNameOnly = cotSpec.Contains(",") ? cotSpec.Substring(0, cotSpec.IndexOf(',')).Trim() : cotSpec;
+var matLibs = new List<PdmObjectId>();
+var cotLibs = new List<PdmObjectId>();
 foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
 {
     string lName = TopSolidHost.Pdm.GetName(lib);
     if (fncPdm.IsEmpty && string.Equals(lName, "TopSolid", StringComparison.OrdinalIgnoreCase))
     {
-        foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, "Extruded Bar*"))
+        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, "Extruded Bar"))
         { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopPrtFct") { fncPdm = h; break; } }
     }
-    if (!string.IsNullOrEmpty(matQuery) && matPdm.IsEmpty)
+    if (string.Equals(lName, "TopSolid MetalWork - Materials and Coatings", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Matériaux", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "Bois TopSolid", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Materials", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Wood", StringComparison.OrdinalIgnoreCase))
+        matLibs.Add(lib);
+    if (string.Equals(lName, "TopSolid MetalWork - Materials and Coatings", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "RAL Classics, By TopSolidBlog", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Matériaux", StringComparison.OrdinalIgnoreCase))
+        cotLibs.Add(lib);
+}
+if (!string.IsNullOrEmpty(matQuery))
+{
+    foreach (var lib in matLibs)
     {
-        bool ok = lName.IndexOf("CEN", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Mat", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Bois", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Wood", StringComparison.OrdinalIgnoreCase) >= 0;
-        if (ok)
+        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, matQuery))
+        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopMat") { matPdm = h; break; } }
+        if (!matPdm.IsEmpty) break;
+    }
+    if (matPdm.IsEmpty)
+    {
+        foreach (var lib in matLibs)
         {
             foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, "*" + matQuery + "*"))
-            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopMat") { matPdm = h; if (string.Equals(TopSolidHost.Pdm.GetName(h), matQuery, StringComparison.OrdinalIgnoreCase)) break; } }
+            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopMat") { matPdm = h; break; } }
+            if (!matPdm.IsEmpty) break;
         }
     }
-    if (!string.IsNullOrEmpty(cotNameOnly) && cotPdm.IsEmpty)
+}
+if (!string.IsNullOrEmpty(cotNameOnly))
+{
+    foreach (var lib in cotLibs)
     {
-        bool ok = lName.IndexOf("RAL", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Coating", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("MetalWork", StringComparison.OrdinalIgnoreCase) >= 0;
-        if (ok)
+        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, cotNameOnly))
+        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopCot") { cotPdm = h; break; } }
+        if (!cotPdm.IsEmpty) break;
+    }
+    if (cotPdm.IsEmpty)
+    {
+        foreach (var lib in cotLibs)
         {
             foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, "*" + cotNameOnly + "*"))
             { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopCot") { cotPdm = h; break; } }
+            if (!cotPdm.IsEmpty) break;
         }
     }
 }
@@ -5556,10 +5450,16 @@ try
     var oldOps = TopSolidHost.Operations.GetOperations(dId);
     for (int oi = oldOps.Count - 1; oi >= 0; oi--)
     {
-        string tn = TopSolidHost.Elements.GetTypeFullName(oldOps[oi]);
-        if (tn.IndexOf("Shape", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Extrud", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Drill", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Sketch", StringComparison.OrdinalIgnoreCase) >= 0)
-            try { TopSolidHost.Elements.Delete(oldOps[oi]); } catch { }
+        try
+        {
+            string tn = TopSolidHost.Elements.GetTypeFullName(oldOps[oi]);
+            if (tn.IndexOf("Shape", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Extrud", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Drill", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Sketch", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Function", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Frame", StringComparison.OrdinalIgnoreCase) >= 0)
+                TopSolidHost.Elements.Delete(oldOps[oi]);
+        } catch { }
     }
+    foreach (var f in TopSolidHost.Entities.GetFunctions(dId)) { try { TopSolidHost.Elements.Delete(f); } catch { } }
+    ElementId modStage = TopSolidHost.Operations.GetModelingStage(dId);
+    if (!modStage.IsEmpty) { try { TopSolidHost.Operations.SetWorkingStage(modStage); TopSolidHost.Operations.ResetInsertionOperation(dId); } catch { } }
     Point3D orig = new Point3D(0, 0, 0);
     Plane3D plXY = new Plane3D(orig, Direction3D.DX, Direction3D.DY);
     ElementId sk = TopSolidHost.Sketches2D.CreateSketchIn3D(dId, new SmartPlane3D(plXY, -1.0, 1.0, -1.0, 1.0), new SmartPoint3D(orig), true, SmartDirection3D.DX);
@@ -5656,17 +5556,16 @@ try
     var allShapes = TopSolidHost.Shapes.GetShapes(dId);
     foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(dId))
     {
-        var repCons = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep);
-        foreach (ElementId s in allShapes)
-            if (!repCons.Contains(s)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, s);
+        try {
+            var repCons = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep);
+            if (!repCons.Contains(body)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, body);
+        } catch { }
     }
     ElementId profFrame = TopSolidHost.Geometries3D.CreateFrame(dId, new Frame3D(new Point3D(0, 0, 0), Direction3D.DX, Direction3D.DY, Direction3D.DZ));
     try { TopSolidHost.Elements.SetName(profFrame, "Repere_ExtrudedBar_XY_Z"); } catch { }
     if (!fncDoc.IsEmpty)
     {
-        ElementId fnc = ElementId.Empty;
-        foreach (var f in TopSolidHost.Entities.GetFunctions(dId)) { fnc = f; break; }
-        if (fnc.IsEmpty) fnc = TopSolidHost.Entities.ProvideFunction(dId, fncDoc, "");
+        ElementId fnc = TopSolidHost.Entities.ProvideFunction(dId, fncDoc, "");
         foreach (var pub in TopSolidHost.Entities.GetFunctionPublishings(fnc))
         {
             string pName = TopSolidHost.Elements.GetName(pub);
@@ -5694,11 +5593,12 @@ try
     TopSolidHost.Application.EndModification(true, true);
 }
 catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
+int invCount = 0; var invNames = new List<string>();
+foreach (var el in TopSolidHost.Elements.GetElements(dId)) { bool inv = false; try { inv = TopSolidHost.Elements.IsInvalid(el); } catch { } if (inv) { invCount++; invNames.Add(TopSolidHost.Elements.GetFriendlyName(el)); } }
 TopSolidHost.Pdm.Save(docPdm, true);
-return "OK: Extruded Bar part '" + docName + "' (" + profType + ", L=" + (lengthM * 1000.0) + "mm, holes=" + (string.IsNullOrEmpty(holesSpec) ? "0" : holesSpec) + ") created with Extruded Bar function (Frame XY/X/Z) and saved.";
+if (invCount > 0) return "Error: " + invCount + " invalid element(s) on '" + docName + "': " + string.Join(", ", invNames);
+return "OK: Extruded Bar part '" + docName + "' (" + profType + ", L=" + (lengthM * 1000.0) + "mm, holes=" + (string.IsNullOrEmpty(holesSpec) ? "0" : holesSpec) + ") created with Extruded Bar function (Frame XY/X/Z, 0 invalid elements) and saved.";
 ```
-
----
 
 ## create_sheet_metal_plate
 Pattern: RW
@@ -5750,25 +5650,49 @@ TopSolidHost.Documents.Open(ref dId);
 PdmObjectId matPdm = PdmObjectId.Empty;
 PdmObjectId cotPdm = PdmObjectId.Empty;
 string cotNameOnly = cotSpec.Contains(",") ? cotSpec.Substring(0, cotSpec.IndexOf(',')).Trim() : cotSpec;
+var matLibs = new List<PdmObjectId>();
+var cotLibs = new List<PdmObjectId>();
 foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
 {
     string lName = TopSolidHost.Pdm.GetName(lib);
-    if (!string.IsNullOrEmpty(matQuery) && matPdm.IsEmpty)
+    if (string.Equals(lName, "TopSolid MetalWork - Materials and Coatings", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Matériaux", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "Bois TopSolid", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Materials", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Wood", StringComparison.OrdinalIgnoreCase))
+        matLibs.Add(lib);
+    if (string.Equals(lName, "TopSolid MetalWork - Materials and Coatings", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "RAL Classics, By TopSolidBlog", StringComparison.OrdinalIgnoreCase) || string.Equals(lName, "TopSolid Matériaux", StringComparison.OrdinalIgnoreCase))
+        cotLibs.Add(lib);
+}
+if (!string.IsNullOrEmpty(matQuery))
+{
+    foreach (var lib in matLibs)
     {
-        bool ok = lName.IndexOf("CEN", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Mat", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Bois", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Wood", StringComparison.OrdinalIgnoreCase) >= 0;
-        if (ok)
+        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, matQuery))
+        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopMat") { matPdm = h; break; } }
+        if (!matPdm.IsEmpty) break;
+    }
+    if (matPdm.IsEmpty)
+    {
+        foreach (var lib in matLibs)
         {
             foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, "*" + matQuery + "*"))
-            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopMat") { matPdm = h; if (string.Equals(TopSolidHost.Pdm.GetName(h), matQuery, StringComparison.OrdinalIgnoreCase)) break; } }
+            { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopMat") { matPdm = h; break; } }
+            if (!matPdm.IsEmpty) break;
         }
     }
-    if (!string.IsNullOrEmpty(cotNameOnly) && cotPdm.IsEmpty)
+}
+if (!string.IsNullOrEmpty(cotNameOnly))
+{
+    foreach (var lib in cotLibs)
     {
-        bool ok = lName.IndexOf("RAL", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("Coating", StringComparison.OrdinalIgnoreCase) >= 0 || lName.IndexOf("MetalWork", StringComparison.OrdinalIgnoreCase) >= 0;
-        if (ok)
+        foreach (var h in TopSolidHost.Pdm.SearchDocumentByName(lib, cotNameOnly))
+        { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopCot") { cotPdm = h; break; } }
+        if (!cotPdm.IsEmpty) break;
+    }
+    if (cotPdm.IsEmpty)
+    {
+        foreach (var lib in cotLibs)
         {
             foreach (var h in TopSolidHost.Pdm.SearchDocumentByNameWithWildcards(lib, "*" + cotNameOnly + "*"))
             { string ext; TopSolidHost.Pdm.GetType(h, out ext); if (ext == ".TopCot") { cotPdm = h; break; } }
+            if (!cotPdm.IsEmpty) break;
         }
     }
 }
@@ -5781,9 +5705,12 @@ try
     var oldOps = TopSolidHost.Operations.GetOperations(dId);
     for (int oi = oldOps.Count - 1; oi >= 0; oi--)
     {
-        string tn = TopSolidHost.Elements.GetTypeFullName(oldOps[oi]);
-        if (tn.IndexOf("Shape", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Extrud", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Drill", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Sketch", StringComparison.OrdinalIgnoreCase) >= 0)
-            try { TopSolidHost.Elements.Delete(oldOps[oi]); } catch { }
+        try
+        {
+            string tn = TopSolidHost.Elements.GetTypeFullName(oldOps[oi]);
+            if (tn.IndexOf("Shape", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Extrud", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Drill", StringComparison.OrdinalIgnoreCase) >= 0 || tn.IndexOf("Sketch", StringComparison.OrdinalIgnoreCase) >= 0)
+                TopSolidHost.Elements.Delete(oldOps[oi]);
+        } catch { }
     }
     Point3D orig = new Point3D(0, 0, 0);
     Plane3D plXY = new Plane3D(orig, Direction3D.DX, Direction3D.DY);
@@ -5823,9 +5750,10 @@ try
     var allShapes = TopSolidHost.Shapes.GetShapes(dId);
     foreach (ElementId rep in TopSolidDesignHost.Representations.GetRepresentations(dId))
     {
-        var repCons = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep);
-        foreach (ElementId s in allShapes)
-            if (!repCons.Contains(s)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, s);
+        try {
+            var repCons = TopSolidDesignHost.Representations.GetRepresentationConstituents(rep);
+            if (!repCons.Contains(body)) TopSolidDesignHost.Representations.AddRepresentationConstituent(rep, body);
+        } catch { }
     }
     if (!matDoc.IsEmpty) TopSolidDesignHost.Parts.SetMaterial(dId, matDoc);
     try { TopSolidDesignHost.Parts.SetMassPropertyManagement(dId, true, new SmartReal(UnitType.Mass, 0)); } catch { }
@@ -5843,11 +5771,12 @@ try
     TopSolidHost.Application.EndModification(true, true);
 }
 catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
+int invCount = 0; var invNames = new List<string>();
+foreach (var el in TopSolidHost.Elements.GetElements(dId)) { bool inv = false; try { inv = TopSolidHost.Elements.IsInvalid(el); } catch { } if (inv) { invCount++; invNames.Add(TopSolidHost.Elements.GetFriendlyName(el)); } }
 TopSolidHost.Pdm.Save(docPdm, true);
-return "OK: Sheet/Plate part '" + docName + "' (" + (lx*1000) + "x" + (wy*1000) + "x" + (tz*1000) + "mm) created and saved.";
+if (invCount > 0) return "Error: " + invCount + " invalid element(s) on '" + docName + "': " + string.Join(", ", invNames);
+return "OK: Sheet/Plate part '" + docName + "' (" + (lx*1000) + "x" + (wy*1000) + "x" + (tz*1000) + "mm, 0 invalid elements) created and saved.";
 ```
-
----
 
 ## create_drilling
 Pattern: RW
@@ -5876,8 +5805,6 @@ var prims = new List<DrillingPrimitive> { new DrillingHolePrimitive(new SmartRea
 TopSolidDesignHost.Parts.CreateDrillingOperation(docId, new SmartShape(body), new SmartFrame3D(drF, -0.02, 0.02, -0.02, 0.02, -0.02, 0.02), prims, false);
 __message = "OK: Drilling d=" + (diam*1000) + "mm depth=" + (depth*1000) + "mm applied.";
 ```
-
----
 
 ## add_inclusion_positioned
 Pattern: RW
@@ -5953,19 +5880,26 @@ else
     tf = new Transform3D(vx.X, vy.X, vz.X, tx, vx.Y, vy.Y, vz.Y, ty, vx.Z, vy.Z, vz.Z, tz, 0, 0, 0, 1);
 }
 TopSolidHost.Application.StartModification("AddInclusion_" + childName, false);
+string uniqOccName = childName;
 try
 {
     TopSolidHost.Documents.EnsureIsDirty(ref asmDoc);
+    var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var pt in TopSolidDesignHost.Assemblies.GetParts(asmDoc))
+    {
+        try { usedNames.Add(TopSolidHost.Elements.GetFriendlyName(pt)); } catch { }
+        try { string fn = TopSolidHost.Entities.GetFunctionOccurrenceName(pt); if (!string.IsNullOrEmpty(fn)) usedNames.Add(fn); } catch { }
+    }
+    int sfx = 1;
+    while (usedNames.Contains(uniqOccName)) { sfx++; uniqOccName = childName + "_" + sfx; }
     ElementId posId = TopSolidDesignHost.Assemblies.CreatePositioning(asmDoc);
-    TopSolidDesignHost.Assemblies.CreateInclusion(asmDoc, posId, childName, childDoc, "", new List<string>(), new List<SmartObject>(), true, ElementId.Empty, ElementId.Empty, false, true, false, false, tf, true);
+    TopSolidDesignHost.Assemblies.CreateInclusion(asmDoc, posId, uniqOccName, childDoc, "", new List<string>(), new List<SmartObject>(), true, ElementId.Empty, ElementId.Empty, false, true, false, false, tf, true);
     TopSolidHost.Application.EndModification(true, true);
 }
 catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
 if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);
-return "OK: Included '" + childName + "' in '" + TopSolidHost.Documents.GetName(asmDoc) + "'.";
+return "OK: Included '" + childName + "' as '" + uniqOccName + "' in '" + TopSolidHost.Documents.GetName(asmDoc) + "'.";
 ```
-
----
 
 ## batch_add_inclusions
 Pattern: RW
@@ -6031,6 +5965,12 @@ try
         foreach (var op in TopSolidHost.Operations.GetOperations(asmDoc))
             try { if (TopSolidDesignHost.Assemblies.IsInclusion(op)) TopSolidHost.Elements.Delete(op); } catch { }
     }
+    var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var pt in TopSolidDesignHost.Assemblies.GetParts(asmDoc))
+    {
+        try { usedNames.Add(TopSolidHost.Elements.GetFriendlyName(pt)); } catch { }
+        try { string fn = TopSolidHost.Entities.GetFunctionOccurrenceName(pt); if (!string.IsNullOrEmpty(fn)) usedNames.Add(fn); } catch { }
+    }
     foreach (string item in items)
     {
         string[] c = item.Trim().Split(',');
@@ -6076,6 +6016,10 @@ try
             Direction3D vz = new Direction3D(cx*sy*cz + sx*sz, cx*sy*sz - sx*cz, cx*cy);
             tf = new Transform3D(vx.X, vy.X, vz.X, tx, vx.Y, vy.Y, vz.Y, ty, vx.Z, vy.Z, vz.Z, tz, 0, 0, 0, 1);
         }
+        string baseOcc = occName;
+        int sfx = 1;
+        while (usedNames.Contains(occName)) { sfx++; occName = baseOcc + "_" + sfx; }
+        usedNames.Add(occName);
         ElementId posId = TopSolidDesignHost.Assemblies.CreatePositioning(asmDoc);
         TopSolidDesignHost.Assemblies.CreateInclusion(asmDoc, posId, occName, childDoc, "", new List<string>(), new List<SmartObject>(), true, ElementId.Empty, ElementId.Empty, false, true, false, false, tf, true);
         count++;
@@ -6087,8 +6031,6 @@ if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);
 return "OK: Batch-included " + count + " occurrence(s) into '" + TopSolidHost.Documents.GetName(asmDoc) + "' and saved.";
 ```
 
----
-
 ## check_collisions
 Pattern: RW
 Description: Activates TopSolid native B-Rep 3D collision analysis (SetCollisionsManagement + ShapeShapeCollisionEntity) on an assembly, reports any colliding pairs, and restores Modeling stage. Param: value=[asm_doc_name]
@@ -6097,12 +6039,13 @@ Description: Activates TopSolid native B-Rep 3D collision analysis (SetCollision
 string targetAsmName = "{value}".Trim();
 DocumentId asmDoc = TopSolidHost.Documents.EditedDocument;
 PdmObjectId asmPdm = asmDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(asmDoc);
-if (!string.IsNullOrEmpty(targetAsmName))
+if (!string.IsNullOrEmpty(targetAsmName) && (asmDoc.IsEmpty || !string.Equals(TopSolidHost.Documents.GetName(asmDoc), targetAsmName, StringComparison.OrdinalIgnoreCase)))
 {
     PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();
     PdmObjectId foundPdm = PdmObjectId.Empty;
     List<PdmObjectId> rf; List<PdmObjectId> rd;
     TopSolidHost.Pdm.GetConstituents(proj, out rf, out rd);
+    foreach (var d in rd) if (string.Equals(TopSolidHost.Pdm.GetName(d), targetAsmName, StringComparison.OrdinalIgnoreCase)) { foundPdm = d; break; }
     for (int fi = rf.Count - 1; fi >= 0 && foundPdm.IsEmpty; fi--)
     {
         List<PdmObjectId> sf; List<PdmObjectId> sd;
@@ -6127,15 +6070,10 @@ try
     TopSolidDesignHost.Assemblies.SetCollisionsManagement(asmDoc, designRep, true, true, true);
     TopSolidDesignHost.Assemblies.SetCollisionsManagementCheckingMechanisms(asmDoc, false);
     TopSolidDesignHost.Assemblies.SetCollisionsManagementInvalidWhenColliding(asmDoc, false);
-    ElementId modStage = TopSolidHost.Operations.GetModelingStage(asmDoc);
-    if (!modStage.IsEmpty)
-    {
-        TopSolidHost.Operations.SetWorkingStage(modStage);
-        TopSolidHost.Operations.ResetInsertionOperation(asmDoc);
-    }
     TopSolidHost.Application.EndModification(true, true);
 }
 catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
+try { TopSolidHost.Documents.Update(asmDoc, false); } catch { }
 int collCount = 0;
 var sb = new StringBuilder();
 foreach (var el in TopSolidHost.Elements.GetElements(asmDoc))
@@ -6154,12 +6092,22 @@ foreach (var el in TopSolidHost.Elements.GetElements(asmDoc))
         sb.AppendLine("  COLLISION: " + string.Join(" <-> ", pair));
     }
 }
+TopSolidHost.Application.StartModification("RestoreModStage_" + TopSolidHost.Documents.GetName(asmDoc), false);
+try
+{
+    TopSolidHost.Documents.EnsureIsDirty(ref asmDoc);
+    ElementId modStage = TopSolidHost.Operations.GetModelingStage(asmDoc);
+    if (!modStage.IsEmpty)
+    {
+        TopSolidHost.Operations.SetWorkingStage(modStage);
+        TopSolidHost.Operations.ResetInsertionOperation(asmDoc);
+    }
+    TopSolidHost.Application.EndModification(true, true);
+}
+catch { TopSolidHost.Application.EndModification(false, false); }
 if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);
-return "OK: B-Rep Collision Check on '" + TopSolidHost.Documents.GetName(asmDoc) + "' — Collisions: " + collCount + (collCount > 0 ? "\
-" + sb.ToString() : " (0 collision)");
+return "OK: B-Rep Collision Check on '" + TopSolidHost.Documents.GetName(asmDoc) + "' — Collisions: " + collCount + (collCount > 0 ? "\n" + sb.ToString() : " (0 collision)");
 ```
-
----
 
 ## update_where_used_and_save
 Pattern: RW
@@ -6197,21 +6145,320 @@ foreach (var d in allDocs)
 int updatedParts = 0, updatedAsms = 0;
 foreach (var p in partsList)
 {
-    try { DocumentId dId = TopSolidHost.Documents.GetDocument(p); TopSolidHost.Documents.Update(dId, false); TopSolidHost.Pdm.Save(p, true); updatedParts++; } catch { }
+    try { TopSolidHost.Pdm.Save(p, true); updatedParts++; } catch { }
 }
 foreach (var a in asmsList)
 {
-    try { DocumentId dId = TopSolidHost.Documents.GetDocument(a); TopSolidHost.Documents.Update(dId, false); TopSolidHost.Pdm.Save(a, true); updatedAsms++; } catch { }
+    try { DocumentId dId = TopSolidHost.Documents.GetDocument(a); TopSolidHost.Documents.Open(ref dId); try { TopSolidHost.Documents.Update(dId, false); } catch { } TopSolidHost.Pdm.Save(a, true); updatedAsms++; } catch { }
 }
 foreach (var a in asmsList)
 {
-    try { DocumentId dId = TopSolidHost.Documents.GetDocument(a); TopSolidHost.Documents.Update(dId, false); TopSolidHost.Pdm.Save(a, true); } catch { }
+    try { DocumentId dId = TopSolidHost.Documents.GetDocument(a); TopSolidHost.Documents.Open(ref dId); try { TopSolidHost.Documents.Update(dId, false); } catch { } TopSolidHost.Pdm.Save(a, true); } catch { }
 }
 TopSolidHost.Pdm.Save(projPdm, true);
 return "OK: Where-Used bottom-up update & save complete on '" + TopSolidHost.Pdm.GetName(projPdm) + "' (Parts: " + updatedParts + ", Assemblies: " + updatedAsms + ").";
 ```
 
----
+## list_profile_families_and_codes
+Pattern: R
+Description: Lists standard TopSolid library profile families (.TopFam in 'Composants Mécanique TopSolid' & 'Mécanique AFNOR TopSolid') and their section codes. Param: value=[family_name[:code_filter]]
+
+```csharp
+string raw = "{value}".Trim();
+string famFilter = raw;
+string codeFilter = "";
+int cIdx = raw.IndexOf(':');
+if (cIdx >= 0) { famFilter = raw.Substring(0, cIdx).Trim(); codeFilter = raw.Substring(cIdx + 1).Trim(); }
+var sb = new StringBuilder();
+foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
+{
+    string libName = TopSolidHost.Pdm.GetName(lib);
+    if (libName != "Composants Mécanique TopSolid" && libName != "Mécanique AFNOR TopSolid") continue;
+    var stack = new Stack<PdmObjectId>();
+    List<PdmObjectId> rf; List<PdmObjectId> rd;
+    TopSolidHost.Pdm.GetConstituents(lib, out rf, out rd);
+    foreach (var f in rf)
+    {
+        string fn = TopSolidHost.Pdm.GetName(f);
+        if (fn == "Profilés" || fn == "Composants") stack.Push(f);
+    }
+    while (stack.Count > 0)
+    {
+        var cur = stack.Pop();
+        List<PdmObjectId> sf; List<PdmObjectId> sd;
+        TopSolidHost.Pdm.GetConstituents(cur, out sf, out sd);
+        foreach (var f in sf)
+        {
+            if (TopSolidHost.Pdm.GetName(cur) == "Composants" && TopSolidHost.Pdm.GetName(f) != "Profilés") continue;
+            stack.Push(f);
+        }
+        foreach (var d in sd)
+        {
+            string ext; TopSolidHost.Pdm.GetType(d, out ext);
+            if (!string.Equals(ext, ".TopFam", StringComparison.OrdinalIgnoreCase)) continue;
+            string dName = TopSolidHost.Pdm.GetName(d);
+            if (!string.IsNullOrEmpty(famFilter) && dName.IndexOf(famFilter, StringComparison.OrdinalIgnoreCase) < 0) continue;
+            DocumentId famDoc = TopSolidHost.Documents.GetDocument(d);
+            var codes = TopSolidHost.Families.GetCodes(famDoc);
+            var matched = new List<string>();
+            string normFilter = codeFilter.Replace("x", "\u00d7").Replace("X", "\u00d7").Replace("*", "\u00d7").Replace(" ", "");
+            foreach (var c in codes)
+            {
+                if (string.IsNullOrEmpty(normFilter) || c.Replace(" ", "").IndexOf(normFilter, StringComparison.OrdinalIgnoreCase) >= 0)
+                    matched.Add(c.Replace("\u00d7", "x"));
+            }
+            sb.AppendLine("[" + libName + "] " + dName + " (" + matched.Count + "/" + codes.Count + " codes): " + string.Join(", ", matched.Take(25)));
+        }
+    }
+}
+return sb.Length > 0 ? sb.ToString() : "No matching profile family found.";
+```
+
+## create_profile_by_two_points
+Pattern: RW
+Description: Places a standard TopSolid 7.21 library profile (.TopFam: Plat, Tube rectangle, Tube carré, Tube rond, Rond, Carré) between two 3D points (mm) in an assembly using TopSolidDesignHost.Assemblies.CreateProfileByTwoPoints. Param: value=[asm_doc_name:]family_name,code,x1_mm,y1_mm,z1_mm,x2_mm,y2_mm,z2_mm[,dir(DX|DY|DZ),rotation_deg,offsetX_mm,offsetY_mm,isInverted]
+
+```csharp
+string raw = "{value}".Trim();
+string targetAsmName = "";
+int colonIdx = raw.IndexOf(':');
+if (colonIdx > 0) { targetAsmName = raw.Substring(0, colonIdx).Trim(); raw = raw.Substring(colonIdx + 1).Trim(); }
+string[] p = raw.Split(',');
+if (p.Length < 8) return "Error: Format is [asm_doc_name:]family_name,code,x1_mm,y1_mm,z1_mm,x2_mm,y2_mm,z2_mm[,dir(DX|DY|DZ),rotation_deg,offsetX_mm,offsetY_mm,isInverted]";
+string famName = p[0].Trim();
+string rawCode = p[1].Trim();
+double x1 = double.Parse(p[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+double y1 = double.Parse(p[3].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+double z1 = double.Parse(p[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+double x2 = double.Parse(p[5].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+double y2 = double.Parse(p[6].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+double z2 = double.Parse(p[7].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+string dirStr = p.Length > 8 ? p[8].Trim().ToUpperInvariant() : "";
+double rotRad = p.Length > 9 && !string.IsNullOrEmpty(p[9].Trim()) ? double.Parse(p[9].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;
+double offX = p.Length > 10 && !string.IsNullOrEmpty(p[10].Trim()) ? double.Parse(p[10].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0 : 0.0;
+double offY = p.Length > 11 && !string.IsNullOrEmpty(p[11].Trim()) ? double.Parse(p[11].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0 : 0.0;
+bool isInv = p.Length > 12 && (p[12].Trim() == "1" || p[12].Trim().Equals("true", StringComparison.OrdinalIgnoreCase));
+DocumentId famDoc = DocumentId.Empty;
+foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
+{
+    string libName = TopSolidHost.Pdm.GetName(lib);
+    if (libName != "Composants Mécanique TopSolid" && libName != "Mécanique AFNOR TopSolid") continue;
+    var stack = new Stack<PdmObjectId>();
+    List<PdmObjectId> rf; List<PdmObjectId> rd;
+    TopSolidHost.Pdm.GetConstituents(lib, out rf, out rd);
+    foreach (var f in rf) { string fn = TopSolidHost.Pdm.GetName(f); if (fn == "Profilés" || fn == "Composants") stack.Push(f); }
+    while (stack.Count > 0 && famDoc.IsEmpty)
+    {
+        var cur = stack.Pop();
+        List<PdmObjectId> sf; List<PdmObjectId> sd;
+        TopSolidHost.Pdm.GetConstituents(cur, out sf, out sd);
+        foreach (var f in sf) { if (TopSolidHost.Pdm.GetName(cur) == "Composants" && TopSolidHost.Pdm.GetName(f) != "Profilés") continue; stack.Push(f); }
+        foreach (var d in sd)
+        {
+            string ext; TopSolidHost.Pdm.GetType(d, out ext);
+            if (string.Equals(ext, ".TopFam", StringComparison.OrdinalIgnoreCase) && string.Equals(TopSolidHost.Pdm.GetName(d), famName, StringComparison.OrdinalIgnoreCase))
+            { famDoc = TopSolidHost.Documents.GetDocument(d); break; }
+        }
+    }
+    if (!famDoc.IsEmpty) break;
+}
+if (famDoc.IsEmpty) return "Error: Profile family '" + famName + "' not found in standard libraries.";
+var allCodes = TopSolidHost.Families.GetCodes(famDoc);
+string normInput = rawCode.Replace("x", "\u00d7").Replace("X", "\u00d7").Replace("*", "\u00d7").Replace(" ", "");
+string matchedCode = "";
+foreach (var c in allCodes) { if (string.Equals(c.Replace(" ", ""), normInput, StringComparison.OrdinalIgnoreCase)) { matchedCode = c; break; } }
+if (string.IsNullOrEmpty(matchedCode)) return "Error: Code '" + rawCode + "' not found in family '" + famName + "'. Sample codes: " + string.Join(", ", allCodes.Take(10));
+DocumentId asmDoc = TopSolidHost.Documents.EditedDocument;
+PdmObjectId asmPdm = asmDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(asmDoc);
+if (!string.IsNullOrEmpty(targetAsmName) && (asmDoc.IsEmpty || !string.Equals(TopSolidHost.Documents.GetName(asmDoc), targetAsmName, StringComparison.OrdinalIgnoreCase)))
+{
+    PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();
+    PdmObjectId foundPdm = PdmObjectId.Empty;
+    List<PdmObjectId> rf; List<PdmObjectId> rd;
+    TopSolidHost.Pdm.GetConstituents(proj, out rf, out rd);
+    foreach (var d in rd) if (string.Equals(TopSolidHost.Pdm.GetName(d), targetAsmName, StringComparison.OrdinalIgnoreCase)) { foundPdm = d; break; }
+    for (int fi = rf.Count - 1; fi >= 0 && foundPdm.IsEmpty; fi--)
+    {
+        List<PdmObjectId> sf; List<PdmObjectId> sd;
+        TopSolidHost.Pdm.GetConstituents(rf[fi], out sf, out sd);
+        foreach (var d in sd) if (string.Equals(TopSolidHost.Pdm.GetName(d), targetAsmName, StringComparison.OrdinalIgnoreCase)) { foundPdm = d; break; }
+    }
+    if (foundPdm.IsEmpty) return "Error: Assembly '" + targetAsmName + "' not found.";
+    asmPdm = foundPdm; asmDoc = TopSolidHost.Documents.GetDocument(asmPdm);
+}
+if (asmDoc.IsEmpty) return "Error: No active assembly.";
+TopSolidHost.Documents.Open(ref asmDoc);
+double dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
+double len = Math.Sqrt(dx*dx + dy*dy + dz*dz);
+SmartDirection3D sDir = SmartDirection3D.DZ;
+if (dirStr == "DX") sDir = SmartDirection3D.DX;
+else if (dirStr == "DY") sDir = SmartDirection3D.DY;
+else if (dirStr == "DZ") sDir = SmartDirection3D.DZ;
+else { sDir = (Math.Abs(dz / len) > 0.9) ? SmartDirection3D.DX : SmartDirection3D.DZ; }
+TopSolidHost.Application.StartModification("CreateProfile721_" + famName, false);
+ElementId profOp = ElementId.Empty;
+try
+{
+    TopSolidHost.Documents.EnsureIsDirty(ref asmDoc);
+    ElementId modStage = TopSolidHost.Operations.GetModelingStage(asmDoc);
+    if (!modStage.IsEmpty) { try { TopSolidHost.Operations.SetWorkingStage(modStage); TopSolidHost.Operations.ResetInsertionOperation(asmDoc); } catch { } }
+    profOp = TopSolidDesignHost.Assemblies.CreateProfileByTwoPoints(
+        asmDoc, famDoc, matchedCode,
+        new List<string>(), new List<SmartObject>(),
+        new List<string>(), new List<SmartDesignObject>(),
+        new SmartPoint3D(new Point3D(x1, y1, z1)),
+        new SmartPoint3D(new Point3D(x2, y2, z2)),
+        sDir,
+        new SmartReal(UnitType.Length, offX),
+        new SmartReal(UnitType.Length, offY),
+        new SmartReal(UnitType.Angle, rotRad),
+        isInv);
+    TopSolidHost.Application.EndModification(true, true);
+}
+catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
+int invalidCount = 0;
+foreach (var el in TopSolidHost.Elements.GetElements(asmDoc)) { try { if (TopSolidHost.Elements.IsInvalid(el)) invalidCount++; } catch { } }
+if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);
+return "OK: Created 7.21 library profile '" + famName + " " + matchedCode.Replace("\u00d7", "x") + "' (L=" + (len*1000).ToString("F0") + " mm, op=" + profOp.Id + ", Invalid=" + invalidCount + ") in '" + TopSolidHost.Documents.GetName(asmDoc) + "'.";
+```
+
+## batch_create_profiles_by_two_points
+Pattern: RW
+Description: Batch-creates multiple standard TopSolid 7.21 library profiles (.TopFam: Plat, Tube rectangle, Tube carré, Tube rond, Rond, Carré) in an assembly in a single transaction and saves. Param: value=[asm_doc_name[@clear]:]family,code,x1_mm,y1_mm,z1_mm,x2_mm,y2_mm,z2_mm[,dir(DX|DY|DZ),rot_deg,offX_mm,offY_mm];...
+
+```csharp
+string raw = "{value}".Trim();
+string targetAsmName = "";
+bool clearExisting = false;
+int colonIdx = raw.IndexOf(':');
+if (colonIdx > 0)
+{
+    targetAsmName = raw.Substring(0, colonIdx).Trim();
+    if (targetAsmName.EndsWith("@clear", StringComparison.OrdinalIgnoreCase))
+    {
+        clearExisting = true;
+        targetAsmName = targetAsmName.Substring(0, targetAsmName.Length - 6).Trim();
+    }
+    raw = raw.Substring(colonIdx + 1).Trim();
+}
+var famCache = new Dictionary<string, DocumentId>(StringComparer.OrdinalIgnoreCase);
+var codeCache = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+foreach (var lib in TopSolidHost.Pdm.GetProjects(false, true))
+{
+    string libName = TopSolidHost.Pdm.GetName(lib);
+    if (libName != "Composants Mécanique TopSolid" && libName != "Mécanique AFNOR TopSolid") continue;
+    var stack = new Stack<PdmObjectId>();
+    List<PdmObjectId> rf; List<PdmObjectId> rd;
+    TopSolidHost.Pdm.GetConstituents(lib, out rf, out rd);
+    foreach (var f in rf) { string fn = TopSolidHost.Pdm.GetName(f); if (fn == "Profilés" || fn == "Composants") stack.Push(f); }
+    while (stack.Count > 0)
+    {
+        var cur = stack.Pop();
+        List<PdmObjectId> sf; List<PdmObjectId> sd;
+        TopSolidHost.Pdm.GetConstituents(cur, out sf, out sd);
+        foreach (var f in sf) { if (TopSolidHost.Pdm.GetName(cur) == "Composants" && TopSolidHost.Pdm.GetName(f) != "Profilés") continue; stack.Push(f); }
+        foreach (var d in sd)
+        {
+            string ext; TopSolidHost.Pdm.GetType(d, out ext);
+            if (!string.Equals(ext, ".TopFam", StringComparison.OrdinalIgnoreCase)) continue;
+            string dn = TopSolidHost.Pdm.GetName(d);
+            if (!famCache.ContainsKey(dn))
+            {
+                DocumentId fd = TopSolidHost.Documents.GetDocument(d);
+                famCache[dn] = fd;
+                codeCache[dn] = TopSolidHost.Families.GetCodes(fd);
+            }
+        }
+    }
+}
+DocumentId asmDoc = TopSolidHost.Documents.EditedDocument;
+PdmObjectId asmPdm = asmDoc.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(asmDoc);
+if (!string.IsNullOrEmpty(targetAsmName) && (asmDoc.IsEmpty || !string.Equals(TopSolidHost.Documents.GetName(asmDoc), targetAsmName, StringComparison.OrdinalIgnoreCase)))
+{
+    PdmObjectId proj = TopSolidHost.Pdm.GetCurrentProject();
+    PdmObjectId foundPdm = PdmObjectId.Empty;
+    List<PdmObjectId> rf; List<PdmObjectId> rd;
+    TopSolidHost.Pdm.GetConstituents(proj, out rf, out rd);
+    foreach (var d in rd) if (string.Equals(TopSolidHost.Pdm.GetName(d), targetAsmName, StringComparison.OrdinalIgnoreCase)) { foundPdm = d; break; }
+    for (int fi = rf.Count - 1; fi >= 0 && foundPdm.IsEmpty; fi--)
+    {
+        List<PdmObjectId> sf; List<PdmObjectId> sd;
+        TopSolidHost.Pdm.GetConstituents(rf[fi], out sf, out sd);
+        foreach (var d in sd) if (string.Equals(TopSolidHost.Pdm.GetName(d), targetAsmName, StringComparison.OrdinalIgnoreCase)) { foundPdm = d; break; }
+    }
+    if (foundPdm.IsEmpty) return "Error: Assembly '" + targetAsmName + "' not found.";
+    asmPdm = foundPdm; asmDoc = TopSolidHost.Documents.GetDocument(asmPdm);
+}
+if (asmDoc.IsEmpty) return "Error: No active assembly.";
+TopSolidHost.Documents.Open(ref asmDoc);
+string[] items = raw.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+TopSolidHost.Application.StartModification("BatchProfiles721_" + TopSolidHost.Documents.GetName(asmDoc), false);
+int count = 0;
+try
+{
+    TopSolidHost.Documents.EnsureIsDirty(ref asmDoc);
+    ElementId modStage = TopSolidHost.Operations.GetModelingStage(asmDoc);
+    if (!modStage.IsEmpty) { try { TopSolidHost.Operations.SetWorkingStage(modStage); TopSolidHost.Operations.ResetInsertionOperation(asmDoc); } catch { } }
+    if (clearExisting)
+    {
+        foreach (var op in TopSolidHost.Operations.GetOperations(asmDoc))
+        {
+            string tn = TopSolidHost.Elements.GetTypeFullName(op);
+            if (tn.IndexOf("ExtrudedBar", StringComparison.OrdinalIgnoreCase) >= 0)
+                try { TopSolidHost.Elements.Delete(op); } catch { }
+        }
+    }
+    foreach (string item in items)
+    {
+        string[] p = item.Trim().Split(',');
+        if (p.Length < 8) continue;
+        string famName = p[0].Trim();
+        string rawCode = p[1].Trim();
+        if (!famCache.ContainsKey(famName)) throw new Exception("Profile family '" + famName + "' not found.");
+        DocumentId famDoc = famCache[famName];
+        string normInput = rawCode.Replace("x", "\u00d7").Replace("X", "\u00d7").Replace("*", "\u00d7").Replace(" ", "");
+        string matchedCode = "";
+        foreach (var c in codeCache[famName]) { if (string.Equals(c.Replace(" ", ""), normInput, StringComparison.OrdinalIgnoreCase)) { matchedCode = c; break; } }
+        if (string.IsNullOrEmpty(matchedCode)) throw new Exception("Code '" + rawCode + "' not found in family '" + famName + "'.");
+        double x1 = double.Parse(p[2].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+        double y1 = double.Parse(p[3].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+        double z1 = double.Parse(p[4].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+        double x2 = double.Parse(p[5].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+        double y2 = double.Parse(p[6].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+        double z2 = double.Parse(p[7].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0;
+        string dirStr = p.Length > 8 ? p[8].Trim().ToUpperInvariant() : "";
+        double rotRad = p.Length > 9 && !string.IsNullOrEmpty(p[9].Trim()) ? double.Parse(p[9].Trim(), System.Globalization.CultureInfo.InvariantCulture) * Math.PI / 180.0 : 0.0;
+        double offX = p.Length > 10 && !string.IsNullOrEmpty(p[10].Trim()) ? double.Parse(p[10].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0 : 0.0;
+        double offY = p.Length > 11 && !string.IsNullOrEmpty(p[11].Trim()) ? double.Parse(p[11].Trim(), System.Globalization.CultureInfo.InvariantCulture) / 1000.0 : 0.0;
+        bool isInv = p.Length > 12 && (p[12].Trim() == "1" || p[12].Trim().Equals("true", StringComparison.OrdinalIgnoreCase));
+        double dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
+        double len = Math.Sqrt(dx*dx + dy*dy + dz*dz);
+        SmartDirection3D sDir = SmartDirection3D.DZ;
+        if (dirStr == "DX") sDir = SmartDirection3D.DX;
+        else if (dirStr == "DY") sDir = SmartDirection3D.DY;
+        else if (dirStr == "DZ") sDir = SmartDirection3D.DZ;
+        else { sDir = (Math.Abs(dz / len) > 0.9) ? SmartDirection3D.DX : SmartDirection3D.DZ; }
+        TopSolidDesignHost.Assemblies.CreateProfileByTwoPoints(
+            asmDoc, famDoc, matchedCode,
+            new List<string>(), new List<SmartObject>(),
+            new List<string>(), new List<SmartDesignObject>(),
+            new SmartPoint3D(new Point3D(x1, y1, z1)),
+            new SmartPoint3D(new Point3D(x2, y2, z2)),
+            sDir,
+            new SmartReal(UnitType.Length, offX),
+            new SmartReal(UnitType.Length, offY),
+            new SmartReal(UnitType.Angle, rotRad),
+            isInv);
+        count++;
+    }
+    TopSolidHost.Application.EndModification(true, true);
+}
+catch (Exception ex) { TopSolidHost.Application.EndModification(false, false); return "Error: " + ex.Message; }
+int invalidCount = 0;
+foreach (var el in TopSolidHost.Elements.GetElements(asmDoc)) { try { if (TopSolidHost.Elements.IsInvalid(el)) invalidCount++; } catch { } }
+if (!asmPdm.IsEmpty) TopSolidHost.Pdm.Save(asmPdm, true);
+return "OK: Batch-created " + count + " 7.21 library profile(s) in '" + TopSolidHost.Documents.GetName(asmDoc) + "' (Invalid=" + invalidCount + ") and saved.";
+```
 
 ## export_project_xliff
 Pattern: RD
@@ -6274,8 +6521,6 @@ foreach (string f in files)
 return sb.ToString();
 ```
 
----
-
 ## import_project_xliff
 Pattern: RW
 Description: Imports translated XLIFF (.xliff) localization file(s) into a TopSolid project (project translation / traduction / localisation / dictionnaire — updates translated names and designations without modifying invariant names). Param: value=[project_name;]xliff_file_or_dir_path (e.g. C:\temp\xliff or MyProject;C:\temp\xliff\MyProject.fr.xliff)
@@ -6326,5 +6571,3 @@ if (errors.Count > 0)
 }
 return "OK: Imported XLIFF localization into project '" + TopSolidHost.Pdm.GetName(projPdm) + "' from '" + targetPath + "' (0 errors).";
 ```
-
----
