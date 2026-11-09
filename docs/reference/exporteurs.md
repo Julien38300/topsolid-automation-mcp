@@ -133,7 +133,7 @@ Constate sur TopSolid 7.20, importeur « SolidWorks (Spatial) » (`.sldprt`, `.s
 |---|---|
 | SLDPRT d'un seul corps | une `.TopPrt` et un `.TopMat` (avec `TRANSLATES_MATERIAL=True`) |
 | SLDPRT de plusieurs corps | une `.TopAsm` et un sous-dossier de `.TopPrt`, une par corps |
-| SLDASM | une `.TopAsm` et des pieces nommees « Copie de <ref>^<assemblage> » |
+| SLDASM | une `.TopAsm` et des pieces nommees « `Copie de <ref>^<assemblage>` » |
 
 Consequences :
 - la `.TopAsm` creee n'a **aucune forme** dans sa representation detaillee : exporter ses pieces, pas elle (voir l'encadre plus haut) ;
