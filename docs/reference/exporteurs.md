@@ -123,7 +123,22 @@ foreach (var msg in log) Console.WriteLine("[Import] " + msg);
 if (badDocs.Count > 0) Console.WriteLine("WARN: " + badDocs.Count + " documents importes avec erreurs.");
 ```
 
-Pour `ImportWithOptions`, la logique est identique : `GetImporterOptions(idx)` puis passer la liste modifiee.
+Pour `ImportWithOptions`, la logique est identique : `GetImporterOptions(idx)` puis passer la liste modifiee. Mettre `IS_TRANSLATOR_SILENT=True` pour eviter les boites de dialogue de l'importeur. La recette `import_file` fait tout cela pour un fichier.
+
+### Ce que cree l'importeur SolidWorks (Spatial)
+
+Constate sur TopSolid 7.20, importeur « SolidWorks (Spatial) » (`.sldprt`, `.sldasm`, `.slddrw`) :
+
+| Fichier source | Documents crees |
+|---|---|
+| SLDPRT d'un seul corps | une `.TopPrt` et un `.TopMat` (avec `TRANSLATES_MATERIAL=True`) |
+| SLDPRT de plusieurs corps | une `.TopAsm` et un sous-dossier de `.TopPrt`, une par corps |
+| SLDASM | une `.TopAsm` et des pieces nommees « Copie de <ref>^<assemblage> » |
+
+Consequences :
+- la `.TopAsm` creee n'a **aucune forme** dans sa representation detaillee : exporter ses pieces, pas elle (voir l'encadre plus haut) ;
+- ne jamais prendre le premier document cree a l'aveugle : ce peut etre l'assemblage vide ou un materiau. Filtrer sur `Shapes.GetShapes(doc).Count > 0` ;
+- chaque import cree son propre `.TopMat` : pour un import en lot, regrouper les materiaux de meme nom.
 
 ## Importer dans un modele precis (Wooden Part, etc.)
 
@@ -206,6 +221,9 @@ TopSolidHost.Documents.Export(idx, docId, @"C:\exports\plan.pdf");
 | Export d'assemblage sans les parts | Fichier vide ou incomplet | Verifier `CanExport` + que les inclusions sont a jour (`Rebuild` avant export) |
 | Caracteres non-ASCII dans le chemin | Exception ou fichier corrompu selon l'exporteur | Prefixer avec `\\?\` sur Windows, ou migrer vers un chemin ASCII sur (C:\temp) |
 | Export depuis un doc dirty | Le fichier contient la version SAUVEGARDEE, pas la version en cours | `Pdm.Save(pdmId, true)` avant l'export |
+| Export d'un document sans forme | Boite modale « aucune entite a exporter », TopSolid gele puis peut tomber | `Shapes.GetShapes(docId).Count > 0` avant tout export 3D ; recette `export_file` |
+| `PdmObjectId.ToString()` comme cle | Tous les objets semblent identiques (meme texte = nom du type) | Garder le `PdmObjectId` comme cle, comparer avec `Equals` |
+| `Documents.IsOpen` | Erreur de compilation : la methode n'existe pas | `Documents.GetOpenDocuments().Contains(docId)` |
 | Creation de document dans une transaction | `CreateDocument` / `CreateDocumentWithTemplate` rejetes par TopSolid, aucun document cree | Recette `create_document_with_template` (mode RN, hors transaction), ou definir le modele par defaut du projet |
 
 ## Utilisation standalone (hors MCP)

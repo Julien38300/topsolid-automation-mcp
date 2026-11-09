@@ -12,9 +12,6 @@ namespace TopSolidMcpServer.Tools
     /// </summary>
     public class ModifyScriptTool
     {
-        /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
-        private const int MaxOutputChars = 8000;
-
         private readonly Func<TopSolidConnector> _connectorProvider;
 
         public ModifyScriptTool(Func<TopSolidConnector> connectorProvider)
@@ -59,7 +56,7 @@ namespace TopSolidMcpServer.Tools
         /// </summary>
         public string Execute(JObject arguments)
         {
-            return Truncate(ExecuteCore(arguments));
+            return ScriptOutputLimit.Apply(ExecuteCore(arguments), ScriptOutputLimit.CurrentMaxChars());
         }
 
         private string ExecuteCore(JObject arguments)
@@ -83,17 +80,6 @@ namespace TopSolidMcpServer.Tools
                 Console.Error.WriteLine("[ModifyScriptTool] Unexpected error: " + ex.Message);
                 return "Error while executing the modification script: " + ex.Message;
             }
-        }
-
-        /// <summary>
-        /// Caps the output length and appends an explicit marker when text was cut.
-        /// </summary>
-        private static string Truncate(string output)
-        {
-            if (string.IsNullOrEmpty(output) || output.Length <= MaxOutputChars)
-                return output;
-
-            return output.Substring(0, MaxOutputChars) + "\n... [output truncated - refine your query]";
         }
     }
 }

@@ -232,6 +232,7 @@ Toutes ces options se passent soit en argument de ligne de commande, soit par va
 | `--version` / `-v` | — | Affiche la version et sort |
 | — | `TOPSOLID_BIN_PATH` | Dossier contenant `TopSolid.Kernel.Automating.dll`, quand la detection automatique echoue |
 | — | `TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC` | Delai max d'execution d'un script, en secondes (defaut 60) |
+| — | `TOPSOLID_MCP_SCRIPT_MAX_OUTPUT_CHARS` | Taille max du texte renvoye par `topsolid_execute_script` et `topsolid_modify_script` (defaut 30000 caracteres, minimum 1000) |
 | — | `TOPSOLID_MCP_ALLOW_UNSAFE=1` | Desactive le controle des APIs interdites — debug uniquement, jamais en usage courant |
 
 Exemple de configuration en lecture seule, sans icone de notification, avec un chemin TopSolid force :

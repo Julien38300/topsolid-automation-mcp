@@ -32,6 +32,7 @@
     <Compile Include="..\..\src\Utils\TopSolidInstanceList.cs" Link="TopSolidInstanceList.cs" />
     <Compile Include="..\..\src\Utils\DialogReport.cs" Link="DialogReport.cs" />
     <Compile Include="..\..\src\Utils\WindowInfo.cs" Link="WindowInfo.cs" />
+    <Compile Include="..\..\src\Utils\ScriptOutputLimit.cs" Link="ScriptOutputLimit.cs" />
     <Compile Include="..\..\src\Utils\TraySettings.cs" Link="TraySettings.cs" />
     <Compile Include="..\..\src\Protocol\McpToolRegistry.cs" Link="McpToolRegistry.cs" />
     <Compile Include="..\..\src\Protocol\Models\McpToolDescriptor.cs" Link="McpToolDescriptor.cs" />

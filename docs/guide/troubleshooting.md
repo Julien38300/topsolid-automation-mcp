@@ -207,6 +207,12 @@ Causes possibles :
 2. **Le document n'est pas en edition** — il est ouvert mais pas en mode edition (double-cliquez dessus dans l'arborescence)
 3. **TopSolid vient d'etre redemarre** — relancez le client MCP pour forcer une reconnexion
 
+## TopSolid a plante pendant une session
+
+Apres un plantage de TopSolid, le serveur repond « TopSolid not connected » a chaque appel. C'est normal : il ne faut ni le tuer ni le relancer. Des que TopSolid redemarre avec l'acces distant actif, le serveur se reconnecte tout seul (la reconnexion apparait dans `server.log`). Attendre que `topsolid_get_state` reponde sans erreur avant de reprendre.
+
+Si le plantage a suivi un export, voir plus haut « Un script expire au bout de 60 s » : un export d'un document sans forme en est la cause la plus frequente.
+
 ## TopSolid est lance mais le serveur ne le voit pas
 
 Verifier que :

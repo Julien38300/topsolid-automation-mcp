@@ -45,7 +45,13 @@ namespace TopSolidMcpServer.Tests
                 Method("IElements", "Delete", "ElementId"),
                 Method("IDocuments", "GetDocument", "PdmObjectId"),
                 Method("IDocuments", "GetOpenDocuments"),
-                Method("IPdm", "CreateFolder", "PdmObjectId", "System.String")
+                Method("IPdm", "CreateFolder", "PdmObjectId", "System.String"),
+                Method("IPdm", "GetProjectFolderConstituents", "PdmProjectFolderId"),
+                Method("IPdm", "HasProjectFolderConstituents", "PdmProjectFolderId"),
+                Method("IParts", "SetMaterial", "DocumentId", "DocumentId"),
+                Method("IParts", "GetMaterial", "DocumentId"),
+                Method("IMaterials", "SetDensity", "DocumentId", "System.Double"),
+                Method("IMaterials", "SetMaterialModel", "DocumentId", "MaterialModelType")
             };
 
             // Enough "Get..." and "...Document..." methods to overflow the 100-edge keyword pool,
@@ -115,6 +121,39 @@ namespace TopSolidMcpServer.Tests
             Assert.That(result, Does.Contain("IPdm ("), result);
             Assert.That(result, Does.Contain("DeleteSeveral"));
             Assert.That(result, Does.Contain("IPdm.DeleteSeveral(objectIds)"), "the usage tip should name the PDM deletion method");
+        }
+
+        private static string FirstMethodLine(string result)
+        {
+            return result.Split('\n').FirstOrDefault(l => l.TrimStart().StartsWith("TopSolid.")) ?? "";
+        }
+
+        [TestCase("GetConstituents folder", "IPdm.GetConstituents(")]
+        [TestCase("SetMaterial part", "IParts.SetMaterial(")]
+        public void QueryWordThatIsAMethodName_PutsThatMethodFirst(string query, string expectedFirst)
+        {
+            string result = Ask(query);
+
+            Assert.That(FirstMethodLine(result), Does.Contain(expectedFirst), result);
+        }
+
+        [Test]
+        public void PartMaterialQuery_TipNamesTheDesignHost()
+        {
+            Assert.That(Ask("SetMaterial part"), Does.Contain("TopSolidDesignHost.Parts.SetMaterial"));
+        }
+
+        [Test]
+        public void IsOpen_TipPointsAtGetOpenDocuments()
+        {
+            Assert.That(Ask("IsOpen"), Does.Contain("GetOpenDocuments().Contains("));
+        }
+
+        [TestCase("PdmObjectId ToString")]
+        [TestCase("PdmObjectId")]
+        public void PdmObjectIdQueries_WarnAboutToString(string query)
+        {
+            Assert.That(Ask(query), Does.Contain("ToString() returns the type name"));
         }
 
         [Test]

@@ -168,6 +168,10 @@ Une liste noire refuse quelques symboles avant compilation (`System.Diagnostics.
 **N'ajoutez pas `topsolid_execute_script` ni `topsolid_modify_script` a la liste des outils auto-approuves de votre client MCP.** Relisez chaque script avant de le laisser tourner. Si vous n'avez besoin que de lire, lancez le serveur avec `--read-only`.
 :::
 
+::: tip Sortie longue
+Le texte renvoye est limite a 30 000 caracteres (variable `TOPSOLID_MCP_SCRIPT_MAX_OUTPUT_CHARS`). Au-dela, la **premiere ligne** l'annonce (`[OUTPUT TRUNCATED: first N of M characters shown...]`) avant les donnees : un JSON coupe ne passe donc pas inapercu. Pour un gros resultat, l'ecrire dans un fichier et renvoyer son chemin.
+:::
+
 ## topsolid_modify_script
 
 Identique a `execute_script` mais pour les **modifications**. Gere automatiquement `StartModification` / `EndModification` / `Save`.

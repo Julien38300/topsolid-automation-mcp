@@ -175,6 +175,12 @@ namespace TopSolidMcpServer.Tools
             { "delete", "PDM objects (documents, folders) are deleted with IPdm.DeleteSeveral(objectIds) (List<PdmObjectId>), project folders with IPdm.DeleteProjectFolder. Elements INSIDE an open document use IElements.Delete / IElements.DeleteSeveral. Before deleting, check that nothing you keep still references the objects." },
             { "supprim", "PDM objects (documents, folders) are deleted with IPdm.DeleteSeveral(objectIds) (List<PdmObjectId>), project folders with IPdm.DeleteProjectFolder. Elements INSIDE an open document use IElements.Delete / IElements.DeleteSeveral. Before deleting, check that nothing you keep still references the objects." },
             { "suppression", "PDM objects (documents, folders) are deleted with IPdm.DeleteSeveral(objectIds) (List<PdmObjectId>), project folders with IPdm.DeleteProjectFolder. Elements INSIDE an open document use IElements.Delete / IElements.DeleteSeveral. Before deleting, check that nothing you keep still references the objects." },
+            { "isopen", "IDocuments has no IsOpen method: use TopSolidHost.Documents.GetOpenDocuments().Contains(docId). Close what you opened with Documents.Close(docId, false, false)." },
+            { "pdmobjectid", "PdmObjectId.ToString() returns the type name, identical for every object: never use it as a dictionary or HashSet key. Compare ids with Equals, or keep the PdmObjectId itself as the key." },
+            { "tostring", "PdmObjectId.ToString() returns the type name, identical for every object: never use it as a dictionary or HashSet key. Compare ids with Equals, or keep the PdmObjectId itself as the key." },
+            { "material", "The material OF A PART: TopSolidDesignHost.Parts.SetMaterial(partDocId, materialDocId) inside StartModification, Parts.GetMaterial(partDocId) to read it (recipe set_material). IMaterials edits the material document itself (density, appearance)." },
+            { "materiau", "The material OF A PART: TopSolidDesignHost.Parts.SetMaterial(partDocId, materialDocId) inside StartModification, Parts.GetMaterial(partDocId) to read it (recipe set_material). IMaterials edits the material document itself (density, appearance)." },
+            { "matiere", "The material OF A PART: TopSolidDesignHost.Parts.SetMaterial(partDocId, materialDocId) inside StartModification, Parts.GetMaterial(partDocId) to read it (recipe set_material). IMaterials edits the material document itself (density, appearance)." },
             { "constituent", "IPdm.GetConstituents(containerId, out folderIds, out documentIds) lists the folders and documents of a project or folder. IElements.GetConstituents(elementId) is unrelated: it lists the sub-elements of a composite element inside a document." },
             { "import", "Prefer the 'import_file' recipe. In a script: find the importer with GetImporterFileType() + IsImporterValid(), take GetImporterOptions(ix), set IS_TRANSLATOR_SILENT=True, then IDocuments.ImportWithOptions(ix, options, path, ownerFolderId, out log, out badDocumentIds). Import one file per call; it runs outside StartModification." },
             { "parameter", "To list parameters: GetParameters(docId), then GetParameterType(p) to pick the right GetXxxValue." },
@@ -374,6 +380,19 @@ namespace TopSolidMcpServer.Tools
                 sortedResults.AddRange(RankedSearch(graph, keywords, rawTokens, query).Where(e => !strict.Contains(e)));
             }
 
+            // A query word that is a method name ("GetConstituents folder", "SetMaterial part")
+            // names the method the caller is after: list it first.
+            var namedMethods = graph.GetEdges()
+                .Where(e => e.MethodName != null && rawTokens.Any(t => string.Equals(t, e.MethodName, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(e => Tier1Rank(e.Interface))
+                .ThenBy(e => e.Interface)
+                .ToList();
+            if (namedMethods.Count > 0)
+            {
+                var named = new HashSet<GraphEdge>(namedMethods);
+                sortedResults = namedMethods.Concat(sortedResults.Where(e => !named.Contains(e))).ToList();
+            }
+
             if (sortedResults.Count == 0)
             {
                 return "No result for '" + query + "'. Suggestions:\n" +
@@ -497,6 +516,11 @@ namespace TopSolidMcpServer.Tools
             if (total > limit)
             {
                 lines.Add($"... and {total - limit} more method(s). Use api_help(\"{name}.Prefix\") to filter.");
+            }
+
+            foreach (string tip in GetUsageTips(name))
+            {
+                lines.Add("Tip: " + tip);
             }
 
             return string.Join("\n", lines);
