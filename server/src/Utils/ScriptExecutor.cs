@@ -100,8 +100,12 @@ namespace TopSolidMcpServer.Utils
                 string deadlockGuard = CheckForDeadlockingUpdate(preprocessed, isModification);
                 if (deadlockGuard != null) return deadlockGuard;
 
+                string mixedError = null;
+                bool outsideTransaction = isModification && RunsOutsideTransaction(preprocessed, out mixedError);
+                if (mixedError != null) return mixedError;
+
                 int headerLineCount;
-                string wrappedCode = WrapCode(preprocessed, isModification, false, out headerLineCount);
+                string wrappedCode = WrapCode(preprocessed, isModification, false, out headerLineCount, outsideTransaction);
 
                 string parameterError;
                 CompilerParameters parameters = BuildCompilerParameters(out parameterError);
@@ -131,7 +135,12 @@ namespace TopSolidMcpServer.Utils
 
                 var okSb = new StringBuilder();
                 okSb.AppendLine("OK: code compiles successfully.");
-                okSb.AppendLine("Mode: " + (isModification ? "WRITE (transactional)" : "READ"));
+                // A script made only of PDM/document calls is not wrapped at all by execute_script
+                // (outsideTransaction stays false), yet it still writes: say so.
+                bool writesOutsideTransaction = outsideTransaction || (!isModification && !hasManualTransaction &&
+                    TransactionRules.FindOutsideOnlyCalls(StripLiteralsAndComments(preprocessed)).Count > 0);
+                okSb.AppendLine("Mode: " + (writesOutsideTransaction ? "WRITE (PDM/document calls, no transaction)"
+                    : isModification ? "WRITE (transactional)" : "READ"));
                 if (warnCount > 0)
                 {
                     okSb.AppendLine("Warnings: " + warnCount);
@@ -187,8 +196,12 @@ namespace TopSolidMcpServer.Utils
                 string deadlockGuard = CheckForDeadlockingUpdate(preprocessed, isModification);
                 if (deadlockGuard != null) return deadlockGuard;
 
+                string mixedError = null;
+                bool outsideTransaction = isModification && RunsOutsideTransaction(preprocessed, out mixedError);
+                if (mixedError != null) return mixedError;
+
                 int headerLineCount;
-                string wrappedCode = WrapCode(preprocessed, isModification, blockReturn, out headerLineCount);
+                string wrappedCode = WrapCode(preprocessed, isModification, blockReturn, out headerLineCount, outsideTransaction);
 
                 // Compiled scripts are cached: recipes have a frozen body and are compiled once.
                 bool isLongRunningLocalization = preprocessed.IndexOf("ExportLocalizations", StringComparison.Ordinal) >= 0 ||
@@ -283,10 +296,16 @@ namespace TopSolidMcpServer.Utils
             {
                 Console.Error.WriteLine("[MCP-ERROR] Script execution timed out after " + timeoutSeconds +
                     " s. The script thread is left running in the background.");
-                return "Error: script execution timed out after " + timeoutSeconds + " seconds. " +
+                string timeoutMessage = "Error: script execution timed out after " + timeoutSeconds + " seconds. " +
                     "The script thread is still running in the background and cannot be stopped safely; " +
                     "check TopSolid before running another script. " +
                     "Set TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC to raise the limit.";
+
+                // The usual cause is a modal dialog waiting for a click: name it right away.
+                string dialogs = DialogDetector.DescribeIfAny();
+                return dialogs == null
+                    ? timeoutMessage + " No TopSolid dialog box was detected (topsolid_detect_dialog checks again)."
+                    : timeoutMessage + "\n\n" + dialogs;
             }
 
             if (failure != null)
@@ -781,23 +800,30 @@ namespace TopSolidMcpServer.Utils
             if (Regex.IsMatch(sanitized, @"\bApplication\s*\.\s*StartModification\s*\("))
                 return false;
 
-            // TopSolidHost.Pdm. / TopSolidDesignHost.Assemblies. / TopSolidHost.Documents. ...
-            const string hostReceiver =
-                @"\b(?:TopSolidHost|TopSolidDesignHost|TopSolidDraftingHost)\b(?:\s*\.\s*[A-Za-z_]\w*)*\s*\.\s*";
+            // PDM and document-level calls (Pdm.DeleteSeveral, Pdm.SetDescription...) are refused
+            // inside a transaction: they do not count as model modifications.
+            return TransactionRules.ModifiesModel(sanitized);
+        }
 
-            string[] mutatingMembers =
+        /// <summary>
+        /// For a script about to run in modification mode: true when it only makes PDM/document
+        /// calls that TopSolid refuses inside a transaction, so the wrapper must not open one.
+        /// Sets <paramref name="mixedError"/> when the script also changes the model, which no
+        /// wrapper can serve.
+        /// </summary>
+        private static bool RunsOutsideTransaction(string preprocessed, out string mixedError)
+        {
+            mixedError = null;
+            string sanitized = StripLiteralsAndComments(preprocessed);
+            List<string> outsideOnly = TransactionRules.FindOutsideOnlyCalls(sanitized);
+            if (outsideOnly.Count == 0) return false;
+
+            if (TransactionRules.ModifiesModel(sanitized))
             {
-                @"Set\w*\s*\(",
-                @"Create\w*\s*\(",
-                @"Delete\w*\s*\(",
-                @"Add\w*\s*\(",
-                @"Modify\w*\s*\(",
-                @"EnsureIsDirty\s*\(",
-                @"Rename\w*\s*\(",
-                @"Remove\w*\s*\("
-            };
-
-            return mutatingMembers.Any(member => Regex.IsMatch(sanitized, hostReceiver + member));
+                mixedError = TransactionRules.MixedTransactionError(outsideOnly);
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
@@ -1222,7 +1248,12 @@ namespace TopSolidMcpServer.Utils
         /// exact number of generated lines placed before the user code, so that compiler line
         /// numbers can be mapped back to the user's own lines.
         /// </summary>
-        private static string WrapCode(string userCode, bool isModification, bool blockReturn, out int headerLineCount)
+        /// <param name="outsideTransaction">
+        /// Modification script made only of PDM/document calls: keep docId, pdmId, __message and the
+        /// final Pdm.Save, but open no transaction (TopSolid refuses these calls inside one).
+        /// </param>
+        private static string WrapCode(string userCode, bool isModification, bool blockReturn, out int headerLineCount,
+            bool outsideTransaction = false)
         {
             // A bare 'return;' cannot compile inside a string-returning method and must still reach
             // the commit path, so it is rewritten as a jump to the commit label. This runs BEFORE
@@ -1259,7 +1290,15 @@ namespace TopSolidMcpServer.Utils
             header.Add("        public static string Run()");
             header.Add("        {");
 
-            if (isModification)
+            if (isModification && outsideTransaction)
+            {
+                header.Add("            try");
+                header.Add("            {");
+                header.Add("                DocumentId docId = TopSolidHost.Documents.EditedDocument;");
+                header.Add("                PdmObjectId pdmId = docId.IsEmpty ? PdmObjectId.Empty : TopSolidHost.Documents.GetPdmObject(docId);");
+                header.Add("                string __message = \"Modification completed successfully.\";");
+            }
+            else if (isModification)
             {
                 header.Add("            TopSolidHost.Application.StartModification(\"TopSolid MCP\", false);");
                 header.Add("            bool __committed = false;");
@@ -1272,7 +1311,19 @@ namespace TopSolidMcpServer.Utils
             }
 
             var footer = new List<string>();
-            if (isModification)
+            if (isModification && outsideTransaction)
+            {
+                if (hasCommitJump)
+                    footer.Add("                __commit:");
+                footer.Add("                if (!pdmId.IsEmpty) TopSolidHost.Pdm.Save(pdmId, true);");
+                footer.Add("                return __message;");
+                footer.Add("            }");
+                footer.Add("            catch (Exception __ex)");
+                footer.Add("            {");
+                footer.Add("                return \"ERROR: \" + __ex.Message;");
+                footer.Add("            }");
+            }
+            else if (isModification)
             {
                 // The label is emitted only when a 'return;' was actually rewritten into a jump:
                 // an unreferenced label makes csc report CS0164 on every modification script.

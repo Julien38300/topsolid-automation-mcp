@@ -20,6 +20,10 @@ for (int i = 0; i < total; i++)
 
 Le **symetrique** existe pour les importateurs : `ImporterCount`, `IsImporterValid`, `GetImporterFileType`.
 
+::: tip Recettes pretes a l'emploi (v1.8.16)
+`import_file` et `export_file` font tout le travail decrit ici : choix de l'importeur ou de l'exporteur par l'extension, controle de licence, mode silencieux, et refus d'exporter un document sans forme. Voir [Recettes](../guide/recettes).
+:::
+
 ## Workflow d'export
 
 ```
@@ -29,10 +33,16 @@ Le **symetrique** existe pour les importateurs : `ImporterCount`, `IsImporterVal
      ↓
 3. Verifier CanExport(i, docId)  (type de document compatible)
      ↓
+3b. Format 3D : verifier IShapes.GetShapes(docId).Count > 0
+     ↓
 4a. Export(i, docId, fullPath)                   ← simple
     OU
 4b. ExportWithOptions(i, options, docId, path)   ← avec options
 ```
+
+::: danger Jamais d'export 3D d'un document sans forme
+Exporter en STEP, IGES, STL, Parasolid... un document dont la representation detaillee est vide (`TopSolidHost.Shapes.GetShapes(docId).Count == 0`) ouvre la boite modale « aucune entite a exporter ». Le mode silencieux (`IS_TRANSLATOR_SILENT=True`) ne l'empeche pas : TopSolid reste bloque, le script expire au bout de 60 s et TopSolid peut finir par tomber. Cas typique : un assemblage importe (SolidWorks...) garde sa geometrie dans ses pieces. Exporter ses pieces une par une. `topsolid_detect_dialog` lit la boite si elle est deja ouverte.
+:::
 
 ### Recette minimale (lookup + export)
 
@@ -113,7 +123,22 @@ foreach (var msg in log) Console.WriteLine("[Import] " + msg);
 if (badDocs.Count > 0) Console.WriteLine("WARN: " + badDocs.Count + " documents importes avec erreurs.");
 ```
 
-Pour `ImportWithOptions`, la logique est identique : `GetImporterOptions(idx)` puis passer la liste modifiee.
+Pour `ImportWithOptions`, la logique est identique : `GetImporterOptions(idx)` puis passer la liste modifiee. Mettre `IS_TRANSLATOR_SILENT=True` pour eviter les boites de dialogue de l'importeur. La recette `import_file` fait tout cela pour un fichier.
+
+### Ce que cree l'importeur SolidWorks (Spatial)
+
+Constate sur TopSolid 7.20, importeur « SolidWorks (Spatial) » (`.sldprt`, `.sldasm`, `.slddrw`) :
+
+| Fichier source | Documents crees |
+|---|---|
+| SLDPRT d'un seul corps | une `.TopPrt` et un `.TopMat` (avec `TRANSLATES_MATERIAL=True`) |
+| SLDPRT de plusieurs corps | une `.TopAsm` et un sous-dossier de `.TopPrt`, une par corps |
+| SLDASM | une `.TopAsm` et des pieces nommees « Copie de <ref>^<assemblage> » |
+
+Consequences :
+- la `.TopAsm` creee n'a **aucune forme** dans sa representation detaillee : exporter ses pieces, pas elle (voir l'encadre plus haut) ;
+- ne jamais prendre le premier document cree a l'aveugle : ce peut etre l'assemblage vide ou un materiau. Filtrer sur `Shapes.GetShapes(doc).Count > 0` ;
+- chaque import cree son propre `.TopMat` : pour un import en lot, regrouper les materiaux de meme nom.
 
 ## Importer dans un modele precis (Wooden Part, etc.)
 
@@ -123,7 +148,7 @@ Par ailleurs, l'API TopSolid refuse la creation de document dans une transaction
 
 > This method must not be called between StartModification(String, Boolean) and EndModification(Boolean, Boolean).
 
-Le serveur MCP enveloppe automatiquement dans une transaction StartModification/EndModification tout code detecte comme ecriture : `topsolid_execute_script` (auto-detection), `topsolid_modify_script`, et toutes les recettes declarees `RW` (Pattern D). Consequence pratique : un script qui appelle `CreateDocumentWithTemplate` via ces entrees est rejete par TopSolid — aucun document n'est cree, et rien d'existant n'est modifie (l'import lui-meme reste valable : le document importe utilise le modele par defaut du projet).
+Le serveur MCP enveloppe automatiquement dans une transaction StartModification/EndModification tout code detecte comme ecriture : `topsolid_execute_script` (auto-detection), `topsolid_modify_script`, et toutes les recettes declarees `RW` (Pattern D). Depuis la v1.8.16, un script dont les seules ecritures sont des appels PDM ou document refuses en transaction (`CreateDocumentWithTemplate`, `CreateFolder`, `Documents.Open`...) s'execute sans transaction. Un script qui les melange a des modifications du modele est refuse avant execution, avec la liste des appels en cause (voir [Outils MCP](../guide/outils-mcp.md#topsolid-modify-script)).
 
 Deux solutions :
 
@@ -196,6 +221,9 @@ TopSolidHost.Documents.Export(idx, docId, @"C:\exports\plan.pdf");
 | Export d'assemblage sans les parts | Fichier vide ou incomplet | Verifier `CanExport` + que les inclusions sont a jour (`Rebuild` avant export) |
 | Caracteres non-ASCII dans le chemin | Exception ou fichier corrompu selon l'exporteur | Prefixer avec `\\?\` sur Windows, ou migrer vers un chemin ASCII sur (C:\temp) |
 | Export depuis un doc dirty | Le fichier contient la version SAUVEGARDEE, pas la version en cours | `Pdm.Save(pdmId, true)` avant l'export |
+| Export d'un document sans forme | Boite modale « aucune entite a exporter », TopSolid gele puis peut tomber | `Shapes.GetShapes(docId).Count > 0` avant tout export 3D ; recette `export_file` |
+| `PdmObjectId.ToString()` comme cle | Tous les objets semblent identiques (meme texte = nom du type) | Garder le `PdmObjectId` comme cle, comparer avec `Equals` |
+| `Documents.IsOpen` | Erreur de compilation : la methode n'existe pas | `Documents.GetOpenDocuments().Contains(docId)` |
 | Creation de document dans une transaction | `CreateDocument` / `CreateDocumentWithTemplate` rejetes par TopSolid, aucun document cree | Recette `create_document_with_template` (mode RN, hors transaction), ou definir le modele par defaut du projet |
 
 ## Utilisation standalone (hors MCP)

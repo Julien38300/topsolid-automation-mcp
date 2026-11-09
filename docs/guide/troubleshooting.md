@@ -119,6 +119,21 @@ Le resolveur cherche dans le registre (`Missler Software`, sous-cles `TopSolid 7
 `TOPSOLID_BIN_PATH` doit pointer sur le dossier qui contient `TopSolid.Kernel.Automating.dll`.
 :::
 
+## Un script expire au bout de 60 s et TopSolid ne repond plus
+
+Cause la plus frequente : TopSolid attend un clic sur une boite de dialogue modale (« aucune entite a exporter », reparation de famille, confirmation...). Le pont rend la main au bout de 60 s mais le script continue en arriere-plan, et TopSolid reste bloque.
+
+1. Le message d'expiration inclut le titre, le texte et les boutons de la boite quand le serveur la trouve. Sinon, appeler `topsolid_detect_dialog` : il lit les fenetres de TopSolid sans passer par l'API, donc il repond meme quand TopSolid est bloque.
+2. Fermer la boite dans TopSolid. Le serveur ne clique jamais a la place de l'utilisateur.
+3. Ne pas relancer le meme appel avant d'avoir compris la cause. Pour un export, utiliser `export_file`, qui refuse les documents sans forme au lieu d'ouvrir cette boite.
+
+## "EndModification must be called before calling this method"
+
+TopSolid refuse un appel PDM ou document (`Pdm.DeleteSeveral`, `MoveSeveral`, `SetDescription`, `Save`, `Documents.Open`...) a l'interieur d'une transaction `StartModification` / `EndModification`.
+
+- Depuis la v1.8.16, le serveur lance sans transaction un script fait uniquement de ces appels, et refuse avant execution un script qui les melange a des modifications du modele, en nommant les appels en cause.
+- Avant la v1.8.16, ces scripts echouaient avec ce message, de meme que les recettes `set_designation`, `set_name`, `set_reference`, `save_all_project`... Dans un script ecrit a la main, faire ces appels apres `EndModification(true, true)`.
+
 ## Erreurs de compilation de scripts
 
 Le serveur compile les scripts via `CSharpCodeProvider` — le compilateur `csc` livre avec le .NET Framework, **pas Roslyn**. Le code est donc compile en **C# 5** et les syntaxes C# 6+ ne sont pas supportees :
@@ -198,6 +213,12 @@ Causes possibles :
 1. **Plusieurs instances TopSolid** — le serveur est connecte a la mauvaise instance (voir section ci-dessus)
 2. **Le document n'est pas en edition** — il est ouvert mais pas en mode edition (double-cliquez dessus dans l'arborescence)
 3. **TopSolid vient d'etre redemarre** — relancez le client MCP pour forcer une reconnexion
+
+## TopSolid a plante pendant une session
+
+Apres un plantage de TopSolid, le serveur repond « TopSolid not connected » a chaque appel. C'est normal : il ne faut ni le tuer ni le relancer. Des que TopSolid redemarre avec l'acces distant actif, le serveur se reconnecte tout seul (la reconnexion apparait dans `server.log`). Attendre que `topsolid_get_state` reponde sans erreur avant de reprendre.
+
+Si le plantage a suivi un export, voir plus haut « Un script expire au bout de 60 s » : un export d'un document sans forme en est la cause la plus frequente.
 
 ## TopSolid est lance mais le serveur ne le voit pas
 

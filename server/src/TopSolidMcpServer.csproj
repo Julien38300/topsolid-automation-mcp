@@ -7,7 +7,7 @@
     <RootNamespace>TopSolidMcpServer</RootNamespace>
     <Platforms>AnyCPU</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <Version>1.8.15</Version>
+    <Version>1.8.16</Version>
     <ApplicationIcon>topsolid-mcp.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
@@ -15,6 +15,9 @@
     <Reference Include="System.Drawing" />
     <Reference Include="System.Security" />
     <Reference Include="System.Management" />
+    <!-- topsolid_detect_dialog reads WPF dialogs, which have no child HWND. -->
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationTypes" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

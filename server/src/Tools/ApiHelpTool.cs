@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json.Linq;
 using TopSolidApiGraph.Core;
@@ -14,6 +16,12 @@ namespace TopSolidMcpServer.Tools
     {
         /// <summary>Maximum size of the returned text, to keep a single call from flooding the caller's context.</summary>
         private const int MaxOutputChars = 8000;
+
+        /// <summary>Methods listed by a keyword search.</summary>
+        private const int MaxKeywordResults = 30;
+
+        /// <summary>Usage tips appended to a keyword search.</summary>
+        private const int MaxUsageTips = 3;
 
         private readonly Func<TypeGraph> _graphProvider;
 
@@ -123,7 +131,34 @@ namespace TopSolidMcpServer.Tools
             { "dictionary", new[] { "Localizations" } },
             { "dictionaries", new[] { "Localizations" } },
             { "langue", new[] { "Localizations" } },
-            { "langues", new[] { "Localizations" } }
+            { "langues", new[] { "Localizations" } },
+            // --- PDM organisation (move, delete, browse) ---
+            { "pdm", new[] { "IPdm" } },
+            { "deplacer", new[] { "Move" } },
+            { "deplace", new[] { "Move" } },
+            { "deplacement", new[] { "Move" } },
+            { "ranger", new[] { "Move" } },
+            { "dossier", new[] { "Folder" } },
+            { "dossiers", new[] { "Folder" } },
+            { "projet", new[] { "Project" } },
+            { "suppression", new[] { "Delete" } },
+            { "supprime", new[] { "Delete" } },
+            { "constituants", new[] { "Constituents" } },
+            { "contenu", new[] { "Constituents" } },
+            // --- File import / export ---
+            { "importer", new[] { "Import" } },
+            { "exporter", new[] { "Export" } }
+        };
+
+        /// <summary>
+        /// Words that carry no search meaning. Without this list, "un" or "dans" matched almost
+        /// every method in the substring fallback and pushed the real answer out of the result pool.
+        /// </summary>
+        private static readonly HashSet<string> StopWords = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "un", "une", "le", "la", "les", "l", "de", "des", "du", "d", "dans", "en", "a", "au", "aux",
+            "et", "ou", "pour", "sur", "par", "avec", "vers", "ce", "cet", "cette", "ces", "mon", "ma", "mes",
+            "comment", "faire", "the", "an", "in", "into", "to", "of", "for", "on", "and", "or", "with", "how"
         };
 
         private static string[] SplitCamelCase(string name)
@@ -135,9 +170,22 @@ namespace TopSolidMcpServer.Tools
 
         private static readonly Dictionary<string, string> UsageTips = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            { "move", "To move documents or folders into a folder: IPdm.MoveSeveral(objectIds, targetFolderId) with a List<PdmObjectId>. Find the target folder by EXACT name through IPdm.GetConstituents (SearchFolderByName is a CONTAINS match)." },
+            { "deplac", "To move documents or folders into a folder: IPdm.MoveSeveral(objectIds, targetFolderId) with a List<PdmObjectId>. Find the target folder by EXACT name through IPdm.GetConstituents (SearchFolderByName is a CONTAINS match)." },
+            { "delete", "PDM objects (documents, folders) are deleted with IPdm.DeleteSeveral(objectIds) (List<PdmObjectId>), project folders with IPdm.DeleteProjectFolder. Elements INSIDE an open document use IElements.Delete / IElements.DeleteSeveral. Before deleting, check that nothing you keep still references the objects." },
+            { "supprim", "PDM objects (documents, folders) are deleted with IPdm.DeleteSeveral(objectIds) (List<PdmObjectId>), project folders with IPdm.DeleteProjectFolder. Elements INSIDE an open document use IElements.Delete / IElements.DeleteSeveral. Before deleting, check that nothing you keep still references the objects." },
+            { "suppression", "PDM objects (documents, folders) are deleted with IPdm.DeleteSeveral(objectIds) (List<PdmObjectId>), project folders with IPdm.DeleteProjectFolder. Elements INSIDE an open document use IElements.Delete / IElements.DeleteSeveral. Before deleting, check that nothing you keep still references the objects." },
+            { "isopen", "IDocuments has no IsOpen method: use TopSolidHost.Documents.GetOpenDocuments().Contains(docId). Close what you opened with Documents.Close(docId, false, false)." },
+            { "pdmobjectid", "PdmObjectId.ToString() returns the type name, identical for every object: never use it as a dictionary or HashSet key. Compare ids with Equals, or keep the PdmObjectId itself as the key." },
+            { "tostring", "PdmObjectId.ToString() returns the type name, identical for every object: never use it as a dictionary or HashSet key. Compare ids with Equals, or keep the PdmObjectId itself as the key." },
+            { "material", "The material OF A PART: TopSolidDesignHost.Parts.SetMaterial(partDocId, materialDocId) inside StartModification, Parts.GetMaterial(partDocId) to read it (recipe set_material). IMaterials edits the material document itself (density, appearance)." },
+            { "materiau", "The material OF A PART: TopSolidDesignHost.Parts.SetMaterial(partDocId, materialDocId) inside StartModification, Parts.GetMaterial(partDocId) to read it (recipe set_material). IMaterials edits the material document itself (density, appearance)." },
+            { "matiere", "The material OF A PART: TopSolidDesignHost.Parts.SetMaterial(partDocId, materialDocId) inside StartModification, Parts.GetMaterial(partDocId) to read it (recipe set_material). IMaterials edits the material document itself (density, appearance)." },
+            { "constituent", "IPdm.GetConstituents(containerId, out folderIds, out documentIds) lists the folders and documents of a project or folder. IElements.GetConstituents(elementId) is unrelated: it lists the sub-elements of a composite element inside a document." },
+            { "import", "Prefer the 'import_file' recipe. In a script: find the importer with GetImporterFileType() + IsImporterValid(), take GetImporterOptions(ix), set IS_TRANSLATOR_SILENT=True, then IDocuments.ImportWithOptions(ix, options, path, ownerFolderId, out log, out badDocumentIds). Import one file per call; it runs outside StartModification." },
             { "parameter", "To list parameters: GetParameters(docId), then GetParameterType(p) to pick the right GetXxxValue." },
             { "sketch", "To list sketches: GetSketches(docId), or GetFunctions(docId) filtered on the Sketch type." },
-            { "export", "To export: find the index with GetExporterFileType(), check CanExport(), then call Export()." },
+            { "export", "Prefer the 'export_file' recipe. In a script: find the index with GetExporterFileType(), check CanExport(), then call Export() or ExportWithOptions(). NEVER export a 3D format from a document without shapes (IShapes.GetShapes(docId).Count == 0, e.g. an imported assembly): TopSolid opens a modal 'nothing to export' dialog that silent mode does not prevent, and the bridge times out." },
             { "assembly", "For assemblies, use TopSolidDesignHost.Assemblies (not TopSolidHost)." },
             { "collision", "Use TopSolidDesignHost.Assemblies.SetCollisionsManagement(asmId, designRep, true, true, true) + SetCollisionsManagementCheckingMechanisms(asmId, false) + SetCollisionsManagementInvalidWhenColliding(asmId, false), then inspect IElements.GetElements(asmId) where GetTypeFullName == 'TopSolid.Cad.Design.DB.Collisions.ShapeShapeCollisionEntity'. IMPORTANT: analyzing collisions switches TopSolid to the Analysis stage; before resuming modeling/inclusions, return to the Modeling stage via TopSolidHost.Operations.SetWorkingStage(TopSolidHost.Operations.GetModelingStage(asmId)); TopSolidHost.Operations.ResetInsertionOperation(asmId);" },
             { "collisions", "Use TopSolidDesignHost.Assemblies.SetCollisionsManagement(asmId, designRep, true, true, true) + SetCollisionsManagementCheckingMechanisms(asmId, false) + SetCollisionsManagementInvalidWhenColliding(asmId, false), then inspect IElements.GetElements(asmId) where GetTypeFullName == 'TopSolid.Cad.Design.DB.Collisions.ShapeShapeCollisionEntity'. IMPORTANT: analyzing collisions switches TopSolid to the Analysis stage; before resuming modeling/inclusions, return to the Modeling stage via TopSolidHost.Operations.SetWorkingStage(TopSolidHost.Operations.GetModelingStage(asmId)); TopSolidHost.Operations.ResetInsertionOperation(asmId);" },
@@ -252,12 +300,33 @@ namespace TopSolidMcpServer.Tools
                 return FormatInterface(query, interfaceEdges);
             }
 
+            // --- 1b. Exact method-name mode (e.g. "GetConstituents") ---
+            // Every interface declaring the method, without the noise of the camel-case split.
+            if (query.IndexOf(' ') < 0)
+            {
+                var methodEdges = graph.GetEdges()
+                    .Where(e => string.Equals(e.MethodName, query, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(e => Tier1Rank(e.Interface))
+                    .ThenBy(e => e.Interface)
+                    .ToList();
+
+                if (methodEdges.Count > 0)
+                    return FormatKeywordResults(query, methodEdges);
+            }
+
             // --- 2. Keyword search mode ---
+            // Accents are dropped so that "déplacer" meets the synonym "deplacer" and the
+            // accent-free semantic hints of the graph.
+            string plainQuery = RemoveDiacritics(query);
             var expandedKeywords = new List<string>();
-            var rawTokens = query.Split(new[] { ' ', ',', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+            var rawTokens = plainQuery.Split(new[] { ' ', ',', '_', '-', '\'' }, StringSplitOptions.RemoveEmptyEntries)
+                .Where(t => !StopWords.Contains(t))
+                .ToArray();
+            if (rawTokens.Length == 0)
+                rawTokens = plainQuery.Split(new[] { ' ', ',', '_', '-', '\'' }, StringSplitOptions.RemoveEmptyEntries);
 
             // Case-insensitive full match in Synonyms (for multi-word terms like "mise en plan")
-            if (Synonyms.TryGetValue(query, out var querySyns))
+            if (Synonyms.TryGetValue(plainQuery, out var querySyns))
             {
                 expandedKeywords.AddRange(querySyns);
             }
@@ -291,15 +360,40 @@ namespace TopSolidMcpServer.Tools
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
 
-            var searchResults = graph.SearchByKeywords(keywords, 100); // Larger pool for scoring
+            // Strict mode: every keyword must match. The pool is unbounded so that scoring sees
+            // every candidate (a cap here used to drop IPdm methods behind generic "Get" hits).
+            var searchResults = graph.SearchByKeywords(keywords, int.MaxValue);
 
-            // Fallback: substring search in Description + SemanticHint + Interface
-            if (searchResults.Count == 0)
+            var sortedResults = searchResults
+                .Select(e => new { Edge = e, Score = CalculateScore(e, query, keywords) })
+                .OrderByDescending(x => x.Score)
+                .ThenBy(x => x.Edge.MethodName)
+                .Select(x => x.Edge)
+                .ToList();
+
+            // Natural-language queries rarely match on every word, and a full match can be the
+            // wrong method ("déplacer dossier" -> MoveProjectFolder, not MoveSeveral): complete
+            // the list with the methods ranked by the words they do match.
+            if (sortedResults.Count < MaxKeywordResults)
             {
-                searchResults = FallbackSubstringSearch(graph, rawTokens, 100);
+                var strict = new HashSet<GraphEdge>(sortedResults);
+                sortedResults.AddRange(RankedSearch(graph, keywords, rawTokens, query).Where(e => !strict.Contains(e)));
             }
 
-            if (searchResults.Count == 0)
+            // A query word that is a method name ("GetConstituents folder", "SetMaterial part")
+            // names the method the caller is after: list it first.
+            var namedMethods = graph.GetEdges()
+                .Where(e => e.MethodName != null && rawTokens.Any(t => string.Equals(t, e.MethodName, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(e => Tier1Rank(e.Interface))
+                .ThenBy(e => e.Interface)
+                .ToList();
+            if (namedMethods.Count > 0)
+            {
+                var named = new HashSet<GraphEdge>(namedMethods);
+                sortedResults = namedMethods.Concat(sortedResults.Where(e => !named.Contains(e))).ToList();
+            }
+
+            if (sortedResults.Count == 0)
             {
                 return "No result for '" + query + "'. Suggestions:\n" +
                     "- Try an exact interface name: IParameters, IPdm, IDocuments, IShapes\n" +
@@ -307,16 +401,76 @@ namespace TopSolidMcpServer.Tools
                     "- Try Interface.Prefix: IDocuments.Export, IPdm.Search";
             }
 
-            // Sort by relevance
-            var sortedResults = searchResults
-                .Select(e => new { Edge = e, Score = CalculateScore(e, query, keywords) })
-                .OrderByDescending(x => x.Score)
+            return FormatKeywordResults(query, sortedResults);
+        }
+
+        /// <summary>
+        /// Ranks edges by the search words they match, each word weighted by its rarity in the
+        /// graph: "Move" (a handful of methods) outweighs "Document" (hundreds). A word matches a
+        /// method-name part, the interface, the semantic hint or the description.
+        /// </summary>
+        private List<GraphEdge> RankedSearch(TypeGraph graph, string[] keywords, string[] rawTokens, string query)
+        {
+            var edges = graph.GetEdges();
+            var terms = keywords
+                .Concat(rawTokens.Where(t => t.Length >= 3))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+            if (terms.Length == 0) return new List<GraphEdge>();
+
+            var matchesByTerm = new Dictionary<string, HashSet<GraphEdge>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var term in terms)
+                matchesByTerm[term] = new HashSet<GraphEdge>(edges.Where(e => EdgeMatches(e, term)));
+
+            double total = Math.Max(1, edges.Count);
+            var weights = matchesByTerm.ToDictionary(
+                kv => kv.Key,
+                kv => Math.Log(total / (1 + kv.Value.Count)),
+                StringComparer.OrdinalIgnoreCase);
+
+            return edges
+                .Select(e => new
+                {
+                    Edge = e,
+                    Weight = terms.Where(t => matchesByTerm[t].Contains(e)).Sum(t => weights[t])
+                })
+                .Where(x => x.Weight > 0)
+                .OrderByDescending(x => x.Weight)
+                .ThenByDescending(x => CalculateScore(x.Edge, query, keywords))
                 .ThenBy(x => x.Edge.MethodName)
                 .Select(x => x.Edge)
-                .Take(30)
                 .ToList();
+        }
 
-            return FormatKeywordResults(query, sortedResults);
+        /// <summary>Position in <see cref="Tier1Interfaces"/>; other interfaces come after.</summary>
+        private static int Tier1Rank(string interfaceName)
+        {
+            int ix = Array.FindIndex(Tier1Interfaces, t => string.Equals(t, interfaceName, StringComparison.OrdinalIgnoreCase));
+            return ix < 0 ? int.MaxValue : ix;
+        }
+
+        private static bool EdgeMatches(GraphEdge e, string term)
+        {
+            if (e.MethodName != null && SplitCamelCase(e.MethodName).Any(w => string.Equals(w, term, StringComparison.OrdinalIgnoreCase)))
+                return true;
+            if (e.Interface != null && string.Equals(e.Interface, term, StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (e.SemanticHint != null && RemoveDiacritics(e.SemanticHint).IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+            return e.Description != null && term.Length >= 4 &&
+                e.Description.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static string RemoveDiacritics(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return text;
+            var sb = new StringBuilder(text.Length);
+            foreach (char c in text.Normalize(NormalizationForm.FormD))
+            {
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+                    sb.Append(c);
+            }
+            return sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
         private int CalculateScore(GraphEdge edge, string query, string[] keywords)
@@ -336,22 +490,10 @@ namespace TopSolidMcpServer.Tools
             return score;
         }
 
-        private List<GraphEdge> FallbackSubstringSearch(TypeGraph graph, string[] queryTokens, int maxResults)
-        {
-            // Union: match if ANY token appears as substring in MethodName, Description, SemanticHint, or Interface
-            return graph.GetEdges()
-                .Where(e => queryTokens.Any(token =>
-                    (e.MethodName != null && e.MethodName.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (e.Description != null && e.Description.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (e.SemanticHint != null && e.SemanticHint.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0) ||
-                    (e.Interface != null && e.Interface.IndexOf(token, StringComparison.OrdinalIgnoreCase) >= 0)
-                ))
-                .Take(maxResults)
-                .ToList();
-        }
-
         private string FormatInterface(string name, List<GraphEdge> edges, bool isFiltered = false)
         {
+            // One edge per parameter type in the graph: count and show each method once.
+            edges = DistinctMethods(edges).ToList();
             int total = edges.Count;
             int limit = 50;
             var displayEdges = edges.OrderBy(e => e.MethodName).Take(limit).ToList();
@@ -378,15 +520,26 @@ namespace TopSolidMcpServer.Tools
                 lines.Add($"... and {total - limit} more method(s). Use api_help(\"{name}.Prefix\") to filter.");
             }
 
+            foreach (string tip in GetUsageTips(name))
+            {
+                lines.Add("Tip: " + tip);
+            }
+
             return string.Join("\n", lines);
         }
 
-        private string FormatKeywordResults(string query, List<GraphEdge> edges)
+        private string FormatKeywordResults(string query, List<GraphEdge> rankedEdges)
         {
+            // The graph holds one edge per parameter type: show each method once, best first.
+            var edges = DistinctMethods(rankedEdges)
+                .Take(MaxKeywordResults)
+                .ToList();
+
             var lines = new List<string>();
             lines.Add($"{edges.Count} result(s) for \"{query}\":\n");
 
-            var groups = edges.GroupBy(e => e.Interface ?? "Other").OrderBy(g => g.Key);
+            // Interfaces in order of their best-ranked method.
+            var groups = edges.GroupBy(e => e.Interface ?? "Other");
 
             foreach (var group in groups)
             {
@@ -398,9 +551,8 @@ namespace TopSolidMcpServer.Tools
                 lines.Add("");
             }
 
-            // Append the contextual usage tip, when one matches the query.
-            string tip = GetUsageTip(query);
-            if (!string.IsNullOrEmpty(tip))
+            // Append the contextual usage tips that match the query.
+            foreach (string tip in GetUsageTips(query))
             {
                 lines.Add("Tip: " + tip);
             }
@@ -408,14 +560,22 @@ namespace TopSolidMcpServer.Tools
             return string.Join("\n", lines);
         }
 
-        private string GetUsageTip(string query)
+        /// <summary>First edge of each method (interface, name, signature), in input order.</summary>
+        private static IEnumerable<GraphEdge> DistinctMethods(IEnumerable<GraphEdge> edges)
         {
-            foreach (var kvp in UsageTips)
-            {
-                if (query.IndexOf(kvp.Key, StringComparison.OrdinalIgnoreCase) >= 0)
-                    return kvp.Value;
-            }
-            return null;
+            return edges
+                .GroupBy(e => (e.Interface ?? "") + "|" + e.MethodName + "|" + e.MethodSignature)
+                .Select(g => g.First());
+        }
+
+        private IEnumerable<string> GetUsageTips(string query)
+        {
+            string plainQuery = RemoveDiacritics(query);
+            return UsageTips
+                .Where(kvp => plainQuery.IndexOf(kvp.Key, StringComparison.OrdinalIgnoreCase) >= 0)
+                .Select(kvp => kvp.Value)
+                .Distinct()
+                .Take(MaxUsageTips);
         }
 
         private string GetCategory(string methodName)
