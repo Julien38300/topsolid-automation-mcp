@@ -1216,8 +1216,8 @@ return sb.ToString();
 ---
 
 ## export_step
-Pattern: R
-Description: Exporte en STEP. Param: value=chemin (ex: C:\\temp\\piece.stp)
+Pattern: RD
+Description: Exports to STEP. Refuses a document without shapes (TopSolid would block on a modal dialog). Param: value=path (e.g. C:\temp\part.stp), add |force to skip the check
 
 ```csharp
 DocumentId docId = TopSolidHost.Documents.EditedDocument;
@@ -1233,13 +1233,26 @@ for (int i = 0; i < count; i++)
     if (idx >= 0) break;
 }
 if (idx < 0) return "STEP exporter not found.";
-string path = "{value}";
+string path = "{value}".Trim();
+bool force = false;
+if (path.EndsWith("|force", StringComparison.OrdinalIgnoreCase)) { force = true; path = path.Substring(0, path.Length - 6).Trim(); }
+if (!force)
+{
+    int shapeCount = -1;
+    try { shapeCount = TopSolidHost.Shapes.GetShapes(docId).Count; } catch { }
+    if (shapeCount == 0)
+    {
+        bool isAssembly = false; int partCount = 0;
+        try { isAssembly = TopSolidDesignHost.Assemblies.IsAssembly(docId); if (isAssembly) partCount = TopSolidDesignHost.Assemblies.GetParts(docId).Count; } catch { }
+        if (isAssembly && partCount > 0)
+            return "REFUSED: this assembly has no shape of its own (" + partCount + " part(s)). An imported assembly exported this way opens TopSolid's modal 'nothing to export' dialog and blocks it. Export its parts one by one, or add '|force' after the path if this is a native TopSolid assembly you know exports fine.";
+        return "REFUSED: the document has no shape in its detailed representation. Exporting it would open TopSolid's modal 'nothing to export' dialog and block TopSolid. Nothing was exported.";
+    }
+}
 if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "export.stp");
 TopSolidHost.Documents.Export(idx, docId, path);
 return "OK: Exported to STEP → " + path;
 ```
-
----
 
 ## export_dxf
 Pattern: R
@@ -1292,6 +1305,127 @@ return "OK: Exported to PDF → " + path;
 ```
 
 ---
+
+## export_file
+Pattern: RD
+Description: Exports the active document to any format TopSolid can write, picked from the file extension (.step, .x_t, .igs, .stl, .dxf, .pdf...). Checks CanExport and refuses a 3D export of a document without shapes instead of letting TopSolid block on its modal 'nothing to export' dialog. Param: value=path, add |force to skip the shape check
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "No document open.";
+string path = "{value}".Trim();
+bool force = false;
+if (path.EndsWith("|force", StringComparison.OrdinalIgnoreCase)) { force = true; path = path.Substring(0, path.Length - 6).Trim(); }
+if (string.IsNullOrEmpty(path)) return "ERROR: value must be the output file path; its extension picks the format (e.g. C:\\out\\part.step).";
+string ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+if (ext.Length == 0) return "ERROR: the output path has no extension, so the format cannot be chosen.";
+int idx = -1; string exporterName = "";
+for (int i = 0; i < TopSolidHost.Application.ExporterCount && idx < 0; i++)
+{
+    string typeName; string[] extensions;
+    TopSolidHost.Application.GetExporterFileType(i, out typeName, out extensions);
+    if (extensions == null) continue;
+    foreach (string e in extensions)
+    {
+        string x = e.Trim().ToLowerInvariant();
+        if (!x.StartsWith(".")) x = "." + x;
+        if (x == ext && TopSolidHost.Application.IsExporterValid(i)) { idx = i; exporterName = typeName; break; }
+    }
+}
+if (idx < 0) return "ERROR: no valid TopSolid exporter writes '" + ext + "' files. Run the list_exporters recipe to see the available formats.";
+if (!TopSolidHost.Documents.CanExport(idx, docId)) return "REFUSED: the " + exporterName + " exporter cannot export this document (CanExport = false). Nothing was exported.";
+string[] threeDExtensions = { ".step", ".stp", ".iges", ".igs", ".stl", ".x_t", ".x_b", ".xmt_txt", ".xmt_bin", ".sat", ".sab", ".jt", ".3mf", ".obj", ".fbx", ".gltf", ".glb", ".wrl", ".vrml", ".3dxml", ".ifc" };
+if (Array.IndexOf(threeDExtensions, ext) >= 0)
+{
+if (!force)
+{
+    int shapeCount = -1;
+    try { shapeCount = TopSolidHost.Shapes.GetShapes(docId).Count; } catch { }
+    if (shapeCount == 0)
+    {
+        bool isAssembly = false; int partCount = 0;
+        try { isAssembly = TopSolidDesignHost.Assemblies.IsAssembly(docId); if (isAssembly) partCount = TopSolidDesignHost.Assemblies.GetParts(docId).Count; } catch { }
+        if (isAssembly && partCount > 0)
+            return "REFUSED: this assembly has no shape of its own (" + partCount + " part(s)). An imported assembly exported this way opens TopSolid's modal 'nothing to export' dialog and blocks it. Export its parts one by one, or add '|force' after the path if this is a native TopSolid assembly you know exports fine.";
+        return "REFUSED: the document has no shape in its detailed representation. Exporting it would open TopSolid's modal 'nothing to export' dialog and block TopSolid. Nothing was exported.";
+    }
+}
+}
+string dir = System.IO.Path.GetDirectoryName(path);
+if (!string.IsNullOrEmpty(dir)) System.IO.Directory.CreateDirectory(dir);
+var options = TopSolidHost.Application.GetExporterOptions(idx);
+for (int i = 0; i < options.Count; i++)
+    if (options[i].Key == "IS_TRANSLATOR_SILENT") options[i] = new KeyValue("IS_TRANSLATOR_SILENT", "True");
+TopSolidHost.Documents.ExportWithOptions(idx, options, docId, path);
+if (!System.IO.File.Exists(path) || new System.IO.FileInfo(path).Length == 0)
+    return "ERROR: the export finished but '" + path + "' is missing or empty.";
+return "OK: '" + TopSolidHost.Documents.GetName(docId) + "' exported with " + exporterName + " → " + path + " (" + new System.IO.FileInfo(path).Length + " bytes).";
+```
+
+## import_file
+Pattern: RN
+Description: Imports a CAD file (.step, .igs, .x_t, .sldprt, .sldasm, .dxf...) into the current project with the importer matching its extension, in silent mode, then saves the created documents and lists them with their shape count (export only the ones that have shapes). One file per call. Param: value=path, or path|Folder/Sub folder to import into a folder of the current project (exact names, created when missing)
+
+```csharp
+string spec = "{value}".Trim();
+int bar = spec.IndexOf('|');
+string file = (bar < 0 ? spec : spec.Substring(0, bar)).Trim();
+string folderPath = bar < 0 ? "" : spec.Substring(bar + 1).Trim();
+if (file.Length == 0) return "ERROR: value must be a file path, e.g. C:\\in\\part.stp or C:\\in\\part.stp|Imports/Bearings.";
+if (!System.IO.File.Exists(file)) return "ERROR: file not found: " + file;
+string ext = System.IO.Path.GetExtension(file).ToLowerInvariant();
+int imp = -1; string importerName = "";
+for (int i = 0; i < TopSolidHost.Application.ImporterCount && imp < 0; i++)
+{
+    string typeName; string[] extensions;
+    TopSolidHost.Application.GetImporterFileType(i, out typeName, out extensions);
+    if (extensions == null) continue;
+    foreach (string e in extensions)
+    {
+        string x = e.Trim().ToLowerInvariant();
+        if (!x.StartsWith(".")) x = "." + x;
+        if (x == ext && TopSolidHost.Application.IsImporterValid(i)) { imp = i; importerName = typeName; break; }
+    }
+}
+if (imp < 0) return "ERROR: no valid TopSolid importer reads '" + ext + "' files (missing or unlicensed importer).";
+PdmObjectId owner = TopSolidHost.Pdm.GetCurrentProject();
+if (owner.IsEmpty) return "ERROR: no current project open.";
+foreach (string rawName in folderPath.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries))
+{
+    string name = rawName.Trim();
+    if (name.Length == 0) continue;
+    List<PdmObjectId> folders; List<PdmObjectId> documents;
+    TopSolidHost.Pdm.GetConstituents(owner, out folders, out documents);
+    PdmObjectId next = new PdmObjectId();
+    foreach (var f in folders) if (TopSolidHost.Pdm.GetName(f) == name) { next = f; break; }
+    owner = next.IsEmpty ? TopSolidHost.Pdm.CreateFolder(owner, name) : next;
+}
+var options = TopSolidHost.Application.GetImporterOptions(imp);
+for (int i = 0; i < options.Count; i++)
+    if (options[i].Key == "IS_TRANSLATOR_SILENT") options[i] = new KeyValue("IS_TRANSLATOR_SILENT", "True");
+List<string> log; List<DocumentId> bad;
+List<DocumentId> created = TopSolidHost.Documents.ImportWithOptions(imp, options, file, owner, out log, out bad);
+var sb = new System.Text.StringBuilder();
+if (created == null || created.Count == 0)
+{
+    sb.AppendLine("ERROR: no document created by the " + importerName + " importer.");
+    if (log != null) foreach (string line in log.Take(10)) sb.AppendLine("  log: " + line);
+    return sb.ToString();
+}
+sb.AppendLine("OK: " + created.Count + " document(s) imported with " + importerName + " into '" + TopSolidHost.Pdm.GetName(owner) + "'.");
+foreach (DocumentId d in created)
+{
+    string docName = "?"; string docType = ""; int shapes = -1;
+    try { docName = TopSolidHost.Documents.GetName(d); } catch { }
+    try { PdmObjectId po = TopSolidHost.Documents.GetPdmObject(d); TopSolidHost.Pdm.GetType(po, out docType); TopSolidHost.Pdm.Save(po, true); } catch (Exception ex) { docType += " (not saved: " + ex.Message + ")"; }
+    try { shapes = TopSolidHost.Shapes.GetShapes(d).Count; } catch { }
+    sb.AppendLine("  " + docName + " " + docType + " — shapes: " + (shapes < 0 ? "?" : shapes.ToString()));
+}
+if (bad != null && bad.Count > 0) sb.AppendLine("WARNING: " + bad.Count + " document(s) reported as bad by the importer.");
+if (log != null) foreach (string line in log.Take(10)) sb.AppendLine("  log: " + line);
+sb.AppendLine("Export only documents with shapes > 0: an imported assembly keeps its geometry in its parts.");
+return sb.ToString();
+```
 
 ## read_user_property
 Pattern: R
@@ -2719,8 +2853,8 @@ return sb.ToString();
 ---
 
 ## export_stl
-Pattern: R
-Description: Exports to STL (3D printing). Param: value=path
+Pattern: RD
+Description: Exports to STL (3D printing). Refuses a document without shapes. Param: value=path, add |force to skip the check
 
 ```csharp
 DocumentId docId = TopSolidHost.Documents.EditedDocument;
@@ -2736,17 +2870,30 @@ for (int i = 0; i < count; i++)
     if (idx >= 0) break;
 }
 if (idx < 0) return "STL exporter not found.";
-string path = "{value}";
+string path = "{value}".Trim();
+bool force = false;
+if (path.EndsWith("|force", StringComparison.OrdinalIgnoreCase)) { force = true; path = path.Substring(0, path.Length - 6).Trim(); }
+if (!force)
+{
+    int shapeCount = -1;
+    try { shapeCount = TopSolidHost.Shapes.GetShapes(docId).Count; } catch { }
+    if (shapeCount == 0)
+    {
+        bool isAssembly = false; int partCount = 0;
+        try { isAssembly = TopSolidDesignHost.Assemblies.IsAssembly(docId); if (isAssembly) partCount = TopSolidDesignHost.Assemblies.GetParts(docId).Count; } catch { }
+        if (isAssembly && partCount > 0)
+            return "REFUSED: this assembly has no shape of its own (" + partCount + " part(s)). An imported assembly exported this way opens TopSolid's modal 'nothing to export' dialog and blocks it. Export its parts one by one, or add '|force' after the path if this is a native TopSolid assembly you know exports fine.";
+        return "REFUSED: the document has no shape in its detailed representation. Exporting it would open TopSolid's modal 'nothing to export' dialog and block TopSolid. Nothing was exported.";
+    }
+}
 if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "export.stl");
 TopSolidHost.Documents.Export(idx, docId, path);
 return "OK: Exported to STL → " + path;
 ```
 
----
-
 ## export_iges
-Pattern: R
-Description: Exports to IGES. Param: value=path
+Pattern: RD
+Description: Exports to IGES. Refuses a document without shapes. Param: value=path, add |force to skip the check
 
 ```csharp
 DocumentId docId = TopSolidHost.Documents.EditedDocument;
@@ -2762,13 +2909,26 @@ for (int i = 0; i < count; i++)
     if (idx >= 0) break;
 }
 if (idx < 0) return "IGES exporter not found.";
-string path = "{value}";
+string path = "{value}".Trim();
+bool force = false;
+if (path.EndsWith("|force", StringComparison.OrdinalIgnoreCase)) { force = true; path = path.Substring(0, path.Length - 6).Trim(); }
+if (!force)
+{
+    int shapeCount = -1;
+    try { shapeCount = TopSolidHost.Shapes.GetShapes(docId).Count; } catch { }
+    if (shapeCount == 0)
+    {
+        bool isAssembly = false; int partCount = 0;
+        try { isAssembly = TopSolidDesignHost.Assemblies.IsAssembly(docId); if (isAssembly) partCount = TopSolidDesignHost.Assemblies.GetParts(docId).Count; } catch { }
+        if (isAssembly && partCount > 0)
+            return "REFUSED: this assembly has no shape of its own (" + partCount + " part(s)). An imported assembly exported this way opens TopSolid's modal 'nothing to export' dialog and blocks it. Export its parts one by one, or add '|force' after the path if this is a native TopSolid assembly you know exports fine.";
+        return "REFUSED: the document has no shape in its detailed representation. Exporting it would open TopSolid's modal 'nothing to export' dialog and block TopSolid. Nothing was exported.";
+    }
+}
 if (string.IsNullOrEmpty(path)) path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "export.igs");
 TopSolidHost.Documents.Export(idx, docId, path);
 return "OK: Exported to IGES → " + path;
 ```
-
----
 
 ## count_assembly_parts
 Pattern: R

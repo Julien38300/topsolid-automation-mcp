@@ -20,6 +20,10 @@ for (int i = 0; i < total; i++)
 
 Le **symetrique** existe pour les importateurs : `ImporterCount`, `IsImporterValid`, `GetImporterFileType`.
 
+::: tip Recettes pretes a l'emploi (v1.8.16)
+`import_file` et `export_file` font tout le travail decrit ici : choix de l'importeur ou de l'exporteur par l'extension, controle de licence, mode silencieux, et refus d'exporter un document sans forme. Voir [Recettes](../guide/recettes).
+:::
+
 ## Workflow d'export
 
 ```
@@ -29,10 +33,16 @@ Le **symetrique** existe pour les importateurs : `ImporterCount`, `IsImporterVal
      ↓
 3. Verifier CanExport(i, docId)  (type de document compatible)
      ↓
+3b. Format 3D : verifier IShapes.GetShapes(docId).Count > 0
+     ↓
 4a. Export(i, docId, fullPath)                   ← simple
     OU
 4b. ExportWithOptions(i, options, docId, path)   ← avec options
 ```
+
+::: danger Jamais d'export 3D d'un document sans forme
+Exporter en STEP, IGES, STL, Parasolid... un document dont la representation detaillee est vide (`TopSolidHost.Shapes.GetShapes(docId).Count == 0`) ouvre la boite modale « aucune entite a exporter ». Le mode silencieux (`IS_TRANSLATOR_SILENT=True`) ne l'empeche pas : TopSolid reste bloque, le script expire au bout de 60 s et TopSolid peut finir par tomber. Cas typique : un assemblage importe (SolidWorks...) garde sa geometrie dans ses pieces. Exporter ses pieces une par une. `topsolid_detect_dialog` lit la boite si elle est deja ouverte.
+:::
 
 ### Recette minimale (lookup + export)
 

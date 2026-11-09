@@ -1,6 +1,6 @@
 # Recettes
 
-217 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
+219 recettes pre-construites dans `RecipeTool`. Le LLM selectionne par nom via `topsolid_run_recipe` -- aucune generation de code necessaire.
 
 ::: warning Source de verite
 La seule source de verite est `server/src/Tools/RecipeTool.cs`. Le tableau detaille « Par categorie » plus bas est maintenu a la main et **derive** : au dernier controle il documentait 6 recettes qui n'existent plus (`count_occurrences`, `find_occurrence`, `list_inclusions_with_reference`, `list_user_properties`, `list_document_properties`, `read_document_property`) et en omettait 11 (`ajouter_inclusion`, `creer_esquisse_rectangle`, `creer_parametre_formule`, `creer_parametre_reel`, `extruder_esquisse`, `get_face_cone_length`, `get_face_cone_radius`, `get_face_cone_semi_angle`, `get_face_torus_major_radius`, `get_face_torus_minor_radius`, `get_item_last_operation_name`).
@@ -164,17 +164,19 @@ Une famille TopSolid est un document parametrique avec des configurations (codes
 | `fix_family_drivers` | Genere automatiquement une designation pour les drivers sans description, en deduisant du nom du parametre (CamelCase → mots separes). | `Elements.SetDescription()` auto-genere — aucun `value` | WRITE |
 | `batch_check_family_drivers` | Audit des drivers de TOUTES les familles du projet. Detecte les drivers sans designation sur chaque famille. | Iteration `IsFamily()` → `GetCatalogColumnParameters()` | READ |
 
-### Export (7 recettes)
+### Export (9 recettes)
 
 Export du document actif vers differents formats CAO/dessin. Le chemin est optionnel — si omis, TopSolid utilise le dossier par defaut (temp ou bureau). L'exporteur est selectionne automatiquement par nom.
 
 | Recette | Description | Technique | Mode |
 |---------|-------------|-----------|------|
-| `export_step` | Export STEP (AP214). Format universel d'echange CAO. Retourne le chemin du fichier cree. | `Documents.Export()` avec exporteur STEP — `value` = chemin (optionnel) | READ |
+| `export_file` **(v1.8.16)** | Export vers n'importe quel format, choisi par l'extension du chemin (`.step`, `.x_t`, `.igs`, `.stl`, `.dxf`, `.pdf`...). Verifie `CanExport` et **refuse** un export 3D d'un document sans forme, au lieu de laisser TopSolid se bloquer sur sa boite « aucune entite a exporter ». Verifie que le fichier ecrit n'est pas vide. | `ExportWithOptions()` en mode silencieux — `value` = chemin, `chemin|force` pour passer outre le controle de forme | WRITE-DISK |
+| `import_file` **(v1.8.16)** | Importe un fichier CAO (`.step`, `.igs`, `.x_t`, `.sldprt`, `.sldasm`...) dans le projet courant avec l'importeur de son extension, en mode silencieux, sauve les documents crees et les liste avec leur nombre de formes. Un fichier par appel. | `ImportWithOptions()` hors transaction — `value` = chemin, ou `chemin|Dossier/Sous-dossier` (noms exacts, crees s'ils manquent) | WRITE-PDM-NO-TRX |
+| `export_step` | Export STEP (AP214). Format universel d'echange CAO. Refuse un document sans forme depuis v1.8.16. | `Documents.Export()` avec exporteur STEP — `value` = chemin (optionnel), `chemin|force` pour passer outre | WRITE-DISK |
 | `export_dxf` | Export DXF (AutoCAD). Pour les mises en plan ou profils 2D. | `Documents.Export()` avec exporteur DXF — `value` = chemin (optionnel) | READ |
 | `export_pdf` | Export PDF. Pour les mises en plan principalement. | `Documents.Export()` avec exporteur PDF — `value` = chemin (optionnel) | READ |
-| `export_stl` | Export STL (maillage triangles). Pour l'impression 3D ou la visualisation. | `Documents.Export()` avec exporteur STL — `value` = chemin (optionnel) | READ |
-| `export_iges` | Export IGES. Format historique d'echange CAO, encore utilise dans l'aeronautique. | `Documents.Export()` avec exporteur IGES — `value` = chemin (optionnel) | READ |
+| `export_stl` | Export STL (maillage triangles). Pour l'impression 3D ou la visualisation. Refuse un document sans forme depuis v1.8.16. | `Documents.Export()` avec exporteur STL — `value` = chemin (optionnel), `chemin|force` pour passer outre | WRITE-DISK |
+| `export_iges` | Export IGES. Format historique d'echange CAO, encore utilise dans l'aeronautique. Refuse un document sans forme depuis v1.8.16. | `Documents.Export()` avec exporteur IGES — `value` = chemin (optionnel), `chemin|force` pour passer outre | WRITE-DISK |
 | `list_exporters` | Liste tous les formats d'export disponibles dans l'installation TopSolid. | `Documents.GetExporterNames()` | READ |
 | `export_bom_csv` | Exporte la nomenclature (BOM) du document en format texte avec colonnes separees. | Lecture `Nomenclatures` → format texte | READ |
 | `export_project_xliff` **(v1.8.13)** | Exporte le dictionnaire de traduction (`.xliff`) de tout un projet PDM recursivement (dossiers, documents, parametres, proprietes). | `Pdm.ExportLocalizations(projects, cultures, dir, ".xliff", false)` — `value=[projet;]culture;dossier` | WRITE-DISK |

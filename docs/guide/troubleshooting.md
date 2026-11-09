@@ -119,6 +119,14 @@ Le resolveur cherche dans le registre (`Missler Software`, sous-cles `TopSolid 7
 `TOPSOLID_BIN_PATH` doit pointer sur le dossier qui contient `TopSolid.Kernel.Automating.dll`.
 :::
 
+## Un script expire au bout de 60 s et TopSolid ne repond plus
+
+Cause la plus frequente : TopSolid attend un clic sur une boite de dialogue modale (« aucune entite a exporter », reparation de famille, confirmation...). Le pont rend la main au bout de 60 s mais le script continue en arriere-plan, et TopSolid reste bloque.
+
+1. Le message d'expiration inclut le titre, le texte et les boutons de la boite quand le serveur la trouve. Sinon, appeler `topsolid_detect_dialog` : il lit les fenetres de TopSolid sans passer par l'API, donc il repond meme quand TopSolid est bloque.
+2. Fermer la boite dans TopSolid. Le serveur ne clique jamais a la place de l'utilisateur.
+3. Ne pas relancer le meme appel avant d'avoir compris la cause. Pour un export, utiliser `export_file`, qui refuse les documents sans forme au lieu d'ouvrir cette boite.
+
 ## Erreurs de compilation de scripts
 
 Le serveur compile les scripts via `CSharpCodeProvider` — le compilateur `csc` livre avec le .NET Framework, **pas Roslyn**. Le code est donc compile en **C# 5** et les syntaxes C# 6+ ne sont pas supportees :

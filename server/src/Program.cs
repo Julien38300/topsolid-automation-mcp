@@ -361,6 +361,9 @@ namespace TopSolidMcpServer
                 var getStateTool = new GetStateTool(() => connector);
                 getStateTool.Register(registry);
 
+                var detectDialogTool = new DetectDialogTool(() => connector);
+                detectDialogTool.Register(registry);
+
                 var executeScriptTool = new ExecuteScriptTool(() => connector);
                 executeScriptTool.Register(registry);
 

@@ -57,6 +57,8 @@ list_exporters
 export_step
 export_dxf
 export_pdf
+export_file
+import_file
 read_user_property
 audit_part
 audit_assembly

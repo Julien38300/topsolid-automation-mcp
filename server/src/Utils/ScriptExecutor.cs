@@ -283,10 +283,16 @@ namespace TopSolidMcpServer.Utils
             {
                 Console.Error.WriteLine("[MCP-ERROR] Script execution timed out after " + timeoutSeconds +
                     " s. The script thread is left running in the background.");
-                return "Error: script execution timed out after " + timeoutSeconds + " seconds. " +
+                string timeoutMessage = "Error: script execution timed out after " + timeoutSeconds + " seconds. " +
                     "The script thread is still running in the background and cannot be stopped safely; " +
                     "check TopSolid before running another script. " +
                     "Set TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC to raise the limit.";
+
+                // The usual cause is a modal dialog waiting for a click: name it right away.
+                string dialogs = DialogDetector.DescribeIfAny();
+                return dialogs == null
+                    ? timeoutMessage + " No TopSolid dialog box was detected (topsolid_detect_dialog checks again)."
+                    : timeoutMessage + "\n\n" + dialogs;
             }
 
             if (failure != null)

@@ -98,23 +98,51 @@ Project : MonProjet
 
 La ligne `Modules :` dit quels modules Automation optionnels ont ete charges — c'est la premiere chose a regarder quand une recette de mise en plan ou de geometrie echoue (voir [Depannage](./troubleshooting)).
 
+## topsolid_detect_dialog (v1.8.16+)
+
+Detecte une boite de dialogue ouverte dans TopSolid (erreur, avertissement, « aucune entite a exporter », demande de confirmation...) et renvoie son titre, son texte et ses boutons. Lecture seule.
+
+L'outil lit les fenetres de TopSolid par Windows (Win32, et UI Automation pour les fenetres WPF) et n'appelle jamais l'API Automation : il repond donc meme quand TopSolid est bloque et que les autres outils expirent. Il cible l'instance TopSolid du port connecte, sinon toutes les instances.
+
+```json
+{ "name": "topsolid_detect_dialog", "arguments": {} }
+```
+
+Exemple de reponse :
+
+```
+1 dialog box(es) open in TopSolid:
+
+[MODAL - TopSolid is blocked until it is closed] "TopSolid" (process 15664)
+  Aucune entite a exporter.
+  Buttons: [OK] [Annuler]
+```
+
+Quand un script depasse son delai (60 s par defaut), le message d'erreur inclut deja ce rapport s'il trouve une boite de dialogue. L'outil ne clique pas : c'est l'utilisateur qui ferme la boite dans TopSolid.
+
+::: warning Serveur dans une autre session Windows
+Si le serveur tourne comme service ou tache planifiee hors de la session de l'utilisateur, il ne voit pas les fenetres de TopSolid : l'outil le dit au lieu de repondre « aucune boite ».
+:::
+
 ## topsolid_api_help
 
 Recherche dans les 1728 methodes API. Supporte les noms d'interface, mots-cles FR/EN, et filtrage.
 
-**72 synonymes FR/EN** : designation → SetDescription, reference → SetPartNumber, esquisse → Sketch, mise a plat → IUnfoldings...
+**109 synonymes FR/EN** : designation → SetDescription, reference → SetPartNumber, esquisse → Sketch, mise a plat → IUnfoldings, deplacer → Move, dossier → Folder, pdm → IPdm... Les accents sont ignores (« déplacer » = « deplacer ») et les mots vides (un, dans, the, to...) sont retires.
 
 **Modes** :
 - Interface exacte : `api_help("IParameters")` → liste complete
 - Mot-cle : `api_help("designation")` → trouve SetDescription
 - Filtre : `api_help("IDocuments.Export")` → methodes Export de IDocuments
+- Nom de methode exact : `api_help("GetConstituents")` → toutes les interfaces qui la declarent (`IPdm` d'abord, puis `IElements`)
+- Phrase : `api_help("déplacer un document dans un dossier")` → `IPdm.MoveSeveral`, avec une astuce d'usage
 
 ```json
 { "name": "topsolid_api_help", "arguments": { "query": "designation" } }
 ```
 
-::: tip Fallback
-Si la recherche par mots-cles ne trouve rien, un fallback cherche dans les descriptions et hints semantiques.
+::: tip Classement
+Les methodes qui contiennent tous les mots passent en premier. La liste est completee par les methodes qui en contiennent une partie, classees par la rarete des mots trouves (« Move » pese plus que « Document ») dans les noms, interfaces, hints semantiques et descriptions. Chaque methode n'apparait qu'une fois (30 au plus), suivie de 3 astuces d'usage au plus.
 :::
 
 ## topsolid_execute_script
@@ -182,7 +210,7 @@ Retourne le code C# d'une recette par nom, sans l'executer. Utile pour apprendre
 { "name": "topsolid_get_recipe", "arguments": { "recipe": "read_mass_volume" } }
 ```
 
-Sans `recipe` : retourne la liste des 217 recettes avec leur mode uniquement (nom + `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]` / `[WRITE-PDM-NO-TRX]`), sans description — pour les descriptions et les filtres, passez par `topsolid_list_recipes`.
+Sans `recipe` : retourne la liste des 219 recettes avec leur mode uniquement (nom + `[READ]` / `[WRITE-PDM]` / `[WRITE-DISK]` / `[WRITE-PDM-NO-TRX]`), sans description — pour les descriptions et les filtres, passez par `topsolid_list_recipes`.
 
 ## topsolid_compile (v1.5.1+)
 
