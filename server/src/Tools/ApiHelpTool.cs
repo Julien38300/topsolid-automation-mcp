@@ -492,6 +492,8 @@ namespace TopSolidMcpServer.Tools
 
         private string FormatInterface(string name, List<GraphEdge> edges, bool isFiltered = false)
         {
+            // One edge per parameter type in the graph: count and show each method once.
+            edges = DistinctMethods(edges).ToList();
             int total = edges.Count;
             int limit = 50;
             var displayEdges = edges.OrderBy(e => e.MethodName).Take(limit).ToList();
@@ -529,9 +531,7 @@ namespace TopSolidMcpServer.Tools
         private string FormatKeywordResults(string query, List<GraphEdge> rankedEdges)
         {
             // The graph holds one edge per parameter type: show each method once, best first.
-            var edges = rankedEdges
-                .GroupBy(e => (e.Interface ?? "") + "|" + e.MethodName + "|" + e.MethodSignature)
-                .Select(g => g.First())
+            var edges = DistinctMethods(rankedEdges)
                 .Take(MaxKeywordResults)
                 .ToList();
 
@@ -558,6 +558,14 @@ namespace TopSolidMcpServer.Tools
             }
 
             return string.Join("\n", lines);
+        }
+
+        /// <summary>First edge of each method (interface, name, signature), in input order.</summary>
+        private static IEnumerable<GraphEdge> DistinctMethods(IEnumerable<GraphEdge> edges)
+        {
+            return edges
+                .GroupBy(e => (e.Interface ?? "") + "|" + e.MethodName + "|" + e.MethodSignature)
+                .Select(g => g.First());
         }
 
         private IEnumerable<string> GetUsageTips(string query)

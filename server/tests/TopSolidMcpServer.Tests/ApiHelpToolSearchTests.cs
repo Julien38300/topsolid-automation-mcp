@@ -165,5 +165,24 @@ namespace TopSolidMcpServer.Tests
             int signatureLines = result.Split('\n').Count(l => l.Contains("IPdm.MoveSeveral(System"));
             Assert.That(signatureLines, Is.EqualTo(1), result);
         }
+
+        // Field test of v1.8.16-rc1 (2026-11-09): "IDocuments.Open" listed Open twice and
+        // announced 5 methods for "IDocuments.Close" while showing 2 identical lines.
+        [TestCase("IPdm.Move")]
+        [TestCase("IPdm")]
+        public void InterfaceModes_ListEachMethodOnce(string query)
+        {
+            string result = Ask(query);
+
+            int signatureLines = result.Split('\n').Count(l => l.Contains("IPdm.MoveSeveral(System"));
+            Assert.That(signatureLines, Is.EqualTo(1), result);
+        }
+
+        [Test]
+        public void InterfacePrefixMode_HeaderCountsDistinctMethods()
+        {
+            // IPdm.Move* = MoveSeveral, MoveProject, MoveProjectFolder.
+            Assert.That(Ask("IPdm.Move"), Does.Contain("=== IPdm (filtered) - 3 method(s) ==="));
+        }
     }
 }
