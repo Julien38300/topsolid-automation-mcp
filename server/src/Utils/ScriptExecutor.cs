@@ -135,8 +135,12 @@ namespace TopSolidMcpServer.Utils
 
                 var okSb = new StringBuilder();
                 okSb.AppendLine("OK: code compiles successfully.");
-                okSb.AppendLine("Mode: " + (!isModification ? "READ"
-                    : outsideTransaction ? "WRITE (PDM/document calls, no transaction)" : "WRITE (transactional)"));
+                // A script made only of PDM/document calls is not wrapped at all by execute_script
+                // (outsideTransaction stays false), yet it still writes: say so.
+                bool writesOutsideTransaction = outsideTransaction || (!isModification && !hasManualTransaction &&
+                    TransactionRules.FindOutsideOnlyCalls(StripLiteralsAndComments(preprocessed)).Count > 0);
+                okSb.AppendLine("Mode: " + (writesOutsideTransaction ? "WRITE (PDM/document calls, no transaction)"
+                    : isModification ? "WRITE (transactional)" : "READ"));
                 if (warnCount > 0)
                 {
                     okSb.AppendLine("Warnings: " + warnCount);
