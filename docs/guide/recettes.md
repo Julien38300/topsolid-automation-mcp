@@ -356,6 +356,7 @@ Les recettes WRITE passent par `topsolid_modify_script` qui wrappe automatiqueme
 - Utiliser `__message = "..."` pour personnaliser le message de retour.
 - `return;` (void) est autorise pour les early exits — transforme en `goto __done;`.
 - Variables pre-declarees : `docId`, `pdmId`, `__message`.
+- Une recette dont les seules ecritures sont des appels PDM (`Pdm.SetDescription`, `SetName`, `SetPartNumber`, `Save`...) tourne sans `StartModification` : TopSolid refuse ces appels dans une transaction. C'est le cas de `set_designation`, `set_name`, `set_reference`, `set_manufacturer`, `set_user_property`, `copy_pdm_properties_to`, `clear_document_author`, `save_all_project` et des `batch_set_*` / `batch_clear_author`, qui echouaient avant la v1.8.16. Melanger ces appels et des modifications du modele est refuse avant execution.
 
 Exemple (extrait de `set_drafting_scale`) :
 ```csharp

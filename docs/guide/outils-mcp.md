@@ -178,6 +178,13 @@ Identique a `execute_script` mais pour les **modifications**. Gere automatiqueme
 
 Non enregistre quand le serveur tourne avec `--read-only` / `TOPSOLID_MCP_READ_ONLY=1`.
 
+::: info Operations PDM et document : jamais dans une transaction
+TopSolid refuse entre `StartModification` et `EndModification` les appels PDM et document : `Pdm.DeleteSeveral`, `MoveSeveral`, `CreateFolder`, `SetDescription`, `SetName`, `SetPartNumber`, `Save`, `Documents.Open`, `Close`, `Export`, `Import`... (erreur `EndModification must be called before calling this method`). La liste vient de la reference API et a ete mesuree sur TopSolid 7.20.
+
+- Un script fait **uniquement** de ces appels s'execute sans transaction : `execute_script` le lance tel quel, `modify_script` et les recettes `RW` gardent `docId`, `pdmId`, `__message` et la sauvegarde finale, sans `StartModification`. `topsolid_compile` l'annonce : `Mode: WRITE (PDM/document calls, no transaction)`.
+- Un script qui **melange** ces appels et des modifications du modele est refuse avant execution, avec la liste des appels en cause : le couper en deux appels, ou gerer soi-meme la transaction et faire ces appels apres `EndModification`. `Pdm.Save` est inutile dans un script enveloppe : le wrapper sauve deja.
+:::
+
 ::: warning
 `EnsureIsDirty(ref docId)` change le docId. Toujours chercher les elements APRES cet appel.
 :::

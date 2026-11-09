@@ -148,7 +148,7 @@ Par ailleurs, l'API TopSolid refuse la creation de document dans une transaction
 
 > This method must not be called between StartModification(String, Boolean) and EndModification(Boolean, Boolean).
 
-Le serveur MCP enveloppe automatiquement dans une transaction StartModification/EndModification tout code detecte comme ecriture : `topsolid_execute_script` (auto-detection), `topsolid_modify_script`, et toutes les recettes declarees `RW` (Pattern D). Consequence pratique : un script qui appelle `CreateDocumentWithTemplate` via ces entrees est rejete par TopSolid — aucun document n'est cree, et rien d'existant n'est modifie (l'import lui-meme reste valable : le document importe utilise le modele par defaut du projet).
+Le serveur MCP enveloppe automatiquement dans une transaction StartModification/EndModification tout code detecte comme ecriture : `topsolid_execute_script` (auto-detection), `topsolid_modify_script`, et toutes les recettes declarees `RW` (Pattern D). Depuis la v1.8.16, un script dont les seules ecritures sont des appels PDM ou document refuses en transaction (`CreateDocumentWithTemplate`, `CreateFolder`, `Documents.Open`...) s'execute sans transaction. Un script qui les melange a des modifications du modele est refuse avant execution, avec la liste des appels en cause (voir [Outils MCP](../guide/outils-mcp.md#topsolid-modify-script)).
 
 Deux solutions :
 

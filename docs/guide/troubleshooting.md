@@ -127,6 +127,13 @@ Cause la plus frequente : TopSolid attend un clic sur une boite de dialogue moda
 2. Fermer la boite dans TopSolid. Le serveur ne clique jamais a la place de l'utilisateur.
 3. Ne pas relancer le meme appel avant d'avoir compris la cause. Pour un export, utiliser `export_file`, qui refuse les documents sans forme au lieu d'ouvrir cette boite.
 
+## "EndModification must be called before calling this method"
+
+TopSolid refuse un appel PDM ou document (`Pdm.DeleteSeveral`, `MoveSeveral`, `SetDescription`, `Save`, `Documents.Open`...) a l'interieur d'une transaction `StartModification` / `EndModification`.
+
+- Depuis la v1.8.16, le serveur lance sans transaction un script fait uniquement de ces appels, et refuse avant execution un script qui les melange a des modifications du modele, en nommant les appels en cause.
+- Avant la v1.8.16, ces scripts echouaient avec ce message, de meme que les recettes `set_designation`, `set_name`, `set_reference`, `save_all_project`... Dans un script ecrit a la main, faire ces appels apres `EndModification(true, true)`.
+
 ## Erreurs de compilation de scripts
 
 Le serveur compile les scripts via `CSharpCodeProvider` — le compilateur `csc` livre avec le .NET Framework, **pas Roslyn**. Le code est donc compile en **C# 5** et les syntaxes C# 6+ ne sont pas supportees :
