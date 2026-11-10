@@ -1,0 +1,168 @@
+SNAP	Pièce B	B.0
+REVS	A.0,B.0
+MAT	Acier S235 EN 10025
+PROP	$TopSolid.Kernel.TX.Properties.InvalidDocument	False
+PROP	$TopSolid.Kernel.TX.Properties.NeedsRefreshingDocument	False
+PROP	$TopSolid.Kernel.TX.Properties.FrozenDocument	False
+PROP	$TopSolid.Kernel.TX.Properties.Author	Author1
+PROP	$TopSolid.Kernel.TX.Properties.MinorRevision	0
+PROP	$TopSolid.Kernel.TX.Properties.MajorRevision	B
+PROP	$TopSolid.Kernel.TX.Properties.Name	Pièce B
+PROP	$TopSolid.Kernel.TX.Properties.Description	Pièce B
+PROP	$TopSolid.Kernel.TX.Properties.Mass	0.69708694836852425
+PROP	$TopSolid.Kernel.TX.Properties.SurfaceArea	0.033071327412287188
+PROP	$TopSolid.Kernel.TX.Properties.Volume	8.8800885142487169E-05
+PROP	$TopSolid.Cad.Design.DB.SheetMetal.SheetMetalDocument	False
+PROP	$TopSolid.Cad.Design.DB.Stocks.MargedLength	0.1
+PROP	$TopSolid.Cad.Design.DB.Stocks.MargedWidth	0.085
+PROP	$TopSolid.Cad.Design.DB.Stocks.MargedHeight	0.07
+PROP	$TopSolid.Kernel.TX.Properties.Length	0.1
+PROP	$TopSolid.Kernel.TX.Properties.Width	0.084999999999999992
+PROP	$TopSolid.Kernel.TX.Properties.Height	0.07
+PROP	$TopSolid.Kernel.TX.Properties.CreateNewUniversalIdentifierAtCopy	True
+PROP	$TopSolid.Cad.Design.DB.SheetMetal.Unfoldable shape	False
+PROP	$TopSolid.Cad.Design.DB.Materials.Name	Acier S235 EN 10025
+PROP	$TopSolid.Cad.Design.DB.Materials.Description	Acier S235 EN 10025
+PROP	$TopSolid.Cad.Design.DB.Materials.Density	7850
+PROP	$TopSolid.Cad.Design.DB.Materials.SpecularShininess	0.25
+PROP	$TopSolid.Cad.Design.DB.Materials.SpecularSpreading	0.1
+PROP	$TopSolid.Cad.Design.DB.Materials.YoungsModulus	210000000000
+PROP	$TopSolid.Cad.Design.DB.Materials.PoissonsRatio	0.3
+PROP	$TopSolid.Cad.Design.DB.Materials.ShearModulus	400000000
+PROP	$TopSolid.Cad.Design.DB.Materials.ReflectionCoefficient	0.2
+PROP	$TopSolid.Cad.Design.DB.Materials.ElasticLimit	235000000
+PROP	$TopSolid.Cad.Design.DB.Stocks.PartNumber	
+PROP	$TopSolid.Cad.Design.DB.Stocks.Description	Acier S235 EN 10025 - 100mm - 85mm - 70mm
+PROP	$TopSolid.Cad.Design.DB.Stocks.Name	Acier S235 EN 10025 - 100mm - 85mm - 70mm
+PROP	$TopSolid.Cad.Design.DB.Stocks.Dimensions	100mm - 85mm - 70mm
+PROP	1661b809-c3f0-4c18-84f6-16feec11ad18.6_1001	True
+PARAM	336	NomBrut	NomBrut	Text	Acier S235 EN 10025 - 100mm - 85mm - 70mm		
+PARAM	267	Union	Union	Text			
+PARAM	265	Union?	Union?	Integer	0		
+PARAM	14	$TopSolid.Kernel.TX.Properties.CreationDate	Date de création	DateTime			
+PARAM	15	$TopSolid.Kernel.TX.Properties.ModificationDate	Date de modification	DateTime			
+PARAM	16	$TopSolid.Kernel.TX.Properties.Author	Auteur	Text	Author1		
+PARAM	17	$TopSolid.Kernel.TX.Properties.MinorRevision	Révision mineure	Text	0		
+PARAM	18	$TopSolid.Kernel.TX.Properties.MajorRevision	Révision majeure	Text	B		
+PARAM	19	$TopSolid.Kernel.TX.Properties.Name	Nom	Text	Pièce B		
+PARAM	20	$TopSolid.Kernel.TX.Properties.Standard	Norme	Enumeration	1		
+PARAM	21	$TopSolid.Kernel.TX.Properties.ErpPartNumber	Référence complémentaire	Text			
+PARAM	22	$TopSolid.Kernel.TX.Properties.ManufacturerPartNumber	Référence fabricant	Text			
+PARAM	23	$TopSolid.Kernel.TX.Properties.Manufacturer	Fabricant	Text			
+PARAM	24	$TopSolid.Kernel.TX.Properties.PartNumber	Référence	Text			
+PARAM	25	$TopSolid.Kernel.TX.Properties.Code	Code	Text			
+PARAM	26	$TopSolid.Kernel.TX.Properties.Description	Désignation	Text	Pièce B		
+PARAM	117	$TopSolid.Kernel.TX.Properties.Comment	Commentaire	Text			
+PARAM	123	$TopSolid.Kernel.TX.Properties.Mass	Masse	Real	0.69708694836852425	Mass	kg
+PARAM	126	$TopSolid.Cad.Design.DB.Documents.ElementName.PrincipalXMoment	Moment X principal	Real	0.0008077649826236336	InertiaMoment	kg.mm2
+PARAM	127	$TopSolid.Cad.Design.DB.Documents.ElementName.PrincipalYMoment	Moment Y principal	Real	0.00072811609618975268	InertiaMoment	kg.mm2
+PARAM	128	$TopSolid.Cad.Design.DB.Documents.ElementName.PrincipalZMoment	Moment Z principal	Real	0.0012389429386851631	InertiaMoment	kg.mm2
+PARAM	129	$TopSolid.Kernel.TX.Properties.SurfaceArea	Surface	Real	0.033071327412287188	Area	mm2
+PARAM	130	$TopSolid.Kernel.TX.Properties.Volume	Volume	Real	8.8800885142487169E-05	Volume	mm3
+PARAM	132	$TopSolid.Cad.Design.DB.SheetMetal.BendsNumber	Nombre de plis	Integer	0		
+PARAM	133	$TopSolid.Cad.Design.DB.SheetMetal.UnfoldingBoxLength	Longueur boite (mise à plat)	Real	0	Length	mm
+PARAM	134	$TopSolid.Cad.Design.DB.SheetMetal.UnfoldingBoxWidth	Largeur boite (mise à plat)	Real	0	Length	mm
+PARAM	135	$TopSolid.Cad.Design.DB.SheetMetal.Perimeter	Périmètre (mise à plat)	Real	0	Length	mm
+PARAM	136	$TopSolid.Cad.Design.DB.SheetMetal.HolesPerimeter	Périmètre des ouvertures (mise à plat)	Real	0	Length	mm
+PARAM	137	$TopSolid.Cad.Design.DB.SheetMetal.UnfoldingSurfaceArea	Surface (mise à plat)	Real	0	Area	mm2
+PARAM	138	$TopSolid.Cad.Design.DB.SheetMetal.SurfaceAreaWithoutHoles	Surface hors ouvertures (mise à plat)	Real	0	Area	mm2
+PARAM	139	$TopSolid.Cad.Design.DB.SheetMetal.SheetMetalDocument	Tôle	Boolean	False		
+PARAM	164	$TopSolid.Cad.Design.DB.Documents.ElementName.EnclosingBoxXSize	Taille X boite	Real	0.1	Length	mm
+PARAM	165	$TopSolid.Cad.Design.DB.Documents.ElementName.EnclosingBoxYSize	Taille Y boite	Real	0.084999999999999992	Length	mm
+PARAM	166	$TopSolid.Cad.Design.DB.Documents.ElementName.EnclosingBoxZSize	Taille Z boite	Real	0.07	Length	mm
+PARAM	222	$TopSolid.Cad.Design.DB.SheetMetal.HolesNumber	Nombre d'ouvertures (mise à plat)	Integer	0		
+PARAM	332	$TopSolid.Cad.Design.DB.Documents.ElementName.EnclosingBoxMargedXSize	Taille X boite margée	Real	0.1	Length	mm
+PARAM	333	$TopSolid.Cad.Design.DB.Documents.ElementName.EnclosingBoxMargedYSize	Taille Y boite margée	Real	0.085	Length	mm
+PARAM	334	$TopSolid.Cad.Design.DB.Documents.ElementName.EnclosingBoxMargedZSize	Taille Z boite margée	Real	0.07	Length	mm
+PARAM	337	$TopSolid.Kernel.TX.Properties.Thickness	Epaisseur	Real	0	Length	mm
+PARAM	338	$TopSolid.Cad.Design.DB.Stocks.MargedLength	Longueur margée du brut	Real	0.1	Length	mm
+PARAM	339	$TopSolid.Cad.Design.DB.Stocks.MargedWidth	Largeur margée du brut	Real	0.085	Length	mm
+PARAM	340	$TopSolid.Cad.Design.DB.Stocks.MargedHeight	Hauteur margée du brut	Real	0.07	Length	mm
+PARAM	341	$TopSolid.Kernel.TX.Properties.Length	Longueur	Real	0.1	Length	mm
+PARAM	342	$TopSolid.Kernel.TX.Properties.Width	Largeur	Real	0.084999999999999992	Length	mm
+PARAM	343	$TopSolid.Kernel.TX.Properties.Height	Hauteur	Real	0.07	Length	mm
+PARAM	347	$TopSolid.Kernel.TX.Properties.UniversalIdentifier	Identificateur universel	Unclassified			
+PARAM	348	$TopSolid.Kernel.TX.Properties.CreateNewUniversalIdentifierAtCopy	Créer un nouvel identificateur universel à la copie	Boolean	True		
+PARAM	351	$TopSolid.Cad.Design.DB.SheetMetal.Unfoldable shape	Forme développable	Boolean	False		
+PARAM	98	$TopSolid.Cad.Design.DB.Materials.Name	Nom du matériau	Text	Acier S235 EN 10025		
+PARAM	99	$TopSolid.Cad.Design.DB.Materials.Description	Désignation du matériau	Text	Acier S235 EN 10025		
+PARAM	100	$TopSolid.Cad.Design.DB.Materials.Category	Catégorie de matériau	Enumeration	6		
+PARAM	101	$TopSolid.Cad.Design.DB.Materials.Density	Masse volumique	Real	7850	Density	kg/dm3
+PARAM	102	$TopSolid.Cad.Design.DB.Materials.DiffuseColor	Couleur diffuse	Color			
+PARAM	103	$TopSolid.Cad.Design.DB.Materials.SpecularShininess	Brillance spéculaire	Real	0.25	Factor	
+PARAM	104	$TopSolid.Cad.Design.DB.Materials.SpecularSpreading	Etalement spéculaire	Real	0.1	Factor	
+PARAM	105	$TopSolid.Cad.Design.DB.Materials.YoungsModulus	Module d'Young	Real	210000000000	Pressure	GPa
+PARAM	106	$TopSolid.Cad.Design.DB.Materials.PoissonsRatio	Coefficient de Poisson	Real	0.3	Factor	
+PARAM	107	$TopSolid.Cad.Design.DB.Materials.ShearModulus	Module de cisaillement	Real	400000000	Pressure	MPa
+PARAM	108	$TopSolid.Cad.Design.DB.Materials.SpecularityType	Type de spécularité	Enumeration	2		
+PARAM	109	$TopSolid.Cad.Design.DB.Materials.ReflectionCoefficient	Coefficient de réflexion	Real	0.2	Factor	
+PARAM	308	$TopSolid.Cad.Design.DB.Materials.CoatingName	Nom du revêtement	Text			
+PARAM	309	$TopSolid.Cad.Design.DB.Materials.CoatingDescription	Désignation du revêtement	Text			
+PARAM	310	$TopSolid.Cad.Design.DB.Materials.CoatingCategory	Catégorie de revêtement	Enumeration	0		
+PARAM	311	$TopSolid.Cad.Design.DB.Materials.CoatingDensity	Masse surfacique du revêtement	Real	0	SurfaceDensity	kg/m2
+PARAM	312	$TopSolid.Cad.Design.DB.Materials.BumpScale	Echelle du relief	Real	0	Factor	
+PARAM	313	$TopSolid.Cad.Design.DB.Materials.ReflectionSpreadAngle	Angle d'étalement de réflexion	Real	0	Angle	°
+PARAM	314	$TopSolid.Cad.Design.DB.Materials.RefractiveIndex	Indice de réfraction	Real	0	Factor	
+PARAM	399	$TopSolid.Cad.Design.DB.Materials.ElasticLimit	Limite d'élasticité	Real	235000000	Pressure	MPa
+PARAM	214	$TopSolid.Cad.Design.DB.Stocks.MajorRevision	Révision majeure du brut	Text			
+PARAM	215	$TopSolid.Cad.Design.DB.Stocks.PartNumber	Référence du brut	Text			
+PARAM	216	$TopSolid.Cad.Design.DB.Stocks.Description	Désignation du brut	Text	Acier S235 EN 10025 - 100mm - 85mm - 70mm		
+PARAM	217	$TopSolid.Cad.Design.DB.Stocks.Name	Nom du brut	Text	Acier S235 EN 10025 - 100mm - 85mm - 70mm		
+PARAM	223	$TopSolid.Cad.Design.DB.Stocks.Dimensions	Dimensions du brut	Text	100mm - 85mm - 70mm		
+PARAM	162	Type de brut	Type de brut	UserEnumeration			
+PARAM	324	Type de production	Type de production	UserEnumeration			
+PARAM	346	Mise en plan nécessaire	Mise en plan nécessaire	Boolean	True		
+PARAM	397	Diamètre	Diamètre	Real	0.008	Length	mm
+PARAM	398	JeuPerçage	JeuPerçage	Real	0.02	Length	mm
+OP	0	32	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Etape initiale)	31	1	0	0	
+OP	1	115	TopSolid.Kernel.DB.Operations.DefinitionCreation	Création définition	31	1	0	0	5,
+OP	2	91	TopSolid.Cad.Design.DB.Materials.MaterialManagementOperation	Gestion du matériau	31	1	0	0	98,99,100,101,102,103,104,105,106,107,108,109,308,309,310,311,312,313,314,399,
+OP	3	358	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra face)	31	1	0	0	59,
+OP	4	359	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra arrière)	31	1	0	0	60,
+OP	5	360	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra gauche)	31	1	0	0	61,
+OP	6	361	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra droite)	31	1	0	0	62,
+OP	7	362	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra dessus)	31	1	0	0	63,
+OP	8	363	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra dessous)	31	1	0	0	64,
+OP	9	364	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra perspective)	31	1	0	0	65,
+OP	10	365	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra isométrique)	31	1	0	0	66,
+OP	11	366	TopSolid.Kernel.DB.D3.Cameras.Operations.StandardCameraCreation	Caméra standard (Caméra conique)	31	1	0	0	67,
+OP	12	31	TopSolid.Kernel.DB.Stages.InitialStageOperation	Etape initiale	29	1	0	0	
+OP	13	75	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Etape modélisation)	74	1	0	0	
+OP	14	368	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Bloc (Forme 1))	367	1	0	0	
+OP	15	367	TopSolid.Kernel.DB.D3.Shapes.Creations.BlockCreation	Bloc (Forme 1)	74	1	0	0	369,373,374,375,
+OP	16	381	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Groupe de perçage 1)	380	1	0	0	
+OP	17	376	TopSolid.Kernel.DB.D3.Sketches.Planar.Operations.PlanarSketchSolvingOperation	Résolution (Esquisse 1)	380	1	0	0	377,
+OP	18	380	TopSolid.Cad.Design.DB.Drillings.Operations.DrillingGroupOperation	Groupe de perçage 1	74	1	0	0	383,
+OP	19	396	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Bossage 1)	395	1	0	0	
+OP	20	387	TopSolid.Kernel.DB.D3.Sketches.Planar.Operations.PlanarSketchSolvingOperation	Résolution (Esquisse 2)	395	1	0	0	388,
+OP	21	395	TopSolid.Kernel.DB.D3.Shapes.Bosses.BossOperation	Bossage 1	74	1	0	0	
+OP	22	74	TopSolid.Kernel.DB.Stages.ModelingStageOperation	Etape modélisation	29	1	0	0	
+OP	23	81	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Etape analyse)	80	1	0	0	
+OP	24	93	TopSolid.Cad.Design.DB.Analysis.PartExtentManagementOperation	Gestion de l'encombrement	80	1	0	0	
+OP	25	94	TopSolid.Cad.Design.DB.Analysis.PartFibersManagementOperation	Gestion des fibres	80	1	0	0	384,385,386,331,
+OP	26	168	TopSolid.Cad.Design.DB.Analysis.PartEnclosingCylinderManagementOperation	Gestion du cylindre englobant	80	1	0	0	
+OP	27	95	TopSolid.Cad.Design.DB.Analysis.PartEnclosingBoxManagementOperation	Gestion de la boite englobante	80	1	0	0	163,164,165,166,332,333,334,
+OP	28	96	TopSolid.Cad.Design.DB.Analysis.PartPhysicalPropertiesManagementOperation	Gestion des propriétés physiques	80	1	0	0	129,130,123,124,125,126,127,128,
+OP	29	97	TopSolid.Cad.Design.DB.Analysis.ThreadingsManagementOperation	Gestion des filetages	80	1	0	0	
+OP	30	131	TopSolid.Cad.Design.DB.SheetMetal.Analysis.SheetMetalPartPropertiesManagementOperation	Gestion des propriétés tôle	80	1	0	0	139,351,337,132,133,134,135,136,222,137,138,
+OP	31	345	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Dimensions)	344	1	0	0	
+OP	32	335	TopSolid.Kernel.DB.Parameters.Operations.TableTextParameterCreation	Paramètre texte tabulé (NomBrut)	344	1	0	0	336,
+OP	33	213	TopSolid.Cad.Design.DB.Stocks.StockManagementOperation	Gestion du brut	344	1	0	0	217,216,215,214,223,338,341,339,342,340,343,
+OP	34	344	TopSolid.Kernel.DB.Operations.FolderOperation	Dimensions	80	1	0	0	
+OP	35	352	TopSolid.Cad.Design.DB.Cameras.StandardCamerasManagementOperation	Gestion des caméras standard	80	1	0	0	
+OP	36	357	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Paramétrage nom document)	356	1	0	0	
+OP	37	264	TopSolid.Kernel.DB.Parameters.Operations.SmartIntegerParameterCreation	Paramètre entier (Union?)	356	1	0	0	265,
+OP	38	266	TopSolid.Kernel.DB.Parameters.Operations.TableTextParameterCreation	Paramètre texte tabulé (Union)	356	1	0	0	267,
+OP	39	259	TopSolid.Kernel.DB.Parameters.Operations.ParameterizedLocalizableTextParameterCreation	Paramétré (Nom)	356	1	0	0	19,
+OP	40	356	TopSolid.Kernel.DB.Operations.FolderOperation	Paramétrage nom document	80	1	0	0	
+OP	41	80	TopSolid.Cad.Design.DB.Analysis.AnalysisStageOperation	Etape analyse	29	1	0	0	
+OP	42	79	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Etape annotation)	78	1	0	0	
+OP	43	144	TopSolid.Cad.Design.DB.Annotations.AnnotationsManagementOperation	Gestion des annotations	78	1	0	0	
+OP	44	78	TopSolid.Cad.Design.DB.Annotations.AnnotationStageOperation	Etape annotation	29	1	0	0	
+OP	45	34	TopSolid.Kernel.DB.Operations.StartOperation	Départ (Etape finale)	33	1	0	0	
+OP	46	116	TopSolid.Kernel.DB.Operations.DefinitionModification	Modification définition	33	1	0	0	
+OP	47	33	TopSolid.Kernel.DB.Stages.FinalStageOperation	Etape finale	29	1	0	0	
+SHAPE	Forme 1	12	0
+SURF	Forme 1	Cylinder	4
+SURF	Forme 1	Plane	8
+CYL	Forme 1	10	7	4

@@ -1,12 +1,14 @@
 # Outils MCP
 
-Le serveur expose **13 outils** au protocole MCP. L'agent IA les appelle via JSON-RPC — sur stdin/stdout (mode stdio) ou via HTTP/SSE (mode bridge).
+Le serveur expose **15 outils** au protocole MCP. L'agent IA les appelle via JSON-RPC — sur stdin/stdout (mode stdio) ou via HTTP/SSE (mode bridge).
 
 | Outil | TopSolid requis |
 |---|---|
 | `topsolid_run_recipe` | oui |
 | `topsolid_list_recipes` | non |
 | `topsolid_get_state` | oui |
+| `topsolid_detect_dialog` | oui |
+| `topsolid_compare_documents` | oui |
 | `topsolid_execute_script` | oui |
 | `topsolid_modify_script` | oui |
 | `topsolid_api_help` | non |
@@ -122,6 +124,68 @@ Quand un script depasse son delai (60 s par defaut), le message d'erreur inclut 
 
 ::: warning Serveur dans une autre session Windows
 Si le serveur tourne comme service ou tache planifiee hors de la session de l'utilisateur, il ne voit pas les fenetres de TopSolid : l'outil le dit au lieu de repondre « aucune boite ».
+:::
+
+## topsolid_compare_documents (v1.8.18+)
+
+Compare deux revisions d'une piece ou d'un assemblage et donne la liste rangee de tout ce qui a change : materiau, parametres, operations (ajoutees, supprimees, deplacees, activees, devenues invalides) et geometrie (trous, faces, encombrement). Avec une `target`, il dit pour chaque changement si cet autre document l'a deja, s'il peut etre reporte automatiquement ou s'il faut le faire a la main. Avec `apply: true`, il reporte la partie automatique.
+
+Cas d'usage : la piece A et la piece B partent de la meme base, A a evolue depuis sa revision A.0, et il faut reporter ces evolutions sur B.
+
+| Parametre | Type | Defaut | Role |
+|---|---|---|---|
+| `document` | string | document edite | Nom exact du document qui a evolue, dans le projet courant |
+| `from_revision` | string | `previous` | Revision de base : `A.0`, `A` (derniere mineure de A) ou `previous` |
+| `to_revision` | string | courante | Revision comparee a la base |
+| `target` | string | — | Nom exact du document sur lequel reporter |
+| `mode` | string | `revisions` | `documents` : compare directement `document` et `target` (ce qu'il faut changer dans `target` pour ressembler a `document`) |
+| `apply` | boolean | `false` | Reporte les changements `AUTO` sur `target`, en une transaction, puis sauvegarde |
+
+```json
+{ "name": "topsolid_compare_documents", "arguments": { "document": "Piece A", "target": "Piece B" } }
+```
+
+Reponse (extrait, mesuree sur TopSolid 7.20) :
+
+```
+COMPARE Piece A: A.0 → B.0   target: Piece B A.0
+Summary: 4 design change(s) — 3 automatic, 1 manual, 0 already in Piece B; 12 recomputed value(s).
+
+MATERIAL
+  ~ Material: Acier → Acier S235 EN 10025   | Piece B: Acier  [AUTO]
+
+PARAMETERS
+  + Diametre = 8 mm   | Piece B: absent  [AUTO: create]
+  + JeuPercage = 20 mm   | Piece B: absent  [AUTO: create]
+
+GEOMETRY (seen on the faces: says WHAT changed, not in which operation)
+  ~ Shape Forme 1: 4 × Ø10 mm (L 7 mm) → 4 × Ø8 mm (L 7 mm)   | Piece B: 4 × Ø10 mm (L 7 mm)  [MANUAL]
+      cylindrical faces changed; the API cannot change an operation's data; candidates in the target: Groupe de percage 1
+
+RECOMPUTED BY TOPSOLID (never applied)
+  Masse: 0.334417 kg → 0.340632 kg
+  ...
+```
+
+Ce qui est reporte automatiquement (`AUTO`) :
+
+- le **materiau** (celui de la revision courante du document source) ;
+- les **parametres simples** (reel, texte, entier, booleen) : crees s'ils manquent, mis a la valeur sinon ;
+- l'**etat des operations** : activee / desactivee, gelee / degelee.
+
+Ce qui reste a la main (`MANUAL`), avec une indication :
+
+- le **contenu d'une operation** (diametre d'un percage, cote d'une esquisse, dimensions d'un bloc) : l'API ne le lit pas. Le changement se voit sur la geometrie (groupes de faces cylindriques par diametre, faces par type, encombrement), et l'outil nomme les operations candidates de la cible ;
+- une **operation ajoutee** (a creer) ou **supprimee** (a supprimer : l'outil ne supprime jamais d'operation) ;
+- un **changement d'ordre** dans l'arbre ;
+- un parametre pilote par une operation (tableau, formule) ou supprime.
+
+Jamais reportes : les valeurs **recalculees** par TopSolid (masse, volume, boite englobante, nom du brut, proprietes du materiau) et l'**identite** du document (nom, designation, revision, auteur).
+
+Apres `apply`, l'outil relit la cible et redonne le rapport : ce qui est fait passe en `already done`, il ne reste que le `MANUAL`. Un echec annule toute la transaction. `apply` est refuse en mode lecture seule et exige la revision courante (`to_revision` vide).
+
+::: tip Appariement des elements
+Deux revisions d'un meme document gardent les memes identifiants d'elements : les operations sont appariees par identifiant. Deux documents differents ne les partagent que jusqu'a leur separation (ensuite chacun reutilise les memes numeros pour autre chose) : l'outil les apparie par type et nom.
 :::
 
 ## topsolid_api_help
@@ -250,7 +314,7 @@ La compilation passe par `CSharpCodeProvider`, c'est-a-dire le compilateur `csc`
 }
 ```
 
-Reponse : `OK: code compiles successfully. Mode: READ` ou liste d'erreurs avec numeros de ligne.
+Reponse : `OK: code compiles successfully. Mode: READ` ou liste d'erreurs avec numeros de ligne. Un script qui appelle lui-meme `Application.StartModification` n'est pas enveloppe : `Mode: WRITE (manual transaction, not wrapped)` (v1.8.18+, il etait annonce `READ` avant).
 
 **Sans TopSolid connecte.**
 
