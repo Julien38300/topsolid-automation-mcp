@@ -116,7 +116,8 @@ Le serveur lit ses donnees dans **`server/data/`** (dossier embarque a cote de l
 | `server/data/help.db` | Index SQLite FTS5 de l'aide (5809 pages) | ~20 MB |
 | `server/data/commands-catalog.json` | Catalogue des 2428 commandes UI (Layer 2) | ~1.3 MB |
 | `server/data/recipe-list.txt` | Liste generee des recettes (nom, mode, description) | ~9 KB |
-| `server/src/Tools/RecipeTool.cs` | 216 recettes C# pre-construites (source de verite) | ~190 KB |
+| `server/data/recipes.md` | Catalogue lisible des recettes (mode, description, code), genere par `server/scripts/gen-recipes-catalog.py` | ~300 KB |
+| `server/src/Tools/RecipeTool.cs` | 219 recettes C# pre-construites (source de verite) | ~190 KB |
 | `data/api-index.json` | Index plat des 1728 methodes | ~420 KB |
 | `data/help-md/` | Aide en ligne convertie en Markdown (FR+EN), non versionnee | ~9 MB |
 | `tests/TestSuite.json` | 85 tests automatises | ~50 KB |
