@@ -367,6 +367,9 @@ namespace TopSolidMcpServer
                 var executeScriptTool = new ExecuteScriptTool(() => connector);
                 executeScriptTool.Register(registry);
 
+                var compareDocumentsTool = new CompareDocumentsTool(() => connector, readOnly);
+                compareDocumentsTool.Register(registry);
+
                 if (!readOnly)
                 {
                     var modifyScriptTool = new ModifyScriptTool(() => connector);

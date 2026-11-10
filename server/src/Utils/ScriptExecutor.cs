@@ -139,7 +139,8 @@ namespace TopSolidMcpServer.Utils
                 // (outsideTransaction stays false), yet it still writes: say so.
                 bool writesOutsideTransaction = outsideTransaction || (!isModification && !hasManualTransaction &&
                     TransactionRules.FindOutsideOnlyCalls(StripLiteralsAndComments(preprocessed)).Count > 0);
-                okSb.AppendLine("Mode: " + (writesOutsideTransaction ? "WRITE (PDM/document calls, no transaction)"
+                okSb.AppendLine("Mode: " + (hasManualTransaction ? "WRITE (manual transaction, not wrapped)"
+                    : writesOutsideTransaction ? "WRITE (PDM/document calls, no transaction)"
                     : isModification ? "WRITE (transactional)" : "READ"));
                 if (warnCount > 0)
                 {

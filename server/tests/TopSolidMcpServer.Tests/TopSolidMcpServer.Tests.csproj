@@ -38,6 +38,11 @@
     <Compile Include="..\..\src\Protocol\McpToolRegistry.cs" Link="McpToolRegistry.cs" />
     <Compile Include="..\..\src\Protocol\Models\McpToolDescriptor.cs" Link="McpToolDescriptor.cs" />
     <Compile Include="..\..\src\Tools\ApiHelpTool.cs" Link="ApiHelpTool.cs" />
+    <Compile Include="..\..\src\Utils\DocumentSnapshot.cs" Link="DocumentSnapshot.cs" />
+    <Compile Include="..\..\src\Utils\DocumentComparison.cs" Link="DocumentComparison.cs" />
+    <Compile Include="..\..\src\Utils\DocumentScripts.cs" Link="DocumentScripts.cs" />
+    <Compile Include="..\..\src\Utils\DocumentCompareRunner.cs" Link="DocumentCompareRunner.cs" />
+    <None Include="Fixtures\**\*.txt" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\TypeGraph.cs" Link="Graph\TypeGraph.cs" />
     <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Models\ExtractedMethod.cs" Link="Graph\ExtractedMethod.cs" />
     <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Models\GraphEdge.cs" Link="Graph\GraphEdge.cs" />

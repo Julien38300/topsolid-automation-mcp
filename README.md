@@ -69,7 +69,7 @@ In your AI assistant, ask:
 
 The agent picks `topsolid_run_recipe` with recipe `read_designation` and returns the result.
 
-## The 14 MCP tools
+## The 15 MCP tools
 
 | Tool | Purpose | Needs TopSolid running |
 |---|---|---|
@@ -80,6 +80,7 @@ The agent picks `topsolid_run_recipe` with recipe `read_designation` and returns
 | `topsolid_explore_paths` | Multi-path BFS between two types | no |
 | `topsolid_get_state` | Active document, project, connection status | yes |
 | `topsolid_detect_dialog` | Title, text and buttons of a dialog box blocking TopSolid; works while TopSolid is frozen | yes (reads its windows, not the API) |
+| `topsolid_compare_documents` | Sorted list of what changed between two revisions of a part or assembly (material, parameters, operations, geometry); tells what a target document already has and applies the automatic part to it | yes |
 | `topsolid_execute_script` | Compile and run arbitrary C# in the server process, outside a TopSolid modification transaction | yes |
 | `topsolid_modify_script` | Compile and run arbitrary C# inside a modification transaction (Pattern D auto-wrapped) | yes |
 | `topsolid_get_recipe` | Return the C# source of a recipe | no |
