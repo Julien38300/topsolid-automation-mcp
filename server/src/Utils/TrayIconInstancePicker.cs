@@ -57,7 +57,7 @@ namespace TopSolidMcpServer.Utils
         {
             TraySettings.Load();
 
-            _instancePickerMenuItem = new ToolStripMenuItem("Instance TopSolid");
+            _instancePickerMenuItem = new ToolStripMenuItem(L10n.T("tray.menu.instance"));
             StyleMenuItem(_instancePickerMenuItem);
             _instancePickerMenuItem.DropDown.Font = rootMenu.Font;
             _instancePickerMenuItem.DropDown.BackColor = Color.White;
@@ -67,7 +67,7 @@ namespace TopSolidMcpServer.Utils
 
             // Seed with a placeholder so the submenu arrow is always drawn;
             // the real list is rebuilt every time the user opens the submenu.
-            _instancePickerMenuItem.DropDownItems.Add(new ToolStripMenuItem("(chargement…)") { Enabled = false });
+            _instancePickerMenuItem.DropDownItems.Add(new ToolStripMenuItem(L10n.T("tray.instance.loading")) { Enabled = false });
             _instancePickerMenuItem.DropDownOpening += (s, e) => PopulateInstanceSubmenu();
 
             rootMenu.Items.Add(_instancePickerMenuItem);
@@ -89,7 +89,7 @@ namespace TopSolidMcpServer.Utils
                 // ── Section 1: Running TopSolid instances (live scan) ──
                 if (running.Count == 0)
                 {
-                    var noneItem = new ToolStripMenuItem("(aucun TopSolid en cours d'exécution)")
+                    var noneItem = new ToolStripMenuItem(L10n.T("tray.instance.noneRunning"))
                     {
                         Enabled = false
                     };
@@ -106,7 +106,7 @@ namespace TopSolidMcpServer.Utils
                         string verText = !string.IsNullOrEmpty(captured.Version) ? " " + captured.Version : "";
                         string portText = captured.HasAutomationPort
                             ? $" (port {captured.Port})"
-                            : " (Automation inactif)";
+                            : L10n.T("tray.instance.automationInactive");
                         var item = new ToolStripMenuItem($"{prefix}TopSolid{verText}{portText}")
                         {
                             Enabled = captured.HasAutomationPort
@@ -132,7 +132,7 @@ namespace TopSolidMcpServer.Utils
                         var captured = decl;
                         var match = TopSolidInstanceList.FindByPort(running, captured.Port);
                         bool isCurrent = _connected && captured.Port == _port;
-                        string stateTag = match != null ? " [actif]" : " [non démarré]";
+                        string stateTag = match != null ? L10n.T("tray.instance.declaredRunning") : L10n.T("tray.instance.declaredStopped");
                         string defaultStar = captured.IsDefault ? " \u2605" : "";
                         string prefix = isCurrent ? "\u2713  " : "     ";
                         string label = $"{prefix}{captured.Name} (port {captured.Port}){defaultStar}{stateTag}";
@@ -152,7 +152,7 @@ namespace TopSolidMcpServer.Utils
 
                 bool isAuto = !string.Equals(mode, "manual", StringComparison.OrdinalIgnoreCase);
                 string autoPrefix = isAuto ? "\u2713  " : "     ";
-                var autoItem = new ToolStripMenuItem(autoPrefix + "Automatique (premier TopSolid détecté)");
+                var autoItem = new ToolStripMenuItem(autoPrefix + L10n.T("tray.instance.autoMode"));
                 StyleMenuItem(autoItem);
                 if (isAuto)
                     autoItem.Font = new Font("Segoe UI", 9.25f, FontStyle.Bold);
@@ -161,7 +161,7 @@ namespace TopSolidMcpServer.Utils
 
                 items.Add(new ToolStripSeparator());
 
-                var manageItem = new ToolStripMenuItem("Gérer les instances TopSolid…");
+                var manageItem = new ToolStripMenuItem(L10n.T("tray.instance.manage"));
                 StyleMenuItem(manageItem);
                 manageItem.Click += (s, e) => ShowManageInstancesDialog();
                 items.Add(manageItem);
@@ -186,15 +186,15 @@ namespace TopSolidMcpServer.Utils
                     if (ok)
                     {
                         ShowBalloon(
-                            "Instance TopSolid sélectionnée",
-                            $"Connecté à TopSolid sur le port {targetPort}.",
+                            L10n.T("tray.instance.selectedTitle"),
+                            L10n.T("tray.instance.selectedBody", targetPort),
                             ToolTipIcon.Info);
                     }
                     else
                     {
                         ShowBalloon(
-                            "TopSolid non disponible",
-                            $"Port {targetPort} enregistré, mais aucun TopSolid ne répond sur ce port.",
+                            L10n.T("tray.instance.unavailableTitle"),
+                            L10n.T("tray.instance.unavailableBody", targetPort),
                             ToolTipIcon.Warning);
                     }
                 }
@@ -230,10 +230,10 @@ namespace TopSolidMcpServer.Utils
                 {
                     bool ok = _retargetAction != null && _retargetAction(targetPort);
                     ShowBalloon(
-                        "Mode automatique activé",
+                        L10n.T("tray.instance.autoEnabledTitle"),
                         ok
-                            ? $"Connecté à TopSolid (port {targetPort})."
-                            : $"Aucun TopSolid actif sur le port {targetPort} — reconnexion automatique en attente.",
+                            ? L10n.T("tray.instance.autoEnabledOk", targetPort)
+                            : L10n.T("tray.instance.autoEnabledWait", targetPort),
                         ok ? ToolTipIcon.Info : ToolTipIcon.Warning);
                 }
                 catch { }
@@ -309,7 +309,7 @@ namespace TopSolidMcpServer.Utils
                 }
                 _onSave = onSave;
 
-                Text = "Gérer les instances TopSolid";
+                Text = L10n.T("manage.title");
                 FormBorderStyle = FormBorderStyle.FixedDialog;
                 MaximizeBox = false;
                 MinimizeBox = false;
@@ -333,7 +333,7 @@ namespace TopSolidMcpServer.Utils
 
                 var titleLabel = new Label
                 {
-                    Text = "Instances TopSolid déclarées",
+                    Text = L10n.T("manage.header"),
                     Font = new Font("Segoe UI Semibold", 12f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(15, 23, 42),
                     Location = new Point(22, 12),
@@ -341,7 +341,7 @@ namespace TopSolidMcpServer.Utils
                 };
                 var subtitleLabel = new Label
                 {
-                    Text = "Définissez l'ordre d'affichage de vos sessions CAO et le port Automation par défaut",
+                    Text = L10n.T("manage.subtitle"),
                     Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                     ForeColor = Color.FromArgb(100, 116, 139),
                     Location = new Point(22, 37),
@@ -352,7 +352,7 @@ namespace TopSolidMcpServer.Utils
                 Controls.Add(banner);
 
                 // ── Card 1 : Liste ordonnée des instances ──
-                var listCard = CreateCard(20, 82, 520, 226, "LISTE ORDONNÉE DES INSTANCES");
+                var listCard = CreateCard(20, 82, 520, 226, L10n.T("manage.cardList"));
 
                 var listBorder = CreateInputContainer(16, 36, 362, 174, Color.White);
                 _listBox = new ListBox
@@ -374,23 +374,23 @@ namespace TopSolidMcpServer.Utils
                 listCard.Controls.Add(listBorder);
 
                 // Right-side clean vertical button stack (with readable labels + symbols)
-                _upButton = CreateSecondaryButton("\u25B2  Monter", 390, 36, 114, 31);
+                _upButton = CreateSecondaryButton(L10n.T("manage.moveUp"), 390, 36, 114, 31);
                 _upButton.Click += OnMoveUp;
                 listCard.Controls.Add(_upButton);
 
-                _downButton = CreateSecondaryButton("\u25BC  Descendre", 390, 72, 114, 31);
+                _downButton = CreateSecondaryButton(L10n.T("manage.moveDown"), 390, 72, 114, 31);
                 _downButton.Click += OnMoveDown;
                 listCard.Controls.Add(_downButton);
 
-                _defaultButton = CreateSecondaryButton("\u2605  Par défaut", 390, 108, 114, 31);
+                _defaultButton = CreateSecondaryButton(L10n.T("manage.default"), 390, 108, 114, 31);
                 _defaultButton.Click += OnSetDefault;
                 listCard.Controls.Add(_defaultButton);
 
-                _editButton = CreateSecondaryButton("\u270E  Modifier", 390, 144, 114, 31);
+                _editButton = CreateSecondaryButton(L10n.T("manage.edit"), 390, 144, 114, 31);
                 _editButton.Click += OnBeginEdit;
                 listCard.Controls.Add(_editButton);
 
-                _removeButton = CreateDangerButton("\u2715  Supprimer", 390, 179, 114, 31);
+                _removeButton = CreateDangerButton(L10n.T("manage.remove"), 390, 179, 114, 31);
                 _removeButton.Click += OnRemove;
                 listCard.Controls.Add(_removeButton);
 
@@ -401,7 +401,7 @@ namespace TopSolidMcpServer.Utils
 
                 _editorHeaderLabel = new Label
                 {
-                    Text = "AJOUTER UNE INSTANCE TOPSOLID",
+                    Text = L10n.T("manage.addInstance"),
                     Font = new Font("Segoe UI Semibold", 8.25f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(100, 116, 139),
                     Location = new Point(16, 12),
@@ -411,7 +411,7 @@ namespace TopSolidMcpServer.Utils
 
                 var nameLbl = new Label
                 {
-                    Text = "Nom de l'instance",
+                    Text = L10n.T("manage.nameLabel"),
                     Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                     ForeColor = Color.FromArgb(71, 85, 105),
                     Location = new Point(16, 36),
@@ -433,7 +433,7 @@ namespace TopSolidMcpServer.Utils
 
                 var portLbl = new Label
                 {
-                    Text = "Port Automation",
+                    Text = L10n.T("manage.portLabel"),
                     Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
                     ForeColor = Color.FromArgb(71, 85, 105),
                     Location = new Point(230, 36),
@@ -455,11 +455,11 @@ namespace TopSolidMcpServer.Utils
                 portContainer.Controls.Add(_portBox);
                 editCard.Controls.Add(portContainer);
 
-                _addOrSaveButton = CreatePrimaryButton("Ajouter", 334, 56, 96, 32);
+                _addOrSaveButton = CreatePrimaryButton(L10n.T("manage.add"), 334, 56, 96, 32);
                 _addOrSaveButton.Click += OnAddOrSave;
                 editCard.Controls.Add(_addOrSaveButton);
 
-                _cancelEditButton = CreateSecondaryButton("Annuler", 436, 56, 68, 32);
+                _cancelEditButton = CreateSecondaryButton(L10n.T("manage.cancel"), 436, 56, 68, 32);
                 _cancelEditButton.Visible = false;
                 _cancelEditButton.Click += (s, e) => ExitEditMode();
                 editCard.Controls.Add(_cancelEditButton);
@@ -469,7 +469,7 @@ namespace TopSolidMcpServer.Utils
                 // ── Footer ──
                 var hintLabel = new Label
                 {
-                    Text = "Les changements sont enregistrés automatiquement.",
+                    Text = L10n.T("manage.autosaveHint"),
                     Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
                     ForeColor = Color.FromArgb(100, 116, 139),
                     Location = new Point(20, 446),
@@ -477,7 +477,7 @@ namespace TopSolidMcpServer.Utils
                 };
                 Controls.Add(hintLabel);
 
-                var closeButton = CreateSecondaryButton("Fermer", 440, 440, 100, 32);
+                var closeButton = CreateSecondaryButton(L10n.T("manage.close"), 440, 440, 100, 32);
                 closeButton.Click += (s, e) => Close();
                 Controls.Add(closeButton);
                 CancelButton = closeButton;
@@ -497,7 +497,7 @@ namespace TopSolidMcpServer.Utils
                         LineAlignment = StringAlignment.Center
                     };
                     e.Graphics.DrawString(
-                        "Aucune instance déclarée (détection automatique active)",
+                        L10n.T("manage.emptyState"),
                         font,
                         brush,
                         new RectangleF(0, 0, _listBox.Width, _listBox.Height),
@@ -567,7 +567,7 @@ namespace TopSolidMcpServer.Utils
                             Alignment = StringAlignment.Center,
                             LineAlignment = StringAlignment.Center
                         };
-                        g.DrawString("\u2605 PAR DÉFAUT", badgeFont, badgeText, badgeRect, sf);
+                        g.DrawString(L10n.T("manage.defaultBadge"), badgeFont, badgeText, badgeRect, sf);
                     }
                 }
             }
@@ -655,9 +655,9 @@ namespace TopSolidMcpServer.Utils
                 if (p > _portBox.Maximum) p = (int)_portBox.Maximum;
                 _portBox.Value = p;
 
-                _editorHeaderLabel.Text = $"MODIFIER L'INSTANCE #{idx + 1}";
+                _editorHeaderLabel.Text = L10n.T("manage.editInstance", idx + 1);
                 _editorHeaderLabel.ForeColor = Color.FromArgb(37, 99, 235);
-                _addOrSaveButton.Text = "Enregistrer";
+                _addOrSaveButton.Text = L10n.T("manage.save");
                 _cancelEditButton.Visible = true;
                 _nameBox.Focus();
                 _nameBox.SelectAll();
@@ -667,9 +667,9 @@ namespace TopSolidMcpServer.Utils
             {
                 _editingIndex = -1;
                 _nameBox.Text = "";
-                _editorHeaderLabel.Text = "AJOUTER UNE INSTANCE TOPSOLID";
+                _editorHeaderLabel.Text = L10n.T("manage.addInstance");
                 _editorHeaderLabel.ForeColor = Color.FromArgb(100, 116, 139);
-                _addOrSaveButton.Text = "Ajouter";
+                _addOrSaveButton.Text = L10n.T("manage.add");
                 _cancelEditButton.Visible = false;
             }
 

@@ -127,13 +127,13 @@ namespace TopSolidMcpServer.Utils
             {
                 if (_notifyIcon == null) return;
 
-                string stateText = _connected ? "connecté" : "déconnecté";
-                string modeSuffix = _readOnly ? " [lecture seule]" : "";
+                string stateText = _connected ? L10n.T("tray.state.connected") : L10n.T("tray.state.disconnected");
+                string modeSuffix = _readOnly ? L10n.T("tray.status.readOnlySuffix") : "";
                 int effectiveHttpPort = _httpPort > 0 ? _httpPort : 8080;
 
-                string tip = $"TopSolid MCP v{_currentVersion} — {stateText} (port {_port}){modeSuffix}";
+                string tip = L10n.T("tray.tooltip", _currentVersion, stateText, _port, modeSuffix);
                 if (!string.IsNullOrEmpty(_latestVersion))
-                    tip += $"\nMise à jour v{_latestVersion} disponible";
+                    tip += L10n.T("tray.tooltip.updateAvailable", _latestVersion);
                 if (tip.Length > 63) tip = tip.Substring(0, 63);
                 _notifyIcon.Text = tip;
 
@@ -145,11 +145,11 @@ namespace TopSolidMcpServer.Utils
                         if (_statusItem != null)
                         {
                             string dot = _connected ? "\u25CF" : "\u25CB";
-                            _statusItem.Text = $"{dot}  TopSolid : {stateText} (port {_port}){modeSuffix}";
+                            _statusItem.Text = L10n.T("tray.status.topSolid", dot, stateText, _port, modeSuffix);
                         }
                         if (_mcpStatusItem != null)
                         {
-                            _mcpStatusItem.Text = $"\u25CF  Serveur MCP : http://localhost:{effectiveHttpPort}/mcp";
+                            _mcpStatusItem.Text = L10n.T("tray.status.mcpServer", effectiveHttpPort);
                         }
                         RefreshTrayIcon();
                     }));
@@ -159,11 +159,11 @@ namespace TopSolidMcpServer.Utils
                     if (_statusItem != null)
                     {
                         string dot = _connected ? "\u25CF" : "\u25CB";
-                        _statusItem.Text = $"{dot}  TopSolid : {stateText} (port {_port}){modeSuffix}";
+                        _statusItem.Text = L10n.T("tray.status.topSolid", dot, stateText, _port, modeSuffix);
                     }
                     if (_mcpStatusItem != null)
                     {
-                        _mcpStatusItem.Text = $"\u25CF  Serveur MCP : http://localhost:{effectiveHttpPort}/mcp";
+                        _mcpStatusItem.Text = L10n.T("tray.status.mcpServer", effectiveHttpPort);
                     }
                     RefreshTrayIcon();
                 }
@@ -215,9 +215,9 @@ namespace TopSolidMcpServer.Utils
                 menu.Items.Add(headerItem);
 
                 string initialDot = _connected ? "\u25CF" : "\u25CB";
-                string initialState = _connected ? "connecté" : "déconnecté";
-                string initialMode = _readOnly ? " [lecture seule]" : "";
-                _statusItem = new ToolStripMenuItem($"{initialDot}  TopSolid : {initialState} (port {_port}){initialMode}")
+                string initialState = _connected ? L10n.T("tray.state.connected") : L10n.T("tray.state.disconnected");
+                string initialMode = _readOnly ? L10n.T("tray.status.readOnlySuffix") : "";
+                _statusItem = new ToolStripMenuItem(L10n.T("tray.status.topSolid", initialDot, initialState, _port, initialMode))
                 {
                     Enabled = false
                 };
@@ -225,7 +225,7 @@ namespace TopSolidMcpServer.Utils
                 menu.Items.Add(_statusItem);
 
                 int initialHttpPort = _httpPort > 0 ? _httpPort : 8080;
-                _mcpStatusItem = new ToolStripMenuItem($"\u25CF  Serveur MCP : http://localhost:{initialHttpPort}/mcp")
+                _mcpStatusItem = new ToolStripMenuItem(L10n.T("tray.status.mcpServer", initialHttpPort))
                 {
                     Enabled = false
                 };
@@ -237,7 +237,7 @@ namespace TopSolidMcpServer.Utils
                 // ── Section 2 : Instance CAO TopSolid (Accès direct niveau 1 -> sous-menu niveau 2 max) ──
                 BuildInstancePickerMenu(menu);
 
-                _reconnectItem = new ToolStripMenuItem("Se reconnecter à TopSolid");
+                _reconnectItem = new ToolStripMenuItem(L10n.T("tray.menu.reconnect"));
                 StyleMenuItem(_reconnectItem);
                 _reconnectItem.Click += (s, e) =>
                 {
@@ -256,7 +256,7 @@ namespace TopSolidMcpServer.Utils
                 menu.Items.Add(new ToolStripSeparator());
 
                 // ── Section 4 : Aide, Maintenance & Mises à jour ──
-                var helpMenu = new ToolStripMenuItem("Aide && Maintenance");
+                var helpMenu = new ToolStripMenuItem(L10n.T("tray.menu.help"));
                 StyleMenuItem(helpMenu);
                 helpMenu.DropDown.Font = menuFont;
                 helpMenu.DropDown.BackColor = Color.White;
@@ -264,19 +264,19 @@ namespace TopSolidMcpServer.Utils
                 if (helpMenu.DropDown is ToolStripDropDownMenu helpDropDown)
                     helpDropDown.ShowImageMargin = false;
 
-                var docsItem = new ToolStripMenuItem("Documentation en ligne", null, (s, e) => OpenUrl(DocsUrl));
+                var docsItem = new ToolStripMenuItem(L10n.T("tray.menu.docs"), null, (s, e) => OpenUrl(DocsUrl));
                 StyleMenuItem(docsItem);
                 helpMenu.DropDownItems.Add(docsItem);
 
                 BuildHelpSubmenuItems(helpMenu);
                 menu.Items.Add(helpMenu);
 
-                _checkUpdateItem = new ToolStripMenuItem("Vérifier les mises à jour…");
+                _checkUpdateItem = new ToolStripMenuItem(L10n.T("tray.menu.checkUpdates"));
                 StyleMenuItem(_checkUpdateItem);
                 _checkUpdateItem.Click += (s, e) => CheckForUpdatesAsync(manual: true);
                 menu.Items.Add(_checkUpdateItem);
 
-                _updateItem = new ToolStripMenuItem("Télécharger la mise à jour…")
+                _updateItem = new ToolStripMenuItem(L10n.T("tray.menu.downloadUpdate"))
                 {
                     Visible = false,
                     Font = new Font("Segoe UI", 9.25f, FontStyle.Bold),
@@ -293,7 +293,7 @@ namespace TopSolidMcpServer.Utils
                 menu.Items.Add(new ToolStripSeparator());
 
                 // ── Section 5 : Quitter ──
-                var quitItem = new ToolStripMenuItem("Arrêter le serveur");
+                var quitItem = new ToolStripMenuItem(L10n.T("tray.menu.quit"));
                 StyleMenuItem(quitItem);
                 quitItem.Click += (s, e) =>
                 {
@@ -303,12 +303,12 @@ namespace TopSolidMcpServer.Utils
                 };
                 menu.Items.Add(quitItem);
 
-                string stateInit = _connected ? "connecté" : "déconnecté";
-                string modeInit = _readOnly ? " [lecture seule]" : "";
+                string stateInit = _connected ? L10n.T("tray.state.connected") : L10n.T("tray.state.disconnected");
+                string modeInit = _readOnly ? L10n.T("tray.status.readOnlySuffix") : "";
                 _notifyIcon = new NotifyIcon
                 {
                     Icon = CreateBadgedIcon(_connected, _readOnly),
-                    Text = $"TopSolid MCP v{_currentVersion} — {stateInit} (port {_port}){modeInit}",
+                    Text = L10n.T("tray.tooltip", _currentVersion, stateInit, _port, modeInit),
                     ContextMenuStrip = menu,
                     Visible = true
                 };
@@ -405,17 +405,17 @@ namespace TopSolidMcpServer.Utils
                 if (manual)
                 {
                     ShowBalloon(
-                        "Vérification en cours",
-                        "Une vérification des mises à jour est déjà en cours…",
+                        L10n.T("tray.update.alreadyCheckingTitle"),
+                        L10n.T("tray.update.alreadyCheckingBody"),
                         ToolTipIcon.Info);
                 }
                 return;
             }
 
-            SetCheckMenuText("Recherche de mise à jour…", enabled: false);
+            SetCheckMenuText(L10n.T("tray.update.searchingTitle"), enabled: false);
             if (manual)
             {
-                ShowBalloon("Recherche de mise à jour…", "Interrogation de GitHub…", ToolTipIcon.Info);
+                ShowBalloon(L10n.T("tray.update.searchingTitle"), L10n.T("tray.update.searchingBody"), ToolTipIcon.Info);
             }
 
             ThreadPool.QueueUserWorkItem(_ =>
@@ -440,8 +440,8 @@ namespace TopSolidMcpServer.Utils
                         if (manual)
                         {
                             ShowModalBox(
-                                "Mise à jour",
-                                "Impossible de lire les informations de version distante sur GitHub.",
+                                L10n.T("tray.update.title"),
+                                L10n.T("tray.update.cannotReadRemote"),
                                 MessageBoxIcon.Warning);
                         }
                         return;
@@ -457,8 +457,8 @@ namespace TopSolidMcpServer.Utils
                     else if (manual)
                     {
                         ShowModalBox(
-                            "Mise à jour",
-                            $"Vous êtes déjà à jour (v{_currentVersion}).",
+                            L10n.T("tray.update.title"),
+                            L10n.T("tray.update.upToDate", _currentVersion),
                             MessageBoxIcon.Information);
                     }
                 }
@@ -468,14 +468,14 @@ namespace TopSolidMcpServer.Utils
                     if (manual)
                     {
                         ShowModalBox(
-                            "Mise à jour",
-                            "Impossible de contacter GitHub (connexion ?).\r\n\r\nDétail : " + ex.Message,
+                            L10n.T("tray.update.title"),
+                            L10n.T("tray.update.cannotContact", ex.Message),
                             MessageBoxIcon.Warning);
                     }
                 }
                 finally
                 {
-                    SetCheckMenuText("Vérifier les mises à jour…", enabled: true);
+                    SetCheckMenuText(L10n.T("tray.menu.checkUpdates"), enabled: true);
                     Interlocked.Exchange(ref _checkInProgress, 0);
                 }
             });
@@ -509,7 +509,7 @@ namespace TopSolidMcpServer.Utils
                         OpenUrl(_updateUrl);
                         return;
                     }
-                    ShowBalloon("Mise à jour", "update.ps1 est introuvable à côté de l'exécutable.", ToolTipIcon.Warning);
+                    ShowBalloon(L10n.T("tray.update.title"), L10n.T("tray.update.scriptNotFound"), ToolTipIcon.Warning);
                     return;
                 }
 
@@ -525,7 +525,7 @@ namespace TopSolidMcpServer.Utils
             }
             catch (Exception ex)
             {
-                ShowBalloon("Erreur", $"Impossible de lancer la mise à jour : {ex.Message}", ToolTipIcon.Error);
+                ShowBalloon(L10n.T("tray.error.title"), L10n.T("tray.update.launchFailed", ex.Message), ToolTipIcon.Error);
             }
         }
 
@@ -588,13 +588,13 @@ namespace TopSolidMcpServer.Utils
                 {
                     if (_updateItem != null)
                     {
-                        _updateItem.Text = $"Télécharger la mise à jour v{remoteVersion}…";
+                        _updateItem.Text = L10n.T("tray.menu.downloadUpdateVersion", remoteVersion);
                         _updateItem.Visible = true;
                     }
                     try
                     {
-                        _notifyIcon.BalloonTipTitle = $"TopSolid MCP v{remoteVersion} disponible";
-                        _notifyIcon.BalloonTipText = $"Mise à jour v{remoteVersion} disponible ! Clic droit sur l'icône pour l'installer.";
+                        _notifyIcon.BalloonTipTitle = L10n.T("tray.update.balloonTitle", remoteVersion);
+                        _notifyIcon.BalloonTipText = L10n.T("tray.update.balloonBody", remoteVersion);
                         _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
                         _notifyIcon.ShowBalloonTip(5000);
                     }
@@ -602,7 +602,7 @@ namespace TopSolidMcpServer.Utils
                     if (manual)
                     {
                         MessageBox.Show(
-                            $"Mise à jour v{remoteVersion} disponible ! Un bouton « Télécharger la mise à jour » a été ajouté au menu.",
+                            L10n.T("tray.update.modalBody", remoteVersion),
                             "TopSolid MCP",
                             MessageBoxButtons.OK,
                             MessageBoxIcon.Information);

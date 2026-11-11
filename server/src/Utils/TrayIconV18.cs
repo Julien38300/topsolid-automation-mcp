@@ -129,13 +129,13 @@ namespace TopSolidMcpServer.Utils
                 _disconnectNotified = false;
                 _reconnectAttempts = 0;
                 if (reconnected)
-                    ShowBalloon("TopSolid reconnecté", $"Connexion rétablie sur le port {_port}.", ToolTipIcon.Info);
+                    ShowBalloon(L10n.T("tray.reconnect.reconnectedTitle"), L10n.T("tray.reconnect.reconnectedBody", _port), ToolTipIcon.Info);
             }
             else if (_wasEverConnected && !_disconnectNotified)
             {
                 _disconnectNotified = true;
-                string suffix = _autoConnect ? " Reconnexion automatique activée." : "";
-                ShowBalloon("TopSolid déconnecté", "La session TopSolid a été fermée." + suffix, ToolTipIcon.Warning);
+                string suffix = _autoConnect ? L10n.T("tray.reconnect.autoRetrySuffix") : "";
+                ShowBalloon(L10n.T("tray.reconnect.disconnectedTitle"), L10n.T("tray.reconnect.disconnectedBody") + suffix, ToolTipIcon.Warning);
             }
         }
 
@@ -156,11 +156,11 @@ namespace TopSolidMcpServer.Utils
         /// </summary>
         private void BuildMcpServerMenuItems(ContextMenuStrip menu)
         {
-            var mcpSettingsItem = new ToolStripMenuItem("Paramètres du serveur MCP…", null, (s, e) => ShowMcpServerSettingsDialog());
+            var mcpSettingsItem = new ToolStripMenuItem(L10n.T("tray.menu.mcpSettings"), null, (s, e) => ShowMcpServerSettingsDialog());
             StyleMenuItem(mcpSettingsItem);
             menu.Items.Add(mcpSettingsItem);
 
-            var copyKeyItem = new ToolStripMenuItem("Copier la clé API", null, (s, e) => OnCopyApiKey());
+            var copyKeyItem = new ToolStripMenuItem(L10n.T("tray.menu.copyApiKey"), null, (s, e) => OnCopyApiKey());
             StyleMenuItem(copyKeyItem);
             menu.Items.Add(copyKeyItem);
         }
@@ -170,26 +170,26 @@ namespace TopSolidMcpServer.Utils
         /// </summary>
         private void BuildHelpSubmenuItems(ToolStripMenuItem helpMenu)
         {
-            var whatsNewItem = new ToolStripMenuItem("Nouveautés de cette version", null,
+            var whatsNewItem = new ToolStripMenuItem(L10n.T("tray.menu.whatsNew"), null,
                 (s, e) => OpenUrl(GitHubFeedbackLogic.BuildReleaseUrl(_currentVersion)));
             StyleMenuItem(whatsNewItem);
             helpMenu.DropDownItems.Add(whatsNewItem);
 
-            var openDirItem = new ToolStripMenuItem("Ouvrir le dossier d'installation", null, (s, e) => OpenInstallFolder());
+            var openDirItem = new ToolStripMenuItem(L10n.T("tray.menu.openInstallFolder"), null, (s, e) => OpenInstallFolder());
             StyleMenuItem(openDirItem);
             helpMenu.DropDownItems.Add(openDirItem);
 
             helpMenu.DropDownItems.Add(new ToolStripSeparator());
 
-            var bugItem = new ToolStripMenuItem("Signaler un bug…", null, (s, e) => ShowFeedbackDialog(GitHubFeedbackLogic.CategoryBug));
+            var bugItem = new ToolStripMenuItem(L10n.T("tray.menu.reportBug"), null, (s, e) => ShowFeedbackDialog(GitHubFeedbackLogic.CategoryBug));
             StyleMenuItem(bugItem);
             helpMenu.DropDownItems.Add(bugItem);
 
-            var featItem = new ToolStripMenuItem("Proposer une amélioration…", null, (s, e) => ShowFeedbackDialog(GitHubFeedbackLogic.CategoryFeature));
+            var featItem = new ToolStripMenuItem(L10n.T("tray.menu.suggestImprovement"), null, (s, e) => ShowFeedbackDialog(GitHubFeedbackLogic.CategoryFeature));
             StyleMenuItem(featItem);
             helpMenu.DropDownItems.Add(featItem);
 
-            var ghItem = new ToolStripMenuItem("Page GitHub du projet", null, (s, e) => OpenUrl(RepoUrl));
+            var ghItem = new ToolStripMenuItem(L10n.T("tray.menu.githubPage"), null, (s, e) => OpenUrl(RepoUrl));
             StyleMenuItem(ghItem);
             helpMenu.DropDownItems.Add(ghItem);
         }
@@ -259,11 +259,8 @@ namespace TopSolidMcpServer.Utils
             Action prompt = () =>
             {
                 var r = MessageBox.Show(
-                    "Aucune clé API n'est configurée pour le serveur MCP HTTP.\n\n" +
-                    "• Oui : générer automatiquement une clé sécurisée (recommandé)\n" +
-                    "• Non : ouvrir les paramètres du serveur MCP pour saisir une clé existante\n" +
-                    "• Annuler : configurer plus tard",
-                    "TopSolid MCP — Configuration de la clé API",
+                    L10n.T("tray.apiKeyPrompt.body"),
+                    L10n.T("tray.apiKeyPrompt.title"),
                     MessageBoxButtons.YesNoCancel,
                     MessageBoxIcon.Information);
 
@@ -289,15 +286,14 @@ namespace TopSolidMcpServer.Utils
             if (showPopup)
             {
                 MessageBox.Show(
-                    "Nouvelle clé API générée et copiée dans le presse-papiers :\n\n" + key +
-                    "\n\nCollez-la dans l'en-tête X-API-Key de votre client MCP.",
-                    "TopSolid MCP — Clé API",
+                    L10n.T("tray.apiKey.generatedBody", key),
+                    L10n.T("tray.apiKey.generatedTitle"),
                     MessageBoxButtons.OK,
                     MessageBoxIcon.Information);
             }
             else
             {
-                ShowBalloon("Nouvelle clé API", "Générée et copiée dans le presse-papiers.", ToolTipIcon.Info);
+                ShowBalloon(L10n.T("tray.apiKey.newBalloonTitle"), L10n.T("tray.apiKey.newBalloonBody"), ToolTipIcon.Info);
             }
         }
 
@@ -309,7 +305,7 @@ namespace TopSolidMcpServer.Utils
                 return;
             }
             if (TrySetClipboard(_apiKey))
-                ShowBalloon("Clé API copiée", "La clé API a été copiée dans le presse-papiers.", ToolTipIcon.Info);
+                ShowBalloon(L10n.T("tray.apiKey.copiedTitle"), L10n.T("tray.apiKey.copiedBody"), ToolTipIcon.Info);
         }
 
         internal static bool TrySetClipboard(string text)
@@ -397,7 +393,7 @@ namespace TopSolidMcpServer.Utils
                     string issueUrl = TrySubmitFeedbackViaProxy(kind, title, body, _currentVersion);
                     if (!string.IsNullOrEmpty(issueUrl))
                     {
-                        ShowBalloon("Merci pour votre retour !", "Ticket GitHub créé — cliquez pour l'ouvrir.", ToolTipIcon.Info);
+                        ShowBalloon(L10n.T("tray.feedback.thanksTitle"), L10n.T("tray.feedback.thanksBody"), ToolTipIcon.Info);
                         OpenUrl(issueUrl);
                     }
                     else
@@ -451,12 +447,12 @@ namespace TopSolidMcpServer.Utils
 
                 int safePort = (initialHttpPort >= 1024 && initialHttpPort <= 65535) ? initialHttpPort : 8080;
 
-                Text = "Paramètres du serveur MCP";
+                Text = L10n.T("settings.title");
                 FormBorderStyle = FormBorderStyle.FixedDialog;
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterScreen;
-                ClientSize = new Size(560, 520);
+                ClientSize = new Size(560, 560);
                 BackColor = Color.FromArgb(248, 250, 252);
                 Font = new Font("Segoe UI", 9.25f, FontStyle.Regular);
 
@@ -475,7 +471,7 @@ namespace TopSolidMcpServer.Utils
 
                 var titleLabel = new Label
                 {
-                    Text = "Paramètres du serveur MCP",
+                    Text = L10n.T("settings.title"),
                     Font = new Font("Segoe UI Semibold", 12f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(15, 23, 42),
                     Location = new Point(22, 12),
@@ -483,7 +479,7 @@ namespace TopSolidMcpServer.Utils
                 };
                 var subtitleLabel = new Label
                 {
-                    Text = "Point d'accès HTTP, clé d'authentification API et comportement du serveur",
+                    Text = L10n.T("settings.subtitle"),
                     Font = new Font("Segoe UI", 9f, FontStyle.Regular),
                     ForeColor = Color.FromArgb(100, 116, 139),
                     Location = new Point(22, 37),
@@ -494,11 +490,11 @@ namespace TopSolidMcpServer.Utils
                 Controls.Add(banner);
 
                 // ── Card 1 : Point d'accès HTTP (Streamable HTTP) ──
-                var httpCard = CreateCard(20, 82, 520, 138, "POINT D'ACCÈS HTTP (STREAMABLE HTTP)");
+                var httpCard = CreateCard(20, 82, 520, 138, L10n.T("settings.cardHttp"));
 
                 var urlLabel = new Label
                 {
-                    Text = "URL cliente MCP :",
+                    Text = L10n.T("settings.urlLabel"),
                     ForeColor = Color.FromArgb(51, 65, 85),
                     Location = new Point(16, 42),
                     AutoSize = true
@@ -521,20 +517,20 @@ namespace TopSolidMcpServer.Utils
                 urlContainer.Controls.Add(_urlBox);
                 httpCard.Controls.Add(urlContainer);
 
-                var copyUrlBtn = CreateSecondaryButton("Copier l'URL", 394, 36, 110, 32);
+                var copyUrlBtn = CreateSecondaryButton(L10n.T("settings.copyUrl"), 394, 36, 110, 32);
                 copyUrlBtn.Click += (s, e) =>
                 {
                     if (TrySetClipboard(_urlBox.Text))
                     {
                         _httpStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
-                        _httpStatusLabel.Text = "\u2713 URL copiée";
+                        _httpStatusLabel.Text = L10n.T("settings.urlCopied");
                     }
                 };
                 httpCard.Controls.Add(copyUrlBtn);
 
                 var portLabel = new Label
                 {
-                    Text = "Port d'écoute TCP :",
+                    Text = L10n.T("settings.portLabel"),
                     ForeColor = Color.FromArgb(51, 65, 85),
                     Location = new Point(16, 86),
                     AutoSize = true
@@ -555,13 +551,13 @@ namespace TopSolidMcpServer.Utils
                 portContainer.Controls.Add(_httpPortBox);
                 httpCard.Controls.Add(portContainer);
 
-                var applyPortBtn = CreatePrimaryButton("Appliquer", 236, 80, 100, 32);
+                var applyPortBtn = CreatePrimaryButton(L10n.T("settings.apply"), 236, 80, 100, 32);
                 applyPortBtn.Click += OnApplyHttpPortClick;
                 httpCard.Controls.Add(applyPortBtn);
 
                 _httpStatusLabel = new Label
                 {
-                    Text = $"Actif sur le port {safePort}",
+                    Text = L10n.T("settings.activeOnPort", safePort),
                     Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
                     ForeColor = Color.FromArgb(100, 116, 139),
                     Location = new Point(344, 87),
@@ -571,7 +567,7 @@ namespace TopSolidMcpServer.Utils
                 Controls.Add(httpCard);
 
                 // ── Card 2 : Authentification (Clé API X-API-Key) ──
-                var authCard = CreateCard(20, 234, 520, 138, "AUTHENTIFICATION (EN-TÊTE X-API-KEY)");
+                var authCard = CreateCard(20, 234, 520, 138, L10n.T("settings.cardAuth"));
 
                 var keyContainer = CreateInputContainer(16, 36, 294, 32, Color.FromArgb(248, 250, 252));
                 _apiKeyBox = new TextBox
@@ -588,7 +584,7 @@ namespace TopSolidMcpServer.Utils
                 keyContainer.Controls.Add(_apiKeyBox);
                 authCard.Controls.Add(keyContainer);
 
-                _toggleRevealButton = CreateSecondaryButton("Afficher", 318, 36, 88, 32);
+                _toggleRevealButton = CreateSecondaryButton(L10n.T("settings.show"), 318, 36, 88, 32);
                 _toggleRevealButton.Click += (s, e) =>
                 {
                     if (_keyEditing) return;
@@ -597,35 +593,35 @@ namespace TopSolidMcpServer.Utils
                 };
                 authCard.Controls.Add(_toggleRevealButton);
 
-                var copyKeyBtn = CreatePrimaryButton("Copier", 414, 36, 90, 32);
+                var copyKeyBtn = CreatePrimaryButton(L10n.T("settings.copy"), 414, 36, 90, 32);
                 copyKeyBtn.Click += (s, e) =>
                 {
                     string toCopy = _keyEditing ? (_apiKeyBox.Text ?? "").Trim() : _currentApiKey;
                     if (string.IsNullOrEmpty(toCopy))
                     {
                         _keyStatusLabel.ForeColor = Color.FromArgb(185, 28, 28);
-                        _keyStatusLabel.Text = "Aucune clé API définie.";
+                        _keyStatusLabel.Text = L10n.T("settings.noKeyDefined");
                         return;
                     }
                     if (TrySetClipboard(toCopy))
                     {
                         _keyStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
-                        _keyStatusLabel.Text = "\u2713 Clé API copiée dans le presse-papiers";
+                        _keyStatusLabel.Text = L10n.T("settings.keyCopied");
                     }
                 };
                 authCard.Controls.Add(copyKeyBtn);
 
-                var regenKeyBtn = CreateSecondaryButton("Régénérer une clé…", 16, 80, 148, 32);
+                var regenKeyBtn = CreateSecondaryButton(L10n.T("settings.regenKey"), 16, 80, 148, 32);
                 regenKeyBtn.Click += OnRegenerateKeyClick;
                 authCard.Controls.Add(regenKeyBtn);
 
-                _editSaveKeyButton = CreateSecondaryButton("Saisir manuellement…", 172, 80, 152, 32);
+                _editSaveKeyButton = CreateSecondaryButton(L10n.T("settings.enterKey"), 172, 80, 152, 32);
                 _editSaveKeyButton.Click += (s, e) => OnEditOrSaveKeyClick(keyContainer);
                 authCard.Controls.Add(_editSaveKeyButton);
 
                 _keyStatusLabel = new Label
                 {
-                    Text = "Chiffrée via Windows DPAPI",
+                    Text = L10n.T("settings.keyDpapi"),
                     Font = new Font("Segoe UI", 8.75f, FontStyle.Regular),
                     ForeColor = Color.FromArgb(100, 116, 139),
                     Location = new Point(332, 87),
@@ -635,11 +631,11 @@ namespace TopSolidMcpServer.Utils
                 Controls.Add(authCard);
 
                 // ── Card 3 : Comportement & Sécurité ──
-                var behaviorCard = CreateCard(20, 386, 520, 76, "COMPORTEMENT && SÉCURITÉ");
+                var behaviorCard = CreateCard(20, 386, 520, 110, L10n.T("settings.cardBehavior"));
 
                 var autoConnectCheck = new CheckBox
                 {
-                    Text = "Connexion automatique à TopSolid",
+                    Text = L10n.T("settings.autoConnect"),
                     Checked = initialAutoConnect,
                     ForeColor = Color.FromArgb(15, 23, 42),
                     Location = new Point(16, 38),
@@ -654,7 +650,7 @@ namespace TopSolidMcpServer.Utils
 
                 var readOnlyCheck = new CheckBox
                 {
-                    Text = "Mode lecture seule (au redémarrage)",
+                    Text = L10n.T("settings.readOnly"),
                     Checked = initialReadOnly,
                     ForeColor = Color.FromArgb(15, 23, 42),
                     Location = new Point(268, 38),
@@ -666,17 +662,69 @@ namespace TopSolidMcpServer.Utils
                     try { _onToggleReadOnly?.Invoke(readOnlyCheck.Checked); } catch { }
                 };
                 behaviorCard.Controls.Add(readOnlyCheck);
+                // v1.8.19 (issue #21): UI language override — Auto follows the
+                // Windows display language, French and English force it. Saved to
+                // settings.json and injected into L10n on the next server start;
+                // dialogs already open keep their current language.
+                var langLabel = new Label
+                {
+                    Text = L10n.T("settings.languageLabel"),
+                    ForeColor = Color.FromArgb(51, 65, 85),
+                    Location = new Point(16, 74),
+                    AutoSize = true
+                };
+                behaviorCard.Controls.Add(langLabel);
+
+                var langCombo = new ComboBox
+                {
+                    DropDownStyle = ComboBoxStyle.DropDownList,
+                    FlatStyle = FlatStyle.Flat,
+                    Font = new Font("Segoe UI", 9.25f, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Location = new Point(96, 70),
+                    Size = new Size(232, 24),
+                    Cursor = Cursors.Hand
+                };
+                langCombo.Items.AddRange(new object[]
+                {
+                    L10n.T("settings.language.auto"),
+                    L10n.T("settings.language.fr"),
+                    L10n.T("settings.language.en")
+                });
+                langCombo.SelectedIndex = (TraySettings.Language == "fr") ? 1
+                    : (TraySettings.Language == "en") ? 2 : 0;
+                bool langComboReady = false;
+                langCombo.SelectedIndexChanged += (s, e) =>
+                {
+                    // Item order matches: 0 = auto, 1 = fr, 2 = en.
+                    if (!langComboReady) return;
+                    string[] codes = { "auto", "fr", "en" };
+                    int idx = langCombo.SelectedIndex;
+                    if (idx >= 0 && idx < codes.Length)
+                        TraySettings.SaveLanguage(codes[idx]);
+                };
+                behaviorCard.Controls.Add(langCombo);
+                langComboReady = true;
+
+                var langHint = new Label
+                {
+                    Text = L10n.T("settings.language.hint"),
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(340, 74),
+                    AutoSize = true
+                };
+                behaviorCard.Controls.Add(langHint);
                 Controls.Add(behaviorCard);
 
                 // ── Footer ──
-                var openFolderBtn = CreateSecondaryButton("Ouvrir le dossier d'installation", 20, 474, 210, 32);
+                var openFolderBtn = CreateSecondaryButton(L10n.T("settings.openFolder"), 20, 508, 210, 32);
                 openFolderBtn.Click += (s, e) =>
                 {
                     try { onOpenInstallFolder?.Invoke(); } catch { }
                 };
                 Controls.Add(openFolderBtn);
 
-                var closeBtn = CreateSecondaryButton("Fermer", 440, 474, 100, 32);
+                var closeBtn = CreateSecondaryButton(L10n.T("settings.close"), 440, 508, 100, 32);
                 closeBtn.Click += (s, e) => Close();
                 Controls.Add(closeBtn);
                 CancelButton = closeBtn;
@@ -690,10 +738,10 @@ namespace TopSolidMcpServer.Utils
 
                 if (string.IsNullOrEmpty(_currentApiKey))
                 {
-                    _apiKeyBox.Text = "(aucune clé configurée — accès libre local)";
+                    _apiKeyBox.Text = L10n.T("settings.noKeyPlaceholder");
                     _apiKeyBox.ForeColor = Color.FromArgb(100, 116, 139);
                     _toggleRevealButton.Enabled = false;
-                    _toggleRevealButton.Text = "Afficher";
+                    _toggleRevealButton.Text = L10n.T("settings.show");
                 }
                 else
                 {
@@ -702,7 +750,7 @@ namespace TopSolidMcpServer.Utils
                     if (_keyRevealed)
                     {
                         _apiKeyBox.Text = _currentApiKey;
-                        _toggleRevealButton.Text = "Masquer";
+                        _toggleRevealButton.Text = L10n.T("settings.hide");
                     }
                     else
                     {
@@ -710,7 +758,7 @@ namespace TopSolidMcpServer.Utils
                             ? _currentApiKey.Substring(_currentApiKey.Length - 4)
                             : _currentApiKey;
                         _apiKeyBox.Text = "tsmcp_\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" + suffix;
-                        _toggleRevealButton.Text = "Afficher";
+                        _toggleRevealButton.Text = L10n.T("settings.show");
                     }
                 }
             }
@@ -729,21 +777,20 @@ namespace TopSolidMcpServer.Utils
                 {
                     _urlBox.Text = $"http://localhost:{newPort}/mcp";
                     _httpStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
-                    _httpStatusLabel.Text = $"\u2713 Port {newPort} actif";
+                    _httpStatusLabel.Text = L10n.T("settings.portActive", newPort);
                 }
                 else
                 {
                     _httpStatusLabel.ForeColor = Color.FromArgb(185, 28, 28);
-                    _httpStatusLabel.Text = $"Port {newPort} indisponible";
+                    _httpStatusLabel.Text = L10n.T("settings.portUnavailable", newPort);
                 }
             }
 
             private void OnRegenerateKeyClick(object sender, EventArgs e)
             {
                 var confirm = MessageBox.Show(
-                    "Générer une nouvelle clé API ?\n\n" +
-                    "L'ancienne clé sera immédiatement invalidée et la nouvelle clé sera copiée dans le presse-papiers.",
-                    "Régénérer la clé API",
+                    L10n.T("tray.apiKey.regenBody"),
+                    L10n.T("tray.apiKey.regenTitle"),
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Warning);
 
@@ -754,13 +801,13 @@ namespace TopSolidMcpServer.Utils
                 _keyEditing = false;
                 _keyRevealed = true;
                 _apiKeyBox.ReadOnly = true;
-                _editSaveKeyButton.Text = "Saisir manuellement…";
+                _editSaveKeyButton.Text = L10n.T("settings.enterKey");
                 try { _onSaveApiKey?.Invoke(newKey); } catch { }
                 TrySetClipboard(newKey);
                 RefreshApiKeyDisplay();
 
                 _keyStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
-                _keyStatusLabel.Text = "\u2713 Nouvelle clé générée et copiée";
+                _keyStatusLabel.Text = L10n.T("settings.regenDone");
             }
 
             private void OnEditOrSaveKeyClick(Panel keyContainer)
@@ -776,9 +823,9 @@ namespace TopSolidMcpServer.Utils
                     _apiKeyBox.Focus();
                     _apiKeyBox.SelectAll();
                     _toggleRevealButton.Enabled = false;
-                    _editSaveKeyButton.Text = "Enregistrer la clé";
+                    _editSaveKeyButton.Text = L10n.T("settings.saveKey");
                     _keyStatusLabel.ForeColor = Color.FromArgb(37, 99, 235);
-                    _keyStatusLabel.Text = "Modifiez puis cliquez sur Enregistrer";
+                    _keyStatusLabel.Text = L10n.T("settings.editHint");
                 }
                 else
                 {
@@ -789,14 +836,14 @@ namespace TopSolidMcpServer.Utils
                     _apiKeyBox.ReadOnly = true;
                     _apiKeyBox.BackColor = Color.FromArgb(248, 250, 252);
                     keyContainer.BackColor = Color.FromArgb(248, 250, 252);
-                    _editSaveKeyButton.Text = "Saisir manuellement…";
+                    _editSaveKeyButton.Text = L10n.T("settings.enterKey");
                     try { _onSaveApiKey?.Invoke(_currentApiKey); } catch { }
                     RefreshApiKeyDisplay();
 
                     _keyStatusLabel.ForeColor = Color.FromArgb(21, 128, 61);
                     _keyStatusLabel.Text = string.IsNullOrEmpty(_currentApiKey)
-                        ? "Authentification désactivée"
-                        : "\u2713 Clé API enregistrée";
+                        ? L10n.T("settings.authDisabled")
+                        : L10n.T("settings.keySaved");
                 }
             }
         }
@@ -940,7 +987,7 @@ namespace TopSolidMcpServer.Utils
             public FeedbackDialog(string kind)
             {
                 bool isBug = !string.Equals(kind, GitHubFeedbackLogic.CategoryFeature, StringComparison.OrdinalIgnoreCase);
-                Text = isBug ? "Signaler un bug — TopSolid MCP" : "Proposer une amélioration — TopSolid MCP";
+                Text = isBug ? L10n.T("tray.feedback.bugTitle") : L10n.T("tray.feedback.featureTitle");
                 Width = 520;
                 Height = 400;
                 FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -952,7 +999,7 @@ namespace TopSolidMcpServer.Utils
 
                 var lbl1 = new Label
                 {
-                    Text = "Sujet :",
+                    Text = L10n.T("tray.feedback.subject"),
                     Left = 20,
                     Top = 18,
                     AutoSize = true,
@@ -963,7 +1010,7 @@ namespace TopSolidMcpServer.Utils
 
                 var lbl2 = new Label
                 {
-                    Text = isBug ? "Étapes pour reproduire / comportement observé :" : "Description de l'amélioration souhaitée :",
+                    Text = isBug ? L10n.T("tray.feedback.bugSteps") : L10n.T("tray.feedback.featureDesc"),
                     Left = 20,
                     Top = 78,
                     AutoSize = true,
@@ -988,12 +1035,12 @@ namespace TopSolidMcpServer.Utils
                     Width = 464,
                     Checked = isBug,
                     ForeColor = Color.FromArgb(51, 65, 85),
-                    Text = "Joindre la version, l'OS et les 50 dernières lignes de log (clé API masquée)"
+                    Text = L10n.T("tray.feedback.includeLogs")
                 };
 
-                var ok = CreatePrimaryButton("Envoyer", 384, 314, 100, 32);
+                var ok = CreatePrimaryButton(L10n.T("tray.feedback.send"), 384, 314, 100, 32);
                 ok.DialogResult = DialogResult.OK;
-                var cancel = CreateSecondaryButton("Annuler", 276, 314, 100, 32);
+                var cancel = CreateSecondaryButton(L10n.T("manage.cancel"), 276, 314, 100, 32);
                 cancel.DialogResult = DialogResult.Cancel;
 
                 Controls.AddRange(new Control[] { lbl1, _subject, lbl2, _description, _includeLogs, ok, cancel });

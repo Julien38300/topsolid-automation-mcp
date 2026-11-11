@@ -28,6 +28,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 $repo = "Julien38300/topsolid-automation-mcp"
+
+# --- v1.8.19 (issue #21): bilingual output ---------------------------------
+# French on French Windows display languages, English everywhere else (a
+# French regional format with a non-French UI language gets English).
+# Msg <english> <french> returns the message for the detected UI language.
+$uiLang = if ([CultureInfo]::CurrentUICulture.Name -like 'fr*') { 'fr' } else { 'en' }
+function Msg([string]$en, [string]$fr) {
+    if ($uiLang -eq 'fr') { $fr } else { $en }
+}
 $baseDir = Split-Path -Parent $PSScriptRoot
 if (-not (Test-Path (Join-Path $baseDir "TopSolidMcpServer.exe"))) {
     # Script is next to the exe (release layout)
@@ -37,25 +46,25 @@ if (-not (Test-Path (Join-Path $baseDir "TopSolidMcpServer.exe"))) {
 $versionFile = Join-Path $baseDir "version.txt"
 $currentVersion = if (Test-Path $versionFile) { (Get-Content $versionFile -Raw).Trim() } else { "0.0.0" }
 
-Write-Host "TopSolid MCP Server - Mise a jour" -ForegroundColor Cyan
-Write-Host "Version actuelle : $currentVersion"
+Write-Host (Msg "TopSolid MCP Server - Update" "TopSolid MCP Server - Mise a jour") -ForegroundColor Cyan
+Write-Host (Msg "Current version: $currentVersion" "Version actuelle : $currentVersion")
 Write-Host ""
 
 # --- Check latest release on GitHub ---
-Write-Host "Verification de la derniere version..." -NoNewline
+Write-Host (Msg "Checking the latest version..." "Verification de la derniere version...") -NoNewline
 try {
     $releaseUrl = "https://api.github.com/repos/$repo/releases/latest"
     $headers = @{ "User-Agent" = "TopSolidMcpServer-Updater" }
     $release = Invoke-RestMethod -Uri $releaseUrl -Headers $headers -TimeoutSec 10
 } catch {
     if ($_.Exception.Response.StatusCode -eq 404) {
-        Write-Host " aucune release trouvee." -ForegroundColor Yellow
-        Write-Host "Le projet n'a pas encore de release GitHub."
-        Write-Host "Consultez : https://github.com/$repo/releases"
+        Write-Host (Msg " no release found." " aucune release trouvee.") -ForegroundColor Yellow
+        Write-Host (Msg "This project has no GitHub release yet." "Le projet n'a pas encore de release GitHub.")
+        Write-Host (Msg "See: https://github.com/$repo/releases" "Consultez : https://github.com/$repo/releases")
         exit 0
     }
-    Write-Host " erreur !" -ForegroundColor Red
-    Write-Host "Impossible de contacter GitHub : $($_.Exception.Message)"
+    Write-Host (Msg " error!" " erreur !") -ForegroundColor Red
+    Write-Host (Msg "Could not reach GitHub: $($_.Exception.Message)" "Impossible de contacter GitHub : $($_.Exception.Message)")
     exit 1
 }
 
@@ -104,23 +113,23 @@ function Compare-SemVer($a, $b) {
 
 $cmp = Compare-SemVer $currentVersion $latestVersion
 if (-not $Force -and $cmp -ge 0) {
-    Write-Host "`nVous etes deja a jour (v$currentVersion) !" -ForegroundColor Green
+    Write-Host (Msg "`nYou are already up to date (v$currentVersion)!" "`nVous etes deja a jour (v$currentVersion) !") -ForegroundColor Green
     exit 0
 }
 
 if ($Check) {
-    Write-Host "`nMise a jour disponible : v$currentVersion -> v$latestVersion" -ForegroundColor Yellow
-    Write-Host "Lancez sans -Check pour installer."
+    Write-Host (Msg "`nUpdate available: v$currentVersion -> v$latestVersion" "`nMise a jour disponible : v$currentVersion -> v$latestVersion") -ForegroundColor Yellow
+    Write-Host (Msg "Run again without -Check to install." "Lancez sans -Check pour installer.")
     exit 0
 }
 
-Write-Host "`nMise a jour : v$currentVersion -> v$latestVersion" -ForegroundColor Yellow
+Write-Host (Msg "`nUpdate: v$currentVersion -> v$latestVersion" "`nMise a jour : v$currentVersion -> v$latestVersion") -ForegroundColor Yellow
 
 # --- Find the zip asset ---
 $zipAsset = $release.assets | Where-Object { $_.name -like "*.zip" } | Select-Object -First 1
 if (-not $zipAsset) {
-    Write-Host "Erreur : aucun fichier .zip dans la release." -ForegroundColor Red
-    Write-Host "Telechargez manuellement : $($release.html_url)"
+    Write-Host (Msg "Error: no .zip file in this release." "Erreur : aucun fichier .zip dans la release.") -ForegroundColor Red
+    Write-Host (Msg "Download manually: $($release.html_url)" "Telechargez manuellement : $($release.html_url)")
     exit 1
 }
 
@@ -131,7 +140,7 @@ $tempZip = Join-Path $env:TEMP "TopSolidMcpServer_update.zip"
 if (Test-Path $tempDir) { Remove-Item $tempDir -Recurse -Force }
 if (Test-Path $tempZip) { Remove-Item $tempZip -Force }
 
-Write-Host "Telechargement ($([math]::Round($zipAsset.size / 1MB, 1)) Mo)..."
+Write-Host (Msg "Downloading ($([math]::Round($zipAsset.size / 1MB, 1)) MB)..." "Telechargement ($([math]::Round($zipAsset.size / 1MB, 1)) Mo)...")
 Invoke-WebRequest -Uri $zipAsset.browser_download_url -OutFile $tempZip -Headers $headers
 
 # --- Verify the download against the SHA256SUMS.txt asset of the release ---
@@ -144,7 +153,7 @@ if (-not $sumsAsset) {
 }
 
 if ($sumsAsset) {
-    Write-Host "Verification de l'empreinte SHA-256..." -NoNewline
+    Write-Host (Msg "Verifying the SHA-256 hash..." "Verification de l'empreinte SHA-256...") -NoNewline
     $tempSums = Join-Path $env:TEMP "TopSolidMcpServer_update.sha256"
     if (Test-Path $tempSums) { Remove-Item $tempSums -Force }
     Invoke-WebRequest -Uri $sumsAsset.browser_download_url -OutFile $tempSums -Headers $headers
@@ -166,31 +175,31 @@ if ($sumsAsset) {
     Remove-Item $tempSums -Force -ErrorAction SilentlyContinue
 
     if (-not $expectedHash) {
-        Write-Host " impossible !" -ForegroundColor Red
-        Write-Host "SHA256SUMS.txt ne contient aucune empreinte pour $($zipAsset.name)."
-        Write-Host "Abandon : aucun fichier n'a ete remplace."
+        Write-Host (Msg " impossible!" " impossible !") -ForegroundColor Red
+        Write-Host (Msg "SHA256SUMS.txt has no hash for $($zipAsset.name)." "SHA256SUMS.txt ne contient aucune empreinte pour $($zipAsset.name).")
+        Write-Host (Msg "Aborting: no file has been replaced." "Abandon : aucun fichier n'a ete remplace.")
         Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
         exit 1
     }
 
     $actualHash = (Get-FileHash $tempZip -Algorithm SHA256).Hash.ToLowerInvariant()
     if ($actualHash -ne $expectedHash) {
-        Write-Host " ECHEC !" -ForegroundColor Red
-        Write-Host "  Attendu : $expectedHash"
-        Write-Host "  Obtenu  : $actualHash"
-        Write-Host "Le fichier telecharge ne correspond pas a la release."
-        Write-Host "Abandon : aucun fichier n'a ete remplace."
+        Write-Host (Msg " FAILED!" " ECHEC !") -ForegroundColor Red
+        Write-Host (Msg "  Expected: $expectedHash" "  Attendu : $expectedHash")
+        Write-Host (Msg "  Actual  : $actualHash" "  Obtenu  : $actualHash")
+        Write-Host (Msg "The downloaded file does not match the release." "Le fichier telecharge ne correspond pas a la release.")
+        Write-Host (Msg "Aborting: no file has been replaced." "Abandon : aucun fichier n'a ete remplace.")
         Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
         exit 1
     }
     Write-Host " OK" -ForegroundColor Green
 } elseif ($AllowUnverified) {
-    Write-Host "Aucun SHA256SUMS.txt dans cette release - verification ignoree (-AllowUnverified)." -ForegroundColor Yellow
+    Write-Host (Msg "No SHA256SUMS.txt in this release - verification skipped (-AllowUnverified)." "Aucun SHA256SUMS.txt dans cette release - verification ignoree (-AllowUnverified).") -ForegroundColor Yellow
 } else {
-    Write-Host "Erreur : cette release ne publie pas de SHA256SUMS.txt." -ForegroundColor Red
-    Write-Host "L'integrite du telechargement ne peut pas etre verifiee. Abandon."
-    Write-Host "Relancez avec -AllowUnverified pour installer sans verification,"
-    Write-Host "ou telechargez manuellement : $($release.html_url)"
+    Write-Host (Msg "Error: this release ships no SHA256SUMS.txt." "Erreur : cette release ne publie pas de SHA256SUMS.txt.") -ForegroundColor Red
+    Write-Host (Msg "The download cannot be verified. Aborting." "L'integrite du telechargement ne peut pas etre verifiee. Abandon.")
+    Write-Host (Msg "Run again with -AllowUnverified to install without verification," "Relancez avec -AllowUnverified pour installer sans verification,")
+    Write-Host (Msg "or download manually: $($release.html_url)" "ou telechargez manuellement : $($release.html_url)")
     Remove-Item $tempZip -Force -ErrorAction SilentlyContinue
     exit 1
 }
@@ -205,7 +214,7 @@ if ($proc) {
     try {
         $procCmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId=$($proc.Id)" -ErrorAction Stop).CommandLine
     } catch { $procCmdLine = $null }
-    Write-Host "Arret de l'instance en cours (PID $($proc.Id))..."
+    Write-Host (Msg "Stopping the running instance (PID $($proc.Id))..." "Arret de l'instance en cours (PID $($proc.Id))...")
     $proc | Stop-Process -Force
     Start-Sleep -Seconds 2
 }
@@ -225,7 +234,7 @@ if ($subdirs.Count -eq 1 -and (Test-Path (Join-Path $subdirs[0].FullName "TopSol
 $dataDir = Join-Path $baseDir "data"
 $backupDir = Join-Path $baseDir "data_backup"
 if (Test-Path $dataDir) {
-    Write-Host "Sauvegarde de data/..."
+    Write-Host (Msg "Backing up data/..." "Sauvegarde de data/...")
     if (Test-Path $backupDir) { Remove-Item $backupDir -Recurse -Force }
     Copy-Item $dataDir $backupDir -Recurse
 }
@@ -235,7 +244,7 @@ if (Test-Path $dataDir) {
 # native e_sqlite3.dll that Microsoft.Data.Sqlite loads to open help.db - was never
 # refreshed, so a SQLitePCLRaw bump broke help search on every installation that had
 # gone through this updater. Walking the whole tree keeps any future subfolder in sync.
-Write-Host "Installation des nouveaux fichiers..."
+Write-Host (Msg "Installing the new files..." "Installation des nouveaux fichiers...")
 $srcRoot = (Resolve-Path $extractedContent).Path.TrimEnd('\')
 $failed = @()
 foreach ($file in (Get-ChildItem $srcRoot -Recurse -File)) {
@@ -251,10 +260,10 @@ foreach ($file in (Get-ChildItem $srcRoot -Recurse -File)) {
 }
 
 if ($failed.Count -gt 0) {
-    Write-Host "Erreur : $($failed.Count) fichier(s) n'ont pas pu etre remplaces." -ForegroundColor Red
+    Write-Host (Msg "Error: $($failed.Count) file(s) could not be replaced." "Erreur : $($failed.Count) fichier(s) n'ont pas pu etre remplaces.") -ForegroundColor Red
     foreach ($entry in $failed) { Write-Host "  - $entry" }
-    Write-Host "Installation incomplete. Fermez les applications qui utilisent ces fichiers,"
-    Write-Host "puis relancez la mise a jour. version.txt n'a pas ete modifie."
+    Write-Host (Msg "Install incomplete. Close the applications using these files," "Installation incomplete. Fermez les applications qui utilisent ces fichiers,")
+    Write-Host (Msg "then run the update again. version.txt was not modified." "puis relancez la mise a jour. version.txt n'a pas ete modifie.")
     exit 1
 }
 
@@ -284,15 +293,15 @@ $taskRestarted = $false
 $ErrorActionPreference = "Continue"
 schtasks /Query /TN $bridgeTask > $null 2>&1
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "Redemarrage du serveur HTTP (tache $bridgeTask)..."
+    Write-Host (Msg "Restarting the HTTP server (task $bridgeTask)..." "Redemarrage du serveur HTTP (tache $bridgeTask)...")
     schtasks /End /TN $bridgeTask > $null 2>&1
     Start-Sleep -Seconds 1
     schtasks /Run /TN $bridgeTask > $null 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Serveur HTTP relance (port 8080) avec la nouvelle version." -ForegroundColor Green
+        Write-Host (Msg "HTTP server restarted (port 8080) with the new version." "Serveur HTTP relance (port 8080) avec la nouvelle version.") -ForegroundColor Green
         $taskRestarted = $true
     } else {
-        Write-Host "La tache $bridgeTask n'a pas pu etre relancee - demarrez-la a la main." -ForegroundColor Yellow
+        Write-Host (Msg "Task $bridgeTask could not be restarted - start it by hand." "La tache $bridgeTask n'a pas pu ete relancee - demarrez-la a la main.") -ForegroundColor Yellow
     }
 }
 
@@ -303,24 +312,24 @@ if ($LASTEXITCODE -eq 0) {
 # survive this PowerShell exiting: Start-Process creates an independent process
 # and we never wait on it.
 if (-not $taskRestarted -and $procCmdLine) {
-    Write-Host "Relancement du serveur..."
+    Write-Host (Msg "Relaunching the server..." "Relancement du serveur...")
     try {
         Start-Process -FilePath "$env:ComSpec" -ArgumentList "/c", $procCmdLine -WindowStyle Hidden
-        Write-Host "Serveur relance avec la nouvelle version." -ForegroundColor Green
+        Write-Host (Msg "Server relaunched with the new version." "Serveur relance avec la nouvelle version.") -ForegroundColor Green
     } catch {
-        Write-Host "Le serveur n'a pas pu etre relance automatiquement : $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host "Commande d'origine : $procCmdLine"
+        Write-Host (Msg "The server could not be relaunched automatically: $($_.Exception.Message)" "Le serveur n'a pas pu etre relance automatiquement : $($_.Exception.Message)") -ForegroundColor Yellow
+        Write-Host (Msg "Original command: $procCmdLine" "Commande d'origine : $procCmdLine")
     }
 }
 
 # --- Show changelog ---
 Write-Host ""
-Write-Host "=== Mise a jour terminee ! ===" -ForegroundColor Green
-Write-Host "Version : v$latestVersion"
+Write-Host (Msg "=== Update complete! ===" "=== Mise a jour terminee ! ===") -ForegroundColor Green
+Write-Host (Msg "Version: v$latestVersion" "Version : v$latestVersion")
 if ($release.body) {
     Write-Host ""
     Write-Host "--- Changelog ---" -ForegroundColor Cyan
     Write-Host $release.body
 }
 Write-Host ""
-Write-Host "Relancez votre client IA pour utiliser la nouvelle version."
+Write-Host (Msg "Restart your AI client to use the new version." "Relancez votre client IA pour utiliser la nouvelle version.")

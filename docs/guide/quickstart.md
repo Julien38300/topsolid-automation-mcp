@@ -22,6 +22,7 @@ Depuis la **v1.8.0**, l'icône tray gère aussi :
 - **Connexion automatique** — le serveur se reconnecte seul à TopSolid s'il a été lancé avant TopSolid ou si TopSolid est relancé (backoff 15 s → 30 s → 60 s plafonné). Activable/désactivable depuis le menu, état mémorisé.
 - **Nouveautés** — ouvre directement la page GitHub de la **release installée** (corrections, évolutions). Le bouton *Vérifier les mises à jour* ouvre maintenant automatiquement cette page au lancement de la mise à jour.
 - **Signaler un bug / Suggérer une évolution** — ouvre le formulaire GitHub pré-rempli (template bug/feature, version serveur, OS et état de connexion injectés automatiquement ; la clé API est **scrubbée** et tout chemin sous votre dossier de profil Windows `C:\Users\<nom>` est remplacé par `%USERPROFILE%` — votre nom de compte n'apparaît jamais dans l'issue publique).
+- **Langue de l'interface (v1.8.19)** — toute l'interface (menus tray, paramètres, dialogues clé API et mise à jour, installateur, updater) suit la **langue d'affichage Windows** : français sur les systèmes `fr-*`, anglais partout ailleurs (néerlandais, allemand, anglais…), avec un repli anglais et un sélecteur `Automatique / Français / English` dans les *Paramètres du serveur MCP*. Un format régional français avec une interface Windows non francophone reste en anglais.
 :::
 
 L'URL a donner a votre assistant IA reste la meme : `http://127.0.0.1:8080/mcp`.

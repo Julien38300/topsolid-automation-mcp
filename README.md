@@ -45,6 +45,7 @@ Since **v1.8.0** the tray also handles:
 - **Auto-connect** — reconnects to TopSolid by itself (backoff 15/30/60 s capped) if TopSolid was started after the server or gets restarted.
 - **What's new** — opens the GitHub release notes of the installed version; the update flow now opens them automatically.
 - **Report a bug / Suggest a feature** — prefilled GitHub issue (template, version, OS and connection state auto-injected; API key scrubbed).
+- **Language (v1.8.19)** — the whole UI (tray menus, settings, API-key and update dialogs, installer, updater) follows the Windows **display language**: French on `fr-*` systems, English everywhere else (Dutch, German, English…), with an English fallback for anything untranslated and an `Automatic / Français / English` override in the tray settings. A French *regional format* with a non-French display language still gets English.
 
 Then point your MCP client at `http://127.0.0.1:8080/mcp` (v1.8.0+: the native endpoint, `X-API-Key` required as soon as a key is defined). Details: [`install/README.md`](./install/README.md).
 

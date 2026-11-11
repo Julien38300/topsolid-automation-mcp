@@ -13,6 +13,10 @@
 
 3. **C'est tout.** Le serveur tourne sur le port 8080, authentifié par clé API.
 
+## Langue de l'installateur et du serveur (v1.8.19+)
+
+L'installateur, l'updater et toute l'interface du serveur (menus tray, paramètres, dialogues) sont **bilingues** : messages en **français** quand la langue d'affichage de Windows est le français (`fr-FR`, `fr-BE`, `fr-CA`…), en **anglais** partout ailleurs (néerlandais, allemand, anglais…). Un format régional français avec une interface Windows en anglais reste en anglais. Un sélecteur `Langue : Automatique / Français / English` est disponible dans les *Paramètres du serveur MCP* (appliqué au redémarrage).
+
 ## L'icône systray
 
 Clic droit sur l'icône :

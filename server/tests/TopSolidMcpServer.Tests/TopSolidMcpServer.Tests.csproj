@@ -35,6 +35,7 @@
     <Compile Include="..\..\src\Utils\ScriptOutputLimit.cs" Link="ScriptOutputLimit.cs" />
     <Compile Include="..\..\src\Utils\TransactionRules.cs" Link="TransactionRules.cs" />
     <Compile Include="..\..\src\Utils\TraySettings.cs" Link="TraySettings.cs" />
+    <Compile Include="..\..\src\Utils\L10n.cs" Link="L10n.cs" />
     <Compile Include="..\..\src\Protocol\McpToolRegistry.cs" Link="McpToolRegistry.cs" />
     <Compile Include="..\..\src\Protocol\Models\McpToolDescriptor.cs" Link="McpToolDescriptor.cs" />
     <Compile Include="..\..\src\Tools\ApiHelpTool.cs" Link="ApiHelpTool.cs" />

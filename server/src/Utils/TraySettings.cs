@@ -56,6 +56,14 @@ namespace TopSolidMcpServer.Utils
         /// </summary>
         public static int HttpPort;
 
+        /// <summary>
+        /// v1.8.19 (issue #21): UI language preference — "auto" (default) follows
+        /// the Windows display language (French for fr-*, English otherwise),
+        /// "fr" and "en" force it. Injected into L10n at startup and after the
+        /// settings dialog saves it; applied on the next restart.
+        /// </summary>
+        public static string Language = "auto";
+
         /// <summary>Test hook: overrides where settings.json is read/written. Null = BaseDirectory.</summary>
         private static string _baseDirectoryOverride;
 
@@ -85,6 +93,7 @@ namespace TopSolidMcpServer.Utils
                 Port = obj.Value<int?>("port") ?? 0;
                 ReadOnly = obj.Value<bool?>("read_only") ?? false;
                 HttpPort = obj.Value<int?>("http_port") ?? 0;
+                Language = NormalizeLanguage(obj.Value<string>("language"));
 
                 string mode = obj.Value<string>("instance_mode");
                 InstanceMode = (mode == "manual") ? "manual" : "auto";
@@ -111,6 +120,7 @@ namespace TopSolidMcpServer.Utils
                 Port = 0;
                 ReadOnly = false;
                 InstanceMode = "auto";
+                Language = "auto";
                 DeclaredInstances = new List<DeclaredTopSolidInstance>();
             }
         }
@@ -139,6 +149,7 @@ namespace TopSolidMcpServer.Utils
                 obj["port"] = port;
                 obj["read_only"] = readOnly;
                 obj["http_port"] = HttpPort;
+                obj["language"] = Language;
                 obj["instance_mode"] = InstanceMode;
                 obj["declared_instances"] = new JArray(
                     DeclaredInstances.Select(d => new JObject
@@ -191,6 +202,26 @@ namespace TopSolidMcpServer.Utils
             if (httpPort > 65535) httpPort = 65535;
             HttpPort = httpPort;
             Save(Port, ReadOnly);
+        }
+
+        /// <summary>
+        /// v1.8.19 (issue #21): saves the UI language preference ("auto"/"fr"/"en"),
+        /// keeping every other field. Unrecognized values normalize to "auto".
+        /// </summary>
+        public static void SaveLanguage(string language)
+        {
+            Language = NormalizeLanguage(language);
+            Save(Port, ReadOnly);
+        }
+
+        /// <summary>"fr" stays "fr", "en" stays "en", anything else becomes "auto".</summary>
+        private static string NormalizeLanguage(string language)
+        {
+            if (string.IsNullOrEmpty(language)) return "auto";
+            language = language.Trim();
+            if (string.Equals(language, "fr", StringComparison.OrdinalIgnoreCase)) return "fr";
+            if (string.Equals(language, "en", StringComparison.OrdinalIgnoreCase)) return "en";
+            return "auto";
         }
     }
 }

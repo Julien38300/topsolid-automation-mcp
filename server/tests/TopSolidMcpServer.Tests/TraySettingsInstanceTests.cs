@@ -199,5 +199,57 @@ namespace TopSolidMcpServer.Tests
             Assert.AreEqual("A", TraySettings.DeclaredInstances[0].Name);
             Assert.IsTrue(TraySettings.DeclaredInstances[0].IsDefault);
         }
+
+        // ── v1.8.19 (issue #21): UI language preference ──
+
+        [Test]
+        public void SaveLanguage_RoundTripsAndNormalizes()
+        {
+            TraySettings.SaveLanguage("fr");
+            Assert.AreEqual("fr", TraySettings.Language);
+            TraySettings.Language = "auto";
+            TraySettings.Load();
+            Assert.AreEqual("fr", TraySettings.Language, "language must survive a save/load cycle");
+
+            TraySettings.SaveLanguage("en");
+            TraySettings.Language = "auto";
+            TraySettings.Load();
+            Assert.AreEqual("en", TraySettings.Language);
+        }
+
+        [Test]
+        public void SaveLanguage_GarbageNormalizesToAuto()
+        {
+            TraySettings.SaveLanguage("klingon");
+            Assert.AreEqual("auto", TraySettings.Language, "unrecognized language falls back to auto");
+
+            TraySettings.SaveLanguage("FR");
+            Assert.AreEqual("fr", TraySettings.Language, "case-insensitive match");
+        }
+
+        [Test]
+        public void Load_LanguageFieldAbsent_DefaultsToAuto()
+        {
+            File.WriteAllText(Path.Combine(_dir, "settings.json"), "{ \"port\": 8090 }");
+            TraySettings.Language = "fr";
+            TraySettings.Load();
+            Assert.AreEqual("auto", TraySettings.Language, "missing language field = auto detection");
+        }
+
+        [Test]
+        public void SaveLanguage_PreservesOtherFields()
+        {
+            TraySettings.SaveHttpPort(8123);
+            TraySettings.SaveInstanceMode(8091, "manual");
+            TraySettings.SaveLanguage("en");
+
+            string json = File.ReadAllText(Path.Combine(_dir, "settings.json"));
+            StringAssert.Contains("\"http_port\": 8123", json, "SaveLanguage must not drop http_port");
+            StringAssert.Contains("\"language\": \"en\"", json);
+            TraySettings.Load();
+            Assert.AreEqual(8123, TraySettings.HttpPort);
+            Assert.AreEqual("manual", TraySettings.InstanceMode);
+            Assert.AreEqual("en", TraySettings.Language);
+        }
     }
 }

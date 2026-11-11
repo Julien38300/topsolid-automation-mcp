@@ -214,6 +214,12 @@ namespace TopSolidMcpServer
             // args and env vars leave unset, so an MCP client configured with
             // --port/--read-only keeps precedence over a tray tweak.
             TraySettings.Load();
+            // v1.8.19 (issue #21): the language preference saved by the tray
+            // ("auto" falls through) wins over the automatic Windows display-language
+            // detection. Must run BEFORE the first L10n.T() call: every tray, dialog,
+            // balloon and menu string resolves through L10n (French on fr-*,
+            // English everywhere else, English fallback on any missing key).
+            L10n.SetConfiguredLanguage(TraySettings.Language);
             string envPort = GetArg(args, "--port");
             bool readOnlyFromCliOrEnv = readOnly;
             if (readOnlyFromCliOrEnv)
