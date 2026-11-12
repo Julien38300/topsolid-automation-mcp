@@ -43,6 +43,7 @@
     <Compile Include="..\..\src\Utils\DocumentComparison.cs" Link="DocumentComparison.cs" />
     <Compile Include="..\..\src\Utils\DocumentScripts.cs" Link="DocumentScripts.cs" />
     <Compile Include="..\..\src\Utils\DocumentCompareRunner.cs" Link="DocumentCompareRunner.cs" />
+    <Compile Include="..\..\src\Utils\FamilyCatalogScripts.cs" Link="FamilyCatalogScripts.cs" />
     <None Include="Fixtures\**\*.txt" CopyToOutputDirectory="PreserveNewest" />
     <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\TypeGraph.cs" Link="Graph\TypeGraph.cs" />
     <Compile Include="..\..\..\graph\src\TopSolidApiGraph.Core\Models\ExtractedMethod.cs" Link="Graph\ExtractedMethod.cs" />

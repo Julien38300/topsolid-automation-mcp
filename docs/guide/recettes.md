@@ -1,6 +1,6 @@
 # Recettes
 
-219 recettes pre-construites. Le LLM les appelle par leur nom via `topsolid_run_recipe` : aucune generation de code necessaire.
+223 recettes pre-construites. Le LLM les appelle par leur nom via `topsolid_run_recipe` : aucune generation de code necessaire.
 
 ## Catalogue
 
@@ -149,11 +149,36 @@ Une famille TopSolid est un document parametrique avec des configurations (codes
 
 | Recette | Description | Technique | Mode |
 |---------|-------------|-----------|------|
-| `detect_family` | Verifie si le document est une famille. Indique si elle est explicite (catalogue) ou implicite (parametrique). | `Families.IsFamily()` + `IsExplicit()` | READ |
+| `detect_family` | Verifie si le document est une famille. Indique si elle est explicite (instances documents) ou implicite (instances issues du generique, avec catalogue possible). | `Families.IsFamily()` + `IsExplicit()` | READ |
 | `read_family_codes` | Liste les codes (variantes) de la famille. Chaque code correspond a une configuration du catalogue. | `Families.GetCodes()` | READ |
+| `read_family_catalog` | Lit les lignes, colonnes et valeurs typees du catalogue de la famille active. | `GetCodes()` + `GetCatalogColumnParameters()` + `GetCatalogCell*Value()` | READ |
+| `add_family_catalog_column` | Ajoute une colonne a partir du selecteur exact d'un parametre existant de la famille. | `Families.AddCatalogColumn()` | WRITE-PDM |
+| `add_family_catalog_row` | Ajoute une ligne avec un code unique et ses cellules typees. | `AddCatalogNewRow()` + `SetCatalogCell*Value()` | WRITE-PDM |
+| `set_family_catalog_cell` | Modifie une cellule identifiee par le code de ligne et le selecteur exact de colonne. | `GetCatalogRow()` + `SetCatalogCell*Value()` | WRITE-PDM |
 | `check_family_drivers` | Verifie que les drivers (parametres pilotant le catalogue) ont une designation. Liste ceux sans description. | `Families.GetCatalogColumnParameters()` → `Elements.GetDescription()` | READ |
 | `fix_family_drivers` | Genere automatiquement une designation pour les drivers sans description, en deduisant du nom du parametre (CamelCase → mots separes). | `Elements.SetDescription()` auto-genere — aucun `value` | WRITE |
 | `batch_check_family_drivers` | Audit des drivers de TOUTES les familles du projet. Detecte les drivers sans designation sur chaque famille. | Iteration `IsFamily()` → `GetCatalogColumnParameters()` | READ |
+
+#### Modifier un catalogue implicite
+
+Les quatre recettes travaillent sur la famille active. Une famille **implicite** peut avoir un catalogue : chaque ligne a un code, chaque colonne correspond a un parametre de cette famille. `read_family_catalog` lit aussi les familles explicites ou derivees ; les trois recettes d'ecriture les refusent.
+
+`value` contient un objet JSON. Les selecteurs de parametres/colonnes doivent correspondre exactement au champ `name` retourne par `read_family_catalog` dans `availableParameters` ou `columns` : nom interne non vide, sinon nom convivial exact avec son suffixe `<id>`. Exemples de valeurs a transmettre :
+
+| Recette | `value` |
+|---------|---------|
+| `read_family_catalog` | vide ou `{}` |
+| `add_family_catalog_column` | `{"parameter":"D <71>"}` |
+| `add_family_catalog_row` | `{"code":"A","cells":{"D <71>":{"type":"real","value":0.1}}}` |
+| `set_family_catalog_cell` | `{"code":"A","column":"D <71>","type":"real","value":0.2}` |
+
+Commencer par la lecture pour reperer les colonnes et les parametres disponibles. `D <71>` et `L <70>` sont des exemples : leurs identifiants varient selon la famille ; recopier les selecteurs de la reponse actuelle. Les pilotes de famille sont decouverts via `Elements.GetElements`, car `Parameters.GetParameters` peut les omettre. L'ajout de colonne utilise un parametre deja present dans la famille ; il ne cree ni pilote ni publication. `cells` est facultatif a l'ajout d'une ligne. Une ligne existante se modifie cellule par cellule.
+
+Types pris en charge : `real`, `integer`, `boolean`, `text`, `code`. Un reel est en **unites SI** : `0.1` represente 100 mm pour une longueur, et un angle s'exprime en radians. Utiliser des nombres JSON avec un point decimal, des booleens `true`/`false` et des chaines JSON pour le texte. La lecture fournit le type et les informations d'unite disponibles ; les types non pris en charge sont signales.
+
+Le champ JSON `code` identifie une ligne du catalogue. Il est distinct de la propriete PDM **Code** du document et des cellules de type `code` pouvant referencer une autre famille. La colonne d'identite est la premiere colonne du catalogue (`columns[0]`), de type texte dans le cas natif qualifie ; son ecriture utilise `SetCatalogCellTextValue`. Elle ne se deduit ni du nom `Code`, ni du type `ParameterType.Code`, qui peut decrire une autre cellule. `set_family_catalog_cell` refuse de modifier cette colonne : le renommage des codes n'est pas pris en charge.
+
+Les codes dupliques, colonnes absentes et valeurs de type incompatible sont refuses. Les ecritures utilisent une transaction TopSolid ; elles sont indisponibles en mode lecture seule. Ces recettes ne suppriment pas de ligne ou de colonne et ne convertissent pas les familles explicites/derivees. Les cellules famille, couleur et enumeration ne sont pas modifiables par ces recettes.
 
 ### Export
 

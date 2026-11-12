@@ -533,6 +533,14 @@ namespace TopSolidMcpServer.Tools
                 "if (!isFamily) return \"This document is NOT a family.\";\n" +
                 "bool isExplicit = TopSolidHost.Families.IsExplicit(docId);\n" +
                 "return \"Family detected (\" + (isExplicit ? \"explicit\" : \"implicit\") + \").\";") },
+            { "read_family_catalog", R("FAMILIES", "Reads active family catalog rows (codes), columns (drivers), primitive values and real SI unit metadata. value: {}.",
+                FamilyCatalogScripts.Build("read_family_catalog", "{}")) },
+            { "add_family_catalog_column", RW("FAMILIES", "Adds an existing active-family parameter as a catalog driver. JSON value: {\"parameter\":\"Length\"}. Exact selector from read_family_catalog availableParameters; primitive types only.",
+                FamilyCatalogScripts.Build("add_family_catalog_column", "{\"parameter\":\"Length\"}")) },
+            { "add_family_catalog_row", RW("FAMILIES", "Adds a unique catalog code and optional typed cells atomically. JSON value: {\"code\":\"A\",\"cells\":{\"Length\":{\"type\":\"real\",\"value\":0.1}}}. Real values SI.",
+                FamilyCatalogScripts.Build("add_family_catalog_row", "{\"code\":\"A\",\"cells\":{\"Length\":{\"type\":\"real\",\"value\":0.1}}}")) },
+            { "set_family_catalog_cell", RW("FAMILIES", "Sets one primitive catalog cell by exact row code and column selector from read_family_catalog. JSON value: {\"code\":\"A\",\"column\":\"Length\",\"type\":\"real\",\"value\":0.2}. Code identity edits refused.",
+                FamilyCatalogScripts.Build("set_family_catalog_cell", "{\"code\":\"A\",\"column\":\"Length\",\"type\":\"real\",\"value\":0.2}")) },
             { "read_family_codes", R("FAMILIES", "Reads family codes",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
@@ -5599,6 +5607,11 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
                     value = string.Join("|", candidates);
             }
             string code = recipe.Code.Replace("{value}", EscapeForLiteral(value));
+            if (FamilyCatalogScripts.Handles(recipeName.ToLowerInvariant()))
+            {
+                try { code = FamilyCatalogScripts.Build(recipeName.ToLowerInvariant(), value); }
+                catch (ArgumentException ex) { return "Error: " + ex.Message; }
+            }
 
             // Ensure connector is initialized and connected (auto-reconnect if needed)
             var connector = _connectorProvider();
