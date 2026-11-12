@@ -198,14 +198,14 @@ add_draft_to_bundle
 get_page_count
 create_project_tree
 create_part_document
-create_revolved_part
-revolve_active_part
-replace_revolved_profile
 create_assembly_document
 set_material
 set_coating
 provide_extruded_bar_function
 create_extruded_bar
+create_revolved_part
+revolve_active_part
+replace_revolved_profile
 create_sheet_metal_plate
 create_drilling
 add_inclusion_positioned

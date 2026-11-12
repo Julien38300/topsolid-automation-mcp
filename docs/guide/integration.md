@@ -370,11 +370,12 @@ ChatGPT Desktop ne supporte pas les serveurs MCP locaux (mai 2026). Utilisez Cla
 ## Modeles locaux (Ollama, Gemma 4, LM Studio, OpenWebUI) & Auto-Onboarding IA (v1.8.11+)
 
 ### 1. Donner directement le repo a votre IA (`AGENTS.md` & `CLAUDE.md`)
-Le depot embarque a sa racine un fichier universel **`AGENTS.md`** (lu par Codex, Cursor, Windsurf, Cline, Continue, OpenCode, Antigravity) ainsi que **`CLAUDE.md`** (lu par Claude Code) et **4 skills metiers complets** dans `skills/` :
-- `skills/topsolid-mcp` : pilotage general et catalogue des 216 recettes
+Le depot embarque a sa racine un fichier universel **`AGENTS.md`** (lu par Codex, Cursor, Windsurf, Cline, Continue, OpenCode, Antigravity) ainsi que **`CLAUDE.md`** (lu par Claude Code) et **3 skills metiers** dans `skills/` :
+- `skills/topsolid-mcp` : pilotage general et usage des recettes
 - `skills/topsolid-mcp-modeling` : modelisation 3D, profilés (`Extruded Bar`), tôlerie et assemblages
-- `skills/topsolid-api-knowledge` : règles C# 5 et unités SI
 - `skills/topsolid-railing-design` : règles métier garde-corps (NF P01-012 / NF P01-013)
+
+Un quatrième skill, `topsolid-api-knowledge` (règles C# 5 et unités SI), est en préparation ; en attendant, `topsolid_api_help` donne les signatures exactes et les règles de transaction de chaque méthode.
 
 Il suffit de pointer votre agent sur le dépôt local pour qu'il sache comment installer le serveur ou quel skill charger avant d'appeler TopSolid.
 

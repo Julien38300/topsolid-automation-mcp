@@ -1,6 +1,18 @@
 # Tests
 
-Le projet inclut une suite de tests automatises qui verifie le serveur MCP et une partie des 216 recettes contre une instance TopSolid vivante. Attention : la couverture est partielle — `TestSuite.json` contient 88 tests et `test_recipes_live.ps1` couvre 39 recettes (RA-01 a RA-39), pas les 216.
+Le projet a deux familles de tests.
+
+| Famille | Ou | TopSolid requis | Qui peut les lancer |
+|---|---|---|---|
+| **Tests unitaires** : logique du serveur, HTTP et cle API, mise a jour, comparaison de documents, controle des recettes | `server/tests/*` (3 suites `dotnet test`) et `tests/python` (`pytest`) | non | tout le monde, et la CI a chaque push |
+| **Tests en direct** : outils et recettes contre une session TopSolid | `tests/run-tests.ps1`, `tests/test_recipes_live.ps1` | oui | pour l'instant le mainteneur seul : ils exigent un document de reference qui n'est pas encore publie |
+
+```powershell
+python scripts/ci_gate.py      # ce que lance la CI : controles Python, recettes, confidentialite, 3 suites, graphe
+python -m pytest tests/python
+```
+
+La suite de la page decrit les **tests en direct**. Leur couverture est partielle : `TestSuite.json` contient 88 tests et `test_recipes_live.ps1` couvre 39 recettes (RA-01 a RA-39), pas les 219. En attendant le kit de test public (voir la [roadmap](./roadmap)), un contributeur decrit son test manuel dans la pull request : version de TopSolid, type de document, resultat obtenu.
 
 ## Architecture de test
 
