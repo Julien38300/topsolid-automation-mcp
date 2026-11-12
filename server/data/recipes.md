@@ -633,22 +633,6 @@ bool isExplicit = TopSolidHost.Families.IsExplicit(docId);
 return "Family detected (" + (isExplicit ? "explicit" : "implicit") + ").";
 ```
 
-## read_family_codes
-Pattern: R
-Description: Reads family codes
-
-```csharp
-DocumentId docId = TopSolidHost.Documents.EditedDocument;
-if (docId.IsEmpty) return "No document open.";
-if (!TopSolidHost.Families.IsFamily(docId)) return "Not a family.";
-var codes = TopSolidHost.Families.GetCodes(docId);
-var sb = new System.Text.StringBuilder();
-sb.AppendLine("Codes: " + codes.Count);
-foreach (var c in codes)
-    sb.AppendLine("  " + c);
-return sb.ToString();
-```
-
 ## read_family_catalog
 Pattern: R
 Description: Reads active family catalog rows (codes), columns (drivers), primitive values and real SI unit metadata. value: {}.
@@ -814,6 +798,22 @@ if (TopSolidHost.Parameters.GetParameterType(col0) != ParameterType.Real) throw 
 ElementId row = TopSolidHost.Families.GetCatalogRow(docId, "A");
 TopSolidHost.Families.SetCatalogCellRealValue(row, col0, 0.2d);
 __message = "OK: catalog cell updated.";
+```
+
+## read_family_codes
+Pattern: R
+Description: Reads family codes
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "No document open.";
+if (!TopSolidHost.Families.IsFamily(docId)) return "Not a family.";
+var codes = TopSolidHost.Families.GetCodes(docId);
+var sb = new System.Text.StringBuilder();
+sb.AppendLine("Codes: " + codes.Count);
+foreach (var c in codes)
+    sb.AppendLine("  " + c);
+return sb.ToString();
 ```
 
 ## open_drafting

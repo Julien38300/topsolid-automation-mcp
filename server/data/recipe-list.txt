@@ -33,11 +33,11 @@ read_operations
 detect_assembly
 list_inclusions
 detect_family
-read_family_codes
 read_family_catalog
 add_family_catalog_column
 add_family_catalog_row
 set_family_catalog_cell
+read_family_codes
 open_drafting
 detect_drafting
 list_drafting_views
