@@ -114,6 +114,38 @@ class TestFailureClasses:
     def test_missing_file_fails(self, tmp_path):
         assert cr.main(["prog", str(tmp_path / "absent.cs")]) == 1
 
+    def test_manifest_in_catalogue_order_passes(self, tmp_path):
+        lines = ('            { "one", R(() => 0) },\n'
+                 '            { "two", R(() => 0) },')
+        path = write_recipe_file(tmp_path, lines)
+        manifest = tmp_path / "recipe-list.txt"
+        manifest.write_text("one\ntwo\n", encoding="utf-8")
+        assert cr.main(["prog", str(path), str(manifest)]) == 0
+
+    def test_manifest_missing_a_recipe_fails_and_names_it(self, tmp_path, capsys):
+        lines = ('            { "one", R(() => 0) },\n'
+                 '            { "two", R(() => 0) },')
+        path = write_recipe_file(tmp_path, lines)
+        manifest = tmp_path / "recipe-list.txt"
+        manifest.write_text("one\n", encoding="utf-8")
+        assert cr.main(["prog", str(path), str(manifest)]) == 1
+        assert "missing 1 recipe(s): two" in capsys.readouterr().out
+
+    def test_manifest_in_another_order_is_warning_only(self, tmp_path, capsys):
+        lines = ('            { "one", R(() => 0) },\n'
+                 '            { "two", R(() => 0) },')
+        path = write_recipe_file(tmp_path, lines)
+        manifest = tmp_path / "recipe-list.txt"
+        manifest.write_text("two\none\n", encoding="utf-8")
+        assert cr.main(["prog", str(path), str(manifest)]) == 0
+        out = capsys.readouterr().out
+        assert "[WARN]" in out and "another order" in out
+
+    def test_manifest_not_checked_for_another_catalogue(self, tmp_path):
+        # Without a manifest argument, only the real catalogue is checked against recipe-list.txt.
+        path = write_recipe_file(tmp_path, '            { "only", R(() => 0) },')
+        assert cr.main(["prog", str(path)]) == 0
+
     def test_csharp6_interpolation_is_warning_only(self, tmp_path):
         body = ('            { "interp", RD(() =>'
                 r' part.Export($\"C:\\out.nc1\")) },')

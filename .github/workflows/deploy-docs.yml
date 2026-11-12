@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'docs/**'
+      # The recipe table of the site is built from this generated catalogue.
+      - 'server/data/recipes.md'
 
 permissions:
   contents: read

@@ -1,0 +1,36 @@
+name: DCO
+
+# Every commit of a contributor's pull request carries "Signed-off-by: Name <email>"
+# (Developer Certificate of Origin, see CONTRIBUTING.md). Merge commits, such as the one
+# GitHub's "Update branch" button creates, are skipped. The repository owner's own pull
+# requests are not checked.
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  signoff:
+    if: github.event.pull_request.user.login != github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every commit is signed off
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          missing=$(gh api "repos/$REPO/pulls/$PR/commits?per_page=100" --paginate \
+            --jq '.[] | select((.parents | length) < 2) | select((.commit.message | test("(?m)^Signed-off-by: .+ <.+>")) | not) | .sha[0:7] + "  " + (.commit.message | split("\n")[0])')
+          if [ -n "$missing" ]; then
+            echo "These commits are not signed off:"
+            echo "$missing"
+            echo
+            echo "Sign them off with: git rebase --signoff origin/main && git push --force-with-lease"
+            echo "Then commit with: git commit -s  (see CONTRIBUTING.md, Ground rules)"
+            exit 1
+          fi
+          echo "All commits are signed off."

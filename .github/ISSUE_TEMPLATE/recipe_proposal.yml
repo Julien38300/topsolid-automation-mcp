@@ -1,0 +1,55 @@
+name: Recipe proposal
+description: A C# script that worked for you, to turn into a recipe
+title: "[recipe] "
+labels: [recipe, needs-topsolid-test]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for sharing. Only share code you wrote or have the right to share, built from the public TopSolid help and Automation SDK. Remove customer names, file names and paths from the script and its output. You can also open a pull request directly: see [CONTRIBUTING.md](https://github.com/Julien38300/topsolid-automation-mcp/blob/main/CONTRIBUTING.md#add-a-recipe).
+  - type: input
+    id: name
+    attributes:
+      label: Suggested recipe name
+      description: verb_object, in English. Example, set_views_scale.
+    validations:
+      required: true
+  - type: textarea
+    id: purpose
+    attributes:
+      label: What it does
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: Script
+      description: The body you ran with topsolid_execute_script or topsolid_modify_script (C# 5).
+      render: csharp
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: What does it change?
+      options:
+        - Nothing, it only reads
+        - The model (parameters, operations, geometry...)
+        - PDM only (name, designation, folders, save...)
+        - Files on disk (export)
+    validations:
+      required: true
+  - type: textarea
+    id: tested
+    attributes:
+      label: How you tested it
+      description: TopSolid version, kind of document, what it returned. Paste the output without private names.
+    validations:
+      required: true
+  - type: checkboxes
+    id: rights
+    attributes:
+      label: Rights
+      options:
+        - label: I wrote this script, or have the right to share it under the MIT licence, and it contains no employer or customer data.
+          required: true

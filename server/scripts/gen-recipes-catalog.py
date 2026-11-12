@@ -30,8 +30,10 @@ class Server(object):
     def __init__(self, exe: str):
         env = dict(os.environ)
         env.setdefault("TOPSOLID_MCP_HTTP_PORT", "18519")  # never collide with a running bridge
+        # Absolute: with cwd set, Windows would look for a relative exe path from that directory.
+        exe = os.path.abspath(exe)
         self.proc = subprocess.Popen([exe, "--no-tray"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                     stderr=subprocess.DEVNULL, env=env, cwd=os.path.dirname(os.path.abspath(exe)))
+                                     stderr=subprocess.DEVNULL, env=env, cwd=os.path.dirname(exe))
         self.next_id = 0
         self.call("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                                  "clientInfo": {"name": "gen-recipes-catalog", "version": "1"}})

@@ -1,370 +1,69 @@
 <script setup>
+// Searchable table of the recipes the server ships, built from server/data/recipes.md.
 import { ref, computed } from 'vue'
+import { data as recipes } from './recipes.data.mjs'
 
-const recipes = [
-  // PDM
-  { name: "read_designation", description: "Lit la designation du document actif, c'est-a-dire la description fonctionnelle de la piece ou de l'assemblage (ex: \"Bride de serrage\", \"Support moteur\"). Retourne \"(vide)\" si le champ n'est pas renseigne dans les proprietes PDM.", mode: "READ", category: "PDM", api: "Pdm.GetDescription(pdmId)" },
-  { name: "read_name", description: "Lit le nom unique du document dans l'arborescence projet TopSolid (ex: \"BRD-001\", \"Plaque_base\"). C'est l'identifiant visible dans l'explorateur de projet, distinct de la designation.", mode: "READ", category: "PDM", api: "Pdm.GetName(pdmId)" },
-  { name: "read_reference", description: "Lit la reference du document, aussi appelee part number ou numero de piece. C'est le code utilise pour le suivi en production et l'approvisionnement (ex: \"REF-2024-0042\"). Retourne \"(vide)\" si non renseignee.", mode: "READ", category: "PDM", api: "Pdm.GetPartNumber(pdmId)" },
-  { name: "read_manufacturer", description: "Lit le fabricant ou fournisseur associe au document. Utile pour les pieces achetees ou sous-traitees. Retourne \"(vide)\" si non renseigne.", mode: "READ", category: "PDM", api: "Pdm.GetManufacturer(pdmId)" },
-  { name: "read_pdm_properties", description: "Retourne les 4 proprietes PDM principales d'un seul appel : nom, designation, reference et fabricant. Pratique pour un apercu rapide du document sans faire 4 appels separes.", mode: "READ", category: "PDM", api: "Pdm.Get{Name,Description,PartNumber,Manufacturer}" },
-  { name: "set_designation", description: "Change la designation (description fonctionnelle) du document actif. La sauvegarde PDM est automatique apres modification. Aucune transaction de modelisation necessaire.", mode: "WRITE-PDM", category: "PDM", api: "Pdm.SetDescription — value = texte libre" },
-  { name: "set_name", description: "Renomme le document dans l'arborescence projet. Attention : si d'autres documents referencent ce nom (inclusions, mises en plan), les liens peuvent etre impactes.", mode: "WRITE-PDM", category: "PDM", api: "Pdm.SetName — value = nouveau nom" },
-  { name: "set_reference", description: "Change la reference / part number du document. Sauvegarde PDM automatique. Utile pour affecter ou corriger un code article en serie.", mode: "WRITE-PDM", category: "PDM", api: "Pdm.SetPartNumber — value = nouvelle reference" },
-  { name: "set_manufacturer", description: "Change le fabricant ou fournisseur associe au document. Sauvegarde PDM automatique.", mode: "WRITE-PDM", category: "PDM", api: "Pdm.SetManufacturer — value = nom fabricant" },
-  // Navigation
-  { name: "read_current_project", description: "Retourne le nom du projet actif dans TopSolid. C'est la premiere verification a faire pour s'assurer qu'un projet est bien ouvert avant toute operation.", mode: "READ", category: "Navigation", api: "Pdm.GetCurrentProject → GetName" },
-  { name: "read_project_contents", description: "Parcourt recursivement toute l'arborescence du projet : dossiers, sous-dossiers et documents a chaque niveau. Affiche l'indentation par profondeur et le total de dossiers et documents trouves.", mode: "READ", category: "Navigation", api: "Pdm.GetConstituents (recursif)" },
-  { name: "search_document", description: "Recherche un document par nom dans le projet (match partiel, type CONTAINS insensible a la casse). Retourne nom, designation et reference de chaque resultat. Utile quand on connait un bout du nom.", mode: "READ", category: "Navigation", api: "Pdm.SearchDocumentByName — value = texte a chercher" },
-  { name: "search_folder", description: "Recherche un dossier par nom dans le projet (match partiel). Retourne le chemin et le contenu du dossier trouve.", mode: "READ", category: "Navigation", api: "Pdm.GetConstituents + filtre — value = texte" },
-  { name: "open_document_by_name", description: "Cherche un document par nom dans le projet puis l'ouvre dans l'editeur TopSolid. Le document devient le document actif pour toutes les operations suivantes. Indispensable avant de lire parametres, shapes, etc.", mode: "READ", category: "Navigation", api: "Documents.Open(ref docId) — value = nom document" },
-  { name: "list_project_documents", description: "Liste TOUS les documents du projet avec pour chacun : nom, designation et reference. Format tableau complet. Utile pour avoir une vue d'ensemble du contenu du projet.", mode: "READ", category: "Navigation", api: "Pdm.GetConstituents iteration complete" },
-  { name: "list_folder_documents", description: "Liste les documents contenus dans un dossier specifique du projet. Utile pour explorer un sous-ensemble sans tout lister.", mode: "READ", category: "Navigation", api: "Pdm.GetConstituents(folderId) — value = nom du dossier" },
-  { name: "summarize_project", description: "Resume synthetique du projet : nombre de documents par type (.TopPrt, .TopAsm, .TopDft...), nombre de dossiers, structure globale. Vue macro avant de plonger dans le detail.", mode: "READ", category: "Navigation", api: "Comptage par Pdm.GetType" },
-  { name: "count_documents_by_type", description: "Compte les documents du projet groupes par type d'extension : .TopPrt (pieces), .TopAsm (assemblages), .TopDft (mises en plan), etc. Retourne un tableau type → quantite.", mode: "READ", category: "Navigation", api: "Pdm.GetType sur chaque doc" },
-  { name: "search_parts_by_material", description: "Liste toutes les pieces du projet avec leur materiau et leur masse. Filtre optionnel sur le nom du materiau (ex: \"Acier\"). Utile pour verifier les affectations materiaux ou calculer la masse totale par materiau.", mode: "READ", category: "Navigation", api: "Parameters $Mass + materiau — value = filtre optionnel" },
-  { name: "read_where_used", description: "Where-used : recherche tous les documents du projet qui referencent le document courant. Trouve les assemblages parents, les mises en plan associees. Indispensable avant de modifier une piece partagee.", mode: "READ", category: "Navigation", api: "Pdm.SearchMajorRevisionBackReferences" },
-  { name: "read_revision_history", description: "Affiche la timeline complete des revisions du document : revisions majeures et mineures avec auteur, date et commentaire. Permet de tracer l'evolution du document dans le temps.", mode: "READ", category: "Navigation", api: "Pdm.GetMajorRevisions + GetMinorRevisions" },
-  { name: "find_modified_documents", description: "Liste les documents du projet qui ont ete modifies mais pas encore sauvegardes (flag dirty). Utile avant un export batch ou une fermeture de projet pour eviter de perdre des modifications.", mode: "READ", category: "Navigation", api: "Documents.IsDirty en boucle" },
-  // Parametres
-  { name: "read_parameters", description: "Liste tous les parametres du document actif avec pour chacun : nom, valeur et type (Real, Integer, Boolean, Text). Les valeurs reelles sont en SI (metres, radians). C'est la vue complete de l'arbre parametrique.", mode: "READ", category: "Parametres", api: "Parameters.GetParameters + GetParameterType + Get*Value" },
-  { name: "read_real_parameter", description: "Lit la valeur d'un parametre reel par son nom (match partiel insensible a la casse). La valeur retournee est en SI : 0.050000 signifie 50 mm, 0.785398 signifie 45 degres.", mode: "READ", category: "Parametres", api: "Parameters.GetRealValue — value = nom du parametre" },
-  { name: "read_text_parameter", description: "Lit la valeur d'un parametre texte par son nom (match partiel). Les parametres texte servent souvent pour les references, noms de materiaux ou commentaires embarques dans le modele.", mode: "READ", category: "Parametres", api: "Parameters.GetTextValue — value = nom du parametre" },
-  { name: "set_real_parameter", description: "Modifie la valeur d'un parametre reel. La valeur DOIT etre en unites SI : les longueurs en metres (50 mm = 0.05), les angles en radians (45° = 0.785398). TopSolid recalcule automatiquement le modele apres modification.", mode: "WRITE-PDM", category: "Parametres", api: "Parameters.SetRealValue — value = nom:valeurSI (ex: Longueur:0.15)" },
-  { name: "set_text_parameter", description: "Modifie la valeur d'un parametre texte. Le format est nom:valeur, separes par deux-points. Le match du nom est partiel et insensible a la casse.", mode: "WRITE-PDM", category: "Parametres", api: "Parameters.SetTextValue — value = nom:valeur" },
-  { name: "compare_parameters", description: "Compare les parametres du document actif avec ceux d'un autre document du projet. Affiche les differences de valeur (A vs B), les parametres presents uniquement dans l'un ou l'autre. Ideal pour comparer deux variantes d'une piece.", mode: "READ", category: "Comparaison", api: "Diff par nom de parametre — value = nom autre document" },
-  // Physique
-  { name: "read_mass_volume", description: "Retourne la masse (kg), le volume (affiche en mm³) et la surface (affiche en mm²) du document actif depuis les proprietes systeme TopSolid. Necessite qu'un materiau soit affecte pour que la masse soit calculee.", mode: "READ", category: "Physique", api: "Parameters systeme $Mass, $Volume, $Surface Area" },
-  { name: "assembly_mass_report", description: "Rapport de masse pour un assemblage complet : masse totale (kg), volume total, surface totale, et decompte des pieces. Donne une vue globale du poids de l'assemblage. Necessite un materiau sur chaque piece.", mode: "READ", category: "Physique", api: "GetParts + proprietes systeme agreges" },
-  { name: "read_material_density", description: "Calcule la densite du materiau (kg/m³) a partir du rapport masse/volume des proprietes systeme. Utile pour verifier que le bon materiau est affecte (acier ~7800, alu ~2700, plastique ~1200).", mode: "READ", category: "Physique", api: "masse / volume depuis params systeme" },
-  { name: "read_material", description: "Retourne le nom du materiau affecte a la piece et sa densite calculee. Si aucun materiau n'est affecte, la masse sera nulle.", mode: "READ", category: "Physique", api: "Parameters systeme $Mass + $Volume" },
-  { name: "read_part_dimensions", description: "Lit les dimensions principales de la piece depuis les proprietes systeme : Height (hauteur), Width (largeur), Length (longueur) et Box Size en mm. Ce sont les dimensions de la boite englobante orientee.", mode: "READ", category: "Physique", api: "Parameters systeme $Height, $Width, $Length, $Box Size" },
-  { name: "read_bounding_box", description: "Retourne la boite englobante du modele : coordonnees min/max en X, Y, Z (en mm) plus les dimensions calculees Longueur × largeur × hauteur.", mode: "READ", category: "Physique", api: "Parameters systeme bounding box" },
-  { name: "read_inertia_moments", description: "Lit les moments principaux d'inertie en X, Y et Z depuis les proprietes systeme. Utilise en calcul de resistance des materiaux et dimensionnement mecanique.", mode: "READ", category: "Physique", api: "Parameters systeme $Principal Moment of Inertia X/Y/Z" },
-  // Geometrie
-  { name: "read_3d_points", description: "Liste tous les points 3D de construction du document avec leurs coordonnees X, Y, Z converties en mm. Les points 3D servent de references geometriques pour les contraintes et les assemblages.", mode: "READ", category: "Geometrie", api: "Geometries3D.GetPoints → GetPointGeometry (×1000)" },
-  { name: "read_3d_frames", description: "Liste les reperes 3D (frames/systemes de coordonnees) du document par nom. Les reperes definissent des systemes de reference locaux utilises pour le positionnement dans les assemblages.", mode: "READ", category: "Geometrie", api: "Geometries3D.GetFrames" },
-  { name: "list_sketches", description: "Liste les esquisses 2D (sketches) du document par nom. Les esquisses sont les profils de base utilises par les operations d'extrusion, revolution, balayage, etc.", mode: "READ", category: "Geometrie", api: "Sketches2D.GetSketches" },
-  { name: "create_revolved_part", description: "Creates a saved Part from a closed polygonal radial/axial profile in millimeters, revolved around the absolute Y axis. The profile is automatically closed; the angle defaults to 360 degrees.", mode: "WRITE", category: "Geometrie", api: "Sketches2D.CreateSketchIn3D + Shapes.CreateRevolvedShape" },
-  { name: "revolve_active_part", description: "Adds a revolved solid to the active empty Part from a polygonal radial/axial profile in millimeters. Refuses to modify a Part that already contains a solid.", mode: "WRITE", category: "Geometrie", api: "Sketches2D.CreateSketchIn3D + Shapes.CreateRevolvedShape" },
-  { name: "replace_revolved_profile", description: "Replaces the sole revolve in a single-solid Part using an ordered closed profile of line and circular-arc segments. Refuses Parts with additional solid features.", mode: "WRITE", category: "Geometrie", api: "Sketches2D.CreateLineSegment/CreateArcSegment + Shapes.CreateRevolvedShape" },
-  { name: "read_shapes", description: "Liste les shapes (corps solides) du document avec le nombre de faces de chaque shape. Un document peut contenir plusieurs shapes (multi-corps). Les faces sont les surfaces individuelles du solide.", mode: "READ", category: "Geometrie", api: "Shapes.GetShapes → GetFaceCount" },
-  { name: "read_operations", description: "Affiche l'arbre de construction complet : liste de toutes les operations (features) avec nom et type (Extrusion, Revolution, Pocket, Fillet, Chamfer, Pattern, etc.). C'est l'historique de modelisation de la piece.", mode: "READ", category: "Geometrie", api: "Operations.GetOperations → Elements.GetTypeFullName" },
-  // Attributs
-  { name: "attr_read_all", description: "Vue complete des attributs visuels de tous les elements : couleur RGB, transparence (0-1), calque (layer) affecte, et visibilite. Donne un apercu global de l'apparence de la piece.", mode: "READ", category: "Attributs", api: "Elements.GetColor/Transparency + Layers.GetLayer" },
-  { name: "attr_read_color", description: "Lit la couleur RGB de chaque shape du document. Retourne \"pas de couleur\" si la couleur est heritee du materiau (comportement par defaut TopSolid).", mode: "READ", category: "Attributs", api: "Elements.HasColor → GetColor" },
-  { name: "attr_read_face_colors", description: "Lit les couleurs face par face de chaque shape. Utile quand un shape a des faces colorees individuellement (peinture selective, zones fonctionnelles).", mode: "READ", category: "Attributs", api: "Shapes.GetFaces → Elements.GetColor par face" },
-  { name: "attr_set_color", description: "Change la couleur d'un shape. Si le document contient un seul shape, la couleur est appliquee directement. Si plusieurs shapes, TopSolid ouvre une boite de selection pour que l'utilisateur pointe le shape voulu.", mode: "WRITE-PDM", category: "Attributs", api: "Elements.SetColor — value = R,G,B (ex: 255,0,0 pour rouge)" },
-  { name: "attr_set_color_all", description: "Change la couleur de TOUS les elements du document d'un coup, sans selection. Applique la meme couleur RGB a chaque shape dont la couleur est modifiable.", mode: "WRITE-PDM", category: "Attributs", api: "Elements.SetColor en boucle — value = R,G,B" },
-  { name: "attr_replace_color", description: "Recherche et remplace : trouve tous les elements ayant une couleur source et les passe a une couleur cible. Ex: remplacer tout le vert (0,128,0) par du rouge (255,0,0) en un seul appel.", mode: "WRITE-PDM", category: "Attributs", api: "Filtre couleur → SetColor — value = R1,G1,B1:R2,G2,B2" },
-  { name: "attr_read_transparency", description: "Lit le niveau de transparence de chaque shape : 0.0 = totalement opaque, 1.0 = totalement invisible. Les shapes sans transparence explicite sont opaques par defaut.", mode: "READ", category: "Attributs", api: "Elements.HasTransparency → GetTransparency" },
-  { name: "attr_set_transparency", description: "Change la transparence d'un shape. Si plusieurs shapes, TopSolid demande une selection interactive. Valeur entre 0.0 (opaque) et 1.0 (invisible). Pratique pour voir l'interieur d'un assemblage.", mode: "WRITE-PDM", category: "Attributs", api: "Elements.SetTransparency — value = 0.0 a 1.0" },
-  { name: "attr_list_layers", description: "Liste les calques (layers) definis dans le document, par nom. Les calques TopSolid permettent d'organiser et de masquer/afficher des groupes d'elements.", mode: "READ", category: "Attributs", api: "Layers.GetLayers" },
-  { name: "attr_assign_layer", description: "Deplace un element (shape, esquisse...) vers un calque existant. Match par nom partiel sur l'element et le calque.", mode: "WRITE-PDM", category: "Attributs", api: "Layers.SetLayer — value = nom_element:nom_calque" },
-  // Selection
-  { name: "select_shape", description: "Ouvre une boite de dialogue TopSolid demandant a l'utilisateur de cliquer un corps solide (shape) a l'ecran. Retourne le nom du shape et son nombre de faces. Utile quand l'IA ne peut pas determiner automatiquement quel element traiter.", mode: "READ", category: "Selection", api: "User.AskShape" },
-  { name: "select_face", description: "Demande a l'utilisateur de cliquer une face dans la vue 3D. Retourne le shape parent et l'index de la face selectionnee. Utilise pour les operations face-specifiques (couleur, usinage).", mode: "READ", category: "Selection", api: "User.AskFace" },
-  { name: "select_3d_point", description: "Demande a l'utilisateur de cliquer un point dans l'espace 3D de TopSolid. Retourne les coordonnees X, Y, Z en mm. Utile pour definir une position, un point de reference ou mesurer une distance.", mode: "READ", category: "Selection", api: "User.AskPoint3D" },
-  // Assemblage
-  { name: "detect_assembly", description: "Verifie si le document courant est un assemblage TopSolid. Si oui, liste toutes les pieces (parts) contenues. Premiere etape avant d'explorer la structure d'un assemblage.", mode: "READ", category: "Assemblage", api: "Assemblies.IsAssembly → GetParts" },
-  { name: "list_inclusions", description: "Liste les inclusions de l'assemblage : chaque inclusion est une instance d'une piece (document de definition). Montre la relation inclusion → piece source. Permet de comprendre la structure de l'assemblage.", mode: "READ", category: "Assemblage", api: "IsInclusion → GetInclusionDefinitionDocument" },
-  { name: "read_occurrences", description: "Liste les occurrences visibles de l'assemblage avec leur document de definition. Les occurrences sont les representations dans l'arbre, les inclusions sont les operations sous-jacentes.", mode: "READ", category: "Assemblage", api: "Assemblies.GetOccurrences → GetOccurrenceDefinitionDocument" },
-  { name: "count_assembly_parts", description: "Compte les pieces groupees par type (reference unique) avec quantites. Ex: \"Vis M8×30 : 4, Plaque support : 2, Equerre : 1 → Total 7 pieces\". Vision nomenclature simplifiee.", mode: "READ", category: "Assemblage", api: "GetParts groupe par GetInclusionDefinitionDocument" },
-  { name: "rename_occurrence", description: "Renomme une occurrence dans l'assemblage. Le match sur l'ancien nom est partiel et insensible a la casse. Utile pour donner des noms significatifs aux instances (\"Vis_gauche\", \"Plaque_dessus\").", mode: "WRITE-PDM", category: "Assemblage", api: "Entities.SetFunctionOccurrenceName — value = ancien:nouveau" },
-  // Famille
-  { name: "detect_family", description: "Verifie si le document est une famille TopSolid. Indique si elle est explicite (catalogue avec codes predetermine) ou implicite (parametrique, les variantes se creent a la volee). Les familles sont le mecanisme de bibliotheque standard de TopSolid.", mode: "READ", category: "Famille", api: "Families.IsFamily + IsExplicit" },
-  { name: "read_family_codes", description: "Liste les codes (variantes) d'une famille explicite. Chaque code correspond a une configuration du catalogue. Ex: pour une famille de vis, les codes sont M6×20, M8×30, M10×40, etc.", mode: "READ", category: "Famille", api: "Families.GetCodes" },
-  { name: "check_family_drivers", description: "Verifie que les parametres drivers de la famille (ceux qui pilotent le catalogue) ont une designation renseignee. Les drivers sans designation rendent le catalogue moins lisible. Liste ceux a corriger.", mode: "READ", category: "Famille", api: "Families.GetCatalogColumnParameters → GetDescription" },
-  { name: "fix_family_drivers", description: "Genere automatiquement une designation pour les drivers qui n'en ont pas, en deduisant du nom du parametre : decoupe le CamelCase en mots, remplace les underscores par des espaces, met une majuscule.", mode: "WRITE-PDM", category: "Famille", api: "Elements.SetDescription auto-genere depuis nom" },
-  { name: "batch_check_family_drivers", description: "Audit les drivers de TOUTES les familles du projet d'un coup. Detecte les drivers sans designation sur chaque famille. Rapport global pour corriger en serie.", mode: "READ", category: "Famille", api: "IsFamily → GetCatalogColumnParameters en boucle" },
-  // Export
-  { name: "export_step", description: "Exporte le document actif en format STEP (AP214), le format universel d'echange entre logiciels CAO (Catia, SolidWorks, NX...). Retourne le chemin du fichier cree. Le chemin est optionnel (defaut = dossier temp).", mode: "WRITE-DISK", category: "Export", api: "Documents.Export STEP — value = chemin (optionnel)" },
-  { name: "export_dxf", description: "Exporte en DXF (format AutoCAD). Principalement utilise pour les mises en plan 2D, les profils de decoupe laser ou les plans d'atelier. Compatible avec tous les logiciels 2D.", mode: "WRITE-DISK", category: "Export", api: "Documents.Export DXF — value = chemin (optionnel)" },
-  { name: "export_pdf", description: "Exporte en PDF. Utilise principalement pour les mises en plan (plans de fabrication, plans d'ensemble). Genere un document lisible sans logiciel CAO.", mode: "WRITE-DISK", category: "Export", api: "Documents.Export PDF — value = chemin (optionnel)" },
-  { name: "export_stl", description: "Exporte en STL (maillage de triangles). Format standard pour l'impression 3D, le prototypage rapide et la visualisation web. Converti la geometrie exacte en facettes triangulaires.", mode: "WRITE-DISK", category: "Export", api: "Documents.Export STL — value = chemin (optionnel)" },
-  { name: "export_iges", description: "Exporte en IGES, format historique d'echange CAO encore utilise dans l'aeronautique et l'automobile. Moins precis que STEP mais plus largement supporte par les anciens systemes.", mode: "WRITE-DISK", category: "Export", api: "Documents.Export IGES — value = chemin (optionnel)" },
-  { name: "list_exporters", description: "Liste tous les formats d'export disponibles dans l'installation TopSolid courante. La liste depend des modules installes et des licences.", mode: "READ", category: "Export", api: "Documents.GetExporterNames" },
-  { name: "export_bom_csv", description: "Exporte le contenu de la nomenclature (BOM) du document en format texte avec colonnes separees par tabulation. Permet d'importer la BOM dans Excel ou un ERP.", mode: "READ", category: "Export", api: "Nomenclatures lecture → format texte" },
-  { name: "batch_export_step", description: "Exporte TOUTES les pieces et assemblages du projet en STEP, un fichier par document, dans un dossier de destination. Utile pour livrer un projet complet a un partenaire utilisant un autre logiciel CAO.", mode: "WRITE-DISK", category: "Export", api: "Documents.Export en boucle — value = dossier destination" },
-  // Audit
-  { name: "audit_part", description: "Audit complet de la piece : proprietes PDM (nom, designation, reference, fabricant), nombre et liste des parametres, shapes avec nombre de faces, masse, volume, surface et materiau. Rapport synthetique en un appel.", mode: "READ", category: "Audit", api: "Pdm + Parameters + Shapes + parametres systeme" },
-  { name: "audit_assembly", description: "Audit complet d'un assemblage : liste des pieces, inclusions, occurrences, masse totale, structure. Equivalent d'une fiche d'identite de l'assemblage.", mode: "READ", category: "Audit", api: "Assemblies.GetParts + GetOccurrences + masse systeme" },
-  { name: "check_part", description: "Check-list qualite pour la piece : designation renseignee ? Reference renseignee ? Materiau affecte ? Retourne OK ou ATTENTION pour chaque critere. A utiliser avant livraison ou archivage.", mode: "READ", category: "Audit", api: "GetDescription + GetPartNumber + presence materiau" },
-  { name: "check_project", description: "Verification qualite a l'echelle du projet entier : liste les pieces sans designation et les pieces sans reference (part number). Detecte les documents incomplets avant une livraison.", mode: "READ", category: "Audit", api: "Iteration complete avec filtres" },
-  { name: "check_missing_materials", description: "Parcourt le projet et liste les pieces qui n'ont pas de materiau affecte (masse = 0 kg). Indispensable avant un calcul de masse d'assemblage ou un export pour simulation.", mode: "READ", category: "Audit", api: "Filtre $Mass == 0 sur tous les docs" },
-  { name: "list_documents_without_reference", description: "Detecte les pieces et assemblages du projet dont le champ reference (part number) est vide. Utile pour l'audit qualite avant mise en production ou archivage.", mode: "READ", category: "Audit", api: "Filtre GetPartNumber vide" },
-  { name: "list_documents_without_designation", description: "Detecte les documents du projet dont la designation (description fonctionnelle) est vide. Une designation manquante rend les nomenclatures et les recherches inutilisables.", mode: "READ", category: "Audit", api: "Filtre GetDescription vide" },
-  { name: "audit_parameter_names", description: "Analyse la syntaxe des noms de parametres du document : detecte les melanges de convention (CamelCase vs snake_case), les doublons proches (ex: \"longueur\" et \"Longueur\"), les caracteres speciaux. Recommandations d'harmonisation.", mode: "READ", category: "Audit", api: "Analyse syntaxique regex des noms" },
-  { name: "batch_audit_parameter_names", description: "Meme audit que auditer_noms_parametres mais sur TOUS les documents du projet. Rapport global des incoherences de nommage a l'echelle du projet.", mode: "READ", category: "Audit", api: "Iteration complete + analyse syntaxique" },
-  { name: "batch_audit_driver_designations", description: "Liste les designations des parametres drivers de toutes les familles du projet pour inspection visuelle. Detecte les fautes d'orthographe, les incoherences de formulation entre familles.", mode: "READ", category: "Audit", api: "GetCatalogColumnParameters → GetDescription sur toutes les familles" },
-  // Mise en plan
-  { name: "detect_drafting", description: "Verifie si le document courant est une mise en plan TopSolid (Drafting). Retourne le nombre de vues, le format papier et les informations de base. Premiere verification avant d'explorer un plan.", mode: "READ", category: "Mise en plan", api: "DraftingDocuments.IsDraftingDocument" },
-  { name: "open_drafting", description: "Cherche automatiquement la mise en plan associee a la piece ou l'assemblage courant en parcourant les back-references PDM (documents de type .TopDft qui referencent le doc actif), puis l'ouvre dans l'editeur.", mode: "READ", category: "Mise en plan", api: "SearchBackReferences filtre .TopDft → Documents.Open" },
-  { name: "list_drafting_views", description: "Liste toutes les vues du plan avec pour chacune : nom, echelle et type (projection, coupe, detail, isometrique...). Les vues sont les representations 2D de la piece/assemblage 3D.", mode: "READ", category: "Mise en plan", api: "DraftingDocuments.GetViews → GetViewScale" },
-  { name: "read_drafting_scale", description: "Lit l'echelle globale du plan et l'echelle individuelle de chaque vue. L'echelle globale definit le ratio par defaut (ex: 1:2), les vues peuvent avoir leur propre echelle.", mode: "READ", category: "Mise en plan", api: "GetDocumentScale + GetViewScale par vue" },
-  { name: "read_drafting_format", description: "Retourne les informations du format papier : taille (A4, A3, A2...), dimensions en mm, marges, orientation (paysage/portrait), nombre de pages.", mode: "READ", category: "Mise en plan", api: "GetSheetSize / Margins / PageCount" },
-  { name: "read_main_projection", description: "Identifie la piece ou l'assemblage 3D source de la mise en plan et les vues principales (face, dessus, droite). Permet de remonter du plan 2D vers le modele 3D.", mode: "READ", category: "Mise en plan", api: "GetProjectionDocument" },
-  // Nomenclature
-  { name: "detect_bom", description: "Verifie si le document contient une nomenclature (BOM - Bill of Materials). Retourne le nombre de lignes. La nomenclature est generalement dans la mise en plan d'un assemblage.", mode: "READ", category: "Nomenclature", api: "Nomenclatures.GetNomenclatures" },
-  { name: "read_bom_columns", description: "Liste les colonnes de la nomenclature : Repere, Designation, Quantite, Reference, Materiau, Masse... La structure depend du modele de nomenclature configure dans TopSolid.", mode: "READ", category: "Nomenclature", api: "Nomenclatures.GetColumns → GetColumnName" },
-  { name: "read_bom_contents", description: "Lit le tableau complet de la nomenclature : toutes les lignes avec toutes les cellules. Format texte tabulaire lisible. C'est le contenu brut de la BOM tel qu'il apparait dans le plan.", mode: "READ", category: "Nomenclature", api: "GetRows → GetCellValue par colonne" },
-  { name: "count_bom_rows", description: "Compte les lignes actives et inactives de la nomenclature. Les lignes inactives sont masquees dans le plan mais toujours presentes dans les donnees.", mode: "READ", category: "Nomenclature", api: "GetRows + IsRowActive" },
-  // Depliage
-  { name: "detect_unfolding", description: "Verifie si le document contient un depliage tolerie (flat pattern). Le depliage est le contour plat obtenu en \"deroulant\" une piece en tole. Liste les plis detectes. Specifique a la tolerie TopSolid.", mode: "READ", category: "Depliage", api: "Detection operations FlatPattern" },
-  { name: "read_bend_features", description: "Liste les plis du depliage tolerie avec pour chacun : angle de pliage (en degres), rayon interieur (en mm) et longueur developpee (en mm). Donnees essentielles pour programmer la plieuse.", mode: "READ", category: "Depliage", api: "Proprietes des operations de pliage" },
-  { name: "read_unfolding_dimensions", description: "Retourne les dimensions du contour deplie (flan plat) : longueur et largeur en mm. Ce sont les dimensions de la tole brute a decouper avant pliage.", mode: "READ", category: "Depliage", api: "Parametres systeme de depliage" },
-  // Document
-  { name: "document_type", description: "Retourne le type du document actif : piece (.TopPrt), assemblage (.TopAsm), mise en plan (.TopDft), etc. Detecte aussi si c'est une famille ou une mise a plat. Premiere chose a verifier pour adapter le traitement.", mode: "READ", category: "Document", api: "IsAssembly + IsDraftingDocument + IsFamily + GetType" },
-  { name: "save_document", description: "Sauvegarde le document actif dans le PDM TopSolid. Equivalent du Ctrl+S dans l'interface. A faire apres des modifications de parametres ou de proprietes.", mode: "WRITE-PDM", category: "Document", api: "Pdm.Save(pdmId, true)" },
-  { name: "rebuild_document", description: "Force la reconstruction complete du modele : recalcul de toutes les operations de l'arbre de construction dans l'ordre. Utile apres modification de parametres pour voir le resultat final.", mode: "WRITE-PDM", category: "Document", api: "Documents.Rebuild(docId)" },
-  { name: "save_all_project", description: "Sauvegarde tous les documents du projet en une seule passe. Equivalent du \"Sauvegarder tout\" de TopSolid. A utiliser apres des modifications batch ou avant de fermer.", mode: "WRITE-PDM", category: "Document", api: "Pdm.Save en boucle sur tous les docs" },
-  { name: "read_user_property", description: "Lit une propriete utilisateur personnalisee (texte) du document. Ces proprietes sont definies par l'entreprise dans le modele PDM (ex: \"Indice\", \"Traitement\", \"Validation\").", mode: "READ", category: "Document", api: "Pdm.GetUserPropertyValue — value = nom de la propriete" },
-  { name: "set_user_property", description: "Modifie une propriete utilisateur personnalisee. Le format est nom:valeur separes par deux-points. La propriete doit exister dans le modele PDM.", mode: "WRITE-PDM", category: "Document", api: "Pdm.SetUserPropertyValue — value = nom:valeur" },
-  { name: "invoke_command", description: "Execute une commande du menu TopSolid par son nom interne. Attention : certaines commandes ouvrent des dialogues interactifs. A utiliser quand aucune recette dediee n'existe pour l'action souhaitee.", mode: "WRITE-PDM", category: "Document", api: "Application.InvokeCommand — value = nom commande" },
-  // Comparaison
-  { name: "compare_revisions", description: "Compare les parametres de la revision courante avec la revision precedente du meme document. Montre les valeurs qui ont change entre les deux revisions. Utile pour tracer les modifications.", mode: "READ", category: "Comparaison", api: "Pdm.GetMajorRevisions → diff GetParameters" },
-  { name: "compare_document_operations", description: "Compare l'arbre de construction entre le document courant et un autre document du projet. Montre les operations ajoutees, supprimees ou presentes dans les deux avec des noms differents.", mode: "READ", category: "Comparaison", api: "Operations.GetOperations diff — value = nom autre document" },
-  { name: "compare_document_entities", description: "Compare les entites geometriques (shapes, esquisses, points 3D, reperes 3D) entre deux documents. Montre les differences de quantite par type d'entite.", mode: "READ", category: "Comparaison", api: "Comptage Shapes/Sketches/Points/Frames — value = nom autre doc" },
-  // Batch
-  { name: "copy_parameters_to", description: "Copie les valeurs de parametres du document actif vers un autre document du projet. Le match se fait par nom de parametre. Ignore les parametres systeme ($Mass, $Volume...). Ideal pour propager une modification sur plusieurs pieces similaires.", mode: "WRITE-PDM", category: "Batch", api: "Parameters.Set{Real,Text,Integer,Boolean}Value — value = nom doc cible" },
-  { name: "copy_pdm_properties_to", description: "Copie la designation, la reference et le fabricant du document actif vers un autre document du projet. Utile pour homogeneiser les proprietes entre pieces d'une meme famille ou serie.", mode: "WRITE-PDM", category: "Batch", api: "Pdm.Set{Description,PartNumber,Manufacturer} — value = nom doc cible" },
-  { name: "batch_read_property", description: "Lit une propriete specifique (designation, reference, fabricant ou propriete utilisateur) sur tous les documents du projet. Retourne un tableau nom de document → valeur. Vue globale d'une propriete.", mode: "READ", category: "Batch", api: "Pdm.Get* en boucle — value = nom de la propriete" },
-  { name: "batch_clear_author", description: "Vide le champ Auteur de tous les documents du projet. Utile pour anonymiser les fichiers avant une livraison client ou un transfert de projet.", mode: "WRITE-PDM", category: "Batch", api: "Pdm.SetAuthor(\"\") en boucle" },
-  { name: "clear_document_author", description: "Vide le champ Auteur du document courant uniquement.", mode: "WRITE-PDM", category: "Document", api: "Pdm.SetAuthor(pdmId, \"\")" },
-  { name: "batch_check_virtual", description: "Verifie la propriete 'virtuel' (IsVirtualDocument) sur tous les documents du projet. Liste les documents non-virtuels. Un document virtuel n'est pas stocke physiquement sur le serveur.", mode: "READ", category: "Batch", api: "Documents.IsVirtualDocument en boucle" },
-  { name: "batch_enable_virtual", description: "Active le mode virtuel sur tous les documents non-virtuels du projet. Les documents virtuels ne sont pas sauvegardes physiquement — ils existent uniquement en memoire.", mode: "WRITE-PDM", category: "Batch", api: "Documents.SetVirtualDocumentMode(true) en boucle" },
-  { name: "enable_virtual_document", description: "Active le mode virtuel sur le document courant uniquement.", mode: "WRITE-PDM", category: "Document", api: "Documents.SetVirtualDocumentMode(docId, true)" },
-]
+const query = ref('')
+const mode = ref('')
+const modes = ['READ', 'WRITE-PDM', 'WRITE-PDM-NO-TRX', 'WRITE-DISK']
 
-const search = ref('')
-const sortKey = ref('name')
-const sortAsc = ref(true)
-const filterMode = ref('ALL')
-const filterCategory = ref('ALL')
+const fold = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 
-const categories = computed(() => {
-  const cats = [...new Set(recipes.map(r => r.category))].sort()
-  return ['ALL', ...cats]
-})
-
-const modes = ['ALL', 'READ', 'WRITE', 'ASK']
-
-const modeColors = { READ: '#3b82f6', WRITE: '#ef4444', ASK: '#f59e0b' }
-
-const filtered = computed(() => {
-  let list = recipes
-  if (search.value) {
-    const q = search.value.toLowerCase()
-    list = list.filter(r =>
-      r.name.includes(q) || r.description.toLowerCase().includes(q) || r.api.toLowerCase().includes(q)
-    )
-  }
-  if (filterMode.value !== 'ALL') list = list.filter(r => r.mode === filterMode.value)
-  if (filterCategory.value !== 'ALL') list = list.filter(r => r.category === filterCategory.value)
-  list = [...list].sort((a, b) => {
-    const va = a[sortKey.value] || ''
-    const vb = b[sortKey.value] || ''
-    return sortAsc.value ? va.localeCompare(vb) : vb.localeCompare(va)
+const shown = computed(() => {
+  const words = fold(query.value).split(/\s+/).filter(Boolean)
+  return recipes.filter(r => {
+    if (mode.value && r.mode !== mode.value) return false
+    const text = fold(r.name + ' ' + r.description)
+    return words.every(w => text.includes(w))
   })
-  return list
 })
 
-const stats = computed(() => ({
-  total: recipes.length,
-  read: recipes.filter(r => r.mode === 'READ').length,
-  write: recipes.filter(r => r.mode === 'WRITE').length,
-  ask: recipes.filter(r => r.mode === 'ASK').length,
-  shown: filtered.value.length
-}))
-
-function toggleSort(key) {
-  if (sortKey.value === key) sortAsc.value = !sortAsc.value
-  else { sortKey.value = key; sortAsc.value = true }
-}
-
-function sortIcon(key) {
-  if (sortKey.value !== key) return ' \u2195'
-  return sortAsc.value ? ' \u2191' : ' \u2193'
-}
+const count = m => recipes.filter(r => r.mode === m).length
 </script>
 
 <template>
-  <div class="recipe-table-container">
+  <div class="recipe-table">
     <div class="controls">
-      <input v-model="search" type="text" placeholder="Rechercher (nom, description, API)..." class="search-input" />
-      <select v-model="filterCategory" class="filter-select">
-        <option v-for="c in categories" :key="c" :value="c">{{ c === 'ALL' ? 'Toutes categories' : c }}</option>
-      </select>
-      <select v-model="filterMode" class="filter-select">
-        <option v-for="m in modes" :key="m" :value="m">{{ m === 'ALL' ? 'Tous modes' : m }}</option>
-      </select>
+      <input v-model="query" type="search" placeholder="Chercher (nom ou description, ex. : export step)" aria-label="Chercher une recette" />
+      <div class="modes" role="group" aria-label="Filtrer par mode">
+        <button :class="{ on: mode === '' }" @click="mode = ''">Toutes ({{ recipes.length }})</button>
+        <button v-for="m in modes" :key="m" :class="{ on: mode === m }" @click="mode = m">{{ m }} ({{ count(m) }})</button>
+      </div>
     </div>
-
-    <div class="stats-bar">
-      <span class="stat">{{ stats.shown }}/{{ stats.total }} recettes</span>
-      <span class="badge read">{{ stats.read }} READ</span>
-      <span class="badge write">{{ stats.write }} WRITE</span>
-      <span class="badge ask">{{ stats.ask }} ASK</span>
-    </div>
-
-    <div class="table-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th @click="toggleSort('name')" class="sortable">Recette{{ sortIcon('name') }}</th>
-            <th @click="toggleSort('description')" class="sortable">Description{{ sortIcon('description') }}</th>
-            <th @click="toggleSort('api')" class="sortable">API{{ sortIcon('api') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="r in filtered" :key="r.name">
-            <td class="col-name">
-              <code>{{ r.name }}</code>
-              <span class="mode-badge" :style="{ background: modeColors[r.mode] }">{{ r.mode }}</span>
-              <span class="cat-badge">{{ r.category }}</span>
-            </td>
-            <td>{{ r.description }}</td>
-            <td><code class="api-code">{{ r.api }}</code></td>
-          </tr>
-          <tr v-if="filtered.length === 0">
-            <td colspan="3" class="no-results">Aucune recette trouvee</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <p class="summary">{{ shown.length }} recette(s)</p>
+    <table>
+      <thead>
+        <tr><th>Recette</th><th>Mode</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr v-for="r in shown" :key="r.name">
+          <td><code>{{ r.name }}</code></td>
+          <td><span class="mode" :data-mode="r.mode">{{ r.mode }}</span></td>
+          <td>{{ r.description }}</td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 </template>
 
 <style scoped>
-.recipe-table-container {
-  margin: 1rem 0;
+.controls { display: flex; flex-direction: column; gap: 8px; margin: 16px 0 8px; }
+input {
+  width: 100%; padding: 8px 12px; font-size: 14px;
+  border: 1px solid var(--vp-c-divider); border-radius: 6px;
+  background: var(--vp-c-bg-soft); color: var(--vp-c-text-1);
 }
-.controls {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
+.modes { display: flex; flex-wrap: wrap; gap: 6px; }
+button {
+  padding: 4px 10px; font-size: 12px; border-radius: 12px;
+  border: 1px solid var(--vp-c-divider); color: var(--vp-c-text-2); background: transparent; cursor: pointer;
 }
-.search-input {
-  flex: 1;
-  min-width: 200px;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 6px;
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-1);
-  font-size: 0.9rem;
-}
-.search-input:focus {
-  outline: none;
-  border-color: var(--vp-c-brand-1);
-}
-.filter-select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 6px;
-  background: var(--vp-c-bg-soft);
-  color: var(--vp-c-text-1);
-  font-size: 0.9rem;
-  cursor: pointer;
-}
-.stats-bar {
-  display: flex;
-  gap: 0.75rem;
-  align-items: center;
-  margin-bottom: 0.5rem;
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-}
-.stat { font-weight: 600; }
-.badge {
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: white;
-}
-.badge.read { background: #3b82f6; }
-.badge.write { background: #ef4444; }
-.badge.ask { background: #f59e0b; }
-.table-scroll {
-  overflow-x: auto;
-  border: 1px solid var(--vp-c-border);
-  border-radius: 8px;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-  table-layout: fixed;
-}
-col.col-recipe { width: 28%; }
-col.col-desc { width: 40%; }
-col.col-api { width: 32%; }
-thead {
-  background: var(--vp-c-bg-soft);
-  position: sticky;
-  top: 0;
-}
-th {
-  padding: 0.4rem 0.5rem;
-  text-align: left;
-  font-weight: 600;
-  font-size: 0.75rem;
-  border-bottom: 2px solid var(--vp-c-border);
-  white-space: nowrap;
-}
-th.sortable {
-  cursor: pointer;
-  user-select: none;
-}
-th.sortable:hover {
-  color: var(--vp-c-brand-1);
-}
-td {
-  padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid var(--vp-c-border);
-  vertical-align: top;
-  line-height: 1.35;
-}
-tr:hover td {
-  background: var(--vp-c-bg-soft);
-}
-.col-name code {
-  font-size: 0.72rem;
-  padding: 1px 3px;
-  border-radius: 3px;
-  background: var(--vp-c-bg-mute);
-  display: block;
-  margin-bottom: 3px;
-}
-.api-code {
-  font-size: 0.68rem;
-  color: var(--vp-c-text-2);
-  word-break: break-word;
-}
-.cat-badge {
-  display: inline-block;
-  padding: 0px 4px;
-  border-radius: 3px;
-  font-size: 0.62rem;
-  background: var(--vp-c-bg-mute);
-  color: var(--vp-c-text-3);
-  white-space: nowrap;
-}
-.mode-badge {
-  display: inline-block;
-  padding: 0px 5px;
-  border-radius: 8px;
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: white;
-  text-transform: uppercase;
-  margin-right: 3px;
-}
-.no-results {
-  text-align: center;
-  color: var(--vp-c-text-3);
-  padding: 2rem !important;
-}
+button.on { border-color: var(--vp-c-brand-1); color: var(--vp-c-brand-1); }
+.summary { font-size: 13px; color: var(--vp-c-text-2); margin: 4px 0; }
+table { display: table; width: 100%; font-size: 13px; }
+td:first-child { white-space: nowrap; }
+.mode { font-size: 11px; font-weight: 600; white-space: nowrap; }
+.mode[data-mode='READ'] { color: var(--vp-c-green-1); }
+.mode[data-mode='WRITE-PDM'], .mode[data-mode='WRITE-PDM-NO-TRX'] { color: var(--vp-c-yellow-1); }
+.mode[data-mode='WRITE-DISK'] { color: var(--vp-c-indigo-1); }
 </style>

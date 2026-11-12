@@ -1,0 +1,12 @@
+# Blank issues stay enabled: the tray menu's "Report a bug" opens a prefilled issue.
+blank_issues_enabled: true
+contact_links:
+  - name: Question or help
+    url: https://github.com/Julien38300/topsolid-automation-mcp/discussions/categories/q-a
+    about: How to install, connect an AI client, use a tool or a recipe. Ask in Discussions.
+  - name: Show what you built
+    url: https://github.com/Julien38300/topsolid-automation-mcp/discussions/categories/show-and-tell
+    about: A workflow, a client setup, a TopSolid version or OS where it works.
+  - name: Security problem
+    url: https://github.com/Julien38300/topsolid-automation-mcp/security/advisories/new
+    about: Report a vulnerability privately (see SECURITY.md). Do not open a public issue.

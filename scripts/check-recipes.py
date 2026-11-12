@@ -22,11 +22,15 @@ Checks, in order:
    WritePdmNoTransaction (RN) is the declared exception: PDM writes that
    TopSolid refuses to run inside a modification transaction (document
    creation APIs such as IPdm.CreateDocumentWithTemplate).
-5. Recipe bodies use no C# 6 string interpolation. Recipe code is compiled by
+5. server/data/recipe-list.txt, the manifest shipped in the release and read by
+   gen-recipes-catalog.py, lists exactly the catalogue's recipes (another order
+   is only a warning). Checked for the real catalogue, or for a manifest given
+   as second argument.
+6. Recipe bodies use no C# 6 string interpolation. Recipe code is compiled by
    CSharpCodeProvider as C# 5, where $"..." is a syntax error at run time. This
    one is a heuristic, so it is reported as a warning and never blocks.
 
-Checks 1 to 4 are failures. Warnings are printed but do not change the exit code.
+Checks 1 to 5 are failures. Warnings are printed but do not change the exit code.
 Exit code 0 = clean. Non-zero = at least one FAIL; CI and `make check` block.
 """
 from __future__ import annotations
@@ -37,6 +41,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_RECIPE_FILE = ROOT / "server" / "src" / "Tools" / "RecipeTool.cs"
+DEFAULT_RECIPE_LIST = ROOT / "server" / "data" / "recipe-list.txt"
 
 # Start of the catalogue. Everything checked below lives between this declaration
 # and the first factory method definition, which the catalogue is always followed
@@ -124,8 +129,43 @@ def parse_entries(region, offset, source):
     return entries
 
 
+def check_manifest(entries, manifest_file):
+    """(failures, warnings): a recipe missing from the shipped manifest, or listed there without
+    existing, is a failure; the same recipes in another order is only a warning."""
+    if manifest_file is None:
+        return [], []
+    if not manifest_file.is_file():
+        return ["manifest not found: " + str(manifest_file)], []
+    listed = [l.strip() for l in manifest_file.read_text(encoding="utf-8").splitlines() if l.strip()]
+    names = [entry.name for entry in entries]
+    if listed == names:
+        return [], []
+    failures = []
+    warnings = []
+    missing = [n for n in names if n not in listed]
+    extra = [n for n in listed if n not in names]
+    if missing:
+        failures.append(manifest_file.name + " is missing " + str(len(missing)) + " recipe(s): " +
+                        ", ".join(missing[:5]) + ("..." if len(missing) > 5 else "") +
+                        " - add each name on its own line, at its place in RecipeTool.cs.")
+    if extra:
+        failures.append(manifest_file.name + " lists " + str(len(extra)) + " recipe(s) that do not exist: " +
+                        ", ".join(extra[:5]) + ("..." if len(extra) > 5 else ""))
+    if not missing and not extra:
+        first = next(i for i, (a, b) in enumerate(zip(listed, names)) if a != b)
+        warnings.append(manifest_file.name + " lists the recipes in another order than RecipeTool.cs "
+                        "(first difference at line " + str(first + 1) + ": '" + listed[first] +
+                        "' where the catalogue has '" + names[first] + "').")
+    return failures, warnings
+
+
 def main(argv):
     recipe_file = Path(argv[1]) if len(argv) > 1 else DEFAULT_RECIPE_FILE
+    # The manifest is checked for the real catalogue, or when given explicitly.
+    if len(argv) > 2:
+        manifest_file = Path(argv[2])
+    else:
+        manifest_file = DEFAULT_RECIPE_LIST if recipe_file == DEFAULT_RECIPE_FILE else None
     print("Recipe check: " + str(recipe_file))
 
     if not recipe_file.is_file():
@@ -182,7 +222,13 @@ def main(argv):
                 "L" + str(entry.line) + "  '" + entry.name + "' is declared " +
                 entry.mode + " but no TopSolid write call was detected.")
 
-    # 5. C# 6 interpolation in recipe bodies (heuristic, hence a warning).
+    # 5. server/data/recipe-list.txt, the manifest shipped in the release, follows the catalogue.
+    if entries:
+        manifest_failures, manifest_warnings = check_manifest(entries, manifest_file)
+        failures.extend(manifest_failures)
+        warnings.extend(manifest_warnings)
+
+    # 6. C# 6 interpolation in recipe bodies (heuristic, hence a warning).
     for entry in entries:
         if INTERPOLATION.search(entry.body):
             warnings.append(

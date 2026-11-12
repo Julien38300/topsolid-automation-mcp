@@ -17,7 +17,8 @@ export default defineConfig({
       { text: 'Accueil', link: '/' },
       { text: 'Guide', link: '/guide/presentation' },
       { text: 'Reference', link: '/reference/glossaire' },
-      { text: 'Roadmap', link: '/guide/roadmap' }
+      { text: 'Roadmap', link: '/guide/roadmap' },
+      { text: 'Contribuer', link: '/guide/contribuer' }
     ],
 
     sidebar: (() => {
@@ -36,7 +37,8 @@ export default defineConfig({
           items: [
             { text: 'Presentation', link: '/guide/presentation' },
             { text: 'Architecture', link: '/guide/architecture' },
-            { text: 'Roadmap', link: '/guide/roadmap' }
+            { text: 'Roadmap', link: '/guide/roadmap' },
+            { text: 'Contribuer', link: '/guide/contribuer' }
           ]
         },
         {
