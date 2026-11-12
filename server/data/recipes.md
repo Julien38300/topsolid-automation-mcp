@@ -649,6 +649,173 @@ foreach (var c in codes)
 return sb.ToString();
 ```
 
+## read_family_catalog
+Pattern: R
+Description: Reads active family catalog rows (codes), columns (drivers), primitive values and real SI unit metadata. value: {}.
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty || !TopSolidHost.Families.IsFamily(docId)) throw new InvalidOperationException("The active document must be a family.");
+
+var columns = TopSolidHost.Families.GetCatalogColumnParameters(docId);
+Func<ElementId, string> label = p => {
+    string name = TopSolidHost.Elements.GetName(p);
+    return string.IsNullOrEmpty(name) ? TopSolidHost.Elements.GetFriendlyName(p) : name;
+};
+Func<System.Collections.Generic.List<ElementId>, string, ElementId> resolve = (items, name) => {
+    ElementId found = ElementId.Empty; int matches = 0;
+    foreach (var p in items) if (label(p) == name) { found = p; matches++; }
+    if (matches != 1) throw new InvalidOperationException("Expected exactly one parameter with exact selector: " + name);
+    return found;
+};
+
+Func<string, string> quote = s => {
+    var q = new System.Text.StringBuilder().Append((char)34);
+    foreach (char c in s ?? "") {
+        if (c == '\\' || c == (char)34) q.Append('\\').Append(c);
+        else if (char.IsControl(c) || char.IsSurrogate(c)) q.Append("\\u").Append(((int)c).ToString("x4"));
+        else q.Append(c);
+    }
+    return q.Append((char)34).ToString();
+};
+var result = new System.Text.StringBuilder("{").Append(quote("columns")).Append(": [");
+bool first = true;
+foreach (var col in columns) {
+    if (!first) result.Append(','); first = false;
+    var type = TopSolidHost.Parameters.GetParameterType(col);
+    result.Append('{').Append(quote("name")).Append(':').Append(quote(label(col))).Append(',').Append(quote("type")).Append(':').Append(quote(type.ToString()));
+    if (type == ParameterType.Real) { UnitType unit; string symbol; TopSolidHost.Parameters.GetRealUnit(col, out unit, out symbol); result.Append(',').Append(quote("unitType")).Append(':').Append(quote(unit.ToString())).Append(',').Append(quote("unitSymbol")).Append(':').Append(quote(symbol)).Append(',').Append(quote("valueUnit")).Append(':').Append(quote("SI")); }
+    result.Append('}');
+}
+result.Append("],").Append(quote("availableParameters")).Append(": ["); first = true;
+foreach (var p in TopSolidHost.Elements.GetElements(docId)) {
+    if (!TopSolidHost.Elements.GetTypeFullName(p).EndsWith("ParameterEntity", StringComparison.Ordinal)) continue;
+    var type = TopSolidHost.Parameters.GetParameterType(p);
+    if (type != ParameterType.Real && type != ParameterType.Integer && type != ParameterType.Boolean && type != ParameterType.Text && type != ParameterType.Code) continue;
+    if (!first) result.Append(','); first = false;
+    result.Append('{').Append(quote("name")).Append(':').Append(quote(label(p))).Append(',').Append(quote("type")).Append(':').Append(quote(type.ToString())).Append('}');
+}
+result.Append("],").Append(quote("rows")).Append(": ["); first = true;
+foreach (var code in TopSolidHost.Families.GetCodes(docId)) {
+    if (!first) result.Append(','); first = false;
+    var row = TopSolidHost.Families.GetCatalogRow(docId, code);
+    result.Append('{').Append(quote("code")).Append(':').Append(quote(code)).Append(',').Append(quote("cells")).Append(": ["); bool firstCell = true;
+    foreach (var col in columns) {
+        if (!firstCell) result.Append(','); firstCell = false;
+        var type = TopSolidHost.Parameters.GetParameterType(col);
+        result.Append('{').Append(quote("column")).Append(':').Append(quote(label(col))).Append(',').Append(quote("value")).Append(':');
+        if (type == ParameterType.Real) { double n = TopSolidHost.Families.GetCatalogCellRealValue(row, col); if (double.IsNaN(n) || double.IsInfinity(n)) throw new InvalidOperationException("Nonfinite real catalog value."); result.Append(n.ToString("R", System.Globalization.CultureInfo.InvariantCulture)); }
+        else if (type == ParameterType.Integer) result.Append(TopSolidHost.Families.GetCatalogCellIntegerValue(row, col).ToString(System.Globalization.CultureInfo.InvariantCulture));
+        else if (type == ParameterType.Boolean) result.Append(TopSolidHost.Families.GetCatalogCellBooleanValue(row, col) ? "true" : "false");
+        else if (type == ParameterType.Text) result.Append(quote(TopSolidHost.Families.GetCatalogCellTextValue(row, col)));
+        else if (type == ParameterType.Code) result.Append(quote(TopSolidHost.Families.GetCatalogCellCodeValue(row, col)));
+        else result.Append("null,").Append(quote("unsupported")).Append(":true");
+        result.Append('}');
+    }
+    result.Append("]}");
+}
+return result.Append("]}").ToString();
+```
+
+## add_family_catalog_column
+Pattern: RW
+Description: Adds an existing active-family parameter as a catalog driver. JSON value: {"parameter":"Length"}. Exact selector from read_family_catalog availableParameters; primitive types only.
+
+```csharp
+if (docId.IsEmpty || !TopSolidHost.Families.IsFamily(docId)) throw new InvalidOperationException("The active document must be a family.");
+if (TopSolidHost.Families.IsExplicit(docId) || TopSolidHost.Families.IsDerived(docId)) throw new InvalidOperationException("Explicit and derived family editing is unsupported.");
+
+var columns = TopSolidHost.Families.GetCatalogColumnParameters(docId);
+Func<ElementId, string> label = p => {
+    string name = TopSolidHost.Elements.GetName(p);
+    return string.IsNullOrEmpty(name) ? TopSolidHost.Elements.GetFriendlyName(p) : name;
+};
+Func<System.Collections.Generic.List<ElementId>, string, ElementId> resolve = (items, name) => {
+    ElementId found = ElementId.Empty; int matches = 0;
+    foreach (var p in items) if (label(p) == name) { found = p; matches++; }
+    if (matches != 1) throw new InvalidOperationException("Expected exactly one parameter with exact selector: " + name);
+    return found;
+};
+var candidates = new System.Collections.Generic.List<ElementId>();
+foreach (var e in TopSolidHost.Elements.GetElements(docId)) if (TopSolidHost.Elements.GetTypeFullName(e).EndsWith("ParameterEntity", StringComparison.Ordinal)) candidates.Add(e);
+ElementId driver = resolve(candidates, "Length");
+var driverType = TopSolidHost.Parameters.GetParameterType(driver);
+if (driverType != ParameterType.Real && driverType != ParameterType.Integer && driverType != ParameterType.Boolean && driverType != ParameterType.Text && driverType != ParameterType.Code) throw new InvalidOperationException("Unsupported column parameter type.");
+if (columns.Contains(driver)) throw new InvalidOperationException("Column already exists.");
+foreach (var existing in columns) if (label(existing) == label(driver)) throw new InvalidOperationException("Duplicate column name.");
+TopSolidHost.Families.AddCatalogColumn(docId, driver);
+__message = "OK: catalog column added.";
+```
+
+## add_family_catalog_row
+Pattern: RW
+Description: Adds a unique catalog code and optional typed cells atomically. JSON value: {"code":"A","cells":{"Length":{"type":"real","value":0.1}}}. Real values SI.
+
+```csharp
+if (docId.IsEmpty || !TopSolidHost.Families.IsFamily(docId)) throw new InvalidOperationException("The active document must be a family.");
+if (TopSolidHost.Families.IsExplicit(docId) || TopSolidHost.Families.IsDerived(docId)) throw new InvalidOperationException("Explicit and derived family editing is unsupported.");
+
+var columns = TopSolidHost.Families.GetCatalogColumnParameters(docId);
+Func<ElementId, string> label = p => {
+    string name = TopSolidHost.Elements.GetName(p);
+    return string.IsNullOrEmpty(name) ? TopSolidHost.Elements.GetFriendlyName(p) : name;
+};
+Func<System.Collections.Generic.List<ElementId>, string, ElementId> resolve = (items, name) => {
+    ElementId found = ElementId.Empty; int matches = 0;
+    foreach (var p in items) if (label(p) == name) { found = p; matches++; }
+    if (matches != 1) throw new InvalidOperationException("Expected exactly one parameter with exact selector: " + name);
+    return found;
+};
+var codes = TopSolidHost.Families.GetCodes(docId);
+bool exists = false; foreach (var c in codes) if (c == "A") exists = true;
+if (exists) throw new InvalidOperationException("Code already exists.");
+
+if (columns.Count == 0 || TopSolidHost.Parameters.GetParameterType(columns[0]) != ParameterType.Text)
+    throw new InvalidOperationException("Expected a Text identity column at catalog index zero.");
+ElementId codeColumn = columns[0];
+ElementId col0 = resolve(columns, "Length");
+if (col0.Equals(codeColumn)) throw new InvalidOperationException("The Code column is reserved for row identity.");
+if (TopSolidHost.Parameters.GetParameterType(col0) != ParameterType.Real) throw new InvalidOperationException("Parameter type mismatch.");
+ElementId row = TopSolidHost.Families.AddCatalogNewRow(docId);
+TopSolidHost.Families.SetCatalogCellTextValue(row, codeColumn, "A");
+TopSolidHost.Families.SetCatalogCellRealValue(row, col0, 0.1d);
+__message = "OK: catalog row added.";
+```
+
+## set_family_catalog_cell
+Pattern: RW
+Description: Sets one primitive catalog cell by exact row code and column selector from read_family_catalog. JSON value: {"code":"A","column":"Length","type":"real","value":0.2}. Code identity edits refused.
+
+```csharp
+if (docId.IsEmpty || !TopSolidHost.Families.IsFamily(docId)) throw new InvalidOperationException("The active document must be a family.");
+if (TopSolidHost.Families.IsExplicit(docId) || TopSolidHost.Families.IsDerived(docId)) throw new InvalidOperationException("Explicit and derived family editing is unsupported.");
+
+var columns = TopSolidHost.Families.GetCatalogColumnParameters(docId);
+Func<ElementId, string> label = p => {
+    string name = TopSolidHost.Elements.GetName(p);
+    return string.IsNullOrEmpty(name) ? TopSolidHost.Elements.GetFriendlyName(p) : name;
+};
+Func<System.Collections.Generic.List<ElementId>, string, ElementId> resolve = (items, name) => {
+    ElementId found = ElementId.Empty; int matches = 0;
+    foreach (var p in items) if (label(p) == name) { found = p; matches++; }
+    if (matches != 1) throw new InvalidOperationException("Expected exactly one parameter with exact selector: " + name);
+    return found;
+};
+var codes = TopSolidHost.Families.GetCodes(docId);
+bool exists = false; foreach (var c in codes) if (c == "A") exists = true;
+if (!exists) throw new InvalidOperationException("Unknown row code.");
+
+if (columns.Count == 0 || TopSolidHost.Parameters.GetParameterType(columns[0]) != ParameterType.Text)
+    throw new InvalidOperationException("Expected a Text identity column at catalog index zero.");
+ElementId codeColumn = columns[0];
+ElementId col0 = resolve(columns, "Length");
+if (col0.Equals(codeColumn)) throw new InvalidOperationException("The Code column is reserved for row identity.");
+if (TopSolidHost.Parameters.GetParameterType(col0) != ParameterType.Real) throw new InvalidOperationException("Parameter type mismatch.");
+ElementId row = TopSolidHost.Families.GetCatalogRow(docId, "A");
+TopSolidHost.Families.SetCatalogCellRealValue(row, col0, 0.2d);
+__message = "OK: catalog cell updated.";
+```
+
 ## open_drafting
 Pattern: R
 Description: Finds and opens the drafting associated with the current part/assembly via PDM back-references

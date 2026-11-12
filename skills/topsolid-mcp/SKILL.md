@@ -1,7 +1,7 @@
 ---
 name: topsolid-mcp
 description: Pilote TopSolid via MCP. Utilise ce skill pour TOUTE question TopSolid (etat, designation, parametres, export, esquisses, assemblages, couleurs, transparence, calques, attributs, familles, audit, masse, dimensions, selection, cone, tore, usinage, cam).
-version: 5.9.2
+version: 5.10.0
 metadata:
   hermes:
     tags: [topsolid, cao, cad, pdm, mcp, automation, extruded-bar, sheet-metal, xliff, localization]
@@ -12,6 +12,7 @@ metadata:
 
 ## CHANGELOG
 
+- **v5.10.0 (2026-11-12)** — Recettes de catalogue famille : lecture, ajout de colonne, ajout de ligne et modification de cellule typee. Necessite le serveur **v1.8.20 ou ulterieur** ; mettre ce skill a jour seul ne rend pas ces recettes disponibles dans un ancien serveur.
 - **v5.9.2 (2026-11-11)** — **Interface bilingue FR/EN (issue GitHub #21, `v1.8.19`)** : toute l'UI serveur (menus tray + tooltip, dialogues clé API / mise à jour / paramètres / gestion des instances, installateur `Installer_TopSolidMCP.bat`, `update.ps1`) est localisée via le noyau statique **`server/src/Utils/L10n.cs`** : `L10n.T(key)` résout dictionnaires EN (source) + FR avec **repli anglais systématique** (clé FR manquante → EN → clé brute, jamais de crash UI), placeholders `{0}` via `string.Format`. La langue suit la **langue d'affichage Windows** (`CultureInfo.CurrentUICulture.Name` en `fr*` → FR, sinon EN — un format régional français avec UI en anglais reste EN, NL/DE → EN). Ordre de résolution : override tests → **`TOPSOLID_MCP_LANG`** (`fr`/`en`) → `settings.json` `"language"` (`auto`/`fr`/`en`, injecté par `Program.cs` via `L10n.SetConfiguredLanguage`) → détection culture. Sélecteur **`Langue : Automatique / Français / English`** dans les *Paramètres du serveur MCP* (`TraySettings.SaveLanguage`, appliqué au redémarrage ; l'installateur détecte via `powershell -Command "if ([CultureInfo]::CurrentUICulture.Name -like 'fr*')..."`, `update.ps1` via une fonction `Msg <en> <fr>`). Tests : 16 `L10nTests.cs` + 4 `TraySettingsInstanceTests.cs` (245 verts au total sur les 3 suites). Les squelettes d'issue GitHub générés par le tray restent volontairement en FR (destinataire = mainteneur FR, hors périmètre #21).
 - **v5.9.1 (2026-11-02)** — **Verrouillage des invariants XLIFF 2.0 TopSolid & timeouts longs (`v1.8.14`)** : (1) A la connexion (`TopSolidConnector.ConnectInternal`), `IContextChannel.OperationTimeout` est etendu a **30 minutes** sur les canaux WCF `pdm`, `documents` et `application` (evitant le passage en `Faulted` au bout des 10 min par defaut lors d'un `ExportLocalizations` / `ImportDictionnaries` de 15 min sur un gros projet), et `ScriptExecutor` passe automatiquement le timeout d'execution a **1800 s** pour tout script appelant `ExportLocalizations`, `ImportDictionnaries` ou `ImportLocalizations`. (2) Documentation des **3 invariants du lecteur `PdmDictionaryDocument` TopSolid** : passer obligatoirement `<segment state="new">` a **`<segment state="signed-off">`** (sinon `<target>` est ignore a l'import), conserver a l'identique 100 % des jetons de parametres entre crochets `[param]` (`isparametrizedtext="1"`), et ignorer les unites obsoletes en commentaires `<!--<unit ...>-->` via `scripts/xliff_workflow.py` du skill `topsolid-translation`.
 - **v5.9.0 (2026-11-02)** — Catalogue passe a **216 recettes** (`108 R` + `100 RW` + `8 RD` dans `server/src/Tools/RecipeTool.cs`) : ajout du workflow complet de **Traduction / Localisation globale de projet via `.xliff`** (`export_project_xliff` en `RD` et `import_project_xliff` en `RW`) et enrichissement de `topsolid_api_help` (synonymes FR/EN `traduction`, `traduire`, `translation`, `xliff`, `localisation`, `dictionnaire`, `dictionary`, `topdic` pointant vers `IPdm.ExportLocalizations` / `ImportLocalizations` / `ImportDictionnaries` avec `UsageTip` complet). Documente l'export recursif sur le `PdmObjectId` du projet, l'interdiction d'utiliser `IPdm.ExportDictionaries` (`FaultException: Sequence contains no matching element`), la troncature du nom de fichier `.xliff` au dernier point `.` par `AnalyzeLocalizationFileName`, et le piege du dialogue modal `Repair family` lorsque le projet contient une famille en etat `Design` avec des instances obsoletes.
@@ -300,6 +301,14 @@ User: "non, laisse tomber"
 |---|---|---|
 | c'est une famille? | detect_family | |
 | codes de la famille | read_family_codes | |
+| lire le catalogue famille | read_family_catalog | vide ou `{}` |
+| ajouter une colonne existante | add_family_catalog_column | `{"parameter":"D <71>"}` |
+| ajouter une ligne/code | add_family_catalog_row | `{"code":"A","cells":{"D <71>":{"type":"real","value":0.1}}}` |
+| modifier une cellule | set_family_catalog_cell | `{"code":"A","column":"D <71>","type":"real","value":0.2}` |
+
+**Catalogue implicite (serveur v1.8.20+) :** les lignes sont les codes de variantes ; les colonnes sont les pilotes/parametres de la famille. Le code de ligne n'est pas la propriete PDM Code du document, ni un parametre systeme nomme `Code`. Une famille implicite sans code catalogue n'est pas invalide pour cette seule raison.
+
+Lire d'abord `read_family_catalog` : recopier le champ `name` de `columns` ou `availableParameters` (nom interne si renseigne, sinon nom convivial exact avec suffixe `<id>`). `D <71>` / `L <70>` sont illustratifs : les identifiants varient. Les pilotes de famille peuvent etre absents de `Parameters.GetParameters` ; la recette les decouvre via `Elements.GetElements`. La premiere colonne du catalogue porte l'identite de ligne (texte dans le cas natif qualifie), pas necessairement le type `ParameterType.Code` ; elle est reservee et non modifiable par la recette de cellule. L'ajout de colonne utilise un parametre deja existant dans la famille ; il ne cree pas de pilote. Les valeurs supportees sont `real` (unites SI : 0.1 m = 100 mm, angles en radians), `integer`, `boolean`, `text`, `code`. Transmettre des nombres/booleens JSON, pas des textes formates. Les trois recettes d'ecriture refusent les familles explicites/derivees et le mode lecture seule ; elles ne suppriment rien et ne renomment pas les codes. Les cellules famille/couleur/enumeration ne sont pas modifiables. Les exemples de la table sont les objets JSON a transmettre dans `value`.
 
 ### Export
 | Demande | recipe | value |

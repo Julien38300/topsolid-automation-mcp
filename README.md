@@ -14,7 +14,7 @@
 An MCP server written in C# (.NET Framework 4.8) that exposes the TopSolid 7 Automation API as a set of 14 tools any MCP client can call. On top of the raw API, it ships with:
 
 
-- **219 pre-built recipes** — curated C# snippets for the most common CAD/PDM operations (create and replace revolved profiles, create a document from a named template, read mass/volume, set designation, import any CAD file, export to any format with a guard against empty documents, activate BOM rows, detect drafting scale, ...), browsable with `topsolid_list_recipes`.
+- **223 pre-built recipes** — curated C# snippets for the most common CAD/PDM operations (create and replace revolved profiles, create a document from a named template, read mass/volume, set designation, read and edit implicit family catalogs, import any CAD file, export to any format with a guard against empty documents, activate BOM rows, detect drafting scale, ...), browsable with `topsolid_list_recipes`.
 - A **4119-edge type graph** of the API (1728 methods, 242 types), queryable by Dijkstra / BFS to discover method chains between any two types.
 - A **5809-page help index** (EN + FR) in SQLite FTS5 — ask your agent *"how does the sheet-metal unfolding command work?"* and get the official help excerpt.
 - A **2428-command catalog** — look up any ribbon/menu command by keyword, get its FullName ready to invoke.
@@ -74,7 +74,7 @@ The agent picks `topsolid_run_recipe` with recipe `read_designation` and returns
 
 | Tool | Purpose | Needs TopSolid running |
 |---|---|---|
-| `topsolid_run_recipe` | Run one of 219 pre-built recipes | yes |
+| `topsolid_run_recipe` | Run one of 223 pre-built recipes | yes |
 | `topsolid_list_recipes` | Browse the recipe catalog, filtered by category or keyword | no |
 | `topsolid_api_help` | Search 1728 API methods (109 FR/EN synonyms, accent-insensitive) | no |
 | `topsolid_find_path` | Shortest method chain between two types (Dijkstra) | no |
