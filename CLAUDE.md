@@ -16,13 +16,13 @@ If a user gave you this repository and said *"set this up"* or *"use this to con
    - **Native Streamable HTTP (recommended, default port `8080`)**: point your client to `http://127.0.0.1:8080/mcp` with header `X-API-Key: <key>` (can be copied/toggled from the Windows system tray icon -> *Paramètres du serveur MCP*).
    - **stdio**: launch `TopSolidMcpServer.exe` directly (e.g. `claude mcp add --scope user topsolid C:\TopSolidMCP\TopSolidMcpServer.exe`).
 3. **Install the bundled AI skills** (optional but strongly recommended):
-   Copy the 4 folders inside [`skills/`](./skills/) (`topsolid-mcp`, `topsolid-mcp-modeling`, `topsolid-api-knowledge`, `topsolid-railing-design`) into your agent's skill directory (`~/.claude/skills/`, `~/.codex/skills/`, `~/.gemini/config/skills/`, or your IDE rules folder).
+   Copy the 3 folders inside [`skills/`](./skills/) (`topsolid-mcp`, `topsolid-mcp-modeling`, `topsolid-railing-design`) into your agent's skill directory (`~/.claude/skills/`, `~/.codex/skills/`, `~/.gemini/config/skills/`, or your IDE rules folder).
 
 ### Path B — The user wants you to **pilot TopSolid (CAD / PDM / Drafting / BOM)**
 **STOP and read the bundled skills in [`skills/`](./skills/) before calling tools:**
 1. **[`skills/topsolid-mcp/SKILL.md`](./skills/topsolid-mcp/SKILL.md)** — **Mandatory for all TopSolid tasks**: 216+ pre-built recipes (`topsolid_run_recipe`), Read (`R`) vs Write (`RW`/`RD`) confirmation rules, PDM properties, parameters, STEP/DXF/PDF exports, and UI commands (`invoke_command`).
 2. **[`skills/topsolid-mcp-modeling/SKILL.md`](./skills/topsolid-mcp-modeling/SKILL.md)** — **Mandatory for 3D modeling & assemblies**: 100% Recipe-First workflow (`create_project_tree`, `create_extruded_bar`, `create_sheet_metal_plate`, `create_profile_by_two_points`, `batch_add_inclusions`, `update_where_used_and_save`, `check_collisions`).
-3. **[`skills/topsolid-api-knowledge/SKILL.md`](./skills/topsolid-api-knowledge/SKILL.md)** — **Mandatory before writing any C# script**: C# 5 compiler constraints (`CSharpCodeProvider`, no `$"..."` string interpolation), SI units (meters/radians/kg), transaction rules (`StartModification` / `EndModification`), and 3D sketch orientation.
+3. **Before writing any C# script** (a dedicated `topsolid-api-knowledge` skill is being prepared for publication; until then): call `topsolid_api_help` for the exact signatures and transaction rules, and respect C# 5 compiler constraints (`CSharpCodeProvider`, no `$"..."` string interpolation), SI units (meters/radians/kg), transaction rules (`StartModification` / `EndModification`), and 3D sketch orientation.
 4. **[`skills/topsolid-railing-design/SKILL.md`](./skills/topsolid-railing-design/SKILL.md)** — Specialized trade rules for guardrails / railings (NF P01-012 / NF P01-013, TopSolid'Steel practices).
 
 ### Path C — You are a **small or local model** (e.g. Gemma 4, Ministral 3B/8B, Llama 8B, Qwen 7B via Ollama / LM Studio / OpenWebUI)
@@ -44,8 +44,8 @@ topsolid-automation-mcp/
 │   │                graph.json, help.db, commands-catalog.json, recipe-list.txt
 │   ├── scripts/   — build-release.ps1, publish-release.py, update.ps1, sync-topsolid-api.py
 │   └── models/    — Ollama Modelfile for the local code sub-agent
-├── skills/        — 4 official Agent Skills (topsolid-mcp, topsolid-mcp-modeling,
-│                    topsolid-api-knowledge, topsolid-railing-design)
+├── skills/        — 3 official Agent Skills (topsolid-mcp, topsolid-mcp-modeling,
+│                    topsolid-railing-design)
 ├── graph/         — TopSolid API Graph builder (.NET 4.8)
 ├── bridge/        — Legacy HTTP/SSE bridge (v1.7, superseded by native HTTP in v1.8+)
 ├── scripts/       — Python utilities (graph enrichment, help index, catalog builder, LoRA)

@@ -1,0 +1,51 @@
+name: Recipe request
+description: A TopSolid task you would like an agent to do in one call
+title: "[recipe] "
+labels: [recipe, enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A recipe is a tested C# snippet that `topsolid_run_recipe` runs by name. Before asking, check the [recipe catalogue](https://julien38300.github.io/topsolid-automation-mcp/guide/recettes) or call `topsolid_list_recipes`.
+  - type: textarea
+    id: task
+    attributes:
+      label: What should the recipe do?
+      description: In TopSolid terms. Example, "set the scale of every view of the active drawing to 1:40".
+    validations:
+      required: true
+  - type: input
+    id: argument
+    attributes:
+      label: Argument
+      description: What you would pass as `value`, if anything. Example, "1:40".
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected result
+      description: What the recipe changes or returns.
+    validations:
+      required: true
+  - type: dropdown
+    id: document
+    attributes:
+      label: Document type
+      multiple: true
+      options:
+        - Part
+        - Assembly
+        - Drawing
+        - Bill of materials
+        - Family
+        - Project / PDM
+        - Other
+  - type: input
+    id: version
+    attributes:
+      label: TopSolid version
+      placeholder: "7.21"
+  - type: textarea
+    id: manual
+    attributes:
+      label: How you do it by hand today (optional)
+      description: The commands or menus you use. It helps to find the right API.

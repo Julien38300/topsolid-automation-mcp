@@ -1,0 +1,42 @@
+name: API pitfall
+description: A trap of the TopSolid Automation API, to teach the agent skills
+title: "[pitfall] "
+labels: [skill]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The agent skills in `skills/` warn AI agents about traps of the API: a method refused inside a transaction, a unit that is not SI, a dialog that freezes TopSolid, a value that reads NaN... Tell us what you found and how to avoid it.
+  - type: input
+    id: api
+    attributes:
+      label: API concerned
+      description: Interface and method. Example, IPdm.DeleteSeveral.
+    validations:
+      required: true
+  - type: textarea
+    id: trap
+    attributes:
+      label: What goes wrong
+      description: The call, and the error message or wrong result.
+    validations:
+      required: true
+  - type: textarea
+    id: fix
+    attributes:
+      label: How to avoid it
+      description: The call or order that works.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: TopSolid version where you saw it
+      placeholder: "7.20"
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Minimal script (optional)
+      render: csharp

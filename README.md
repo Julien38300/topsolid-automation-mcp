@@ -141,10 +141,12 @@ topsolid-automation-mcp/
 
 ## Contributing
 
-Read [CONTRIBUTING.md](./CONTRIBUTING.md). Short version: pick up a [good-first-issue](https://github.com/Julien38300/topsolid-automation-mcp/labels/good%20first%20issue), add a recipe to `server/src/Tools/RecipeTool.cs`, or improve the docs. Every PR helps.
+You do not need to write C# to help. Report a bug (the tray menu fills in the details), [request a recipe](https://github.com/Julien38300/topsolid-automation-mcp/issues/new?template=recipe_request.yml), share a script that worked as a [recipe proposal](https://github.com/Julien38300/topsolid-automation-mcp/issues/new?template=recipe_proposal.yml), tell the agent skills about an [API pitfall](https://github.com/Julien38300/topsolid-automation-mcp/issues/new?template=api_pitfall.yml), or say where it runs with a [compatibility report](https://github.com/Julien38300/topsolid-automation-mcp/issues/new?template=compatibility_report.yml). Questions go to [Discussions](https://github.com/Julien38300/topsolid-automation-mcp/discussions).
 
-All interactions are governed by our [Code of Conduct](./CODE_OF_CONDUCT.md).
+To change code, recipes, skills or docs, read [CONTRIBUTING.md](./CONTRIBUTING.md): only public material, signed-off commits (`git commit -s`), and a recipe is tested on a real TopSolid before it is merged. Good first tasks carry the [good first issue](https://github.com/Julien38300/topsolid-automation-mcp/labels/good%20first%20issue) label.
+
+All interactions are governed by our [Code of Conduct](./CODE_OF_CONDUCT.md). Security problems: see [SECURITY.md](./SECURITY.md).
 
 ## License
 
-[MIT](./LICENSE). Use commercially, fork, modify freely. TopSolid itself is proprietary — you need your own license from TOPSOLID SAS to run this against a live TopSolid instance.
+[MIT](./LICENSE). Use commercially, fork, modify freely. TopSolid itself is proprietary — you need your own license from TOPSOLID SAS to run this against a live TopSolid instance. Trademark and source notice: [NOTICE](./NOTICE).

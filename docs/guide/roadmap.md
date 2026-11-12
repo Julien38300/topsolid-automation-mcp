@@ -1,43 +1,33 @@
 # Roadmap
 
-## Progression
+## Ou en est le projet (v1.8.18, novembre 2026)
 
-| Phase | Description | Avancement |
-|-------|-------------|------------|
-| Phase 1 | Fondations (extraction, graphe, pathfinding) | 100% |
-| Phase 2 | Serveur MCP (protocole, outils de base) | 100% |
-| Phase 3 | Intelligence semantique (regles, pruning) | 100% |
-| Phase 4 | Connexion TopSolid & execution scripts | 100% |
-| Phase 5 | Connaissance API (graphe enrichi, api_help, 72 synonymes) | 100% |
-| Phase 5b-e | Robustesse, qualite, fixes | 100% |
-| Phase 6 | 151 recettes Tier 1/2/3 + tests LIVE + graphe complet | 100% |
-| Phase 7 | Graphe multi-couche — Layer 2 Commands (2428 commandes) | 50% |
-| Phase 8 | Recettes batch PDM (batch_set_designation/reference/manufacturer) | 100% |
-| Phase 9a | LoRA 3B v7 (96% eval, PROD) | 100% |
-| Phase 9b | Codestral 22B vanilla + enhanced Modelfile (PROD) | 100% |
-| Phase 10 | Test & validation complete | 85% |
-| Phase 11 | Bridge HTTP/SSE (v1.7, mcp-proxy) — remplacé par l'endpoint HTTP natif en v1.8.0 | Done |
+- **15 outils MCP**, dont `topsolid_run_recipe` (219 recettes), `topsolid_api_help` (1728 methodes, avec les remarques officielles de transaction), `topsolid_compare_documents` (comparer deux revisions et reporter l'ecart) et `topsolid_detect_dialog`.
+- **Endpoint HTTP natif** avec cle `X-API-Key`, icone de notification, mise a jour depuis les releases GitHub, interface en francais ou en anglais selon Windows.
+- **Aide en ligne** indexee (5809 pages) et **catalogue des commandes** de l'interface (2428 commandes).
+- Teste sur TopSolid 7.20 et 7.21 ; signale aussi en fonctionnement sous TopSolinux.
 
-## Chiffres cles (2026-05-05, v1.6.7)
-
-- **4119 edges** dans le graphe API
-- **1728 methodes** uniques couvertes, **242 nodes**, **46 interfaces**
-- **1193 edges** portent un champ `Examples`, **vide dans le graphe redistribue** (les snippets viennent de corpora prives, non redistribuables)
-- **85%** d'edges avec hints semantiques FR/EN, **90%** avec description
-- **216 recettes** RecipeTool (Tier 1/2/3 — PDM, parametres, export, assemblages, familles, mise en plan, BOM, creation, proprietes utilisateur, batch PDM)
-- **2428 commandes UI** indexees en Layer 2 (outil `topsolid_search_commands`)
-- **13 outils MCP** : run_recipe, list_recipes, get_state, execute_script, modify_script, api_help, find_path, explore_paths, get_recipe, compile, search_examples, search_help, search_commands
-- **2164 paires** dataset LoRA v7 (ShareGPT EN, eval 96%)
-- **5809 pages** d'aide en ligne indexees en SQLite FTS5 (~20 MB embedded)
-- `ministral-topsolid:latest` (3B LoRA v7, 96%) + `codestral:22b` (vanilla, 97.5% Pattern D)
-- **Endpoint HTTP natif v1.8.0** : Streamable HTTP embarque dans `TopSolidMcpServer.exe` (`--http-standalone`), validation d'`Origin` + cle `X-API-Key` natifs, sans Node.js ; le bridge `mcp-proxy` v1.7 reste disponible dans `bridge/` pour migration.
+Le detail version par version est dans les [notes de release](https://github.com/Julien38300/topsolid-automation-mcp/releases).
 
 ## Prochaines etapes
 
-| Priorite | Mission | Description |
-|----------|---------|-------------|
-| 1 | M-31 | Graphe multi-couche Layer 3 — ADS (documentation non publique, a differer) |
-| 2 | M-21 | Securite : confirmation utilisateur avant operations destructives, rollback PDM |
-| 3 | M-36 | Benchmark latence / tokens / taux de succes (3B vs 22B, recettes vs scripts) |
-| 4 | M-35b | Skill automation Codestral (instructions graphe + patterns C# pour modeles 14-24B) |
-| 5 | — | Tier 1 Gaps : PDM Navigation (S-001→S-013), Documents (S-021→S-031), Parametres CRUD (S-040→S-059) |
+### Ouvrir le projet aux contributions
+
+| Etape | Contenu |
+|---|---|
+| Fait (v1.8.18+) | Guide de contribution, formulaires d'issue (bug, demande de recette, proposition de recette, piege d'API, compatibilite), modele de pull request, signature DCO, signalement de securite prive, Discussions |
+| Une recette par fichier | Sortir les recettes du fichier unique `RecipeTool.cs` : un fichier par recette avec son en-tete (mode, categorie, versions testees, auteur), catalogues generes et verifies par la CI sans TopSolid |
+| Kit de test public | Un projet TopSolid de reference publie, et un script qui lance une recette sur le TopSolid du contributeur et produit un rapport a joindre a la pull request |
+| Skills communs | Le depot devient la reference des skills, avec un controle CI (liens, recettes citees qui existent) ; publication du skill `topsolid-api-knowledge` (pieges de l'API) |
+| Credits | Contributeurs cites dans chaque note de release ; matrice de compatibilite par version de TopSolid alimentee par les retours |
+
+### Fonctions
+
+| Sujet | Contenu |
+|---|---|
+| Confirmation avant les operations destructives | [#7](https://github.com/Julien38300/topsolid-automation-mcp/issues/7) |
+| Graphe API 7.21 | Ajouter au graphe les methodes d'interface apparues en 7.21 |
+| TopSolid'Cam | Couvrir l'API Cam Automation (recettes et aide) |
+| Documentation en anglais | Traduire les pages du guide |
+
+Une idee ? Ouvrez une [discussion](https://github.com/Julien38300/topsolid-automation-mcp/discussions) ou une [demande de recette](https://github.com/Julien38300/topsolid-automation-mcp/issues/new?template=recipe_request.yml).
