@@ -452,7 +452,7 @@ namespace TopSolidMcpServer.Utils
                 MaximizeBox = false;
                 MinimizeBox = false;
                 StartPosition = FormStartPosition.CenterScreen;
-                ClientSize = new Size(560, 560);
+                ClientSize = new Size(560, 596);
                 BackColor = Color.FromArgb(248, 250, 252);
                 Font = new Font("Segoe UI", 9.25f, FontStyle.Regular);
 
@@ -631,7 +631,7 @@ namespace TopSolidMcpServer.Utils
                 Controls.Add(authCard);
 
                 // ── Card 3 : Comportement & Sécurité ──
-                var behaviorCard = CreateCard(20, 386, 520, 110, L10n.T("settings.cardBehavior"));
+                var behaviorCard = CreateCard(20, 386, 520, 146, L10n.T("settings.cardBehavior"));
 
                 var autoConnectCheck = new CheckBox
                 {
@@ -714,17 +714,70 @@ namespace TopSolidMcpServer.Utils
                     AutoSize = true
                 };
                 behaviorCard.Controls.Add(langHint);
+
+                // v1.8.21: "Start with Windows" drives the installer's logon task (AutoStart).
+                // Its state is read from Task Scheduler each time the dialog opens.
+                AutoStartState startState = AutoStart.GetState();
+                var autoStartCheck = new CheckBox
+                {
+                    Text = L10n.T("settings.autoStart"),
+                    Checked = startState == AutoStartState.Enabled,
+                    ForeColor = Color.FromArgb(15, 23, 42),
+                    Location = new Point(16, 108),
+                    AutoSize = true,
+                    Cursor = Cursors.Hand
+                };
+                var autoStartStatus = new Label
+                {
+                    Text = startState == AutoStartState.Unknown ? L10n.T("settings.autoStart.unknown") : "",
+                    ForeColor = Color.FromArgb(100, 116, 139),
+                    Location = new Point(268, 110),
+                    AutoSize = true
+                };
+                bool revertingAutoStart = false;
+                autoStartCheck.CheckedChanged += (s, e) =>
+                {
+                    if (revertingAutoStart) return;
+                    bool wanted = autoStartCheck.Checked;
+                    autoStartCheck.Enabled = false;
+                    autoStartStatus.ForeColor = Color.FromArgb(100, 116, 139);
+                    autoStartStatus.Text = L10n.T("settings.autoStart.applying");
+                    string exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule.FileName;
+                    System.Threading.Tasks.Task.Run(() => AutoStart.Set(wanted, exePath)).ContinueWith(t =>
+                    {
+                        string error = t.Exception != null ? t.Exception.GetBaseException().Message : t.Result;
+                        if (IsDisposed) return;
+                        BeginInvoke((Action)(() =>
+                        {
+                            autoStartCheck.Enabled = true;
+                            if (error == null)
+                            {
+                                autoStartStatus.ForeColor = Color.FromArgb(21, 128, 61);
+                                autoStartStatus.Text = L10n.T(wanted ? "settings.autoStart.on" : "settings.autoStart.off");
+                                return;
+                            }
+                            revertingAutoStart = true;
+                            autoStartCheck.Checked = !wanted;
+                            revertingAutoStart = false;
+                            autoStartStatus.ForeColor = Color.FromArgb(185, 28, 28);
+                            autoStartStatus.Text = L10n.T("settings.autoStart.failed");
+                            Console.Error.WriteLine("[MCP-WARN] Start with Windows: " + error);
+                        }));
+                    });
+                };
+                behaviorCard.Controls.Add(autoStartCheck);
+                behaviorCard.Controls.Add(autoStartStatus);
                 Controls.Add(behaviorCard);
 
                 // ── Footer ──
-                var openFolderBtn = CreateSecondaryButton(L10n.T("settings.openFolder"), 20, 508, 210, 32);
+                var openFolderBtn = CreateSecondaryButton(L10n.T("settings.openFolder"), 20, 544, 210, 32);
                 openFolderBtn.Click += (s, e) =>
                 {
                     try { onOpenInstallFolder?.Invoke(); } catch { }
                 };
                 Controls.Add(openFolderBtn);
 
-                var closeBtn = CreateSecondaryButton(L10n.T("settings.close"), 440, 508, 100, 32);
+                var closeBtn = CreateSecondaryButton(L10n.T("settings.close"), 440, 544, 100, 32);
                 closeBtn.Click += (s, e) => Close();
                 Controls.Add(closeBtn);
                 CancelButton = closeBtn;

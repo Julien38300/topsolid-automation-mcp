@@ -47,6 +47,17 @@ namespace TopSolidMcp.UpdateCheck
         /// original tray implementation, ANY number of segments is compared
         /// (1.7.4.2 &gt; 1.7.4.1).
         /// </summary>
+        /// <summary>
+        /// Whether the automatic check shows the "new release" popup: the release is newer than the
+        /// running version and newer than the last one already shown (once per release, not per check).
+        /// </summary>
+        public static bool ShouldNotify(string current, string remote, string lastNotified)
+        {
+            if (string.IsNullOrWhiteSpace(remote)) return false;
+            if (CompareVersions(current, remote) >= 0) return false;
+            return lastNotified == null || CompareVersions(lastNotified, remote) < 0;
+        }
+
         public static int CompareVersions(string a, string b)
         {
             a = (a ?? "0.0.0").TrimStart('v', 'V');
