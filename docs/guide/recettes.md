@@ -1,6 +1,6 @@
 # Recettes
 
-223 recettes pre-construites. Le LLM les appelle par leur nom via `topsolid_run_recipe` : aucune generation de code necessaire.
+224 recettes pre-construites. Le LLM les appelle par leur nom via `topsolid_run_recipe` : aucune generation de code necessaire.
 
 ## Catalogue
 
@@ -107,6 +107,7 @@ Un materiau TopSolid (`.TopMat`) porte les proprietes physiques de la piece (mas
 | `get_material_bump_scale` | Lit la propriete « echelle de texture bump » du materiau actif. Signale aussi l'erreur quand aucun materiau n'est affecte. | `Materials.GetBumpScale()` | READ |
 | `get_material_bump_rotation` | Lit la rotation de la texture bump du materiau actif (radians). Signale aussi l'erreur quand aucun materiau n'est affecte. | `Materials.GetBumpRotation()` | READ |
 | `get_material_anisotropy_angle_factor` | Lit le facteur d'angle d'anisotropie du materiau actif. Signale aussi l'erreur quand aucun materiau n'est affecte. | `Materials.GetAnisotropyAngleFactor()` | READ |
+| `read_material_mechanical_properties` | Lit en un seul appel les facteurs du materiau de la piece editee : durete Brinell, durete Vickers, brillance, angle d'anisotropie (radians et degres), echelle et rotation bump. Valeurs en unites SI ; liste a la fin les facteurs non definis. Exige TopSolid 7.20.400+ (getters IMaterials) : refuse avec un message explicite sur les versions plus anciennes. | `Parts.GetMaterial()` + 6 getters `Materials` | READ |
 | `get_coating_brinell_hardness_factor` | Lit la propriete « durete Brinell » du revetement actif. | `Coatings.GetBrinellHardnessFactor()` | READ |
 | `get_coating_vickers_hardness_factor` | Lit la propriete « durete Vickers » du revetement actif. | `Coatings.GetVickersHardnessFactor()` | READ |
 | `get_coating_glossiness_factor` | Lit la propriete « brillance » du revetement actif. | `Coatings.GetGlossinessFactor()` | READ |

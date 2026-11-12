@@ -34,6 +34,7 @@
     <Compile Include="..\..\src\Utils\WindowInfo.cs" Link="WindowInfo.cs" />
     <Compile Include="..\..\src\Utils\ScriptOutputLimit.cs" Link="ScriptOutputLimit.cs" />
     <Compile Include="..\..\src\Utils\TransactionRules.cs" Link="TransactionRules.cs" />
+    <Compile Include="..\..\src\Utils\KernelVersion.cs" Link="KernelVersion.cs" />
     <Compile Include="..\..\src\Utils\AutoStartLogic.cs" Link="AutoStartLogic.cs" />
     <Compile Include="..\..\src\Utils\TraySettings.cs" Link="TraySettings.cs" />
     <Compile Include="..\..\src\Utils\L10n.cs" Link="L10n.cs" />

@@ -2,7 +2,7 @@
 
 ## Ou en est le projet (v1.8.18, novembre 2026)
 
-- **15 outils MCP**, dont `topsolid_run_recipe` (219 recettes), `topsolid_api_help` (1728 methodes, avec les remarques officielles de transaction), `topsolid_compare_documents` (comparer deux revisions et reporter l'ecart) et `topsolid_detect_dialog`.
+- **15 outils MCP**, dont `topsolid_run_recipe` (224 recettes), `topsolid_api_help` (1728 methodes, avec les remarques officielles de transaction), `topsolid_compare_documents` (comparer deux revisions et reporter l'ecart) et `topsolid_detect_dialog`.
 - **Endpoint HTTP natif** avec cle `X-API-Key`, icone de notification, mise a jour depuis les releases GitHub, interface en francais ou en anglais selon Windows.
 - **Aide en ligne** indexee (5809 pages) et **catalogue des commandes** de l'interface (2428 commandes).
 - Teste sur TopSolid 7.20 et 7.21 ; signale aussi en fonctionnement sous TopSolinux.

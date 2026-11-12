@@ -2846,7 +2846,7 @@ namespace TopSolidMcpServer.Tools
                 "catch (Exception ex)\n" +
                 "{\n" +
                 "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
-                "}") },
+                "}", 720400000) },
             { "get_material_vickers_hardness_factor", R("MATERIALS", "Get the Vickers hardness factor of the active material (from its standards file). Reports (also) error when no material is set",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
@@ -2858,7 +2858,7 @@ namespace TopSolidMcpServer.Tools
                 "catch (Exception ex)\n" +
                 "{\n" +
                 "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
-                "}") },
+                "}", 720400000) },
             { "get_material_glossiness_factor", R("MATERIALS", "Get the glossiness factor of the active material. Reports (also) error when no material is set",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
@@ -2870,7 +2870,7 @@ namespace TopSolidMcpServer.Tools
                 "catch (Exception ex)\n" +
                 "{\n" +
                 "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
-                "}") },
+                "}", 720400000) },
             { "get_material_bump_scale", R("MATERIALS", "Get the bump texture scale factor of the active material. Reports (also) error when no material is set",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
@@ -2882,7 +2882,7 @@ namespace TopSolidMcpServer.Tools
                 "catch (Exception ex)\n" +
                 "{\n" +
                 "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
-                "}") },
+                "}", 720400000) },
             { "get_material_bump_rotation", R("MATERIALS", "Get the bump texture rotation of the active material (radians). Reports (also) error when no material is set",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
@@ -2894,7 +2894,7 @@ namespace TopSolidMcpServer.Tools
                 "catch (Exception ex)\n" +
                 "{\n" +
                 "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
-                "}") },
+                "}", 720400000) },
             { "get_material_anisotropy_angle_factor", R("MATERIALS", "Get the anisotropy angle factor of the active material. Reports (also) error when no material is set",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
@@ -2906,7 +2906,67 @@ namespace TopSolidMcpServer.Tools
                 "catch (Exception ex)\n" +
                 "{\n" +
                 "    return \"Error (no material set on this document?): \" + ex.Message;\n" +
-                "}") },
+                "}", 720400000) },
+            { "read_material_mechanical_properties", R("MATERIALS", "Reads in one call the factors of the material of the edited part: Brinell hardness, Vickers hardness, glossiness, anisotropy angle, bump scale and bump rotation (angles in radians, degrees also shown). Values in SI units; ends with the list of factors that are not set. Requires TopSolid 7.20.400+ (IMaterials getters): refused with an explicit message on older instances",
+                "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
+                "if (docId.IsEmpty) return \"No document open.\";\n" +
+                "DocumentId matId = default(DocumentId);\n" +
+                "try { matId = TopSolidDesignHost.Parts.GetMaterial(docId); }\n" +
+                "catch { return \"The edited document is not a part: Parts.GetMaterial needs a part document. Open the part document and retry.\"; }\n" +
+                "if (matId.IsEmpty) return \"No material is set on the edited part.\";\n" +
+                "string matName = \"\";\n" +
+                "try { matName = TopSolidHost.Documents.GetName(matId); } catch { }\n" +
+                "var sb = new System.Text.StringBuilder();\n" +
+                "var notSet = new List<string>();\n" +
+                "sb.AppendLine(\"=== MATERIAL FACTORS (SI units) ===\");\n" +
+                "sb.AppendLine(\"Part: \" + TopSolidHost.Documents.GetName(docId));\n" +
+                "sb.AppendLine(\"Material: \" + (matName.Length == 0 ? \"(unnamed)\" : matName));\n" +
+                "double v;\n" +
+                "try\n" +
+                "{\n" +
+                "    v = TopSolidDesignHost.Materials.GetBrinellHardnessFactor(matId);\n" +
+                "    if (double.IsNaN(v)) { notSet.Add(\"Brinell hardness\"); sb.AppendLine(\"Brinell hardness factor: not set\"); }\n" +
+                "    else sb.AppendLine(\"Brinell hardness factor: \" + v.ToString(\"F4\"));\n" +
+                "}\n" +
+                "catch (Exception ex) { notSet.Add(\"Brinell hardness\"); sb.AppendLine(\"Brinell hardness factor: not set (\" + ex.Message + \")\"); }\n" +
+                "try\n" +
+                "{\n" +
+                "    v = TopSolidDesignHost.Materials.GetVickersHardnessFactor(matId);\n" +
+                "    if (double.IsNaN(v)) { notSet.Add(\"Vickers hardness\"); sb.AppendLine(\"Vickers hardness factor: not set\"); }\n" +
+                "    else sb.AppendLine(\"Vickers hardness factor: \" + v.ToString(\"F4\"));\n" +
+                "}\n" +
+                "catch (Exception ex) { notSet.Add(\"Vickers hardness\"); sb.AppendLine(\"Vickers hardness factor: not set (\" + ex.Message + \")\"); }\n" +
+                "try\n" +
+                "{\n" +
+                "    v = TopSolidDesignHost.Materials.GetGlossinessFactor(matId);\n" +
+                "    if (double.IsNaN(v)) { notSet.Add(\"Glossiness\"); sb.AppendLine(\"Glossiness factor: not set\"); }\n" +
+                "    else sb.AppendLine(\"Glossiness factor: \" + v.ToString(\"F4\"));\n" +
+                "}\n" +
+                "catch (Exception ex) { notSet.Add(\"Glossiness\"); sb.AppendLine(\"Glossiness factor: not set (\" + ex.Message + \")\"); }\n" +
+                "try\n" +
+                "{\n" +
+                "    v = TopSolidDesignHost.Materials.GetAnisotropyAngleFactor(matId);\n" +
+                "    if (double.IsNaN(v)) { notSet.Add(\"Anisotropy angle\"); sb.AppendLine(\"Anisotropy angle: not set\"); }\n" +
+                "    else sb.AppendLine(\"Anisotropy angle: \" + v.ToString(\"F4\") + \" rad (\" + (v * 180.0 / System.Math.PI).ToString(\"F2\") + \" deg)\");\n" +
+                "}\n" +
+                "catch (Exception ex) { notSet.Add(\"Anisotropy angle\"); sb.AppendLine(\"Anisotropy angle: not set (\" + ex.Message + \")\"); }\n" +
+                "try\n" +
+                "{\n" +
+                "    v = TopSolidDesignHost.Materials.GetBumpScale(matId);\n" +
+                "    if (double.IsNaN(v)) { notSet.Add(\"Bump scale\"); sb.AppendLine(\"Bump scale: not set\"); }\n" +
+                "    else sb.AppendLine(\"Bump scale: \" + v.ToString(\"F4\"));\n" +
+                "}\n" +
+                "catch (Exception ex) { notSet.Add(\"Bump scale\"); sb.AppendLine(\"Bump scale: not set (\" + ex.Message + \")\"); }\n" +
+                "try\n" +
+                "{\n" +
+                "    v = TopSolidDesignHost.Materials.GetBumpRotation(matId);\n" +
+                "    if (double.IsNaN(v)) { notSet.Add(\"Bump rotation\"); sb.AppendLine(\"Bump rotation: not set\"); }\n" +
+                "    else sb.AppendLine(\"Bump rotation: \" + v.ToString(\"F4\") + \" rad (\" + (v * 180.0 / System.Math.PI).ToString(\"F2\") + \" deg)\");\n" +
+                "}\n" +
+                "catch (Exception ex) { notSet.Add(\"Bump rotation\"); sb.AppendLine(\"Bump rotation: not set (\" + ex.Message + \")\"); }\n" +
+                "if (notSet.Count == 0) sb.AppendLine(\"All factors are set on this material.\");\n" +
+                "else sb.AppendLine(\"Not set: \" + string.Join(\", \", notSet.ToArray()) + \".\");\n" +
+                "return sb.ToString();", 720400000) },
             { "get_coating_brinell_hardness_factor", R("MATERIALS", "Get the Brinell hardness factor of the active coating",
                 "DocumentId docId = TopSolidHost.Documents.EditedDocument;\n" +
                 "if (docId.IsEmpty) return \"No document open.\";\n" +
@@ -5509,28 +5569,28 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
 
         // Shortcut factory methods for readability.
         // R  = read-only, RW = writes to the PDM (transactional), RD = writes to disk only.
-        private static RecipeEntry R(string category, string description, string code)
+        private static RecipeEntry R(string category, string description, string code, int minKernelVersion = 0)
         {
-            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.Read);
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.Read, minKernelVersion);
         }
 
-        private static RecipeEntry RW(string category, string description, string code)
+        private static RecipeEntry RW(string category, string description, string code, int minKernelVersion = 0)
         {
-            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WritePdm);
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WritePdm, minKernelVersion);
         }
 
-        private static RecipeEntry RD(string category, string description, string code)
+        private static RecipeEntry RD(string category, string description, string code, int minKernelVersion = 0)
         {
-            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WriteDisk);
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WriteDisk, minKernelVersion);
         }
 
         // RN = writes to the PDM but runs OUTSIDE any modification transaction:
         // TopSolid refuses document creation (IPdm.CreateDocument,
         // IPdm.CreateDocumentWithTemplate) between StartModification and
         // EndModification, so the runtime must not wrap these recipes.
-        private static RecipeEntry RN(string category, string description, string code)
+        private static RecipeEntry RN(string category, string description, string code, int minKernelVersion = 0)
         {
-            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WritePdmNoTransaction);
+            return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WritePdmNoTransaction, minKernelVersion);
         }
 
         /// <summary>
@@ -5619,6 +5679,21 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
                 return "Error: TopSolid connector not initialized.";
             if (!connector.EnsureConnected())
                 return "Error: TopSolid not connected. Please check that TopSolid is running with Automation enabled (port 8090). Use the tray icon to reconnect.";
+
+            // Version gate (GH #25): recipes whose body calls Automation methods that only
+            // exist from a given TopSolid version declare the minimum they need. Checking
+            // here, BEFORE the body is compiled, turns what would be a raw C# compile
+            // error on an older installation into an explicit, actionable message.
+            // TopSolidHost.Version is the version of the CONNECTED instance (0 when
+            // unknown), so a server whose local interop DLLs are newer than the running
+            // instance refuses cleanly too.
+            if (recipe.MinKernelVersion > 0)
+            {
+                int runningVersion = 0;
+                try { runningVersion = TopSolid.Kernel.Automating.TopSolidHost.Version; } catch { }
+                string refusal = TopSolidMcpServer.Utils.KernelVersion.BuildRecipeRefusal(recipeName, recipe.MinKernelVersion, runningVersion);
+                if (refusal != null) return refusal;
+            }
 
             // The declared mode wins: auto-detection must never promote a recipe.
             // forceModification: true  -> transactional wrapper (Pattern D).
@@ -5739,6 +5814,16 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
             public RecipeMode Mode { get; }
 
             /// <summary>
+            /// Minimum TopSolid kernel version the recipe body can compile and run against,
+            /// encoded as ((Major * 100 + Minor) * 1000 + Build) * 1000 + Revision
+            /// (7.21.0.0 -> 721000000). 0, the default, means "every version".
+            /// Recipes that call version-specific Automation methods (the 7.21 IMaterials
+            /// getters, GH #25) declare it so the server can refuse cleanly on an older
+            /// TopSolid instead of failing at C# compile time.
+            /// </summary>
+            public int MinKernelVersion { get; }
+
+            /// <summary>
             /// True when the recipe modifies the document or the PDM and therefore needs a
             /// modification transaction. Kept so existing callers keep working.
             /// </summary>
@@ -5748,11 +5833,17 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
             }
 
             public RecipeEntry(string category, string description, string code, RecipeMode mode)
+                : this(category, description, code, mode, 0)
+            {
+            }
+
+            public RecipeEntry(string category, string description, string code, RecipeMode mode, int minKernelVersion)
             {
                 Category = category;
                 Description = description;
                 Code = code;
                 Mode = mode;
+                MinKernelVersion = minKernelVersion;
             }
         }
     }

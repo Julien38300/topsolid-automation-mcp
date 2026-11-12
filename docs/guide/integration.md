@@ -383,7 +383,7 @@ Il suffit de pointer votre agent sur le dépôt local pour qu'il sache comment i
 Depuis la **v1.8.11**, le serveur MCP injecte automatiquement des instructions **Recipe-First** lors du handshake `initialize` MCP :
 - **Règle d'or pour les petits modèles (3B à 12B)** : ne leur faites **jamais** générer de C# (`topsolid_execute_script` / `topsolid_modify_script`). Désactivez ces deux outils dans votre client local (OpenWebUI / LM Studio) et laissez uniquement :
   1. `topsolid_list_recipes` (pour trouver le nom exact d'une recette),
-  2. `topsolid_run_recipe` (pour exécuter une des 216 recettes pré-compilées),
+  2. `topsolid_run_recipe` (pour exécuter une des 224 recettes pré-compilées),
   3. `topsolid_search_commands` (pour chercher parmi les 2 428 commandes ruban/menu et les lancer via `invoke_command`, qui résout désormais automatiquement la casse `.UI.` et accepte aussi bien le `FullName` complet que le nom court `CreateLayoutSketchCommand`).
 
 ---
@@ -395,7 +395,7 @@ Une fois connecte, votre assistant IA dispose des outils suivants :
 | Outil | Description |
 |-------|-------------|
 | `topsolid_get_state` | Etat de connexion, document actif, projet courant |
-| `topsolid_run_recipe` | Execute une des 216 recettes pre-construites |
+| `topsolid_run_recipe` | Execute une des 224 recettes pre-construites |
 | `topsolid_list_recipes` | Catalogue des recettes, filtrable par categorie ou mot-cle |
 | `topsolid_get_recipe` | Retourne le code source C# d'une recette |
 | `topsolid_api_help` | Recherche dans l'API TopSolid (1728 methodes, synonymes FR) |
@@ -409,7 +409,7 @@ Une fois connecte, votre assistant IA dispose des outils suivants :
 | `topsolid_search_examples` | Recherche dans les corpora prives locaux (opt-in, env var) |
 
 ::: tip Pour la plupart des usages
-`topsolid_run_recipe` suffit. Les 216 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
+`topsolid_run_recipe` suffit. Les 224 recettes couvrent PDM, parametres, export, assemblages, familles, mise en plan, nomenclature et plus. Demandez simplement en francais.
 :::
 
 ::: danger N'auto-approuvez pas les outils de script

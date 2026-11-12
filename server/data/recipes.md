@@ -3707,6 +3707,72 @@ catch (Exception ex)
 }
 ```
 
+## read_material_mechanical_properties
+Pattern: R
+Description: Reads in one call the factors of the material of the edited part: Brinell hardness, Vickers hardness, glossiness, anisotropy angle, bump scale and bump rotation (angles in radians, degrees also shown). Values in SI units; ends with the list of factors that are not set. Requires TopSolid 7.20.400+ (IMaterials getters): refused with an explicit message on older instances
+
+```csharp
+DocumentId docId = TopSolidHost.Documents.EditedDocument;
+if (docId.IsEmpty) return "No document open.";
+DocumentId matId = default(DocumentId);
+try { matId = TopSolidDesignHost.Parts.GetMaterial(docId); }
+catch { return "The edited document is not a part: Parts.GetMaterial needs a part document. Open the part document and retry."; }
+if (matId.IsEmpty) return "No material is set on the edited part.";
+string matName = "";
+try { matName = TopSolidHost.Documents.GetName(matId); } catch { }
+var sb = new System.Text.StringBuilder();
+var notSet = new List<string>();
+sb.AppendLine("=== MATERIAL FACTORS (SI units) ===");
+sb.AppendLine("Part: " + TopSolidHost.Documents.GetName(docId));
+sb.AppendLine("Material: " + (matName.Length == 0 ? "(unnamed)" : matName));
+double v;
+try
+{
+    v = TopSolidDesignHost.Materials.GetBrinellHardnessFactor(matId);
+    if (double.IsNaN(v)) { notSet.Add("Brinell hardness"); sb.AppendLine("Brinell hardness factor: not set"); }
+    else sb.AppendLine("Brinell hardness factor: " + v.ToString("F4"));
+}
+catch (Exception ex) { notSet.Add("Brinell hardness"); sb.AppendLine("Brinell hardness factor: not set (" + ex.Message + ")"); }
+try
+{
+    v = TopSolidDesignHost.Materials.GetVickersHardnessFactor(matId);
+    if (double.IsNaN(v)) { notSet.Add("Vickers hardness"); sb.AppendLine("Vickers hardness factor: not set"); }
+    else sb.AppendLine("Vickers hardness factor: " + v.ToString("F4"));
+}
+catch (Exception ex) { notSet.Add("Vickers hardness"); sb.AppendLine("Vickers hardness factor: not set (" + ex.Message + ")"); }
+try
+{
+    v = TopSolidDesignHost.Materials.GetGlossinessFactor(matId);
+    if (double.IsNaN(v)) { notSet.Add("Glossiness"); sb.AppendLine("Glossiness factor: not set"); }
+    else sb.AppendLine("Glossiness factor: " + v.ToString("F4"));
+}
+catch (Exception ex) { notSet.Add("Glossiness"); sb.AppendLine("Glossiness factor: not set (" + ex.Message + ")"); }
+try
+{
+    v = TopSolidDesignHost.Materials.GetAnisotropyAngleFactor(matId);
+    if (double.IsNaN(v)) { notSet.Add("Anisotropy angle"); sb.AppendLine("Anisotropy angle: not set"); }
+    else sb.AppendLine("Anisotropy angle: " + v.ToString("F4") + " rad (" + (v * 180.0 / System.Math.PI).ToString("F2") + " deg)");
+}
+catch (Exception ex) { notSet.Add("Anisotropy angle"); sb.AppendLine("Anisotropy angle: not set (" + ex.Message + ")"); }
+try
+{
+    v = TopSolidDesignHost.Materials.GetBumpScale(matId);
+    if (double.IsNaN(v)) { notSet.Add("Bump scale"); sb.AppendLine("Bump scale: not set"); }
+    else sb.AppendLine("Bump scale: " + v.ToString("F4"));
+}
+catch (Exception ex) { notSet.Add("Bump scale"); sb.AppendLine("Bump scale: not set (" + ex.Message + ")"); }
+try
+{
+    v = TopSolidDesignHost.Materials.GetBumpRotation(matId);
+    if (double.IsNaN(v)) { notSet.Add("Bump rotation"); sb.AppendLine("Bump rotation: not set"); }
+    else sb.AppendLine("Bump rotation: " + v.ToString("F4") + " rad (" + (v * 180.0 / System.Math.PI).ToString("F2") + " deg)");
+}
+catch (Exception ex) { notSet.Add("Bump rotation"); sb.AppendLine("Bump rotation: not set (" + ex.Message + ")"); }
+if (notSet.Count == 0) sb.AppendLine("All factors are set on this material.");
+else sb.AppendLine("Not set: " + string.Join(", ", notSet.ToArray()) + ".");
+return sb.ToString();
+```
+
 ## get_coating_brinell_hardness_factor
 Pattern: R
 Description: Get the Brinell hardness factor of the active coating
