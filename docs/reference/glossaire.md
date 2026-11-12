@@ -13,7 +13,7 @@ Mapping officiel des termes metier TopSolid (francais) vers les termes API (angl
 | **Reference fabricant** | ManufacturerPartNumber | `IPdm.SetManufacturerPartNumber` / `GetManufacturerPartNumber` |
 | **Auteur** | Author | `IPdm.SetAuthor` / `GetAuthor` |
 | **Proprietaire** | Owner | `IPdm.GetOwner` |
-| **Code** | Code | `IPdm.GetCode` |
+| **Code** | Code | `IPdm.GetCode` : propriete PDM. A distinguer du code de ligne du catalogue famille (`IFamilies.GetCodes`). |
 | **Commentaire** | Comment | Parametre systeme |
 
 ::: danger Piege courant
@@ -230,7 +230,7 @@ Workflow complet pour affecter une propriete utilisateur :
 | **Document virtuel** | Document qui ne se met pas a jour automatiquement |
 | **Piece derivee** | Piece creee par derivation d'une autre (lien parametrique) |
 | **Driver / Pilote** | Parametre qui pilote les instances d'une famille |
-| **Catalogue famille** | Tableau des instances (codes x colonnes/drivers) |
+| **Catalogue famille** | Tableau des instances (codes x colonnes/drivers). Une famille implicite peut posseder ce catalogue ; les recettes `*_family_catalog*` utilisent les parametres de la famille. |
 | **Composant standard** | Piece de bibliotheque non modifiable (vis, ecrou...) |
 | **Inclusion** | Composant place dans un assemblage |
 | **Occurrence** | Instance d'une inclusion dans l'assemblage |
