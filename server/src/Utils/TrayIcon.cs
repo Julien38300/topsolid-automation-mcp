@@ -41,6 +41,12 @@ namespace TopSolidMcpServer.Utils
         private string _latestVersion;
         private string _currentVersion;
         private int _checkInProgress;
+        // v1.8.21: the release popup, the last release it showed (once per release), and the
+        // periodic check that finds a release published while the server keeps running.
+        private UpdateToast _updateToast;
+        private string _notifiedVersion;
+        private System.Threading.Timer _periodicUpdateTimer;
+        private static readonly TimeSpan PeriodicUpdateCheck = TimeSpan.FromHours(6);
 
         public TrayIcon(Action onQuit)
         {
@@ -323,6 +329,8 @@ namespace TopSolidMcpServer.Utils
                 };
 
                 CheckForUpdatesAsync(manual: false);
+                _periodicUpdateTimer = new System.Threading.Timer(
+                    _ => CheckForUpdatesAsync(manual: false), null, PeriodicUpdateCheck, PeriodicUpdateCheck);
                 PromptInitialApiKeySetupIfNeeded();
 
                 Application.Run();
@@ -452,7 +460,10 @@ namespace TopSolidMcpServer.Utils
                         string cleanVer = remoteVersion.TrimStart('v', 'V');
                         _latestVersion = cleanVer;
                         _updateUrl = GitHubFeedbackLogic.BuildReleaseUrl(cleanVer);
-                        ShowUpdateAvailable(cleanVer, manual);
+                        // A manual check always shows the popup; the automatic ones show it once per release.
+                        bool popup = manual || UpdateCheckLogic.ShouldNotify(_currentVersion, cleanVer, _notifiedVersion);
+                        if (popup) _notifiedVersion = cleanVer;
+                        ShowUpdateAvailable(cleanVer, popup);
                     }
                     else if (manual)
                     {
@@ -575,7 +586,11 @@ namespace TopSolidMcpServer.Utils
             catch { }
         }
 
-        private void ShowUpdateAvailable(string remoteVersion, bool manual)
+        /// <summary>
+        /// Adds "Download update" to the menu and, when <paramref name="popup"/>, shows the
+        /// bottom-right popup with a direct "Download and install" button.
+        /// </summary>
+        private void ShowUpdateAvailable(string remoteVersion, bool popup)
         {
             try
             {
@@ -591,21 +606,28 @@ namespace TopSolidMcpServer.Utils
                         _updateItem.Text = L10n.T("tray.menu.downloadUpdateVersion", remoteVersion);
                         _updateItem.Visible = true;
                     }
+                    if (!popup) return;
                     try
                     {
-                        _notifyIcon.BalloonTipTitle = L10n.T("tray.update.balloonTitle", remoteVersion);
-                        _notifyIcon.BalloonTipText = L10n.T("tray.update.balloonBody", remoteVersion);
-                        _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
-                        _notifyIcon.ShowBalloonTip(5000);
+                        if (_updateToast != null && !_updateToast.IsDisposed) _updateToast.Close();
+                        string notesUrl = GitHubFeedbackLogic.BuildReleaseUrl(remoteVersion);
+                        _updateToast = new UpdateToast(_currentVersion, remoteVersion,
+                            onInstall: LaunchUpdater,
+                            onNotes: () => OpenUrl(notesUrl));
+                        _updateToast.Show();
                     }
-                    catch { }
-                    if (manual)
+                    catch (Exception ex)
                     {
-                        MessageBox.Show(
-                            L10n.T("tray.update.modalBody", remoteVersion),
-                            "TopSolid MCP",
-                            MessageBoxButtons.OK,
-                            MessageBoxIcon.Information);
+                        // Fallback: the balloon tip of earlier versions.
+                        Console.Error.WriteLine("[TrayIcon] Update popup failed: " + ex.Message);
+                        try
+                        {
+                            _notifyIcon.BalloonTipTitle = L10n.T("tray.update.balloonTitle", remoteVersion);
+                            _notifyIcon.BalloonTipText = L10n.T("tray.update.balloonBody", remoteVersion);
+                            _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
+                            _notifyIcon.ShowBalloonTip(5000);
+                        }
+                        catch { }
                     }
                 };
 
@@ -734,6 +756,8 @@ namespace TopSolidMcpServer.Utils
         {
             if (_disposed) return;
             _disposed = true;
+            try { _periodicUpdateTimer?.Dispose(); } catch { }
+            _periodicUpdateTimer = null;
             StopAutoReconnect();
 
             try
