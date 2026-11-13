@@ -824,6 +824,32 @@ namespace TopSolidMcpServer.Tools
                 "TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);\n" +
                 "__message = \"OK: drafting scale set to 1:\" + denom;") },
 
+            // GH #9: set_drafting_scale only moves the views that follow the drafting scale; a view
+            // with its own (absolute) scale keeps it. This one sets both.
+            { "set_all_views_scale", RW("DRAFTING", "Sets the scale of the drafting AND of every view that has its own scale (views with a relative scale follow). Param: value=denominator (e.g. '40' for 1:40)",
+                "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
+                "bool isDrafting = false;\n" +
+                "try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = \"Not a drafting.\"; return; }\n" +
+                "if (!isDrafting) { __message = \"Not a drafting.\"; return; }\n" +
+                "double denom;\n" +
+                "if (!double.TryParse(\"{value}\", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out denom) || denom <= 0)\n" +
+                "{ __message = \"ERROR: value must be a positive number (e.g. '40' for 1:40).\"; return; }\n" +
+                "double factor = 1.0 / denom;\n" +
+                "TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);\n" +
+                "int own = 0, relative = 0;\n" +
+                "var names = new System.Text.StringBuilder();\n" +
+                "foreach (ElementId view in TopSolidDraftingHost.Draftings.GetDraftingViews(docId))\n" +
+                "{\n" +
+                "    bool isRelative; double relValue, absValue, refValue;\n" +
+                "    TopSolidDraftingHost.Draftings.GetViewScaleFactor(view, out isRelative, out relValue, out absValue, out refValue);\n" +
+                "    if (isRelative) { relative++; continue; }\n" +
+                "    TopSolidDraftingHost.Draftings.SetViewScaleFactor(view, factor);\n" +
+                "    own++;\n" +
+                "    names.Append(names.Length > 0 ? \", \" : \"\").Append(TopSolidDraftingHost.Draftings.GetViewTitle(view));\n" +
+                "}\n" +
+                "__message = \"OK: drafting scale set to 1:\" + denom + \"; \" + own + \" view(s) with their own scale set to 1:\" + denom +\n" +
+                "    (own > 0 ? \" (\" + names + \")\" : \"\") + \"; \" + relative + \" view(s) follow the drafting scale.\";") },
+
             { "set_drafting_format", RW("DRAFTING", "Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')",
                 "if (docId.IsEmpty) { __message = \"No document open.\"; return; }\n" +
                 "bool isDrafting = false;\n" +

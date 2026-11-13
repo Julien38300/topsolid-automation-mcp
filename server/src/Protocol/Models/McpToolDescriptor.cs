@@ -16,5 +16,9 @@ namespace TopSolidMcpServer.Protocol.Models
 
         [JsonProperty("inputSchema")]
         public JObject InputSchema { get; set; }
+
+        /// <summary>MCP annotations (readOnlyHint, destructiveHint...), see McpToolAnnotations.</summary>
+        [JsonProperty("annotations", NullValueHandling = NullValueHandling.Ignore)]
+        public JObject Annotations { get; set; }
     }
 }
