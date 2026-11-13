@@ -100,6 +100,7 @@ Practical consequences:
 
 - **Do not add `topsolid_execute_script` or `topsolid_modify_script` to the auto-approved / always-allow tool list of your MCP client.** Read each script before you let it run.
 - Run the server with `--read-only` (or `TOPSOLID_MCP_READ_ONLY=1`) when you only need to query: `topsolid_modify_script` is then not registered at all, and recipes run in read-only mode.
+- Since v1.8.23, exports, batch changes, recipes that remove data and scripts that delete TopSolid data are refused until the agent calls again with `confirm: true`, which it should do only after asking you. `--no-confirm` (or `TOPSOLID_MCP_SKIP_CONFIRM=1`) removes that step for unattended automation.
 - Do not expose the HTTP endpoint publicly without authentication — see the [HTTP guide](https://julien38300.github.io/topsolid-automation-mcp/guide/bridge-http).
 
 ## Data sources & attribution

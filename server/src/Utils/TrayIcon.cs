@@ -46,7 +46,7 @@ namespace TopSolidMcpServer.Utils
         private UpdateToast _updateToast;
         private string _notifiedVersion;
         private System.Threading.Timer _periodicUpdateTimer;
-        private static readonly TimeSpan PeriodicUpdateCheck = TimeSpan.FromHours(6);
+        private static readonly TimeSpan PeriodicUpdateCheck = TimeSpan.FromHours(1);
 
         public TrayIcon(Action onQuit)
         {
