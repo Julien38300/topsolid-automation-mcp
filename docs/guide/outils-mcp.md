@@ -28,6 +28,15 @@ Lance avec `--read-only` (ou `TOPSOLID_MCP_READ_ONLY=1`) et `topsolid_modify_scr
 Chaque outil declare dans `tools/list` les annotations MCP standard : `readOnlyHint` pour les outils qui ne font que lire (aide, recherche, etat, compilation...), `destructiveHint` pour ceux qui peuvent supprimer ou ecraser (`topsolid_run_recipe`, `topsolid_execute_script`, `topsolid_modify_script`). Un client MCP peut ainsi approuver d'office les premiers et demander confirmation avant les seconds. Ce sont des indications : les gardes du serveur (mode lecture seule, regles de transaction) restent en place.
 :::
 
+::: warning Confirmation obligatoire (v1.8.23+)
+Ce qui ne se defait pas attend `confirm: true` :
+
+- les recettes qui ecrivent sur le disque (exports, impression), les modifications en masse d'un projet (`batch_set_designation`, `batch_set_reference`, `batch_set_manufacturer`, `batch_clear_author`, `batch_enable_virtual`), `clear_document_author`, `replace_revolved_profile` et `import_project_xliff` ;
+- les scripts (`topsolid_execute_script`, `topsolid_modify_script`) qui appellent une suppression TopSolid (`Delete...`, `Purge...`, `Remove...`, `Erase...`).
+
+Sans `confirm`, l'outil renvoie un refus qui dit quoi demander a l'utilisateur ; l'agent rappelle avec `confirm: true` une fois l'accord obtenu. Pour l'automatisation sans personne pour confirmer : option `--no-confirm` ou variable `TOPSOLID_MCP_SKIP_CONFIRM=1`.
+:::
+
 ## topsolid_run_recipe
 
 **L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.

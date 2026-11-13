@@ -5659,6 +5659,11 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
                         {
                             ["type"] = "string",
                             ["description"] = "Value for parameterized recipes (e.g. name, path, name:value)"
+                        },
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Set to true ONLY after the user explicitly approved. Required by exports, batch changes and recipes that remove data."
                         }
                     },
                     ["required"] = new JArray { "recipe" }
@@ -5682,6 +5687,11 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
                 return "Refused: recipe '" + recipeName + "' is " + GetModeLabel(recipe.Mode) +
                     " and this server runs in read-only mode. " +
                     "Only " + GetModeLabel(RecipeEntry.RecipeMode.Read) + " recipes are allowed.";
+
+            // GH #7: exports, batch changes and removals wait for confirm=true.
+            string confirmRefusal = TopSolidMcpServer.Utils.DestructiveGuard.CheckRecipe(
+                recipeName, recipe.Mode == RecipeEntry.RecipeMode.WriteDisk, arguments);
+            if (confirmRefusal != null) return confirmRefusal;
 
             // Substitute the {value} placeholder, escaped for a C# string literal.
             string value = arguments["value"]?.ToString() ?? "";

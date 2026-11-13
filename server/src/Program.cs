@@ -199,6 +199,8 @@ namespace TopSolidMcpServer
 
             bool noTray = HasFlag(args, "--no-tray") || IsEnvFlagSet("TOPSOLID_MCP_NO_TRAY");
             bool readOnly = HasFlag(args, "--read-only") || IsEnvFlagSet("TOPSOLID_MCP_READ_ONLY");
+            // GH #7: --no-confirm (or TOPSOLID_MCP_SKIP_CONFIRM=1) skips the confirm=true step, for automation.
+            TopSolidMcpServer.Utils.DestructiveGuard.Disabled = HasFlag(args, "--no-confirm") || IsEnvFlagSet(TopSolidMcpServer.Utils.DestructiveGuard.EnvVarName);
 
             // ── v1.8.0: http-standalone mode. ──
             // The process is launched detached (scheduled task, no stdio client) and

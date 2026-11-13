@@ -37,6 +37,11 @@ namespace TopSolidMcpServer.Tools
                     ["type"] = "object",
                     ["properties"] = new JObject
                     {
+                        ["confirm"] = new JObject
+                        {
+                            ["type"] = "boolean",
+                            ["description"] = "Set to true ONLY after the user explicitly approved. Required for actions that cannot be undone (see the refusal message)."
+                        },
                         ["code"] = new JObject
                         {
                             ["type"] = "string",
@@ -68,6 +73,10 @@ namespace TopSolidMcpServer.Tools
 
                 if (string.IsNullOrWhiteSpace(code))
                     return "Error: the 'code' argument is required.";
+
+                // GH #7: a script that deletes TopSolid data waits for confirm=true.
+                string refusal = DestructiveGuard.CheckScript(code, arguments);
+                if (refusal != null) return refusal;
 
                 var connector = _connectorProvider();
 
