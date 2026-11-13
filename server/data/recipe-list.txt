@@ -52,6 +52,7 @@ detect_unfolding
 read_bend_features
 read_unfolding_dimensions
 set_drafting_scale
+set_all_views_scale
 set_drafting_format
 set_projection_quality
 print_drafting

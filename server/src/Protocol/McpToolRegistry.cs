@@ -21,6 +21,8 @@ namespace TopSolidMcpServer.Protocol
         /// <param name="handler">Tool execution handler.</param>
         public void RegisterTool(McpToolDescriptor descriptor, Func<JObject, string> handler)
         {
+            if (descriptor.Annotations == null)
+                descriptor.Annotations = McpToolAnnotations.For(descriptor.Name);
             _descriptors[descriptor.Name] = descriptor;
             _handlers[descriptor.Name] = handler;
         }

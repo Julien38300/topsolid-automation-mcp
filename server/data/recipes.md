@@ -1142,6 +1142,35 @@ TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);
 __message = "OK: drafting scale set to 1:" + denom;
 ```
 
+## set_all_views_scale
+Pattern: RW
+Description: Sets the scale of the drafting AND of every view that has its own scale (views with a relative scale follow). Param: value=denominator (e.g. '40' for 1:40)
+
+```csharp
+if (docId.IsEmpty) { __message = "No document open."; return; }
+bool isDrafting = false;
+try { isDrafting = TopSolidDraftingHost.Draftings.IsDrafting(docId); } catch { __message = "Not a drafting."; return; }
+if (!isDrafting) { __message = "Not a drafting."; return; }
+double denom;
+if (!double.TryParse("{value}", System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out denom) || denom <= 0)
+{ __message = "ERROR: value must be a positive number (e.g. '40' for 1:40)."; return; }
+double factor = 1.0 / denom;
+TopSolidDraftingHost.Draftings.SetScaleFactorParameterValue(docId, factor);
+int own = 0, relative = 0;
+var names = new System.Text.StringBuilder();
+foreach (ElementId view in TopSolidDraftingHost.Draftings.GetDraftingViews(docId))
+{
+    bool isRelative; double relValue, absValue, refValue;
+    TopSolidDraftingHost.Draftings.GetViewScaleFactor(view, out isRelative, out relValue, out absValue, out refValue);
+    if (isRelative) { relative++; continue; }
+    TopSolidDraftingHost.Draftings.SetViewScaleFactor(view, factor);
+    own++;
+    names.Append(names.Length > 0 ? ", " : "").Append(TopSolidDraftingHost.Draftings.GetViewTitle(view));
+}
+__message = "OK: drafting scale set to 1:" + denom + "; " + own + " view(s) with their own scale set to 1:" + denom +
+    (own > 0 ? " (" + names + ")" : "") + "; " + relative + " view(s) follow the drafting scale.";
+```
+
 ## set_drafting_format
 Pattern: RW
 Description: Sets the drafting format (paper size). Param: value=format_name (e.g. 'A3', 'A4')

@@ -24,6 +24,10 @@ Le serveur expose **15 outils** au protocole MCP. L'agent IA les appelle via JSO
 Lance avec `--read-only` (ou `TOPSOLID_MCP_READ_ONLY=1`) et `topsolid_modify_script` n'est pas enregistre du tout : il n'apparait pas dans `tools/list`, et les recettes tournent en mode lecture seule. Voir [Options de lancement](./quickstart#options-de-lancement-et-variables).
 :::
 
+::: tip Annotations MCP (v1.8.22+)
+Chaque outil declare dans `tools/list` les annotations MCP standard : `readOnlyHint` pour les outils qui ne font que lire (aide, recherche, etat, compilation...), `destructiveHint` pour ceux qui peuvent supprimer ou ecraser (`topsolid_run_recipe`, `topsolid_execute_script`, `topsolid_modify_script`). Un client MCP peut ainsi approuver d'office les premiers et demander confirmation avant les seconds. Ce sont des indications : les gardes du serveur (mode lecture seule, regles de transaction) restent en place.
+:::
+
 ## topsolid_run_recipe
 
 **L'outil principal.** Execute une recette pre-construite par nom. Le LLM n'a pas besoin de generer du code C# — il choisit juste le nom de la recette.
