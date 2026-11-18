@@ -263,66 +263,233 @@ namespace TopSolidMcpServer.Utils
             }
         }
 
+        /// <summary>A script running on its own thread. Kept after the call returns while it still runs.</summary>
+        private sealed class ScriptRun
+        {
+            public Thread Worker;
+            public string Result;
+            public Exception Failure;
+            public readonly Stopwatch Clock = Stopwatch.StartNew();
+            public readonly List<string> AutoClosed = new List<string>();
+            public int AutoClicks;
+        }
+
+        /// <summary>Interval between two looks at the TopSolid windows while a script runs.</summary>
+        private const int DialogPollMs = 250;
+
+        private static readonly object PendingLock = new object();
+
+        /// <summary>The script left running when its call returned (dialog box or timeout), or null.</summary>
+        private static ScriptRun _pending;
+
         /// <summary>
         /// Runs the compiled Run() method on a dedicated thread and gives up after the timeout
         /// configured by TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC (default 60 seconds), so that an endless
         /// loop in a user script cannot freeze the single-threaded stdio loop.
+        /// While it waits, it watches the TopSolid windows (field report: an error window is not
+        /// reported by the Automation API and blocks the process until someone closes it). A modal
+        /// dialog box that stays open is reported at once instead of after the timeout; one that only
+        /// acknowledges (a single button) is closed and its text kept, as set by
+        /// TOPSOLID_MCP_DIALOG_POLICY. See <see cref="DialogWatch"/>.
         /// KNOWN LIMITATION: a script that overruns the timeout is NOT killed. Thread.Abort is
         /// unsupported and unsafe, so the thread is only marked as background (it cannot keep the
-        /// process alive) and keeps running — possibly still holding a TopSolid transaction —
-        /// until it finishes on its own.
+        /// process alive) and keeps running, possibly still holding a TopSolid transaction, until it
+        /// finishes on its own. It is kept as the pending script: topsolid_dismiss_dialog waits for it,
+        /// and the next call reports how it ended.
         /// </summary>
         private static string InvokeWithTimeout(MethodInfo method, int minTimeoutSeconds = 0)
         {
             int timeoutSeconds = Math.Max(GetTimeoutSeconds(), minTimeoutSeconds);
-            string result = null;
-            Exception failure = null;
 
-            var worker = new Thread(delegate()
+            string notice;
+            string refusal = CheckPendingBeforeRun(out notice);
+            if (refusal != null) return refusal;
+
+            int[] pids = DialogWatch.CurrentPolicy() == DialogPolicy.Off ? new int[0] : DialogDetector.TopSolidProcessIds();
+            var openBefore = pids.Length == 0 ? new List<IntPtr>() : DialogDetector.ModalDialogHandles(pids);
+
+            var run = new ScriptRun();
+            run.Worker = new Thread(delegate()
             {
                 try
                 {
-                    result = (string)method.Invoke(null, null);
+                    run.Result = (string)method.Invoke(null, null);
                 }
                 catch (Exception ex)
                 {
-                    failure = ex;
+                    run.Failure = ex;
                 }
             });
-            worker.IsBackground = true;
-            worker.Name = "TopSolidMcpScript";
-            worker.Start();
+            run.Worker.IsBackground = true;
+            run.Worker.Name = "TopSolidMcpScript";
+            run.Worker.Start();
 
-            if (!worker.Join(TimeSpan.FromSeconds(timeoutSeconds)))
+            string outcome = WaitForScript(run, timeoutSeconds, openBefore, false);
+            return notice == null ? outcome : notice + "\n\n" + outcome;
+        }
+
+        /// <summary>
+        /// Waits for the script left running by a previous call (after the agent closed the dialog
+        /// box that stopped it). Null when no script is pending.
+        /// </summary>
+        public static string ResumePendingScript(int waitSeconds)
+        {
+            ScriptRun run;
+            lock (PendingLock) run = _pending;
+            if (run == null) return null;
+            return WaitForScript(run, Math.Max(1, waitSeconds), new List<IntPtr>(), true);
+        }
+
+        /// <summary>True when a script left running by a previous call has not finished yet.</summary>
+        public static bool HasRunningScript
+        {
+            get
             {
-                Console.Error.WriteLine("[MCP-ERROR] Script execution timed out after " + timeoutSeconds +
-                    " s. The script thread is left running in the background.");
-                string timeoutMessage = "Error: script execution timed out after " + timeoutSeconds + " seconds. " +
+                lock (PendingLock) return _pending != null && _pending.Worker.IsAlive;
+            }
+        }
+
+        /// <summary>
+        /// Before a new script: a previous script still waiting on a dialog box blocks TopSolid, so the
+        /// new one is refused; a previous script that finished meanwhile is reported in a notice.
+        /// </summary>
+        private static string CheckPendingBeforeRun(out string notice)
+        {
+            notice = null;
+            ScriptRun previous;
+            lock (PendingLock) previous = _pending;
+            if (previous == null) return null;
+
+            if (!previous.Worker.IsAlive)
+            {
+                ClearPending(previous);
+                string ended = Finish(previous);
+                if (ended.Length > 1000) ended = ended.Substring(0, 1000) + "...";
+                notice = "Note: the previous script, left running when its call returned, has finished since: " + ended;
+                return null;
+            }
+
+            var dialogs = DialogDetector.ReadDialogs(0).Where(DialogIsModal).ToList();
+            if (dialogs.Count > 0)
+                return "Error [topsolid_busy]: the previous script is still waiting on a TopSolid dialog box, so this one was not started. " +
+                    "Tell the user what the dialog says, then answer it with topsolid_dismiss_dialog.\n\n" + DialogDetector.Format(dialogs);
+
+            notice = "Warning: the previous script is still running in the background (" +
+                (int)previous.Clock.Elapsed.TotalSeconds + " s so far). TopSolid may answer slowly or see both scripts at once.";
+            return null;
+        }
+
+        private static bool DialogIsModal(WindowInfo w)
+        {
+            return w.IsEnabled && w.Owner != IntPtr.Zero && !w.OwnerEnabled;
+        }
+
+        private static string WaitForScript(ScriptRun run, int timeoutSeconds, IList<IntPtr> openBefore, bool resumed)
+        {
+            var policy = DialogWatch.CurrentPolicy();
+            int[] pids = policy == DialogPolicy.Off ? new int[0] : DialogDetector.TopSolidProcessIds();
+            var tracker = new DialogTracker(openBefore, DialogWatch.CurrentGraceMs());
+            var clock = Stopwatch.StartNew();
+            long deadline = timeoutSeconds * 1000L;
+
+            while (!run.Worker.Join(DialogPollMs))
+            {
+                if (clock.ElapsedMilliseconds >= deadline)
+                {
+                    SetPending(run);
+                    return TimeoutMessage(run, timeoutSeconds, resumed);
+                }
+                if (pids.Length == 0) continue;
+
+                foreach (IntPtr handle in tracker.Update(DialogDetector.ModalDialogHandles(pids), clock.ElapsedMilliseconds))
+                {
+                    WindowInfo dialog = DialogDetector.ReadDialog(handle);
+                    tracker.Skip(handle);
+                    if (dialog == null) continue;
+
+                    DialogDecision decision = DialogWatch.Decide(dialog, policy, run.AutoClicks);
+                    if (decision == DialogDecision.Ignore) continue;
+
+                    if (decision == DialogDecision.AutoClick)
+                    {
+                        string clickError = DialogDetector.Click(dialog, DialogWatch.Buttons(dialog)[0]);
+                        if (clickError == null)
+                        {
+                            run.AutoClicks++;
+                            run.AutoClosed.Add(DialogWatch.Summarize(dialog));
+                            Console.Error.WriteLine("[MCP-INFO] Dialog box closed automatically: " + DialogWatch.Summarize(dialog));
+                            continue;
+                        }
+                        Console.Error.WriteLine("[MCP-WARN] Could not close a dialog box automatically: " + clickError);
+                    }
+
+                    SetPending(run);
+                    return DialogWatch.BlockedHeader((int)run.Clock.Elapsed.TotalSeconds) + "\n\n" +
+                        DialogDetector.Format(new List<WindowInfo> { dialog });
+                }
+            }
+
+            ClearPending(run);
+            return Finish(run);
+        }
+
+        private static string TimeoutMessage(ScriptRun run, int timeoutSeconds, bool resumed)
+        {
+            Console.Error.WriteLine("[MCP-ERROR] Script execution timed out after " + timeoutSeconds +
+                " s. The script thread is left running in the background.");
+            string message = resumed
+                ? "Error [timeout]: the script is still running " + timeoutSeconds + " s after the dialog box was closed (" +
+                    (int)run.Clock.Elapsed.TotalSeconds + " s in all). It keeps running in the background; the next call reports how it ended."
+                : "Error [timeout]: script execution timed out after " + timeoutSeconds + " seconds. " +
                     "The script thread is still running in the background and cannot be stopped safely; " +
                     "check TopSolid before running another script. " +
                     "Set TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC to raise the limit.";
 
-                // The usual cause is a modal dialog waiting for a click: name it right away.
-                string dialogs = DialogDetector.DescribeIfAny();
-                return dialogs == null
-                    ? timeoutMessage + " No TopSolid dialog box was detected (topsolid_detect_dialog checks again)."
-                    : timeoutMessage + "\n\n" + dialogs;
-            }
+            // The usual cause is a modal dialog waiting for a click: name it right away.
+            string dialogs = DialogDetector.DescribeIfAny();
+            return dialogs == null
+                ? message + " No TopSolid dialog box was detected (topsolid_detect_dialog checks again)."
+                : message + "\n\n" + dialogs;
+        }
 
-            if (failure != null)
+        private static void SetPending(ScriptRun run)
+        {
+            lock (PendingLock) _pending = run;
+        }
+
+        private static void ClearPending(ScriptRun run)
+        {
+            lock (PendingLock)
+            {
+                if (ReferenceEquals(_pending, run)) _pending = null;
+            }
+        }
+
+        /// <summary>The result of a finished script, with the dialog boxes closed automatically on the way.</summary>
+        private static string Finish(ScriptRun run)
+        {
+            string text;
+            if (run.Failure != null)
             {
                 // If a script with manual StartModification threw an unhandled exception,
                 // abort any open TopSolid modification so the session is not left locked.
                 try { AbortOpenModification(); } catch { }
 
-                var invocationFailure = failure as TargetInvocationException;
+                var invocationFailure = run.Failure as TargetInvocationException;
                 Exception inner = (invocationFailure != null && invocationFailure.InnerException != null)
                     ? invocationFailure.InnerException
-                    : failure;
-                return "Execution error: " + inner.GetType().Name + " - " + inner.Message + "\n" + inner.StackTrace;
+                    : run.Failure;
+                text = "Execution error: " + inner.GetType().Name + " - " + inner.Message + "\n" + inner.StackTrace;
+            }
+            else
+            {
+                text = run.Result ?? string.Empty;
             }
 
-            return result ?? string.Empty;
+            if (run.AutoClosed.Count == 0) return text;
+            return text + "\n\n[topsolid_dialog] TopSolid showed " + run.AutoClosed.Count +
+                " message box(es) during the script, closed automatically with their only button. " +
+                "Check that the result is what was expected:\n- " + string.Join("\n- ", run.AutoClosed);
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]

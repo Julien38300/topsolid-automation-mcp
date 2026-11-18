@@ -42,6 +42,7 @@ namespace TopSolidMcpServer.Protocol
             { "topsolid_run_recipe", new Hint { Title = "Run a recipe", Destructive = true } },
             { "topsolid_execute_script", new Hint { Title = "Run a C# script", Destructive = true } },
             { "topsolid_modify_script", new Hint { Title = "Run a C# script in a transaction", Destructive = true } },
+            { "topsolid_dismiss_dialog", new Hint { Title = "Answer a TopSolid dialog box", Destructive = true } },
         };
 
         /// <summary>The "annotations" object of a tool, or null for a tool that is not classified.</summary>

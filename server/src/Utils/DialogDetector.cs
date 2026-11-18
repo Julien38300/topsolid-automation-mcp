@@ -51,6 +51,21 @@ namespace TopSolidMcpServer.Utils
         private static extern IntPtr SendMessageTimeout(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam,
             uint flags, uint timeout, out IntPtr result);
 
+        [DllImport("user32.dll")]
+        private static extern bool IsWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetParent(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern int GetDlgCtrlID(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        private const uint WM_COMMAND = 0x0111;
+        private const int CloseWaitMs = 3000;
+
         [DllImport("user32.dll", CharSet = CharSet.Unicode, EntryPoint = "SendMessageTimeoutW")]
         private static extern IntPtr SendMessageTimeoutText(IntPtr hWnd, uint msg, IntPtr wParam, StringBuilder lParam,
             uint flags, uint timeout, out IntPtr result);
@@ -95,7 +110,7 @@ namespace TopSolidMcpServer.Utils
             }
         }
 
-        private static List<WindowInfo> Snapshot(ICollection<int> pids)
+        private static List<WindowInfo> Snapshot(ICollection<int> pids, bool withTitles = true)
         {
             var result = new List<WindowInfo>();
             if (pids.Count == 0) return result;
@@ -112,7 +127,8 @@ namespace TopSolidMcpServer.Utils
                 {
                     Handle = hWnd,
                     ProcessId = (int)pid,
-                    Title = GetText(hWnd),
+                    // Reading a title sends a message to TopSolid's UI thread: the fast poll skips it.
+                    Title = withTitles ? GetText(hWnd) : "",
                     ClassName = GetClass(hWnd),
                     IsVisible = IsWindowVisible(hWnd),
                     IsEnabled = IsWindowEnabled(hWnd),
@@ -138,6 +154,8 @@ namespace TopSolidMcpServer.Utils
                 if (!IsWindowVisible(child)) return true;
 
                 string cls = GetClass(child);
+                if (cls.IndexOf("progress", StringComparison.OrdinalIgnoreCase) >= 0)
+                    dialog.HasProgressBar = true;
                 string text = GetText(child);
                 if (string.IsNullOrWhiteSpace(text)) return true;
 
@@ -173,6 +191,7 @@ namespace TopSolidMcpServer.Utils
                     {
                         if (++count > MaxChildControls) break;
                         var info = element.Current;
+                        if (info.ControlType == ControlType.ProgressBar) dialog.HasProgressBar = true;
                         if (string.IsNullOrWhiteSpace(info.Name)) continue;
                         if (info.ControlType == ControlType.Button)
                         {
@@ -198,6 +217,150 @@ namespace TopSolidMcpServer.Utils
 
             lock (texts) dialog.Texts.AddRange(texts);
             lock (buttons) dialog.Buttons.AddRange(buttons);
+        }
+
+        /// <summary>The TopSolid processes of this machine.</summary>
+        public static int[] TopSolidProcessIds()
+        {
+            return Process.GetProcessesByName("TopSolid").Select(p => p.Id).ToArray();
+        }
+
+        /// <summary>
+        /// Fast poll for the dialog watch: the handles of the modal dialogs of TopSolid, without reading
+        /// any text (no message is sent to TopSolid, which may be busy running the script).
+        /// </summary>
+        public static List<IntPtr> ModalDialogHandles(int[] pids)
+        {
+            try
+            {
+                return DialogReport.SelectModal(Snapshot(pids, false)).Select(w => w.Handle).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("[MCP-WARN] Dialog poll failed: " + ex.Message);
+                return new List<IntPtr>();
+            }
+        }
+
+        /// <summary>The open dialogs with their texts and buttons, modal ones first.</summary>
+        public static List<WindowInfo> ReadDialogs(int processId)
+        {
+            int[] pids = processId > 0 ? new[] { processId } : TopSolidProcessIds();
+            var dialogs = DialogReport.SelectDialogs(Snapshot(pids));
+            foreach (var dialog in dialogs)
+                ReadTexts(dialog);
+            return dialogs;
+        }
+
+        /// <summary>One dialog read from its handle, or null when it has closed meanwhile.</summary>
+        public static WindowInfo ReadDialog(IntPtr handle)
+        {
+            if (!IsOpen(handle)) return null;
+            uint pid;
+            GetWindowThreadProcessId(handle, out pid);
+            IntPtr owner = GetWindow(handle, GW_OWNER);
+            var dialog = new WindowInfo
+            {
+                Handle = handle,
+                ProcessId = (int)pid,
+                Title = GetText(handle),
+                ClassName = GetClass(handle),
+                IsVisible = true,
+                IsEnabled = IsWindowEnabled(handle),
+                Owner = owner,
+                OwnerEnabled = owner == IntPtr.Zero || IsWindowEnabled(owner)
+            };
+            ReadTexts(dialog);
+            return dialog;
+        }
+
+        /// <summary>The report text of some dialogs (title, text, buttons).</summary>
+        public static string Format(IList<WindowInfo> dialogs)
+        {
+            var list = dialogs ?? new List<WindowInfo>();
+            return DialogReport.Format(list, list, Math.Max(1, list.Select(d => d.ProcessId).Distinct().Count()));
+        }
+
+        public static bool IsOpen(IntPtr handle)
+        {
+            return handle != IntPtr.Zero && IsWindow(handle) && IsWindowVisible(handle);
+        }
+
+        /// <summary>
+        /// Presses a button of a dialog, as a click would, and waits for the dialog to close.
+        /// Win32 buttons get a posted WM_COMMAND (never a SendMessage, which would wait for TopSolid);
+        /// WPF buttons, which have no window handle, are invoked through UI Automation.
+        /// Returns null on success, else why it failed.
+        /// </summary>
+        public static string Click(WindowInfo dialog, string caption)
+        {
+            if (dialog == null || !IsOpen(dialog.Handle)) return "the dialog box is no longer open";
+            string wanted = DialogWatch.NormalizeButton(caption);
+
+            IntPtr button = IntPtr.Zero;
+            EnumChildWindows(dialog.Handle, delegate(IntPtr child, IntPtr lParam)
+            {
+                if (!IsWindowVisible(child) || !IsWindowEnabled(child)) return true;
+                if (GetClass(child).IndexOf("BUTTON", StringComparison.OrdinalIgnoreCase) < 0) return true;
+                if (!string.Equals(DialogWatch.NormalizeButton(GetText(child)), wanted, StringComparison.OrdinalIgnoreCase)) return true;
+                button = child;
+                return false;
+            }, IntPtr.Zero);
+
+            bool pressed;
+            if (button != IntPtr.Zero)
+            {
+                // BN_CLICKED is 0: the high word of wParam stays empty.
+                int id = GetDlgCtrlID(button);
+                IntPtr parent = GetParent(button);
+                pressed = PostMessage(parent == IntPtr.Zero ? dialog.Handle : parent, WM_COMMAND, new IntPtr(id & 0xFFFF), button);
+            }
+            else
+            {
+                pressed = InvokeWithUiAutomation(dialog.Handle, wanted);
+            }
+            if (!pressed) return "the button [" + wanted + "] could not be pressed";
+
+            var watch = Stopwatch.StartNew();
+            while (watch.ElapsedMilliseconds < CloseWaitMs)
+            {
+                if (!IsOpen(dialog.Handle)) return null;
+                Thread.Sleep(100);
+            }
+            return "the button [" + wanted + "] was pressed but the dialog box is still open";
+        }
+
+        private static bool InvokeWithUiAutomation(IntPtr handle, string wanted)
+        {
+            bool done = false;
+            var worker = new Thread(delegate()
+            {
+                try
+                {
+                    var root = AutomationElement.FromHandle(handle);
+                    var all = root.FindAll(TreeScope.Descendants,
+                        new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Button));
+                    foreach (AutomationElement element in all)
+                    {
+                        if (!string.Equals(DialogWatch.NormalizeButton(element.Current.Name), wanted, StringComparison.OrdinalIgnoreCase))
+                            continue;
+                        object pattern;
+                        if (!element.TryGetCurrentPattern(InvokePattern.Pattern, out pattern)) continue;
+                        ((InvokePattern)pattern).Invoke();
+                        done = true;
+                        return;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine("[MCP-WARN] UI Automation could not press [" + wanted + "]: " + ex.Message);
+                }
+            });
+            worker.IsBackground = true;
+            worker.SetApartmentState(ApartmentState.MTA);
+            worker.Start();
+            worker.Join(UiAutomationTimeoutMs);
+            return done;
         }
 
         /// <summary>

@@ -44,6 +44,16 @@ namespace TopSolidMcpServer.Utils
                 .ToList();
         }
 
+        /// <summary>The modal dialogs only: the windows that block TopSolid until they are answered.</summary>
+        public static List<WindowInfo> SelectModal(IEnumerable<WindowInfo> windows)
+        {
+            var list = (windows ?? Enumerable.Empty<WindowInfo>()).Where(w => w != null).ToList();
+            var pidsWithDisabledMain = new HashSet<int>(list
+                .Where(w => w.IsVisible && w.Owner == IntPtr.Zero && !w.IsEnabled && !IsIgnored(w.ClassName))
+                .Select(w => w.ProcessId));
+            return SelectDialogs(list).Where(w => IsModal(w, pidsWithDisabledMain)).ToList();
+        }
+
         /// <summary>True when the window blocks the rest of its process.</summary>
         public static bool IsModal(WindowInfo w, ICollection<int> pidsWithDisabledMain)
         {

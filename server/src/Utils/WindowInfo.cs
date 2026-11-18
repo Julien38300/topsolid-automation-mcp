@@ -23,5 +23,8 @@ namespace TopSolidMcpServer.Utils
 
         public List<string> Texts { get; } = new List<string>();
         public List<string> Buttons { get; } = new List<string>();
+
+        /// <summary>True when the window shows a progress bar: TopSolid is working, not asking.</summary>
+        public bool HasProgressBar { get; set; }
     }
 }
