@@ -228,7 +228,7 @@ Toutes ces options se passent soit en argument de ligne de commande, soit par va
 
 | Option | Variable | Effet |
 |---|---|---|
-| `--read-only` | `TOPSOLID_MCP_READ_ONLY=1` | `topsolid_modify_script` n'est pas enregistre ; les recettes tournent en lecture seule |
+| `--read-only` | `TOPSOLID_MCP_READ_ONLY=1` | `topsolid_modify_script` et `topsolid_dismiss_dialog` ne sont pas enregistres ; les recettes tournent en lecture seule |
 | `--profile small` | `TOPSOLID_MCP_PROFILE=small` | N'expose que 4 outils (`topsolid_run_recipe`, `topsolid_list_recipes`, `topsolid_get_state`, `topsolid_search_help`) pour les petits modeles locaux |
 | `--no-confirm` | `TOPSOLID_MCP_SKIP_CONFIRM=1` | Supprime l'etape `confirm: true` des exports, modifications en masse et suppressions (v1.8.23+), pour l'automatisation sans personne pour confirmer |
 | `--no-tray` | `TOPSOLID_MCP_NO_TRAY=1` | Pas d'icone dans la zone de notification (serveur headless, session 0, CI) |
@@ -237,6 +237,8 @@ Toutes ces options se passent soit en argument de ligne de commande, soit par va
 | `--version` / `-v` | — | Affiche la version et sort |
 | — | `TOPSOLID_BIN_PATH` | Dossier contenant `TopSolid.Kernel.Automating.dll`, quand la detection automatique echoue |
 | — | `TOPSOLID_MCP_SCRIPT_TIMEOUT_SEC` | Delai max d'execution d'un script, en secondes (defaut 60) |
+| — | `TOPSOLID_MCP_DIALOG_POLICY` | Boites de dialogue pendant un script (v1.8.24+) : `ack` (defaut, ferme les messages a un seul bouton et rend la main sur une question), `report` (ne clique jamais), `off` (pas de surveillance) |
+| — | `TOPSOLID_MCP_DIALOG_GRACE_MS` | Temps qu'une boite doit rester ouverte avant d'etre traitee, en millisecondes (defaut 1500) |
 | — | `TOPSOLID_MCP_SCRIPT_MAX_OUTPUT_CHARS` | Taille max du texte renvoye par `topsolid_execute_script` et `topsolid_modify_script` (defaut 30000 caracteres, minimum 1000) |
 | — | `TOPSOLID_MCP_ALLOW_UNSAFE=1` | Desactive le controle des APIs interdites — debug uniquement, jamais en usage courant |
 

@@ -401,6 +401,10 @@ namespace TopSolidMcpServer
                 {
                     var modifyScriptTool = new ModifyScriptTool(() => connector);
                     modifyScriptTool.Register(registry);
+
+                    // Answers TopSolid dialog boxes: never in read-only mode, where a "Yes" could write.
+                    var dismissDialogTool = new DismissDialogTool(() => connector);
+                    dismissDialogTool.Register(registry);
                 }
 
                 var apiHelpTool = new ApiHelpTool(() => { EnsureGraphLoaded(); return graph; });

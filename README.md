@@ -70,7 +70,7 @@ In your AI assistant, ask:
 
 The agent picks `topsolid_run_recipe` with recipe `read_designation` and returns the result.
 
-## The 15 MCP tools
+## The 16 MCP tools
 
 | Tool | Purpose | Needs TopSolid running |
 |---|---|---|
@@ -81,6 +81,7 @@ The agent picks `topsolid_run_recipe` with recipe `read_designation` and returns
 | `topsolid_explore_paths` | Multi-path BFS between two types | no |
 | `topsolid_get_state` | Active document, project, connection status | yes |
 | `topsolid_detect_dialog` | Title, text and buttons of a dialog box blocking TopSolid; works while TopSolid is frozen | yes (reads its windows, not the API) |
+| `topsolid_dismiss_dialog` | Press a button of that dialog box, then return the result of the script it had paused; answers other than Cancel or a lone OK need `confirm: true` | yes (reads its windows, not the API) |
 | `topsolid_compare_documents` | Sorted list of what changed between two revisions of a part or assembly (material, parameters, operations, geometry); tells what a target document already has and applies the automatic part to it | yes |
 | `topsolid_execute_script` | Compile and run arbitrary C# in the server process, outside a TopSolid modification transaction | yes |
 | `topsolid_modify_script` | Compile and run arbitrary C# inside a modification transaction (Pattern D auto-wrapped) | yes |
@@ -100,6 +101,7 @@ Practical consequences:
 
 - **Do not add `topsolid_execute_script` or `topsolid_modify_script` to the auto-approved / always-allow tool list of your MCP client.** Read each script before you let it run.
 - Run the server with `--read-only` (or `TOPSOLID_MCP_READ_ONLY=1`) when you only need to query: `topsolid_modify_script` is then not registered at all, and recipes run in read-only mode.
+- Since v1.8.24, the server watches TopSolid's windows while a script runs. A message box with a single button (an error such as "nothing to export") is closed and its text added to the result; a question (Yes/No, Save...) returns at once with `Error [topsolid_dialog]` and its text and buttons, instead of blocking until someone clicks. `TOPSOLID_MCP_DIALOG_POLICY=report` never clicks, `off` turns the watch off.
 - Since v1.8.23, exports, batch changes, recipes that remove data and scripts that delete TopSolid data are refused until the agent calls again with `confirm: true`, which it should do only after asking you. `--no-confirm` (or `TOPSOLID_MCP_SKIP_CONFIRM=1`) removes that step for unattended automation.
 - Do not expose the HTTP endpoint publicly without authentication — see the [HTTP guide](https://julien38300.github.io/topsolid-automation-mcp/guide/bridge-http).
 

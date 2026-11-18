@@ -39,7 +39,7 @@ namespace TopSolidMcpServer.Tools
         {
             try
             {
-                return DialogDetector.Describe(ResolveProcessId());
+                return DialogDetector.Describe(ResolveProcessId(_connectorProvider));
             }
             catch (Exception ex)
             {
@@ -52,11 +52,11 @@ namespace TopSolidMcpServer.Tools
         /// The TopSolid process listening on the connector port; 0 (every TopSolid process)
         /// when it cannot be told apart.
         /// </summary>
-        private int ResolveProcessId()
+        internal static int ResolveProcessId(Func<TopSolidConnector> connectorProvider)
         {
             try
             {
-                var connector = _connectorProvider();
+                var connector = connectorProvider();
                 if (connector == null) return 0;
                 var instance = TopSolidInstanceList.FindByPort(TopSolidInstanceList.Scan(), connector.Port);
                 return instance != null ? instance.Pid : 0;
