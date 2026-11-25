@@ -125,22 +125,29 @@ PdmObjectId projId = TopSolidHost.Pdm.GetCurrentProject();
 if (projId.IsEmpty) return "No current project.";
 var sb = new System.Text.StringBuilder();
 sb.AppendLine("Project: " + TopSolidHost.Pdm.GetName(projId));
-int totalDocs = 0; int totalFolders = 0;
+int totalDocs = 0; int totalFolders = 0; int shown = 0;
+const int MaxEntries = 500; bool truncated = false;
 Action<PdmObjectId, string> listRecursive = null;
 listRecursive = (parentId, indent) => {
+    if (truncated) return;
     List<PdmObjectId> folders; List<PdmObjectId> docs;
     TopSolidHost.Pdm.GetConstituents(parentId, out folders, out docs);
     foreach (var f in folders) {
+        if (shown >= MaxEntries) { truncated = true; return; }
         totalFolders++;
         sb.AppendLine(indent + "[Folder] " + TopSolidHost.Pdm.GetName(f));
+        shown++;
         listRecursive(f, indent + "  ");
     }
     foreach (var d in docs) {
+        if (shown >= MaxEntries) { truncated = true; return; }
         totalDocs++;
         sb.AppendLine(indent + TopSolidHost.Pdm.GetName(d));
+        shown++;
     }
 };
 listRecursive(projId, "  ");
+if (truncated) sb.AppendLine("(OUTPUT TRUNCATED at " + MaxEntries + " entries — refine the query: topsolid_search_document by name, or list a subfolder directly.)");
 sb.Insert(sb.ToString().IndexOf('\n') + 1, "(" + totalFolders + " folders, " + totalDocs + " documents)\n");
 return sb.ToString();
 ```
