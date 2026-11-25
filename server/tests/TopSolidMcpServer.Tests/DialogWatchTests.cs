@@ -127,6 +127,7 @@ namespace TopSolidMcpServer.Tests
             Assert.That(DialogWatch.RequiresConfirm(question, "&Non"), Is.True, "No is an answer too");
             Assert.That(DialogWatch.RequiresConfirm(question, "Annuler"), Is.False);
             Assert.That(DialogWatch.RequiresConfirm(Dialog("TopSolid", "OK"), "OK"), Is.False);
+            Assert.That(DialogWatch.RequiresConfirm(Dialog("TopSolid", "Supprimer"), "Supprimer"), Is.True, "a lone destructive button still needs confirm");
         }
 
         [Test]

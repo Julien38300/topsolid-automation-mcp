@@ -96,7 +96,8 @@ namespace TopSolidMcpServer.Utils
         /// <summary>A dialog with a single button only informs: pressing it answers nothing.</summary>
         public static bool IsAcknowledgeOnly(WindowInfo dialog)
         {
-            return Buttons(dialog).Count == 1;
+            var buttons = Buttons(dialog);
+            return buttons.Count == 1 && AutoClickCaptions.Contains(buttons[0]);
         }
 
         /// <summary>
