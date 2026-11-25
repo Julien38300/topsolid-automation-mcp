@@ -146,12 +146,12 @@ Une boite de dialogue de TopSolid n'est pas remontee par l'API Automation : l'ap
 
 | Boite | Ce que fait le serveur |
 |---|---|
-| Un seul bouton (message d'erreur ou d'information : « aucune entite a exporter »...) | Il la ferme avec ce bouton, le script continue, et son texte est ajoute a la fin du resultat (`[topsolid_dialog] ... closed automatically`) |
-| Une question (Oui / Non, Enregistrer, Remplacer...) | L'appel rend la main tout de suite avec `Error [topsolid_dialog]`, le titre, le texte et les boutons. Le script est en pause, pas en echec |
+| Un seul bouton anodin (`OK`, `Fermer`, `Close`, `Continuer`, `Continue`, insensible a la casse et aux `&`) | Il la ferme avec ce bouton, le script continue, et son texte est ajoute a la fin du resultat (`[topsolid_dialog] ... closed automatically`) |
+| Une question (Oui / Non, Enregistrer, Remplacer...) ou un bouton unique hors liste blanche (`Supprimer`, `Delete`, `Annuler`...) | L'appel rend la main tout de suite avec `Error [topsolid_dialog]`, le titre, le texte et les boutons. Le script est en pause, pas en echec |
 | Une fenetre de progression | Ignoree : TopSolid travaille |
 | Une boite deja ouverte avant le script | Ignoree : elle n'est pas du fait du script |
 
-Le serveur n'appuie jamais seul sur un bouton qui annule (Annuler, Abbrechen...), et au plus 5 fois par script : au-dela, il rend la main. La variable `TOPSOLID_MCP_DIALOG_POLICY` regle ce comportement : `ack` (defaut, comme ci-dessus), `report` (ne clique jamais, rend toujours la main) ou `off` (aucune surveillance, comme avant la v1.8.24 : seulement le rapport au bout du delai). `TOPSOLID_MCP_DIALOG_GRACE_MS` change le delai de 1,5 s.
+Seuls les boutons de la liste blanche (`OK`, `Fermer`, `Close`, `Continuer`, `Continue`) peuvent etre cliques automatiquement, et au plus 5 fois par script : au-dela, ou pour tout autre bouton, le serveur rend la main. La variable `TOPSOLID_MCP_DIALOG_POLICY` regle ce comportement : `ack` (defaut, comme ci-dessus), `report` (ne clique jamais, rend toujours la main) ou `off` (aucune surveillance, comme avant la v1.8.24 : seulement le rapport au bout du delai). `TOPSOLID_MCP_DIALOG_GRACE_MS` change le delai de 1,5 s.
 
 Tant qu'un script attend une boite, un nouveau script est refuse avec `Error [topsolid_busy]` et le rapport de la boite : il resterait bloque lui aussi. Un script qui a fini en arriere-plan voit son resultat rendu en tete de l'appel suivant.
 

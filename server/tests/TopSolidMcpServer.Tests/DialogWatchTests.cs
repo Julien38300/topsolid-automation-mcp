@@ -66,6 +66,16 @@ namespace TopSolidMcpServer.Tests
             Assert.That(DialogWatch.Decide(d, DialogPolicy.Acknowledge, 0), Is.EqualTo(DialogDecision.AutoClick));
         }
 
+        [TestCase("OK", DialogDecision.AutoClick)]
+        [TestCase("&Fermer", DialogDecision.AutoClick)]
+        [TestCase("Supprimer", DialogDecision.Report)]
+        [TestCase("Delete", DialogDecision.Report)]
+        public void SingleButton_OnlyWhitelistedCaptionsAreAutoClicked(string caption, DialogDecision expected)
+        {
+            var d = Dialog("TopSolid", caption);
+            Assert.That(DialogWatch.Decide(d, DialogPolicy.Acknowledge, 0), Is.EqualTo(expected));
+        }
+
         [Test]
         public void ReportPolicy_NeverClicks()
         {

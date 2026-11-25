@@ -4,31 +4,6 @@ using System.Linq;
 
 namespace TopSolidMcpServer.Utils
 {
-    /// <summary>What the server does when TopSolid opens a modal dialog box while a script runs.</summary>
-    public enum DialogPolicy
-    {
-        /// <summary>No watch: the call waits until the timeout, as before 1.8.24.</summary>
-        Off,
-        /// <summary>The call returns at once with the dialog's text and buttons; nothing is clicked.</summary>
-        Report,
-        /// <summary>
-        /// As Report, but a dialog with a single button (a message to acknowledge) is closed with that
-        /// button, its text is kept for the result, and the script carries on. The default.
-        /// </summary>
-        Acknowledge
-    }
-
-    /// <summary>What to do with one dialog box seen by the watch.</summary>
-    public enum DialogDecision
-    {
-        /// <summary>A progress window: TopSolid is working, not waiting for an answer.</summary>
-        Ignore,
-        /// <summary>Close it with its only button and let the script continue.</summary>
-        AutoClick,
-        /// <summary>Return to the agent: the dialog asks a question the user must answer.</summary>
-        Report
-    }
-
     /// <summary>
     /// Pure logic of the dialog watch (field report: "when TopSolid shows an error window, it is not
     /// reported through the API and the process stays blocked until someone closes it"). Win32 lives in
@@ -55,6 +30,12 @@ namespace TopSolidMcpServer.Utils
         private static readonly HashSet<string> AbortCaptions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "Cancel", "Annuler", "Abbrechen", "Annulla", "Cancelar", "Stop", "Arrêter", "Abort", "Interrompre"
+        };
+
+        /// <summary>Benign single-button captions safe to auto-click (case- and '&amp;'-insensitive).</summary>
+        private static readonly HashSet<string> AutoClickCaptions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "OK", "Fermer", "Close", "Continuer", "Continue"
         };
 
         public static DialogPolicy ParsePolicy(string raw)
@@ -132,7 +113,7 @@ namespace TopSolidMcpServer.Utils
             var buttons = Buttons(dialog);
             if (dialog != null && dialog.HasProgressBar && buttons.All(b => IsCancelLike(b) || AbortCaptions.Contains(b)))
                 return DialogDecision.Ignore;
-            if (policy == DialogPolicy.Acknowledge && buttons.Count == 1 && !AbortCaptions.Contains(buttons[0]) &&
+            if (policy == DialogPolicy.Acknowledge && buttons.Count == 1 && AutoClickCaptions.Contains(buttons[0]) &&
                 autoClicksSoFar < MaxAutoClicksPerScript)
                 return DialogDecision.AutoClick;
             return DialogDecision.Report;
@@ -200,48 +181,6 @@ namespace TopSolidMcpServer.Utils
                 "The script is paused, not failed: it resumes when the dialog is closed. " +
                 "Tell the user what the dialog says, then call topsolid_dismiss_dialog with the button to press " +
                 "(it returns the script result once the script finishes).";
-        }
-    }
-
-    /// <summary>
-    /// Follows the modal dialogs seen at each poll and says which one has stayed open longer than the
-    /// grace period. Windows open before the script started are not the script's doing and are skipped.
-    /// </summary>
-    public sealed class DialogTracker
-    {
-        private readonly int _graceMs;
-        private readonly HashSet<IntPtr> _skipped;
-        private readonly Dictionary<IntPtr, long> _firstSeen = new Dictionary<IntPtr, long>();
-
-        public DialogTracker(IEnumerable<IntPtr> openBefore, int graceMs)
-        {
-            _graceMs = Math.Max(0, graceMs);
-            _skipped = new HashSet<IntPtr>(openBefore ?? Enumerable.Empty<IntPtr>());
-        }
-
-        /// <summary>The handles open for at least the grace period and not handled yet.</summary>
-        public List<IntPtr> Update(IEnumerable<IntPtr> openNow, long nowMs)
-        {
-            var open = new HashSet<IntPtr>(openNow ?? Enumerable.Empty<IntPtr>());
-            foreach (var gone in _firstSeen.Keys.Where(h => !open.Contains(h)).ToList())
-                _firstSeen.Remove(gone);
-
-            var due = new List<IntPtr>();
-            foreach (var h in open)
-            {
-                if (_skipped.Contains(h)) continue;
-                long first;
-                if (!_firstSeen.TryGetValue(h, out first)) { _firstSeen[h] = nowMs; first = nowMs; }
-                if (nowMs - first >= _graceMs) due.Add(h);
-            }
-            return due;
-        }
-
-        /// <summary>Never act on this window again (handled, or a progress window).</summary>
-        public void Skip(IntPtr handle)
-        {
-            _skipped.Add(handle);
-            _firstSeen.Remove(handle);
         }
     }
 }
