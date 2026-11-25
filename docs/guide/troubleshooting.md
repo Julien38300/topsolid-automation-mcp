@@ -121,10 +121,14 @@ Le resolveur cherche dans le registre (`Missler Software`, sous-cles `TopSolid 7
 
 ## Un script expire au bout de 60 s et TopSolid ne repond plus
 
-Cause la plus frequente : TopSolid attend un clic sur une boite de dialogue modale (« aucune entite a exporter », reparation de famille, confirmation...). Le pont rend la main au bout de 60 s mais le script continue en arriere-plan, et TopSolid reste bloque.
+Cause la plus frequente : TopSolid attend un clic sur une boite de dialogue modale (« aucune entite a exporter », reparation de famille, confirmation...).
+
+Depuis la v1.8.24, le serveur surveille les boites pendant le script (voir [Boites de dialogue pendant un script](./outils-mcp#boites-de-dialogue-pendant-un-script-v1-8-24)) : un message a un seul bouton est ferme et son texte rendu, une question rend la main en 1 a 2 s avec `Error [topsolid_dialog]`. Il ne reste alors qu'a repondre avec `topsolid_dismiss_dialog`.
+
+Si l'appel expire quand meme (surveillance coupee par `TOPSOLID_MCP_DIALOG_POLICY=off`, ou serveur dans une autre session Windows) :
 
 1. Le message d'expiration inclut le titre, le texte et les boutons de la boite quand le serveur la trouve. Sinon, appeler `topsolid_detect_dialog` : il lit les fenetres de TopSolid sans passer par l'API, donc il repond meme quand TopSolid est bloque.
-2. Fermer la boite dans TopSolid. Le serveur ne clique jamais a la place de l'utilisateur.
+2. Repondre avec `topsolid_dismiss_dialog`, ou fermer la boite dans TopSolid.
 3. Ne pas relancer le meme appel avant d'avoir compris la cause. Pour un export, utiliser `export_file`, qui refuse les documents sans forme au lieu d'ouvrir cette boite.
 
 ## "EndModification must be called before calling this method"

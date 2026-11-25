@@ -29,11 +29,12 @@
               │  KeywordIdx       │  api-index.json (1728 methods)
               │  RecipeTool       │  224 recettes
               │                   │
-              │  15 outils MCP :  │
+              │  16 outils MCP :  │
               │  - run_recipe     │
               │  - list_recipes   │
               │  - get_state      │
               │  - detect_dialog  │
+              │  - dismiss_dialog │
               │  - compare_docs   │
               │  - api_help       │
               │  - execute_script │

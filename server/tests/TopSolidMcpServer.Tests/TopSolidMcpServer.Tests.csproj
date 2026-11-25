@@ -32,6 +32,10 @@
     <Compile Include="..\..\src\Utils\TopSolidInstanceList.cs" Link="TopSolidInstanceList.cs" />
     <Compile Include="..\..\src\Utils\DialogReport.cs" Link="DialogReport.cs" />
     <Compile Include="..\..\src\Utils\WindowInfo.cs" Link="WindowInfo.cs" />
+    <Compile Include="..\..\src\Utils\DialogPolicy.cs" Link="DialogPolicy.cs" />
+    <Compile Include="..\..\src\Utils\DialogDecision.cs" Link="DialogDecision.cs" />
+    <Compile Include="..\..\src\Utils\DialogWatch.cs" Link="DialogWatch.cs" />
+    <Compile Include="..\..\src\Utils\DialogTracker.cs" Link="DialogTracker.cs" />
     <Compile Include="..\..\src\Utils\ScriptOutputLimit.cs" Link="ScriptOutputLimit.cs" />
     <Compile Include="..\..\src\Utils\TransactionRules.cs" Link="TransactionRules.cs" />
     <Compile Include="..\..\src\Utils\DestructiveGuard.cs" Link="DestructiveGuard.cs" />

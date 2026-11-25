@@ -1,6 +1,6 @@
 # Outils MCP
 
-Le serveur expose **15 outils** au protocole MCP. L'agent IA les appelle via JSON-RPC — sur stdin/stdout (mode stdio) ou via HTTP/SSE (mode bridge).
+Le serveur expose **16 outils** au protocole MCP. L'agent IA les appelle via JSON-RPC — sur stdin/stdout (mode stdio) ou via HTTP/SSE (mode bridge).
 
 | Outil | TopSolid requis |
 |---|---|
@@ -8,6 +8,7 @@ Le serveur expose **15 outils** au protocole MCP. L'agent IA les appelle via JSO
 | `topsolid_list_recipes` | non |
 | `topsolid_get_state` | oui |
 | `topsolid_detect_dialog` | oui |
+| `topsolid_dismiss_dialog` | oui |
 | `topsolid_compare_documents` | oui |
 | `topsolid_execute_script` | oui |
 | `topsolid_modify_script` | oui |
@@ -21,11 +22,11 @@ Le serveur expose **15 outils** au protocole MCP. L'agent IA les appelle via JSO
 | `topsolid_search_commands` | non |
 
 ::: warning `--read-only`
-Lance avec `--read-only` (ou `TOPSOLID_MCP_READ_ONLY=1`) et `topsolid_modify_script` n'est pas enregistre du tout : il n'apparait pas dans `tools/list`, et les recettes tournent en mode lecture seule. Voir [Options de lancement](./quickstart#options-de-lancement-et-variables).
+Lance avec `--read-only` (ou `TOPSOLID_MCP_READ_ONLY=1`) et `topsolid_modify_script` et `topsolid_dismiss_dialog` ne sont pas enregistres du tout : il n'apparait pas dans `tools/list`, et les recettes tournent en mode lecture seule. Voir [Options de lancement](./quickstart#options-de-lancement-et-variables).
 :::
 
 ::: tip Annotations MCP (v1.8.22+)
-Chaque outil declare dans `tools/list` les annotations MCP standard : `readOnlyHint` pour les outils qui ne font que lire (aide, recherche, etat, compilation...), `destructiveHint` pour ceux qui peuvent supprimer ou ecraser (`topsolid_run_recipe`, `topsolid_execute_script`, `topsolid_modify_script`). Un client MCP peut ainsi approuver d'office les premiers et demander confirmation avant les seconds. Ce sont des indications : les gardes du serveur (mode lecture seule, regles de transaction) restent en place.
+Chaque outil declare dans `tools/list` les annotations MCP standard : `readOnlyHint` pour les outils qui ne font que lire (aide, recherche, etat, compilation...), `destructiveHint` pour ceux qui peuvent supprimer ou ecraser (`topsolid_run_recipe`, `topsolid_execute_script`, `topsolid_modify_script`, `topsolid_dismiss_dialog`). Un client MCP peut ainsi approuver d'office les premiers et demander confirmation avant les seconds. Ce sont des indications : les gardes du serveur (mode lecture seule, regles de transaction) restent en place.
 :::
 
 ::: warning Confirmation obligatoire (v1.8.23+)
@@ -133,11 +134,51 @@ Exemple de reponse :
   Buttons: [OK] [Annuler]
 ```
 
-Quand un script depasse son delai (60 s par defaut), le message d'erreur inclut deja ce rapport s'il trouve une boite de dialogue. L'outil ne clique pas : c'est l'utilisateur qui ferme la boite dans TopSolid.
+L'outil ne clique pas. Pour repondre a la boite, voir [`topsolid_dismiss_dialog`](#topsolid-dismiss-dialog-v1-8-24).
 
 ::: warning Serveur dans une autre session Windows
 Si le serveur tourne comme service ou tache planifiee hors de la session de l'utilisateur, il ne voit pas les fenetres de TopSolid : l'outil le dit au lieu de repondre « aucune boite ».
 :::
+
+## Boites de dialogue pendant un script (v1.8.24+)
+
+Une boite de dialogue de TopSolid n'est pas remontee par l'API Automation : l'appel attend jusqu'a ce que quelqu'un la ferme. Depuis la v1.8.24, le serveur regarde les fenetres de TopSolid toutes les 250 ms pendant qu'un script tourne (recette, `topsolid_execute_script`, `topsolid_modify_script`). Une boite modale qui reste ouverte plus de 1,5 s est traitee ainsi :
+
+| Boite | Ce que fait le serveur |
+|---|---|
+| Un seul bouton anodin (`OK`, `Fermer`, `Close`, `Continuer`, `Continue`, insensible a la casse et aux `&`) | Il la ferme avec ce bouton, le script continue, et son texte est ajoute a la fin du resultat (`[topsolid_dialog] ... closed automatically`) |
+| Une question (Oui / Non, Enregistrer, Remplacer...) ou un bouton unique hors liste blanche (`Supprimer`, `Delete`, `Annuler`...) | L'appel rend la main tout de suite avec `Error [topsolid_dialog]`, le titre, le texte et les boutons. Le script est en pause, pas en echec |
+| Une fenetre de progression | Ignoree : TopSolid travaille |
+| Une boite deja ouverte avant le script | Ignoree : elle n'est pas du fait du script |
+
+Seuls les boutons de la liste blanche (`OK`, `Fermer`, `Close`, `Continuer`, `Continue`) peuvent etre cliques automatiquement, et au plus 5 fois par script : au-dela, ou pour tout autre bouton, le serveur rend la main. La variable `TOPSOLID_MCP_DIALOG_POLICY` regle ce comportement : `ack` (defaut, comme ci-dessus), `report` (ne clique jamais, rend toujours la main) ou `off` (aucune surveillance, comme avant la v1.8.24 : seulement le rapport au bout du delai). `TOPSOLID_MCP_DIALOG_GRACE_MS` change le delai de 1,5 s.
+
+Tant qu'un script attend une boite, un nouveau script est refuse avec `Error [topsolid_busy]` et le rapport de la boite : il resterait bloque lui aussi. Un script qui a fini en arriere-plan voit son resultat rendu en tete de l'appel suivant.
+
+## topsolid_dismiss_dialog (v1.8.24+)
+
+Appuie sur un bouton d'une boite de dialogue ouverte dans TopSolid, puis attend le script qu'elle avait mis en pause et renvoie son resultat. Comme `topsolid_detect_dialog`, il passe par Windows et non par l'API : il marche quand TopSolid est bloque.
+
+| Parametre | Type | Defaut | Role |
+|---|---|---|---|
+| `button` | string | requis | Libelle du bouton, tel que rapporte (`OK`, `Annuler`, `Oui`...) |
+| `title` | string | — | Partie du titre de la boite, quand plusieurs sont ouvertes |
+| `confirm` | boolean | false | `true` une fois que l'utilisateur a choisi cette reponse |
+| `wait_seconds` | integer | 60 | Attente du script apres le clic (max 600) |
+
+Annuler, Fermer, ou le seul bouton d'un message se pressent directement. Toute autre reponse (Oui, Non, Enregistrer, Reessayer...) est un choix de l'utilisateur : sans `confirm: true`, l'outil refuse et dit de lui montrer le texte de la boite. `--no-confirm` supprime aussi cette etape.
+
+```json
+{ "name": "topsolid_dismiss_dialog", "arguments": { "button": "Non", "confirm": true } }
+```
+
+Exemple de reponse :
+
+```
+Pressed [Non] in "TopSolid": Le document a ete modifie. Enregistrer ? [Oui] [Non] [Annuler]. Result of the paused script:
+
+OK: 3 pieces exportees
+```
 
 ## topsolid_compare_documents (v1.8.18+)
 
