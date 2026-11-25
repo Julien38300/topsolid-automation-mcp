@@ -3221,7 +3221,7 @@ namespace TopSolidMcpServer.Tools
                 "    }\n" +
                 "}\n" +
                 "return sb.ToString();") },
-            { "set_angular_scale", RW("MATERIALS", "Sets the angular scale factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_angular_scale", RW("MATERIALS", "Sets the angular scale factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3230,9 +3230,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_anisotropy_angle_factor", RW("MATERIALS", "Sets the anisotropy angle factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_anisotropy_angle_factor", RW("MATERIALS", "Sets the anisotropy angle factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3241,9 +3241,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_brinell_hardness_factor", RW("MATERIALS", "Sets the Brinell hardness factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_brinell_hardness_factor", RW("MATERIALS", "Sets the Brinell hardness factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3252,9 +3252,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_bulk_modulus", RW("MATERIALS", "Sets the bulk modulus of the material applied to the edited document. Param: value=<number>",
+            { "set_material_bulk_modulus", RW("MATERIALS", "Sets the bulk modulus of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3263,9 +3263,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_bump_rotation", RW("MATERIALS", "Sets the bump texture rotation angle of the material applied to the edited document. Param: value=<number>",
+            { "set_material_bump_rotation", RW("MATERIALS", "Sets the bump texture rotation angle of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3274,9 +3274,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_bump_scale", RW("MATERIALS", "Sets the bump texture scale factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_bump_scale", RW("MATERIALS", "Sets the bump texture scale factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3285,9 +3285,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_cutting_force", RW("MATERIALS", "Sets the cutting force of the material applied to the edited document. Param: value=<number>",
+            { "set_material_cutting_force", RW("MATERIALS", "Sets the cutting force of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3296,9 +3296,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_cutting_force_increment", RW("MATERIALS", "Sets the cutting force increment of the material applied to the edited document. Param: value=<number>",
+            { "set_material_cutting_force_increment", RW("MATERIALS", "Sets the cutting force increment of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3307,9 +3307,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_elastic_limit", RW("MATERIALS", "Sets the elastic limit of the material applied to the edited document. Param: value=<number>",
+            { "set_material_elastic_limit", RW("MATERIALS", "Sets the elastic limit of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3318,9 +3318,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_elongation_at_break", RW("MATERIALS", "Sets the elongation at break of the material applied to the edited document. Param: value=<number>",
+            { "set_material_elongation_at_break", RW("MATERIALS", "Sets the elongation at break of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3329,9 +3329,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_glossiness_factor", RW("MATERIALS", "Sets the glossiness factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_glossiness_factor", RW("MATERIALS", "Sets the glossiness factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3340,9 +3340,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_melting_temperature", RW("MATERIALS", "Sets the melting temperature of the material applied to the edited document. Param: value=<number>",
+            { "set_material_melting_temperature", RW("MATERIALS", "Sets the melting temperature of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3351,9 +3351,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_plastic_strain_ratio", RW("MATERIALS", "Sets the plastic strain ratio of the material applied to the edited document. Param: value=<number>",
+            { "set_material_plastic_strain_ratio", RW("MATERIALS", "Sets the plastic strain ratio of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3362,9 +3362,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_poisson_ratio", RW("MATERIALS", "Sets the Poisson ratio of the material applied to the edited document. Param: value=<number>",
+            { "set_material_poisson_ratio", RW("MATERIALS", "Sets the Poisson ratio of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3373,9 +3373,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_section_reduction_at_break", RW("MATERIALS", "Sets the section reduction at break of the material applied to the edited document. Param: value=<number>",
+            { "set_material_section_reduction_at_break", RW("MATERIALS", "Sets the section reduction at break of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3384,9 +3384,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_shear_modulus", RW("MATERIALS", "Sets the shear modulus of the material applied to the edited document. Param: value=<number>",
+            { "set_material_shear_modulus", RW("MATERIALS", "Sets the shear modulus of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3395,9 +3395,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_shrinkage_factor", RW("MATERIALS", "Sets the shrinkage factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_shrinkage_factor", RW("MATERIALS", "Sets the shrinkage factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3406,9 +3406,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_specific_heat_capacity", RW("MATERIALS", "Sets the specific heat capacity of the material applied to the edited document. Param: value=<number>",
+            { "set_material_specific_heat_capacity", RW("MATERIALS", "Sets the specific heat capacity of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3417,9 +3417,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_thermal_conductivity", RW("MATERIALS", "Sets the thermal conductivity of the material applied to the edited document. Param: value=<number>",
+            { "set_material_thermal_conductivity", RW("MATERIALS", "Sets the thermal conductivity of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3428,9 +3428,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_thermal_expansion_coefficient", RW("MATERIALS", "Sets the thermal expansion coefficient of the material applied to the edited document. Param: value=<number>",
+            { "set_material_thermal_expansion_coefficient", RW("MATERIALS", "Sets the thermal expansion coefficient of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3439,9 +3439,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_ultimate_stress", RW("MATERIALS", "Sets the ultimate stress of the material applied to the edited document. Param: value=<number>",
+            { "set_material_ultimate_stress", RW("MATERIALS", "Sets the ultimate stress of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3450,9 +3450,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_vertical_angular_scale", RW("MATERIALS", "Sets the vertical angular scale factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_vertical_angular_scale", RW("MATERIALS", "Sets the vertical angular scale factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3461,9 +3461,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_vickers_hardness_factor", RW("MATERIALS", "Sets the Vickers hardness factor of the material applied to the edited document. Param: value=<number>",
+            { "set_material_vickers_hardness_factor", RW("MATERIALS", "Sets the Vickers hardness factor of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3472,9 +3472,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_young_modulus", RW("MATERIALS", "Sets the Young modulus of the material applied to the edited document. Param: value=<number>",
+            { "set_material_young_modulus", RW("MATERIALS", "Sets the Young modulus of the active material. Param: value=<number>",
                 "try\n" +
                 "{\n" +
                 "    double value = double.Parse(\"{value}\".Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture);\n" +
@@ -3483,9 +3483,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_homogeneous_parameter_value", RW("MATERIALS", "Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false",
+            { "set_material_homogeneous_parameter_value", RW("MATERIALS", "Sets the homogeneous parameter value (bool) of the material. Param: value=empty(unset)/true/false",
                 "string raw = string.IsNullOrWhiteSpace(\"{value}\") ? null : \"{value}\".Trim().ToLowerInvariant();\n" +
                 "bool parsed = false;\n" +
                 "if (raw != null) { bool.TryParse(raw, out parsed); }\n" +
@@ -3500,9 +3500,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_isotropic_parameter_value", RW("MATERIALS", "Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false",
+            { "set_material_isotropic_parameter_value", RW("MATERIALS", "Sets the isotropic parameter value (bool) of the material. Param: value=empty(unset)/true/false",
                 "string raw = string.IsNullOrWhiteSpace(\"{value}\") ? null : \"{value}\".Trim().ToLowerInvariant();\n" +
                 "bool parsed = false;\n" +
                 "if (raw != null) { bool.TryParse(raw, out parsed); }\n" +
@@ -3517,9 +3517,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_rockwell_factors", RW("MATERIALS", "Sets the Rockwell factors (A,B,C) of the material applied to the edited document. Param: value=A,B,C (double or 'null')",
+            { "set_material_rockwell_factors", RW("MATERIALS", "Sets the Rockwell factors (A,B,C) of the active material. Param: value=A,B,C (double or 'null')",
                 "    string raw = \"{value}\".Trim();\n" +
                 "    string[] parts = raw.Split(',');\n" +
                 "    if (parts.Length != 3)\n" +
@@ -3545,9 +3545,9 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
-            { "set_specular_color", RW("MATERIALS", "Sets the specular color (R,G,B) of the material applied to the edited document. Param: value=R,G,B (0-255)",
+            { "set_material_specular_color", RW("MATERIALS", "Sets the specular color (R,G,B) of the active material. Param: value=R,G,B (0-255)",
                 "    string raw = \"{value}\".Trim();\n" +
                 "    string[] parts = raw.Split(',');\n" +
                 "    if (parts.Length != 3)\n" +
@@ -3566,7 +3566,7 @@ namespace TopSolidMcpServer.Tools
                 "}\n" +
                 "catch (Exception ex)\n" +
                 "{\n" +
-                "    __message = \"Error (no material applied to this document?): \" + ex.Message;\n" +
+                "    __message = \"Error (no material set on this document?): \" + ex.Message;\n" +
                 "}") },
             { "set_coating_brinell_hardness_factor", RW("MATERIALS", "Sets the Brinell hardness factor of the active coating. Param: value=<number>",
                 "try\n" +
@@ -4056,7 +4056,7 @@ namespace TopSolidMcpServer.Tools
                 "if (!targetPdm.IsEmpty) TopSolidHost.Pdm.Save(targetPdm, true);\n" +
                 "return \"OK: Material '\" + matRealName + \"' applied to '\" + TopSolidHost.Documents.GetName(targetDoc) + \"' (Mass & CoG enabled).\";") },
 
-            { "set_coating", RW("MATERIALS", "Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries and applies it (or RGB color) to all shapes of a part. Param: value=[doc_name;]coating_keyword[;R,G,B]",
+            { "set_coating", RW("MATERIALS", "Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries, applies it as the ACTIVE coating (Parts.SetCoating) and tints all shapes with its albedo color - or applies a plain RGB color when no coating is found. Param: value=[doc_name;]coating_keyword[;R,G,B]",
                 "string raw = \"{value}\".Trim();\n" +
                 "if (string.IsNullOrEmpty(raw)) return \"Error: Provide coating name or doc_name;coating_name[;R,G,B].\";\n" +
                 "string[] parts = raw.Split(';');\n" +
@@ -4116,13 +4116,19 @@ namespace TopSolidMcpServer.Tools
                 "    string status = \"\";\n" +
                 "    if (!cotDoc.IsEmpty)\n" +
                 "    {\n" +
+                "        bool activeSet = false;\n" +
+                "        try\n" +
+                "        {\n" +
+                "            TopSolidDesignHost.Parts.SetCoating(targetDoc, cotDoc);\n" +
+                "            activeSet = true;\n" +
+                "        } catch { }\n" +
                 "        try\n" +
                 "        {\n" +
                 "            Color alb = TopSolidDesignHost.Coatings.GetAlbedoColor(cotDoc);\n" +
                 "            foreach (var s in TopSolidHost.Shapes.GetShapes(targetDoc))\n" +
                 "                TopSolidHost.Elements.SetColor(s, alb);\n" +
                 "        } catch { }\n" +
-                "        status = \"Coating '\" + TopSolidHost.Pdm.GetName(cotPdm) + \"'\";\n" +
+                "        status = \"Coating '\" + TopSolidHost.Pdm.GetName(cotPdm) + \"'\" + (activeSet ? \" (active coating set)\" : \" (color tint only)\");\n" +
                 "    }\n" +
                 "    if (!string.IsNullOrEmpty(rgbSpec))\n" +
                 "    {\n" +
@@ -5624,6 +5630,48 @@ return ""Replaced the active Part's single revolve profile and saved."";") },
         private static RecipeEntry RN(string category, string description, string code, int minKernelVersion = 0)
         {
             return new RecipeEntry(category, description, code, RecipeEntry.RecipeMode.WritePdmNoTransaction, minKernelVersion);
+        }
+
+        /// <summary>
+        /// Legacy aliases for the material setters standardised in v1.8.15: the
+        /// unprefixed names (set_bump_scale, set_young_modulus, ...) moved to
+        /// set_material_* so that Materials.* and Coatings.* recipes - which
+        /// share 13 identical API method names (GetBumpScale,
+        /// SetBrinellHardnessFactor, SetRockwellFactors, ...) - can no longer
+        /// be confused. Old callers (skills, LoRA prompts, existing scripts)
+        /// keep working. scripts/check-recipes.py check 6d verifies that every
+        /// alias below resolves to a live catalogue entry.
+        /// </summary>
+        static RecipeTool()
+        {
+            Recipes["set_angular_scale"] = Recipes["set_material_angular_scale"];
+            Recipes["set_anisotropy_angle_factor"] = Recipes["set_material_anisotropy_angle_factor"];
+            Recipes["set_brinell_hardness_factor"] = Recipes["set_material_brinell_hardness_factor"];
+            Recipes["set_bulk_modulus"] = Recipes["set_material_bulk_modulus"];
+            Recipes["set_bump_rotation"] = Recipes["set_material_bump_rotation"];
+            Recipes["set_bump_scale"] = Recipes["set_material_bump_scale"];
+            Recipes["set_cutting_force"] = Recipes["set_material_cutting_force"];
+            Recipes["set_cutting_force_increment"] = Recipes["set_material_cutting_force_increment"];
+            Recipes["set_elastic_limit"] = Recipes["set_material_elastic_limit"];
+            Recipes["set_elongation_at_break"] = Recipes["set_material_elongation_at_break"];
+            Recipes["set_glossiness_factor"] = Recipes["set_material_glossiness_factor"];
+            Recipes["set_homogeneous_parameter_value"] = Recipes["set_material_homogeneous_parameter_value"];
+            Recipes["set_isotropic_parameter_value"] = Recipes["set_material_isotropic_parameter_value"];
+            Recipes["set_melting_temperature"] = Recipes["set_material_melting_temperature"];
+            Recipes["set_plastic_strain_ratio"] = Recipes["set_material_plastic_strain_ratio"];
+            Recipes["set_poisson_ratio"] = Recipes["set_material_poisson_ratio"];
+            Recipes["set_rockwell_factors"] = Recipes["set_material_rockwell_factors"];
+            Recipes["set_section_reduction_at_break"] = Recipes["set_material_section_reduction_at_break"];
+            Recipes["set_shear_modulus"] = Recipes["set_material_shear_modulus"];
+            Recipes["set_shrinkage_factor"] = Recipes["set_material_shrinkage_factor"];
+            Recipes["set_specific_heat_capacity"] = Recipes["set_material_specific_heat_capacity"];
+            Recipes["set_specular_color"] = Recipes["set_material_specular_color"];
+            Recipes["set_thermal_conductivity"] = Recipes["set_material_thermal_conductivity"];
+            Recipes["set_thermal_expansion_coefficient"] = Recipes["set_material_thermal_expansion_coefficient"];
+            Recipes["set_ultimate_stress"] = Recipes["set_material_ultimate_stress"];
+            Recipes["set_vertical_angular_scale"] = Recipes["set_material_vertical_angular_scale"];
+            Recipes["set_vickers_hardness_factor"] = Recipes["set_material_vickers_hardness_factor"];
+            Recipes["set_young_modulus"] = Recipes["set_material_young_modulus"];
         }
 
         /// <summary>
