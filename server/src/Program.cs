@@ -359,33 +359,53 @@ namespace TopSolidMcpServer
 
                 var registry = new McpToolRegistry();
 
+                // ── T-1066: "small model" profile. ──
+                // Exposes only run_recipe / list_recipes / get_state / search_help
+                // (no code-generation tools) so tools/list stays under the 800-token
+                // budget targeted at small local models (3-4B, num_ctx 4096).
+                // Triggered by --profile small or TOPSOLID_MCP_PROFILE=small.
+                string profileArg = (GetArg(args, "--profile")
+                    ?? Environment.GetEnvironmentVariable("TOPSOLID_MCP_PROFILE")
+                    ?? string.Empty).Trim().ToLowerInvariant();
+                bool smallProfile = profileArg == "small";
+                if (!smallProfile && profileArg.Length > 0)
+                    Console.Error.WriteLine($"[MCP-INFO] Unknown profile '{profileArg}' — falling back to the default full profile.");
+                if (smallProfile)
+                    Console.Error.WriteLine("[MCP-INFO] Small-model profile: only run_recipe, list_recipes, get_state, search_help are registered.");
+
                 // Register tools — graph is lazy, connector is immediate
                 var findPathTool = new FindPathTool(() => { EnsureGraphLoaded(); return graph; }, () => { EnsureGraphLoaded(); return resolver; });
-                findPathTool.Register(registry);
+                if (!smallProfile)
+                    findPathTool.Register(registry);
 
                 var explorePathsTool = new ExplorePathsTool(() => { EnsureGraphLoaded(); return graph; }, () => { EnsureGraphLoaded(); return resolver; });
-                explorePathsTool.Register(registry);
+                if (!smallProfile)
+                    explorePathsTool.Register(registry);
 
                 var getStateTool = new GetStateTool(() => connector);
                 getStateTool.Register(registry);
 
                 var detectDialogTool = new DetectDialogTool(() => connector);
-                detectDialogTool.Register(registry);
+                if (!smallProfile)
+                    detectDialogTool.Register(registry);
 
                 var executeScriptTool = new ExecuteScriptTool(() => connector);
-                executeScriptTool.Register(registry);
+                if (!smallProfile)
+                    executeScriptTool.Register(registry);
 
                 var compareDocumentsTool = new CompareDocumentsTool(() => connector, readOnly);
-                compareDocumentsTool.Register(registry);
+                if (!smallProfile)
+                    compareDocumentsTool.Register(registry);
 
-                if (!readOnly)
+                if (!readOnly && !smallProfile)
                 {
                     var modifyScriptTool = new ModifyScriptTool(() => connector);
                     modifyScriptTool.Register(registry);
                 }
 
                 var apiHelpTool = new ApiHelpTool(() => { EnsureGraphLoaded(); return graph; });
-                apiHelpTool.Register(registry);
+                if (!smallProfile)
+                    apiHelpTool.Register(registry);
 
                 var recipeTool = new RecipeTool(() => connector, readOnly);
                 recipeTool.Register(registry);
@@ -394,19 +414,23 @@ namespace TopSolidMcpServer
                 listRecipesTool.Register(registry);
 
                 var getRecipeTool = new GetRecipeTool();
-                getRecipeTool.Register(registry);
+                if (!smallProfile)
+                    getRecipeTool.Register(registry);
 
                 var compileTool = new CompileTool();
-                compileTool.Register(registry);
+                if (!smallProfile)
+                    compileTool.Register(registry);
 
                 var searchExamplesTool = new SearchExamplesTool();
-                searchExamplesTool.Register(registry);
+                if (!smallProfile)
+                    searchExamplesTool.Register(registry);
 
                 var searchHelpTool = new SearchHelpTool();
                 searchHelpTool.Register(registry);
 
                 var searchCommandsTool = new SearchCommandsTool();
-                searchCommandsTool.Register(registry);
+                if (!smallProfile)
+                    searchCommandsTool.Register(registry);
 
                 var router = new McpRouter(registry);
                 var server = new McpStdioServer(router);

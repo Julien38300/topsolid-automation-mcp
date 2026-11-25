@@ -46,6 +46,10 @@ __pycache__/
 *.safetensors
 *.bin
 *.sqlite
+/cache/
+data/lora-dataset*.jsonl
+data/lora-dataset-stats.json
+data/eval-*.json
 
 # TopSolid
 *.TopPrt

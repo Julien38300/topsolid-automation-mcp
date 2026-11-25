@@ -127,22 +127,29 @@ namespace TopSolidMcpServer.Tools
                 "if (projId.IsEmpty) return \"No current project.\";\n" +
                 "var sb = new System.Text.StringBuilder();\n" +
                 "sb.AppendLine(\"Project: \" + TopSolidHost.Pdm.GetName(projId));\n" +
-                "int totalDocs = 0; int totalFolders = 0;\n" +
+                "int totalDocs = 0; int totalFolders = 0; int shown = 0;\n" +
+                "const int MaxEntries = 500; bool truncated = false;\n" +
                 "Action<PdmObjectId, string> listRecursive = null;\n" +
                 "listRecursive = (parentId, indent) => {\n" +
+                "    if (truncated) return;\n" +
                 "    List<PdmObjectId> folders; List<PdmObjectId> docs;\n" +
                 "    TopSolidHost.Pdm.GetConstituents(parentId, out folders, out docs);\n" +
                 "    foreach (var f in folders) {\n" +
+                "        if (shown >= MaxEntries) { truncated = true; return; }\n" +
                 "        totalFolders++;\n" +
                 "        sb.AppendLine(indent + \"[Folder] \" + TopSolidHost.Pdm.GetName(f));\n" +
+                "        shown++;\n" +
                 "        listRecursive(f, indent + \"  \");\n" +
                 "    }\n" +
                 "    foreach (var d in docs) {\n" +
+                "        if (shown >= MaxEntries) { truncated = true; return; }\n" +
                 "        totalDocs++;\n" +
                 "        sb.AppendLine(indent + TopSolidHost.Pdm.GetName(d));\n" +
+                "        shown++;\n" +
                 "    }\n" +
                 "};\n" +
                 "listRecursive(projId, \"  \");\n" +
+                "if (truncated) sb.AppendLine(\"(OUTPUT TRUNCATED at \" + MaxEntries + \" entries — refine the query: topsolid_search_document by name, or list a subfolder directly.)\");\n" +
                 "sb.Insert(sb.ToString().IndexOf('\\n') + 1, \"(\" + totalFolders + \" folders, \" + totalDocs + \" documents)\\n\");\n" +
                 "return sb.ToString();") },
             { "search_document", R("PROJECTS", "Searches for a document by name (CONTAINS). Param: value",

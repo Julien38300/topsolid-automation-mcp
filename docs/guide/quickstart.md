@@ -229,6 +229,7 @@ Toutes ces options se passent soit en argument de ligne de commande, soit par va
 | Option | Variable | Effet |
 |---|---|---|
 | `--read-only` | `TOPSOLID_MCP_READ_ONLY=1` | `topsolid_modify_script` n'est pas enregistre ; les recettes tournent en lecture seule |
+| `--profile small` | `TOPSOLID_MCP_PROFILE=small` | N'expose que 4 outils (`topsolid_run_recipe`, `topsolid_list_recipes`, `topsolid_get_state`, `topsolid_search_help`) pour les petits modeles locaux |
 | `--no-confirm` | `TOPSOLID_MCP_SKIP_CONFIRM=1` | Supprime l'etape `confirm: true` des exports, modifications en masse et suppressions (v1.8.23+), pour l'automatisation sans personne pour confirmer |
 | `--no-tray` | `TOPSOLID_MCP_NO_TRAY=1` | Pas d'icone dans la zone de notification (serveur headless, session 0, CI) |
 | `--port <n>` | — | Port Automation de TopSolid (defaut 8090). Sans `--port` ni port enregistre : le serveur **detecte automatiquement le premier TopSolid lance** et cible son port Automation |

@@ -31,7 +31,6 @@ namespace TopSolidMcpServer.Protocol
             { "topsolid_search_examples", new Hint { Title = "Search code examples", ReadOnly = true } },
             { "topsolid_search_help", new Hint { Title = "Search TopSolid help", ReadOnly = true } },
             { "topsolid_search_commands", new Hint { Title = "Search TopSolid commands", ReadOnly = true } },
-            { "topsolid_whats_new", new Hint { Title = "API changes between versions", ReadOnly = true } },
             { "topsolid_get_state", new Hint { Title = "TopSolid state", ReadOnly = true } },
             { "topsolid_detect_dialog", new Hint { Title = "Detect a blocking dialog", ReadOnly = true } },
 
