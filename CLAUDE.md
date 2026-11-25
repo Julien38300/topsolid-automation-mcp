@@ -131,6 +131,7 @@ not to auto-approve them in their MCP client.
 | Flag | Environment variable | Effect |
 |---|---|---|
 | `--read-only` | `TOPSOLID_MCP_READ_ONLY=1` | `topsolid_modify_script` is not registered; recipes run in read-only mode |
+| `--profile small` | `TOPSOLID_MCP_PROFILE=small` | Exposes only `topsolid_run_recipe`, `topsolid_list_recipes`, `topsolid_get_state`, and `topsolid_search_help` (for small local models) |
 | `--no-tray` | `TOPSOLID_MCP_NO_TRAY=1` | No system-tray icon (headless / session 0) |
 | `--http-standalone` | — | Run the native HTTP server + system tray without waiting on stdin |
 | `--port <n>` | — | TopSolid Automation port (default 8090) |
