@@ -4056,7 +4056,7 @@ namespace TopSolidMcpServer.Tools
                 "if (!targetPdm.IsEmpty) TopSolidHost.Pdm.Save(targetPdm, true);\n" +
                 "return \"OK: Material '\" + matRealName + \"' applied to '\" + TopSolidHost.Documents.GetName(targetDoc) + \"' (Mass & CoG enabled).\";") },
 
-            { "set_coating", RW("MATERIALS", "Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries, applies it as the ACTIVE coating (Coatings.SetCoating) and tints all shapes with its albedo color - or applies a plain RGB color when no coating is found. Param: value=[doc_name;]coating_keyword[;R,G,B]",
+            { "set_coating", RW("MATERIALS", "Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries, applies it as the ACTIVE coating (Parts.SetCoating) and tints all shapes with its albedo color - or applies a plain RGB color when no coating is found. Param: value=[doc_name;]coating_keyword[;R,G,B]",
                 "string raw = \"{value}\".Trim();\n" +
                 "if (string.IsNullOrEmpty(raw)) return \"Error: Provide coating name or doc_name;coating_name[;R,G,B].\";\n" +
                 "string[] parts = raw.Split(';');\n" +
@@ -4119,7 +4119,7 @@ namespace TopSolidMcpServer.Tools
                 "        bool activeSet = false;\n" +
                 "        try\n" +
                 "        {\n" +
-                "            TopSolidDesignHost.Coatings.SetCoating(targetDoc, cotDoc);\n" +
+                "            TopSolidDesignHost.Parts.SetCoating(targetDoc, cotDoc);\n" +
                 "            activeSet = true;\n" +
                 "        } catch { }\n" +
                 "        try\n" +

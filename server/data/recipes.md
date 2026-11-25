@@ -5211,7 +5211,7 @@ return "OK: Material '" + matRealName + "' applied to '" + TopSolidHost.Document
 
 ## set_coating
 Pattern: RW
-Description: Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries, applies it as the ACTIVE coating (Coatings.SetCoating) and tints all shapes with its albedo color - or applies a plain RGB color when no coating is found. Param: value=[doc_name;]coating_keyword[;R,G,B]
+Description: Searches a standard coating (.TopCot, e.g. RAL 7016) in libraries, applies it as the ACTIVE coating (Parts.SetCoating) and tints all shapes with its albedo color - or applies a plain RGB color when no coating is found. Param: value=[doc_name;]coating_keyword[;R,G,B]
 
 ```csharp
 string raw = "{value}".Trim();
@@ -5276,7 +5276,7 @@ try
         bool activeSet = false;
         try
         {
-            TopSolidDesignHost.Coatings.SetCoating(targetDoc, cotDoc);
+            TopSolidDesignHost.Parts.SetCoating(targetDoc, cotDoc);
             activeSet = true;
         } catch { }
         try

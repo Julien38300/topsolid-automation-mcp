@@ -48,10 +48,9 @@ Checks, in order:
    6d. Legacy alias registrations (Recipes["old"] = Recipes["new"]) must point
        at an existing catalogue entry, must not collide with a catalogue name
        and must not be registered twice.
-   6e. A recipe that reads or modifies the active object (anything but the
-       Coatings.SetCoating poser) must report the standard family hint in its
-       catch ("no material set on this document?" / "no coating set on this
-       document?") so real type errors stay diagnosable.
+   6e. A recipe that reads or modifies the active object must report the
+       standard family hint in its catch ("no material set on this document?" /
+       "no coating set on this document?") so real type errors stay diagnosable.
    6f. Each API that exists on BOTH interfaces is expected to have its twin
        recipe in both families (get_material_X / get_coating_X, set_material_X
        / set_coating_X). A missing twin is reported as a warning: the
@@ -119,10 +118,6 @@ INTERPOLATION = re.compile(r'(?<!\\")\$\\"')
 # (docId / targetDoc). Reading the .TopCot definition itself
 # (GetAlbedoColor(cotDoc)) is NOT a target call and is exempt from the rules.
 TARGET_DOC = re.compile(r"(Materials|Coatings)\.(\w+)\(\s*(?:docId|targetDoc)\b")
-
-# Recipes that POSE the active object. Their failure means something else
-# than "none is set", so check 6e does not apply to them.
-ACTIVE_POSET = {"Coatings.SetCoating"}
 
 # The standard diagnostic hint each family must report in its catch, so a
 # type error stays diagnosable instead of being guessed from a generic message.
@@ -310,10 +305,6 @@ def main(argv):
         if not calls:
             continue
         interfaces = sorted(set(i for i, m in calls))
-        non_poser_ifaces = set()
-        for iface, meth in calls:
-            if iface + "." + meth not in ACTIVE_POSET:
-                non_poser_ifaces.add(iface)
         named_material = "material" in entry.name
         named_coating = "coating" in entry.name
 
@@ -349,7 +340,7 @@ def main(argv):
         # 6e. Standard diagnostic hint per family, so a real type error stays
         # diagnosable instead of hiding behind a generic catch.
         if "catch" in entry.body:
-            for iface in sorted(non_poser_ifaces):
+            for iface in interfaces:
                 if STANDARD_MSG[iface] not in entry.body:
                     failures.append(
                         "L" + str(entry.line) + "  '" + entry.name + "' calls " + iface +
