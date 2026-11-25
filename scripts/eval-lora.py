@@ -13,7 +13,7 @@ pulls a recipe name out of the raw text with parse_tool_call(), and compares tha
 string to a hard-coded expected string. That is all. It is a string-match
 benchmark, useful for comparing two models on the same prompts.
 
-What it does NOT measure:
+What it does NOT measure WITHOUT --verify-mcp:
   * Whether the recipe exists. Names are never checked against RecipeTool.cs or
     server/data/recipe-list.txt. A model that invents a plausible name is only
     ever marked wrong for differing from the expected string -- never flagged as
@@ -31,7 +31,13 @@ What it does NOT measure:
     FR/EN phrases; a correct refusal worded differently counts as a failure.
 
 So: a regression signal on recipe-name selection, not an end-to-end validation.
-An end-to-end check has to go through the MCP server itself (see tests/).
+End-to-end checks go through the MCP server itself (see tests/), and since
+T-1066 step 11 this script can do it too: `--verify-mcp` replays every parsed
+model call as a real `tools/call topsolid_run_recipe` against a live
+TopSolidMcpServer.exe (stdio, profile small) — an invented recipe name then
+fails on "Unknown recipe", a value left in raw millimetres fails the SI check,
+and results carry `mcp_verdict` / `value_check` fields. `--selftest-mcp` runs
+this verification loop offline (no Ollama) against the real server binary.
 """
 
 import json
@@ -155,11 +161,14 @@ def ask_ollama(model, query):
         return f"Error: {e}"
 
 
-def parse_tool_call(response):
-    """Extract recipe name from a tool_call in either Mistral native or Hermes format.
+def parse_tool_call_args(response):
+    """Extract (recipe_name, args_dict) from a tool call in either format.
 
     Mistral native:  [TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{"recipe":"x"}
-    Hermes:          <tool_call>{"name":"...","arguments":{"recipe":"x"}}</tool_call>
+    Hermes:         <tool_call>{"name":"...","arguments":{"recipe":"x"}}
+    Bare (Ollama /api/chat strips the native markers):
+                     topsolid__topsolid_run_recipe{"recipe":"x"}
+    Returns (None, None) when no call is found.
     """
     import re
     # Mistral native format
@@ -179,9 +188,32 @@ def parse_tool_call(response):
                         json_end = i + 1
                         break
             args = json.loads(response[json_start:json_end])
-            return args.get("recipe") or args.get("recipe_name")
+            name = args.get("recipe") or args.get("recipe_name")
+            return name, args if isinstance(args, dict) else {}
         except Exception:
-            return None
+            return None, None
+
+    # Bare emitted call (Ollama /api/chat strips the Mistral native markers):
+    #   topsolid__topsolid_run_recipe{"recipe":"x"}
+    if re.search(r"\w*run_recipe\w*\s*(?=\{)", response):
+        try:
+            m = re.search(r"\w*run_recipe\w*\s*\{", response)
+            json_start = m.end() - 1
+            depth = 0
+            json_end = json_start
+            for i in range(json_start, len(response)):
+                if response[i] == "{":
+                    depth += 1
+                elif response[i] == "}":
+                    depth -= 1
+                    if depth == 0:
+                        json_end = i + 1
+                        break
+            args = json.loads(response[json_start:json_end])
+            name = args.get("recipe") or args.get("recipe_name")
+            return name, args if isinstance(args, dict) else {}
+        except Exception:
+            return None, None
 
     # Hermes format (legacy fallback)
     if "<tool_call>" in response:
@@ -190,23 +222,31 @@ def parse_tool_call(response):
             end = response.rfind("}") + 1
             data = json.loads(response[start:end])
             args = data.get("arguments", {})
-            return args.get("recipe") or args.get("recipe_name")
+            return args.get("recipe") or args.get("recipe_name"), args if isinstance(args, dict) else {}
         except Exception:
-            return None
+            return None, None
 
-    return None
+    return None, None
 
 
-def evaluate_model(model, suite):
+def parse_tool_call(response):
+    """Extract recipe name only (kept for backward compatibility)."""
+    return parse_tool_call_args(response)[0]
+
+
+def evaluate_model(model, suite, verifier=None):
     """Run evaluation suite."""
     results = []
     print(f"Benchmarking model: {model} ({len(suite)} tests)...")
+    if verifier is not None:
+        print("MCP verification ENABLED: every parsed call is replayed against "
+              f"{verifier.exe.name} (hallucinated names fail on 'Unknown recipe'.)")
 
     for i, test in enumerate(suite):
         print(f"[{i+1}/{len(suite)}] Tier {test['tier']}: {test['query']}")
         response = ask_ollama(model, test["query"])
 
-        actual_recipe = parse_tool_call(response)
+        actual_recipe, tool_args = parse_tool_call_args(response)
 
         success = False
         if test.get("clarification"):
@@ -215,6 +255,7 @@ def evaluate_model(model, suite):
         elif test.get("type") == "error":
             r_lower = response.lower()
             if actual_recipe is None and (
+
                 "ne peux pas" in r_lower
                 or "pas possible" in r_lower
                 or "je ne" in r_lower
@@ -239,31 +280,268 @@ def evaluate_model(model, suite):
             if actual_recipe in valid_recipes:
                 success = True
 
+        mcp_verdict = None
+        value_check = None
+        if verifier is not None and actual_recipe and not test.get("clarification") and test.get("type") != "error":
+            mcp = verifier.verify(actual_recipe, tool_args, test["query"])
+            mcp_verdict = mcp.get("verdict")
+            mcp_detail = mcp.get("detail", "")
+            value_check = value_argument_verdict(test["query"], tool_args)
+            if mcp_verdict == "hallucinated":
+                success = False  # criterion (a)/(c): the name does not exist server-side
+            if value_check is not None:
+                success = False  # criterion (b): wrong/missing unit conversion
+        else:
+            mcp_detail = ""
+
         results.append({
             "tier": test["tier"],
             "query": test["query"],
             "expected": test.get("expected") or "Clarification/Error",
             "actual": actual_recipe or "Natural Language",
             "response": response,
-            "success": success
+            "success": success,
+            "mcp_verdict": mcp_verdict,
+            "value_check": value_check,
+            "mcp_detail": mcp_detail
         })
 
     return results
 
 
+# ---------------------------------------------------------------------------
+# T-1066 step 11 -- close the evaluation loop against the REAL MCP server.
+# The parsed model output is replayed as a genuine tools/call against a live
+# TopSolidMcpServer.exe (stdio), so a hallucinated recipe name fails on
+# "Unknown recipe" instead of only differing from the expected string.
+# ---------------------------------------------------------------------------
+import os
+import re
+import subprocess
+import sys
+import threading
+import time
+import queue as _queue
+
+MCP_BIN_DEFAULT = Path(os.environ.get(
+    "TOPSOLID_MCP_BIN",
+    str(SCRIPT_DIR.parent / "server" / "src" / "bin" / "Release" / "net48" / "TopSolidMcpServer.exe")))
+MCP_CALL_TIMEOUT_S = float(os.environ.get("MCP_CALL_TIMEOUT_S", "12"))
+
+# SI-multipliers for the `value` argument check (criterion b of step 11).
+# The TopSolid API wants SI metres -- a model producing raw millimetres is wrong.
+_SI_MULT = {"mm": 0.001, "millimetre": 0.001, "millimetres": 0.001,
+            "cm": 0.01, "centimetre": 0.01,
+            "dm": 0.1,
+            "m": 1.0, "metre": 1.0, "metres": 1.0}
+
+
+def si_expected_value(query):
+    """Expected SI value (in metres) if the query carries a length with unit, else None."""
+    m = re.search(r"(\d+(?:[.,]\d+)?)\s*(mm|millimetres?|cm|centimetres?|dm|m|metres?)\b",
+                  query.lower())
+    if not m:
+        return None
+    return float(m.group(1).replace(",", ".")) * _SI_MULT[m.group(2)]
+
+
+def value_argument_verdict(query, args):
+    """Check `value` for set_real_parameter-style calls. Returns None when OK/not applicable."""
+    if args is None or not isinstance(args, dict) or "value" not in args:
+        return None  # no value argument produced -- nothing to check here
+    expected = si_expected_value(query)
+    if expected is None:
+        return None
+    raw = args.get("value")
+    try:
+        got = float(raw)
+    except (TypeError, ValueError):
+        return f"non_numeric_value({raw!r})"
+    if abs(got - expected) > 1e-9:
+        return f"wrong_units(got={raw}, expected_si={expected})"
+    return None
+
+
+class McpRecipeVerifier:
+    """Replays parsed model output against the real TopSolidMcpServer (stdio).
+
+    Verdicts:
+      executed_ok         -- result returned with no error and no "Unknown recipe".
+      exists_not_executed -- server could not execute for a reason OTHER than an
+                             unknown recipe (e.g. TopSolid not attached): the name
+                             therefore exists in Recipes.
+      hallucinated        -- "Unknown recipe" from the server: name does not exist.
+      timeout / verifier_down -- no answer in time / server not spawnable
+                             (conservative: treated as exists_not_executed).
+    """
+
+    def __init__(self, exe=None):
+        self.exe = Path(exe or MCP_BIN_DEFAULT)
+        self.proc = None
+        self.responses = _queue.Queue()
+        self._next_id = 10
+
+    def _send(self, obj):
+        self.proc.stdin.write(json.dumps(obj) + "\n")
+        self.proc.stdin.flush()
+
+    def _rpc(self, obj, timeout=None):
+        req_id = obj.get("id")
+        self._send(obj)
+        deadline = time.time() + (timeout or MCP_CALL_TIMEOUT_S)
+        while time.time() < deadline:
+            try:
+                msg = self.responses.get(timeout=max(0.05, deadline - time.time()))
+            except _queue.Empty:
+                break
+            if isinstance(msg, dict) and msg.get("id") == req_id:
+                return msg
+        return None
+
+    def _start(self):
+        if not self.exe.exists():
+            raise FileNotFoundError(str(self.exe))
+        env = dict(os.environ, TOPSOLID_MCP_TRANSPORT="stdio",
+                   TOPSOLID_MCP_PROFILE=os.environ.get("TOPSOLID_MCP_PROFILE", "small"))
+        self.proc = subprocess.Popen(
+            [str(self.exe)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL, env=env, text=True, encoding="utf-8")
+
+        def _pump():
+            try:
+                for line in self.proc.stdout:
+                    try:
+                        self.responses.put(json.loads(line))
+                    except Exception:
+                        continue
+            except Exception:
+                pass
+
+        t = threading.Thread(target=_pump, daemon=True)
+        t.start()
+        init = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
+                "params": {"protocolVersion": "2024-11-05", "capabilities": {},
+                           "clientInfo": {"name": "t1066-eval-verify", "version": "0"}}}
+        self._rpc(init, 2 * MCP_CALL_TIMEOUT_S)
+        self._send({"jsonrpc": "2.0", "method": "notifications/initialized"})
+
+    @staticmethod
+    def _result_text(msg):
+        result = msg.get("result", {}) if isinstance(msg, dict) else {}
+        parts = []
+        for c in result.get("content", []) or []:
+            if isinstance(c, dict) and "text" in c:
+                parts.append(c["text"])
+        if "error" in msg:
+            parts.append(json.dumps(msg["error"], ensure_ascii=False))
+        return "\n".join(parts)
+
+    def verify(self, recipe_name, args, query):
+        """Return {"verdict": ..., "detail": ...} for one parsed model call."""
+        if not recipe_name:
+            return {"verdict": "no_call", "detail": ""}
+        try:
+            if self.proc is None or self.proc.poll() is not None:
+                self._start()
+        except Exception as e:
+            return {"verdict": "verifier_down", "detail": str(e)[:200]}
+        call = {"jsonrpc": "2.0", "id": self._next_id, "method": "tools/call",
+                "params": {"name": "topsolid_run_recipe",
+                           "arguments": {"recipe": recipe_name}}}
+        self._next_id += 1
+        msg = self._rpc(call)
+        if msg is None:
+            return {"verdict": "timeout", "detail": ""}
+        text = self._result_text(msg)
+        if "Unknown recipe" in text:
+            return {"verdict": "hallucinated", "detail": text[:200]}
+        if msg.get("error") or (msg.get("result", {}) or {}).get("isError"):
+            return {"verdict": "exists_not_executed", "detail": text[:200]}
+        return {"verdict": "executed_ok", "detail": text[:200]}
+
+    def close(self):
+        if self.proc is not None and self.proc.poll() is None:
+            try:
+                self.proc.stdin.close()
+                self.proc.kill()
+            except Exception:
+                pass
+
+
+def selftest_mcp():
+    """Offline selftest of the MCP verification loop (no Ollama, no GPU).
+
+    Uses fake model outputs replayed against the REAL server binary:
+      1. invented recipe name  -> server must answer "Unknown recipe" -> hallucinated
+      2. valid write recipe, value left in raw millimetres -> wrong_units
+      3. valid write recipe, value already SI metres    -> value check OK
+    """
+    cases = [
+        ("invented_name", '[TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{"recipe":"read_designation_v2"}</s>',
+         "read_designation_v2", "lire la designation", "hallucinated"),
+        ("valid_name_raw_mm", '[TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{"recipe":"set_real_parameter","value":50}</s>',
+         "set_real_parameter", "longueur 50mm", "exists_or_executed"),
+        ("valid_name_si", '[TOOL_CALLS]topsolid__topsolid_run_recipe[ARGS]{"recipe":"set_real_parameter","value":0.05}</s>',
+         "set_real_parameter", "longueur 50mm", "exists_or_executed"),
+    ]
+    verifier = McpRecipeVerifier()
+    all_ok = True
+    try:
+        for label, response, _recipe, query, expected_verdict in cases:
+            name, args = parse_tool_call_args(response)
+            assert name == _recipe, f"{label}: parse_tool_call_args -> {name!r}, {_args_err(args)}"
+            mcp = verifier.verify(name, args, query)
+            vverdict = value_argument_verdict(query, args)
+            if expected_verdict == "hallucinated":
+                ok = mcp["verdict"] == "hallucinated"
+            else:
+                ok = mcp["verdict"] in ("executed_ok", "exists_not_executed")
+            if label == "valid_name_raw_mm":
+                ok = ok and (vverdict is not None and vverdict.startswith("wrong_units"))
+            if label == "valid_name_si":
+                ok = ok and vverdict is None
+            print(f"  {label}: name={name} mcp={mcp['verdict']} value_check={vverdict}"
+                  f" -> {'OK' if ok else 'FAIL'}"
+                  + (f" | detail: {mcp['detail'][:120]}" if mcp.get('detail') else ""))
+            all_ok = all_ok and ok
+    finally:
+        verifier.close()
+    print("SELFTEST MCP OK" if all_ok else "SELFTEST MCP FAILED")
+    return all_ok
+
+
+def _args_err(args):
+    return "not a dict" if not isinstance(args, dict) else repr(args)[:80]
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", type=str, required=True, help="Ollama model name")
+    parser.add_argument("--model", type=str, required=False, help="Ollama model name")
     parser.add_argument("--output", type=str, help="JSON output file")
     parser.add_argument("--compare", action="store_true", help="Generate comparison report")
     parser.add_argument("--max-tests", type=int, help="Limit the number of tests")
+    parser.add_argument("--selftest-mcp", action="store_true",
+                        help="Selftest the real-server verification loop (T-1066 step 11) and exit")
+    parser.add_argument("--verify-mcp", action="store_true",
+                        help="Replay every parsed tool call against the real TopSolidMcpServer (closes the loop)")
     args = parser.parse_args()
+
+    if args.selftest_mcp:
+        sys.exit(0 if selftest_mcp() else 1)
+
+    if not args.model:
+        parser.error("--model is required unless --selftest-mcp is used")
 
     suite = EVAL_SUITE
     if args.max_tests:
         suite = suite[:args.max_tests]
 
-    results = evaluate_model(args.model, suite)
+    verifier = McpRecipeVerifier() if args.verify_mcp else None
+    try:
+        results = evaluate_model(args.model, suite, verifier=verifier)
+    finally:
+        if verifier is not None:
+            verifier.close()
 
     accuracy = sum(1 for r in results if r["success"]) / len(results) * 100
 

@@ -69,11 +69,17 @@ def load_all_recipes():
             if not line or line.startswith("Total"):
                 continue
             parts = line.split("|")
+            # Manifest shipped in release is name-only (validated by
+            # check-recipes.py in that exact shape); accept both layouts.
             if len(parts) >= 3:
                 name = parts[0].strip()
                 rw = parts[1].strip()
                 desc = parts[2].strip()
-                recipes[name] = {"rw": rw, "description": desc}
+            else:
+                name = line
+                rw = ""
+                desc = ""
+            recipes[name] = {"rw": rw, "description": desc}
     return recipes
 
 
@@ -1836,6 +1842,59 @@ def count_existing_variants(migrated_entries, manual_entries):
     return counts
 
 
+STEP_3C_TEMPLATES_FR = [
+    "lance la recette {name}",
+    "execute la recette {name} sur le document ouvert",
+    "utilise la recette {name} du pont topsolid",
+    "je veux la recette {name}, vas-y",
+    "topsolid: {name}",
+]
+STEP_3C_TEMPLATES_EN = [
+    "run the {name} recipe",
+    "execute the {name} recipe on the open document",
+    "use the {name} recipe from the top solid bridge",
+    "topsolid: run {name}",
+]
+
+
+def generate_fallback_variants(all_entries):
+    """STEP 3c: generic fallback — every recipe in ALL_EN_NAMES still at 0
+    variants after templates + bilingual coverage gets 5 canonical FR/EN
+    phrasings built directly from its recipe name (deterministic)."""
+    existing = count_existing_variants(all_entries, [])
+    invoked = set()
+    for entry in all_entries:
+        gpt_msg = entry["conversations"][2]["value"]
+        try:
+            start = gpt_msg.index('"recipe":"') + len('"recipe":"')
+            end = gpt_msg.index('"', start)
+            invoked.add(gpt_msg[start:end])
+        except (ValueError, AttributeError):
+            pass
+    uncovered = [r for r in sorted(ALL_EN_NAMES)
+                 if existing.get(r, 0) == 0 and r not in invoked]
+
+    entries = []
+    random.seed(321)  # Deterministic for reproducibility
+    for recipe in uncovered:
+        candidates = []
+        for tmpl in list(STEP_3C_TEMPLATES_FR) + list(STEP_3C_TEMPLATES_EN):
+            q = tmpl.replace("{name}", recipe).lower().strip()
+            candidates.append(q)
+        seen = set()
+        unique_candidates = []
+        for c in candidates:
+            if c not in seen:
+                seen.add(c)
+                unique_candidates.append(c)
+        random.shuffle(unique_candidates)
+        for question in unique_candidates[:5]:
+            tc = make_tool_call(recipe)
+            entries.append(make_entry(question, tc))
+    print(f"Generated {len(entries)} fallback variants for {len(uncovered)} uncovered recipes")
+    return entries
+
+
 def generate_from_templates(existing_counts):
     """Generate template-based variants for recipes with < 5 variants."""
     entries = []
@@ -2332,6 +2391,11 @@ def main():
     # Step 3b: Bilingual coverage (force 3 FR + 3 EN per recipe)
     bilingual = generate_bilingual_coverage(all_entries)
     all_entries.extend(bilingual)
+
+    # Step 3c: Generic fallback — recipes still at 0 variants get 5 canonical
+    # FR/EN phrasings built from the recipe name (deterministic).
+    fallback = generate_fallback_variants(all_entries)
+    all_entries.extend(fallback)
 
     # Step 4: Negatives
     negatives = generate_negative_examples()

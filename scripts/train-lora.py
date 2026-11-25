@@ -16,6 +16,7 @@ Output:
   ~/ministral-topsolid-en.gguf — Q4_K_M GGUF ready for Ollama
 """
 
+import json
 import os
 import sys
 import shutil
@@ -29,9 +30,9 @@ from pathlib import Path
 MODEL_NAME = "unsloth/Ministral-3-3B-Instruct-2512-bnb-4bit"
 
 # Training sequence length. Override with LORA_MAX_SEQ_LENGTH.
-# 2048 only covers the short samples this script currently builds; see the
-# train/serve skew TODO in formatting_prompts_func before trusting it.
-MAX_SEQ_LENGTH = int(os.environ.get("LORA_MAX_SEQ_LENGTH", "2048"))
+# 4096 = num_ctx servi par skills/topsolid-mcp/Modelfile (PARAMETER num_ctx
+# 4096) : entraîner à la longueur réellement servie (T-1066 / étape 8).
+MAX_SEQ_LENGTH = int(os.environ.get("LORA_MAX_SEQ_LENGTH", "4096"))
 LORA_R = 32
 LORA_ALPHA = 64
 EPOCHS = 3
@@ -43,6 +44,60 @@ DATASET_FILE = os.environ.get(
     "LORA_DATASET",
     str(Path(__file__).parent.parent / "data" / "lora-dataset.jsonl")
 )
+
+# T-1066 / étape 7 : the [AVAILABLE_TOOLS] block must be rendered exactly the
+# way the Modelfile TEMPLATE injects `$.Tools` at serving time. This file is
+# captured from the REAL compiled server (scripts/capture-available-tools.py,
+# MCP -> Ollama function format, compact JSON). Empty/missing -> samples are
+# rendered WITHOUT tools (eval numbers then only cover the no-tools regime).
+TOOLS_FILE = os.environ.get(
+    "LORA_TOOLS_FILE",
+    str(Path(__file__).parent.parent / "data" / "available-tools.json")
+)
+
+
+def load_tools_blob():
+    """Serialise la liste d'outils servie exactement comme `$.Tools`."""
+    p = Path(TOOLS_FILE)
+    if not p.is_file():
+        return ""
+    try:
+        json.loads(p.read_text(encoding="utf-8"))
+    except Exception as e:
+        raise SystemExit(f"Invalid TOOLS_FILE {p}: {e}") from e
+    # Re-serialise compactément (le JSON de sortie de capture EST déjà compact ;
+    # on repasse par json.dumps pour garantir la forme [AVAILABLE_TOOLS]{...}]).
+    return json.dumps(json.loads(p.read_text(encoding="utf-8")),
+                      ensure_ascii=False, separators=(",", ":"))
+
+
+def _render_text(conv, tools_blob):
+    """Un échantillon : SYSTEM [AVAILABLE_TOOLS] ... [INST] ... [/INST] ... </s>.
+
+    Le TEMPLATE Ollama injecte le bloc d'outils juste AVANT le [INST] du
+    dernier message utilisateur : pour les échantillons mono-tours générés par
+    le pipeline (system, human, gpt), cela revient à l'insérer après le bloc
+    système. C'est exactement ce que le TEMPLATE produit au service.
+    """
+    last_human = max((i for i, m in enumerate(conv)
+                      if m.get("from") == "human"), default=-1)
+    parts = []
+    for i, msg in enumerate(conv):
+        role = msg["from"]
+        value = msg["value"]
+        if role == "system":
+            parts.append(f"[SYSTEM_PROMPT]{value}[/SYSTEM_PROMPT]")
+        elif role == "human":
+            if i == last_human and tools_blob:
+                parts.append(f"[AVAILABLE_TOOLS]{tools_blob}[/AVAILABLE_TOOLS]")
+            parts.append(f"[INST]{value}[/INST]")
+        elif role == "gpt":
+            # Assistant content. If it's a tool_call, no trailing </s> separator
+            # here — Mistral native expects [TOOL_CALLS]...[ARGS]...</s> as a unit.
+            parts.append(f"{value}</s>")
+        elif role == "tool":
+            parts.append(f"[TOOL_RESULTS]{value}[/TOOL_RESULTS]")
+    return "".join(parts)
 
 HOME = Path.home()
 ADAPTER_DIR = HOME / "topsolid_lora_en"
@@ -92,39 +147,14 @@ def step_train():
         # and NEVER contain an [AVAILABLE_TOOLS] block. In production the Ollama
         # TEMPLATE (skills/topsolid-mcp/Modelfile) injects one right before the last
         # [INST] as soon as the client advertises tools: several thousand tokens of
-        # JSON schema for the 13 tools TopSolidMcpServer registers (12 with
-        # --read-only). So the model is fine-tuned on a prompt
-        # distribution that never occurs at serving time -- the question it must
-        # answer sits after a long tool block it has never seen, at a sequence
-        # length it was never trained at.
-        # To fix: render the exact same [AVAILABLE_TOOLS]{...}[/AVAILABLE_TOOLS]
-        # payload the server sends (dump tools/list from TopSolidMcpServer and
-        # serialize it the way the TEMPLATE does) into every training sample, and
-        # raise LORA_MAX_SEQ_LENGTH to cover tool block + question + answer.
-        # Until then, eval numbers measured without tools do not predict behaviour
-        # with tools.
+        # T-1066 / étape 7 : le bloc [AVAILABLE_TOOLS] réel est désormais rendu
+        # dans chaque échantillon via _render_text() — même payload que `$.Tools`
+        # du TEMPLATE (capturé du serveur compilé par capture-available-tools.py,
+        # sérialisation compacte identique). Override possible via LORA_TOOLS_FILE,
+        # fichier absent -> échantillons sans outils (régime "no tools").
         convs = examples["conversations"]
-        texts = []
-        for conv in convs:
-            parts = []
-            for msg in conv:
-                role = msg["from"]
-                value = msg["value"]
-                if role == "system":
-                    parts.append(f"[SYSTEM_PROMPT]{value}[/SYSTEM_PROMPT]")
-                elif role == "human":
-                    parts.append(f"[INST]{value}[/INST]")
-                elif role == "gpt":
-                    # Assistant content. If it's a tool_call, no trailing </s> separator
-                    # here — Mistral native expects [TOOL_CALLS]...[ARGS]...</s> as a unit.
-                    if value.startswith("[TOOL_CALLS]"):
-                        parts.append(f"{value}</s>")
-                    else:
-                        parts.append(f"{value}</s>")
-                elif role == "tool":
-                    parts.append(f"[TOOL_RESULTS]{value}[/TOOL_RESULTS]")
-            texts.append("".join(parts))
-        return {"text": texts}
+        tools_blob = load_tools_blob()
+        return {"text": [_render_text(conv, tools_blob) for conv in convs]}
 
     print(f"[TRAIN] Loading dataset: {DATASET_FILE}")
     dataset = load_dataset("json", data_files={"train": DATASET_FILE}, split="train")
@@ -324,7 +354,27 @@ def main():
                         help="Run a specific step or all (default: all)")
     parser.add_argument("--skip-train", action="store_true",
                         help="Skip training, just merge+convert existing adapter")
+    parser.add_argument("--selftest", action="store_true",
+                        help="Render one fake sample with the real [AVAILABLE_TOOLS] "
+                             "blob and print it — no GPU, no unsloth import")
     args = parser.parse_args()
+
+    if args.selftest:
+        blob = load_tools_blob()
+        conv = [
+            {"from": "system", "value": "You are the TopSolid recipe sub-agent."},
+            {"from": "human", "value": "Exporte la pièce active en STEP."},
+            {"from": "gpt", "value": "[TOOL_CALLS]export_step[ARGS]{\"path\": \"piece.step\"}"},
+        ]
+        text = _render_text(conv, blob)
+        ok_block = ("[AVAILABLE_TOOLS]" in text) == bool(blob)
+        ok_order = text.index("[SYSTEM_PROMPT]") < text.index("[TOOL_CALLS]")
+        print(f"tools_blob_chars={len(blob)}")
+        print(f"has_tools_block={('[AVAILABLE_TOOLS]' in text)}")
+        print(f"ok_block={ok_block} ok_order={ok_order}")
+        assert ok_block and ok_order
+        print("SELFTEST OK")
+        return
 
     if args.step == "all" or args.step == "train":
         if not args.skip_train:
