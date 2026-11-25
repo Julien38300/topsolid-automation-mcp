@@ -152,8 +152,7 @@ Nom sans source verifiee = interdit. Notion non confirmee = `[A VALIDER]`.
   fix_family_drivers (affecte une designation aux pilotes qui en manquent, deduite du nom du parametre),
   batch_check_family_drivers, batch_audit_driver_designations. `[REC]`
 - Regle fiabilite observee en prod : check_family_drivers / fix_family_drivers existent parce que les
-  pilotes sans designation cassent l'usage des familles. Pattern de pilotage cascade famille->code :
-  voir assemblages-pilotes.md (methode ticket 7.21).
+  pilotes sans designation cassent l'usage des familles.
 
 ## 8. Transactions et ecritures
 

@@ -6,16 +6,14 @@ license: internal
 metadata:
   hermes:
     tags: [topsolid, mcp, cad, assemblage, stl, verification-perceptive, recipes, extruded-bar, profiles-721, sheet-metal, collisions, where-used, circuit-breaker]
-    related_skills: [topsolid-mcp, topsolid-railing-design, topsolid-api-knowledge, topsolid-cage-from-image]
+    related_skills: [topsolid-mcp, topsolid-api-knowledge]
 description: Use when modeling TopSolid via the MCP bridge — turned parts (create_revolved_part, revolve_active_part, replace_revolved_profile), 7.21 native library profiles (CreateProfileByTwoPoints), extruded bars, sheet metal plates, assemblies, Chronology & IsInvalid discipline, Circuit-Breaker & Token Discipline, Compile-First C# rules, generic <500ms material lookup, Where-Used update before save, native B-Rep collision checks.
 ---
 
 # Modélisation & Bonnes Pratiques Utilisateur TopSolid via MCP (TopSolid 7.20 / 7.21)
 
 > **Skill vivant** : Ce skill centralise les pratiques utilisateur TopSolid et la modélisation via le pont MCP. Chaque nouveau piège ou apprentissage issu des tests MCP doit y être immédiatement ajouté et synchronisé.
-> **Skills métiers spécialisés à charger en parallèle selon l'ouvrage** :
-> - **Garde-corps / rambardes / balustrades** : charger obligatoirement **`topsolid-railing-design`** (`TopSolid-Railing-Design`) avant toute analyse d'image ou conception.
-> - **Cages SubD depuis photo** : charger **`topsolid-cage-from-image`**.
+> **Skills métiers spécialisés** : si un skill dédié à l'ouvrage demandé est installé chez l'utilisateur, le charger en parallèle de celui-ci.
 
 ## When to Use
 
@@ -83,7 +81,7 @@ Classe de travail : analyser finement le besoin/photo (avec le skill métier sp�
 5. **COUPE-CIRCUIT (CIRCUIT-BREAKER) & 5 INTERDICTIONS ABSOLUES** :
    - **COUPE-CIRCUIT IMMÉDIAT SUR PANNE INFRASTRUCTURE / SERVEUR MCP** : Si `topsolid_compile` ou `topsolid_execute_script` renvoie une erreur système interne, **ARRÊT IMMÉDIAT** (interdiction de lire le code source du serveur MCP, de bricoler un exécutable ou d'ouvrir WinRM).
    - **ZÉRO PIÈCE MULTI-CORPS « FOURRE-TOUT »** : 1 fichier `.TopPrt` par référence unitaire distincte, instancié $N$ fois dans `.TopAsm`.
-   - **ZÉRO CRAWL WEB NORMATIF** : tout est dans `topsolid-railing-design`.
+   - **ZÉRO CRAWL WEB NORMATIF** : pas de recherche web pendant une session CAO.
    - **JAMAIS `TopSolidHost.Documents.Update(docId, true)` à l'intérieur d'un `StartModification` ouvert** (deadlock 60 s).
    - **JAMAIS `GetShapeVolume(shapeId)` avant `EndModification(true, true)`** et **JAMAIS de scripts Python pour fouiller `methods.json` ou `types.json`**.
 
